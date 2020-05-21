@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>带LDAP认证与WebUI的Docker私有仓库搭建 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="带LDAP认证与WebUI的Docker私有仓库搭建" />
+<meta property="og:description" content="带LDAP认证与WebUI的Docker私有仓库搭建 1. 获取docker仓库并运行 docker pull registry:latest docker run -d -p 127.0.0.1:5000:5000 --name registry-localhost -v /opt/docker-registry:/var/lib/registry --restart=always registry:latest 2. 获取WebUI并运行 Docker Regi" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://mrcroxx.github.io/posts/private-docker-registry-with-ldap-auth-and-webui/" />
+<meta property="article:published_time" content="2019-07-22T16:37:55+08:00" />
+<meta property="article:modified_time" content="2019-07-22T16:37:55+08:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="带LDAP认证与WebUI的Docker私有仓库搭建"/>
+<meta name="twitter:description" content="带LDAP认证与WebUI的Docker私有仓库搭建 1. 获取docker仓库并运行 docker pull registry:latest docker run -d -p 127.0.0.1:5000:5000 --name registry-localhost -v /opt/docker-registry:/var/lib/registry --restart=always registry:latest 2. 获取WebUI并运行 Docker Regi"/>
+<meta name="application-name" content="叉鸽 MrCroxx 的博客">
+<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/private-docker-registry-with-ldap-auth-and-webui/" /><link rel="prev" href="https://mrcroxx.github.io/posts/csp-201312-t1/" /><link rel="next" href="https://mrcroxx.github.io/posts/csp-201403-t4/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "带LDAP认证与WebUI的Docker私有仓库搭建",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/mrcroxx.github.io\/posts\/private-docker-registry-with-ldap-auth-and-webui\/"
+        },"genre": "posts","wordcount":  852 ,
+        "url": "https:\/\/mrcroxx.github.io\/posts\/private-docker-registry-with-ldap-auth-and-webui\/","datePublished": "2019-07-22T16:37:55+08:00","dateModified": "2019-07-22T16:37:55+08:00","author": {
+                "@type": "Person",
+                "name": "叉鸽"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : '' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-1" class="typeit"></span></a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-2" class="typeit"></span></a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">带LDAP认证与WebUI的Docker私有仓库搭建</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/docker/"><i class="far fa-folder fa-fw"></i>docker</a>&nbsp;<a href="/categories/ldap/"><i class="far fa-folder fa-fw"></i>LDAP</a>&nbsp;<a href="/categories/registry/"><i class="far fa-folder fa-fw"></i>registry</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2019-07-22">2019-07-22</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 852 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 2 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#1-获取docker仓库并运行">1. 获取docker仓库并运行</a></li>
+    <li><a href="#2-获取webui并运行">2. 获取WebUI并运行</a></li>
+    <li><a href="#3-搭建带有ldap认证的nginx服务">3. 搭建带有LDAP认证的Nginx服务</a>
+      <ul>
+        <li><a href="#31-编译安装nginx依赖">3.1 编译安装nginx依赖</a></li>
+        <li><a href="#32-下载nginx与拓展模块源码">3.2 下载nginx与拓展模块源码</a></li>
+        <li><a href="#33-编译安装nginx">3.3 编译安装nginx</a></li>
+        <li><a href="#34-编写nginx配置文件etcnginxnginxconf">3.4 编写nginx配置文件/etc/nginx/nginx.conf</a></li>
+        <li><a href="#35-配置nginx服务管理与自启动">3.5 配置Nginx服务管理与自启动</a></li>
+      </ul>
+    </li>
+    <li><a href="#4-客户端配置">4. 客户端配置</a>
+      <ul>
+        <li><a href="#41-编写etcdockerdaemonjson">4.1 编写/etc/docker/daemon.json</a></li>
+        <li><a href="#42-重启docker服务">4.2 重启docker服务</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><h1 id="带ldap认证与webui的docker私有仓库搭建">带LDAP认证与WebUI的Docker私有仓库搭建</h1>
+<h2 id="1-获取docker仓库并运行">1. 获取docker仓库并运行</h2>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">docker pull registry:latest
+docker run -d -p 127.0.0.1:5000:5000 --name registry-localhost -v /opt/docker-registry:/var/lib/registry --restart<span class="o">=</span>always registry:latest
+</code></pre></div><h2 id="2-获取webui并运行">2. 获取WebUI并运行</h2>
+<p><em>Docker Registry的WebUI有很多，这里使用konradkleine/docker-registry-frontend:v2</em></p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">docker pull konradkleine/docker-registry-frontend:v2
+docker run -d -e <span class="nv">ENV_DOCKER_REGISTRY_HOST</span><span class="o">=</span>barricade.ivic.org.cn -e <span class="nv">ENV_DOCKER_REGISTRY_PORT</span><span class="o">=</span><span class="m">80</span> -p 127.0.0.1:8081:80 --restart<span class="o">=</span>always --name frontend-localhost konradkleine/docker-registry-frontend:v2
+</code></pre></div><h2 id="3-搭建带有ldap认证的nginx服务">3. 搭建带有LDAP认证的Nginx服务</h2>
+<p>预编译版本的nginx默认不带有LDAP认证所需模块，需要手动编译nginx与拓展模块。</p>
+<h3 id="31-编译安装nginx依赖">3.1 编译安装nginx依赖</h3>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash"><span class="c1"># 编译安装pcre</span>
+wget ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.42.tar.gz
+tar -zxf pcre-8.42.tar.gz
+<span class="nb">cd</span> pcre-8.42
+./configure
+make
+sudo make install
+
+<span class="c1"># 编译安装zlib</span>
+wget http://zlib.net/zlib-1.2.11.tar.gz
+tar -zxf zlib-1.2.11.tar.gz
+<span class="nb">cd</span> zlib-1.2.11
+./configure
+make
+sudo make install
+
+<span class="c1"># 如果没有安装openssl，请自行安装openssl</span>
+<span class="c1"># ...</span>
+
+<span class="c1"># 安装ldap依赖库</span>
+<span class="c1"># Ubuntu/Debian</span>
+sudo apt install libldap2-dev
+<span class="c1"># CentOS</span>
+yum install openldap-devel
+</code></pre></div><h3 id="32-下载nginx与拓展模块源码">3.2 下载nginx与拓展模块源码</h3>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash"><span class="c1"># 下载解压nginx源码</span>
+wget https://nginx.org/download/nginx-1.15.11.tar.gz
+tar zxf nginx-1.15.11.tar.gz
+
+<span class="c1"># 下载解压nginx-auth-ldap</span>
+wget https://github.com/kvspb/nginx-auth-ldap/archive/master.zip
+unzip master.zip
+</code></pre></div><h3 id="33-编译安装nginx">3.3 编译安装nginx</h3>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash"><span class="c1"># 编译nginx</span>
+<span class="nb">cd</span> nginx-1.15.11
+./configure --sbin-path<span class="o">=</span>/usr/local/nginx/nginx --conf-path<span class="o">=</span>/etc/nginx/nginx.conf --pid-path<span class="o">=</span>/usr/local/nginx/nginx.pid --with-pcre<span class="o">=</span>../pcre-8.42 --with-zlib<span class="o">=</span>../zlib-1.2.11 --with-http_ssl_module --with-stream --with-mail<span class="o">=</span>dynamic  --add-module<span class="o">=</span>~/nginx-auth-ldap-master
+
+make
+sudo make install
+
+<span class="c1"># 创建软连接</span>
+sudo ln -s /usr/local/nginx/nginx /usr/bin/nginx
+</code></pre></div><h3 id="34-编写nginx配置文件etcnginxnginxconf">3.4 编写nginx配置文件/etc/nginx/nginx.conf</h3>
+<p><strong>注意替换ldap_server中参数，同时注意其他位置关于host与port的配置</strong></p>
+<pre><code>worker_processes  1;
+
+events {
+    worker_connections  1024;
+}
+
+
+http {
+
+    upstream docker-registry {
+        server localhost:5000;
+    }
+
+    ldap_server ldapserver {
+	url ldap://&lt;LDAP-SERVER-HOST&gt;:&lt;LDAP-SERVER-PORT&gt;/&lt;OU=...,DC=...&gt;?samaccountname?sub?(objectClass=user);
+        binddn &lt;BINDDN&gt;;
+        binddn_passwd &lt;PASSWORD-FOR-BINDDN&gt;;
+        group_attribute uniquemember;
+        group_attribute_is_dn on;
+    }
+    
+    server {
+
+        listen 80;
+
+        error_log /var/log/nginx/error.log debug;
+        access_log /var/log/nginx/access.log;
+
+        client_max_body_size 0;
+
+        chunked_transfer_encoding on;
+
+        location / {
+            return 301 http://barricade.ivic.org.cn:80/v2;
+        }
+
+
+
+        location /v2/ {
+                # Do not allow connections from docker 1.5 and earlier
+                # docker pre-1.6.0 did not properly set the user agent on ping, catch &quot;Go *&quot; user agents
+                if ($http_user_agent ~ &quot;^(docker\/1\.(3|4|5(?!\.[0-9]-dev))|Go ).*$&quot; ) {
+                        return 404;
+                }
+
+                auth_ldap &quot;Forbidden&quot;;
+                auth_ldap_servers ldapserver;
+                add_header 'Docker-Distribution-Api-Version' 'registry/2.0' always;
+
+                proxy_pass                          http://docker-registry;
+                    proxy_set_header  Host              $http_host;   # required for docker client's sake
+                    proxy_set_header  X-Real-IP         $remote_addr; # pass on real client's IP
+                    proxy_set_header  X-Forwarded-For   $proxy_add_x_forwarded_for;
+                    proxy_set_header  X-Forwarded-Proto $scheme;
+                    proxy_read_timeout                  900;
+        }
+
+    }
+
+    server {
+
+	listen 8080;
+
+	error_log /var/log/nginx/error.log debug;
+	access_log /var/log/nginx/access.log;
+
+	client_max_body_size 0;
+	chunked_transfer_encoding on;
+	location / {
+
+		auth_ldap &quot;Forbidden&quot;;
+		auth_ldap_servers ldapserver;
+		proxy_pass http://localhost:8081;
+
+	}
+
+    }
+
+}
+</code></pre><h3 id="35-配置nginx服务管理与自启动">3.5 配置Nginx服务管理与自启动</h3>
+<p>编写服务<code>/lib/systemd/system/nginx.service</code></p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash"><span class="o">[</span>Unit<span class="o">]</span>
+<span class="nv">Description</span><span class="o">=</span>nginx - high performance web server
+<span class="nv">Documentation</span><span class="o">=</span>http://nginx.org/en/docs/
+<span class="nv">After</span><span class="o">=</span>network.target
+
+<span class="o">[</span>Service<span class="o">]</span>
+<span class="nv">Type</span><span class="o">=</span>forking
+<span class="nv">ExecStartPre</span><span class="o">=</span>/usr/local/nginx/nginx -t -c /etc/nginx/nginx.conf
+<span class="nv">ExecStart</span><span class="o">=</span>/usr/local/nginx/nginx -c /etc/nginx/nginx.conf
+<span class="nv">ExecReload</span><span class="o">=</span>/usr/local/nginx/nginx -s reload
+<span class="nv">ExecStop</span><span class="o">=</span>/usr/local/nginx/nginx -s quit
+<span class="nv">PrivateTmp</span><span class="o">=</span><span class="nb">true</span>
+
+<span class="o">[</span>Install<span class="o">]</span>
+<span class="nv">WantedBy</span><span class="o">=</span>multi-user.target
+</code></pre></div><p>启动Nginx服务并设置自启动</p>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">sudo systemctl daemon-reload
+sudo systemctl start nginx
+sudo systemctl status nginx
+sudo systemctl <span class="nb">enable</span> nginx
+</code></pre></div><h2 id="4-客户端配置">4. 客户端配置</h2>
+<p>docker仅支持https的仓库，在内网中无需使用https，因此需要将仓库加入docker的白名单。</p>
+<h3 id="41-编写etcdockerdaemonjson">4.1 编写/etc/docker/daemon.json</h3>
+<div class="highlight"><pre class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
+    <span class="nt">&#34;insecure-registries&#34;</span><span class="p">:</span><span class="p">[</span>
+        <span class="s2">&#34;barricade.ivic.org.cn&#34;</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div><h3 id="42-重启docker服务">4.2 重启docker服务</h3>
+<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">sudo systemctl restart docker
+</code></pre></div></div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2019-07-22</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"></div>
+            <div class="post-info-share">
+                <span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/posts/csp-201312-t1/" class="prev" rel="prev" title="CSP 201312 T1 出现次数最多的数"><i class="fas fa-angle-left fa-fw"></i>CSP 201312 T1 出现次数最多的数</a>
+            <a href="/posts/csp-201403-t4/" class="next" rel="next" title="CSP 201403 T4 无线网络">CSP 201403 T4 无线网络<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.62.2">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.9"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2020</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"><link rel="stylesheet" href="/lib/katex/katex.min.css"><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"><style>.lg-toolbar .lg-icon::after { color: #999; }</style><script type="text/javascript" src="/lib/smooth-scroll/smooth-scroll.min.js"></script><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"id-1":"叉鸽 | MrCroxx","id-2":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"id-1":["id-1"],"id-2":["id-2"]},"duration":null,"speed":null}};</script><script type="text/javascript" src="/js/theme.min.js"></script></body>
+</html>

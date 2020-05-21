@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>CSP 201403 T4 无线网络 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="CSP 201403 T4 无线网络" />
+<meta property="og:description" content="CCF CSP 201403 T4 无线网络 题目 问题描述 目前在一个很大的平面房间里有 n 个无线路由器,每个无线路由器都固定在某个点上。任何两个无线路由器只要距离不超过 r 就" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://mrcroxx.github.io/posts/csp-201403-t4/" />
+<meta property="article:published_time" content="2019-07-30T13:36:30+08:00" />
+<meta property="article:modified_time" content="2019-07-30T13:36:30+08:00" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="CSP 201403 T4 无线网络"/>
+<meta name="twitter:description" content="CCF CSP 201403 T4 无线网络 题目 问题描述 目前在一个很大的平面房间里有 n 个无线路由器,每个无线路由器都固定在某个点上。任何两个无线路由器只要距离不超过 r 就"/>
+<meta name="application-name" content="叉鸽 MrCroxx 的博客">
+<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/csp-201403-t4/" /><link rel="prev" href="https://mrcroxx.github.io/posts/private-docker-registry-with-ldap-auth-and-webui/" /><link rel="next" href="https://mrcroxx.github.io/posts/csp-201403-t3/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "CSP 201403 T4 无线网络",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/mrcroxx.github.io\/posts\/csp-201403-t4\/"
+        },"genre": "posts","keywords": "CCF CSP, algorithm","wordcount":  1551 ,
+        "url": "https:\/\/mrcroxx.github.io\/posts\/csp-201403-t4\/","datePublished": "2019-07-30T13:36:30+08:00","dateModified": "2019-07-30T13:36:30+08:00","author": {
+                "@type": "Person",
+                "name": "叉鸽"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : '' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-1" class="typeit"></span></a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-2" class="typeit"></span></a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">CSP 201403 T4 无线网络</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/ccf-csp/"><i class="far fa-folder fa-fw"></i>CCF CSP</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2019-07-30">2019-07-30</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1551 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 4 分钟&nbsp;</div>
+        </div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#题目">题目</a>
+      <ul>
+        <li><a href="#问题描述">问题描述</a></li>
+        <li><a href="#输入格式">输入格式</a></li>
+        <li><a href="#输出格式">输出格式</a></li>
+        <li><a href="#样例输入">样例输入</a></li>
+        <li><a href="#样例输出">样例输出</a></li>
+        <li><a href="#时间限制">时间限制</a></li>
+        <li><a href="#内存限制">内存限制</a></li>
+      </ul>
+    </li>
+    <li><a href="#题解">题解</a></li>
+    <li><a href="#代码">代码</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><h1 id="ccf-csp-201403-t4-无线网络">CCF CSP 201403 T4 无线网络</h1>
+<h2 id="题目">题目</h2>
+<h3 id="问题描述">问题描述</h3>
+<p>目前在一个很大的平面房间里有 n 个无线路由器,每个无线路由器都固定在某个点上。任何两个无线路由器只要距离不超过 r 就能互相建立网络连接。
+除此以外,另有 m 个可以摆放无线路由器的位置。你可以在这些位置中选择至多 k 个增设新的路由器。
+你的目标是使得第 1 个路由器和第 2 个路由器之间的网络连接经过尽量少的中转路由器。请问在最优方案下中转路由器的最少个数是多少?</p>
+<h3 id="输入格式">输入格式</h3>
+<p>第一行包含四个正整数 n,m,k,r。(2 ≤ n ≤ 100,1 ≤ k ≤ m ≤ 100, 1 ≤ r ≤ 108)。
+接下来 n 行,每行包含两个整数 xi 和 yi,表示一个已经放置好的无线 路由器在 (xi, yi) 点处。输入数据保证第 1 和第 2 个路由器在仅有这 n 个路由器的情况下已经可以互相连接(经过一系列的中转路由器)。
+接下来 m 行,每行包含两个整数 xi 和 yi,表示 (xi, yi) 点处可以增设 一个路由器。
+输入中所有的坐标的绝对值不超过 108,保证输入中的坐标各不相同。</p>
+<h3 id="输出格式">输出格式</h3>
+<p>输出只有一个数,即在指定的位置中增设 k 个路由器后,从第 1 个路 由器到第 2 个路由器最少经过的中转路由器的个数。</p>
+<h3 id="样例输入">样例输入</h3>
+<pre><code>5 3 1 3
+0 0
+5 5
+0 3
+0 5
+3 5
+3 3
+4 4
+3 0
+</code></pre>
+<h3 id="样例输出">样例输出</h3>
+<pre><code>2
+</code></pre>
+<h3 id="时间限制">时间限制</h3>
+<pre><code>1.0s
+</code></pre>
+<h3 id="内存限制">内存限制</h3>
+<pre><code>256.0MB
+</code></pre>
+<h2 id="题解">题解</h2>
+<p>这道题是一道限制经过某类点最大次数的最短路问题,这类问题可以通过二维距离解决。由于图的边权均为1，因此直接使用二维距离BFS即可，如<code>dis[i][j]</code>表示从0号路由器到<code>i</code>号路由器，在新增了<code>j</code>个路由器时的最少总路由器数。</p>
+<p>之前在网上查看大多数的题解都是直接在一维的距离上使用BFS，由于这道题数据比较弱，可以AC，但是实际上这样如下问题:</p>
+<p>当在BFS过程中，已经过的新增路由器已经耗尽了可以添加的最大次数，而未经过的路由器中存在添加后可以缩短的路径长度大于已添加某一新增路由器能够缩短的路径长度。由于dis只有一维，BFS对每个路由器只会遍历一次，因此不会跳过在前面的新增路由器，导致得到的答案大于最优解。</p>
+<p>如果上面这段话比较绕嘴，可以通过如下的一组数据来演示：</p>
+<pre><code>13 2 1 1
+0 0
+6 0
+0 1
+1 1
+2 1
+2 0
+3 0
+4 0
+4 1
+4 2
+5 2
+6 2
+6 1
+1 0
+5 0
+</code></pre>
+<p>将这组数据绘制成图，虚线表示0号和1号路由器，白点表示已有的路由器，黑点表示可以添加的路由器。可以互相连通的路由器中间使用直线连接：</p>
+<figure><a class="lightgallery" href="/img/csp-201403-t4/origin.png" title="/img/csp-201403-t4/origin.png" data-thumbnail="/img/csp-201403-t4/origin.png" data-sub-html="<h2>origin</h2>">
+        <img
+            class="lazyload"
+            src="/svg/loading/normal.min.svg"
+            data-src="/img/csp-201403-t4/origin.png"
+            data-srcset="/img/csp-201403-t4/origin.png, /img/csp-201403-t4/origin.png 1.5x, /img/csp-201403-t4/origin.png 2x"
+            data-sizes="auto"
+            alt="/img/csp-201403-t4/origin.png" width="100px" />
+    </a><figcaption class="image-caption">origin</figcaption>
+    </figure>
+<p>在这组数据中，<code>k=1</code>。如果<code>dis</code>只有一维，在遇到第一个黑点时会经过，这样到黑点后的第一个路由器的距离为<code>2</code>，我们设这个点为<code>x</code>点。当绕过黑点的路径到达该点时，该点已被遍历，不会再次遍历。而到达第二个黑点时，由于第一个黑点已经耗尽了增加路由器的次数，因此只能绕更远的路。最终导致得到的答案为<code>9</code>。其路径如下图所示；</p>
+<figure><a class="lightgallery" href="/img/csp-201403-t4/wrong.png" title="/img/csp-201403-t4/wrong.png" data-thumbnail="/img/csp-201403-t4/wrong.png" data-sub-html="<h2>wrong</h2>">
+        <img
+            class="lazyload"
+            src="/svg/loading/normal.min.svg"
+            data-src="/img/csp-201403-t4/wrong.png"
+            data-srcset="/img/csp-201403-t4/wrong.png, /img/csp-201403-t4/wrong.png 1.5x, /img/csp-201403-t4/wrong.png 2x"
+            data-sizes="auto"
+            alt="/img/csp-201403-t4/wrong.png" width="100px" />
+    </a><figcaption class="image-caption">wrong</figcaption>
+    </figure>
+<p>而使用二维距离时，<code>dis[i][j]</code>表示从0号路由器到<code>i</code>号路由器，在新增了<code>j</code>个路由器时的最少总路由器数。因此对于我们命名为<code>x</code>的点时，有两种不同的状态：<code>dis[x][1]=2</code>与<code>dis[x][0]=4</code>。这样，可以通过<code>dis[x][0]=4</code>继续遍历，经过第二个黑点找到到达终点的真正最短路<code>7</code>。其路径如下图所示：</p>
+<figure><a class="lightgallery" href="/img/csp-201403-t4/correct.png" title="/img/csp-201403-t4/correct.png" data-thumbnail="/img/csp-201403-t4/correct.png" data-sub-html="<h2>correct</h2>">
+        <img
+            class="lazyload"
+            src="/svg/loading/normal.min.svg"
+            data-src="/img/csp-201403-t4/correct.png"
+            data-srcset="/img/csp-201403-t4/correct.png, /img/csp-201403-t4/correct.png 1.5x, /img/csp-201403-t4/correct.png 2x"
+            data-sizes="auto"
+            alt="/img/csp-201403-t4/correct.png" width="100px" />
+    </a><figcaption class="image-caption">correct</figcaption>
+    </figure>
+<p>通过比较网上一维BFS的结果与二维BFS在这组数据下得到的结果，证明这个问题确实存在。</p>
+<h2 id="代码">代码</h2>
+<p>这里为了复习最短路的写法，使用SPFA的方式写的。</p>
+<div class="highlight"><pre class="chroma"><code class="language-c++" data-lang="c++"><span class="cp">#</span><span class="cp">include</span> <span class="cpf">&lt;iostream&gt;</span><span class="cp">
+</span><span class="cp"></span><span class="cp">#</span><span class="cp">include</span> <span class="cpf">&lt;cstring&gt;</span><span class="cp">
+</span><span class="cp"></span><span class="cp">#</span><span class="cp">include</span> <span class="cpf">&lt;vector&gt;</span><span class="cp">
+</span><span class="cp"></span><span class="cp">#</span><span class="cp">include</span> <span class="cpf">&lt;queue&gt;</span><span class="cp">
+</span><span class="cp"></span>
+<span class="cp">#</span><span class="cp">define ll long long</span><span class="cp">
+</span><span class="cp"></span><span class="cp">#</span><span class="cp">define N 205</span><span class="cp">
+</span><span class="cp"></span>
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">std</span><span class="p">;</span>
+
+<span class="k">struct</span> <span class="nc">point</span>
+<span class="p">{</span>
+    <span class="n">ll</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">;</span>
+<span class="p">}</span><span class="p">;</span>
+
+<span class="n">queue</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">q</span><span class="p">;</span>
+<span class="kt">bool</span> <span class="n">inq</span><span class="p">[</span><span class="n">N</span><span class="p">]</span><span class="p">;</span>
+<span class="n">vector</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">nxt</span><span class="p">[</span><span class="n">N</span><span class="p">]</span><span class="p">;</span>
+<span class="n">point</span> <span class="n">pos</span><span class="p">[</span><span class="n">N</span><span class="p">]</span><span class="p">;</span> <span class="c1">// index &lt; n : 已有
+</span><span class="c1"></span><span class="kt">int</span> <span class="n">dis</span><span class="p">[</span><span class="n">N</span><span class="p">]</span><span class="p">[</span><span class="n">N</span><span class="p">]</span><span class="p">;</span>
+
+<span class="kt">bool</span> <span class="nf">reach</span><span class="p">(</span><span class="n">point</span> <span class="n">a</span><span class="p">,</span> <span class="n">point</span> <span class="n">b</span><span class="p">,</span> <span class="n">ll</span> <span class="n">r</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">x</span> <span class="o">-</span> <span class="n">b</span><span class="p">.</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">x</span> <span class="o">-</span> <span class="n">b</span><span class="p">.</span><span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">y</span> <span class="o">-</span> <span class="n">b</span><span class="p">.</span><span class="n">y</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">y</span> <span class="o">-</span> <span class="n">b</span><span class="p">.</span><span class="n">y</span><span class="p">)</span> <span class="o">&lt;</span><span class="o">=</span> <span class="n">r</span> <span class="o">*</span> <span class="n">r</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+    <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="kt">int</span> <span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">k</span><span class="p">;</span>
+    <span class="n">ll</span> <span class="n">r</span><span class="p">;</span>
+
+    <span class="n">cin</span> <span class="o">&gt;</span><span class="o">&gt;</span> <span class="n">n</span> <span class="o">&gt;</span><span class="o">&gt;</span> <span class="n">m</span> <span class="o">&gt;</span><span class="o">&gt;</span> <span class="n">k</span> <span class="o">&gt;</span><span class="o">&gt;</span> <span class="n">r</span><span class="p">;</span>
+    <span class="n">memset</span><span class="p">(</span><span class="n">inq</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">inq</span><span class="p">)</span><span class="p">)</span><span class="p">;</span>
+    <span class="n">memset</span><span class="p">(</span><span class="n">dis</span><span class="p">,</span> <span class="mh">0x7f</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">dis</span><span class="p">)</span><span class="p">)</span><span class="p">;</span>
+    <span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">q</span><span class="p">.</span><span class="n">empty</span><span class="p">(</span><span class="p">)</span><span class="p">)</span>
+        <span class="n">q</span><span class="p">.</span><span class="n">pop</span><span class="p">(</span><span class="p">)</span><span class="p">;</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span> <span class="o">+</span> <span class="n">m</span><span class="p">;</span> <span class="n">i</span><span class="o">+</span><span class="o">+</span><span class="p">)</span>
+        <span class="n">cin</span> <span class="o">&gt;</span><span class="o">&gt;</span> <span class="n">pos</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="p">.</span><span class="n">x</span> <span class="o">&gt;</span><span class="o">&gt;</span> <span class="n">pos</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="p">.</span><span class="n">y</span><span class="p">;</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span> <span class="o">+</span> <span class="n">m</span><span class="p">;</span> <span class="n">i</span><span class="o">+</span><span class="o">+</span><span class="p">)</span>
+        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">n</span> <span class="o">+</span> <span class="n">m</span><span class="p">;</span> <span class="n">j</span><span class="o">+</span><span class="o">+</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">reach</span><span class="p">(</span><span class="n">pos</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="p">,</span> <span class="n">pos</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span><span class="p">)</span>
+                <span class="n">nxt</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">j</span><span class="p">)</span><span class="p">;</span>
+
+    <span class="n">q</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="p">;</span>
+    <span class="n">inq</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+    <span class="n">dis</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">q</span><span class="p">.</span><span class="n">empty</span><span class="p">(</span><span class="p">)</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="kt">int</span> <span class="n">s</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">front</span><span class="p">(</span><span class="p">)</span><span class="p">;</span>
+        <span class="n">q</span><span class="p">.</span><span class="n">pop</span><span class="p">(</span><span class="p">)</span><span class="p">;</span>
+        <span class="n">inq</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">s</span> <span class="o">=</span><span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">break</span><span class="p">;</span>
+
+        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">c</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">c</span> <span class="o">&lt;</span><span class="o">=</span> <span class="n">k</span><span class="p">;</span> <span class="n">c</span><span class="o">+</span><span class="o">+</span><span class="p">)</span>
+            <span class="k">for</span> <span class="p">(</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="o">:</span><span class="o">:</span><span class="n">iterator</span> <span class="n">it</span> <span class="o">=</span> <span class="n">nxt</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="p">.</span><span class="n">begin</span><span class="p">(</span><span class="p">)</span><span class="p">;</span> <span class="n">it</span> <span class="o">!</span><span class="o">=</span> <span class="n">nxt</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="p">.</span><span class="n">end</span><span class="p">(</span><span class="p">)</span><span class="p">;</span> <span class="n">it</span><span class="o">+</span><span class="o">+</span><span class="p">)</span>
+            <span class="p">{</span>
+
+                <span class="kt">int</span> <span class="n">t</span> <span class="o">=</span> <span class="o">*</span><span class="n">it</span><span class="p">;</span>
+                <span class="kt">int</span> <span class="n">ct</span> <span class="o">=</span> <span class="p">(</span><span class="n">s</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">)</span> <span class="o">?</span> <span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="o">:</span> <span class="p">(</span><span class="n">c</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="p">;</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">ct</span> <span class="o">&gt;</span> <span class="n">k</span><span class="p">)</span>
+                    <span class="k">continue</span><span class="p">;</span>
+
+                <span class="k">if</span> <span class="p">(</span><span class="n">dis</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="p">[</span><span class="n">ct</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">dis</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="p">{</span>
+
+                    <span class="n">dis</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="p">[</span><span class="n">ct</span><span class="p">]</span> <span class="o">=</span> <span class="n">dis</span><span class="p">[</span><span class="n">s</span><span class="p">]</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">inq</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="p">)</span>
+                    <span class="p">{</span>
+                        <span class="n">q</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="p">;</span>
+                        <span class="n">inq</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kt">int</span> <span class="n">ans</span> <span class="o">=</span> <span class="n">m</span> <span class="o">+</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">c</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">c</span> <span class="o">&lt;</span><span class="o">=</span> <span class="n">k</span><span class="p">;</span> <span class="n">c</span><span class="o">+</span><span class="o">+</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">dis</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">ans</span><span class="p">)</span>
+            <span class="n">ans</span> <span class="o">=</span> <span class="n">dis</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="p">;</span>
+    <span class="n">cout</span> <span class="o">&lt;</span><span class="o">&lt;</span> <span class="n">ans</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2019-07-30</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"></div>
+            <div class="post-info-share">
+                <span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/ccf-csp/">CCF CSP</a>,&nbsp;<a href="/tags/algorithm/">algorithm</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/posts/private-docker-registry-with-ldap-auth-and-webui/" class="prev" rel="prev" title="带LDAP认证与WebUI的Docker私有仓库搭建"><i class="fas fa-angle-left fa-fw"></i>带LDAP认证与WebUI的Docker私有仓库搭建</a>
+            <a href="/posts/csp-201403-t3/" class="next" rel="next" title="CSP 201403 T3 命令行选项">CSP 201403 T3 命令行选项<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+<div id="comments"></div></article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.62.2">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.9"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2020</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank">CC BY-NC 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"><link rel="stylesheet" href="/lib/katex/katex.min.css"><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"><style>.lg-toolbar .lg-icon::after { color: #999; }</style><script type="text/javascript" src="/lib/smooth-scroll/smooth-scroll.min.js"></script><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"id-1":"叉鸽 | MrCroxx","id-2":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"id-1":["id-1"],"id-2":["id-2"]},"duration":null,"speed":null}};</script><script type="text/javascript" src="/js/theme.min.js"></script></body>
+</html>
