@@ -26,7 +26,7 @@
         "mainEntityOfPage": {
             "@type": "WebPage",
             "@id": "https:\/\/mrcroxx.com\/posts\/csp-201403-t4\/"
-        },"genre": "posts","keywords": "CCF CSP, algorithm","wordcount":  1551 ,
+        },"genre": "posts","keywords": "CCF CSP, algorithm","wordcount":  1572 ,
         "url": "https:\/\/mrcroxx.com\/posts\/csp-201403-t4\/","datePublished": "2019-07-30T13:36:30+08:00","dateModified": "2019-07-30T13:36:30+08:00","author": {
                 "@type": "Person",
                 "name": "叉鸽"
@@ -101,7 +101,7 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">CSP 201403 T4 无线网络</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/ccf-csp/"><i class="far fa-folder fa-fw"></i>CCF CSP</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2019-07-30">2019-07-30</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1551 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2019-07-30">2019-07-30</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1572 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 4 分钟&nbsp;</div>
         </div><div class="details toc" id="toc-static"  kept="">
                 <div class="details-summary toc-title">
@@ -181,7 +181,7 @@
 5 0
 </code></pre>
 <p>将这组数据绘制成图，虚线表示0号和1号路由器，白点表示已有的路由器，黑点表示可以添加的路由器。可以互相连通的路由器中间使用直线连接：</p>
-<figure><a class="lightgallery" href="/img/csp-201403-t4/origin.png" title="/img/csp-201403-t4/origin.png" data-thumbnail="/img/csp-201403-t4/origin.png" data-sub-html="<h2>origin</h2>">
+<figure><a class="lightgallery" href="/img/csp-201403-t4/origin.png" title="/img/csp-201403-t4/origin.png" data-thumbnail="/img/csp-201403-t4/origin.png" data-sub-html="<h2>样例数据</h2>">
         <img
             class="lazyload"
             src="/svg/loading/normal.min.svg"
@@ -189,10 +189,10 @@
             data-srcset="/img/csp-201403-t4/origin.png, /img/csp-201403-t4/origin.png 1.5x, /img/csp-201403-t4/origin.png 2x"
             data-sizes="auto"
             alt="/img/csp-201403-t4/origin.png" width="100px" />
-    </a><figcaption class="image-caption">origin</figcaption>
+    </a><figcaption class="image-caption">样例数据</figcaption>
     </figure>
 <p>在这组数据中，<code>k=1</code>。如果<code>dis</code>只有一维，在遇到第一个黑点时会经过，这样到黑点后的第一个路由器的距离为<code>2</code>，我们设这个点为<code>x</code>点。当绕过黑点的路径到达该点时，该点已被遍历，不会再次遍历。而到达第二个黑点时，由于第一个黑点已经耗尽了增加路由器的次数，因此只能绕更远的路。最终导致得到的答案为<code>9</code>。其路径如下图所示；</p>
-<figure><a class="lightgallery" href="/img/csp-201403-t4/wrong.png" title="/img/csp-201403-t4/wrong.png" data-thumbnail="/img/csp-201403-t4/wrong.png" data-sub-html="<h2>wrong</h2>">
+<figure><a class="lightgallery" href="/img/csp-201403-t4/wrong.png" title="/img/csp-201403-t4/wrong.png" data-thumbnail="/img/csp-201403-t4/wrong.png" data-sub-html="<h2>错误路径</h2>">
         <img
             class="lazyload"
             src="/svg/loading/normal.min.svg"
@@ -200,10 +200,10 @@
             data-srcset="/img/csp-201403-t4/wrong.png, /img/csp-201403-t4/wrong.png 1.5x, /img/csp-201403-t4/wrong.png 2x"
             data-sizes="auto"
             alt="/img/csp-201403-t4/wrong.png" width="100px" />
-    </a><figcaption class="image-caption">wrong</figcaption>
+    </a><figcaption class="image-caption">错误路径</figcaption>
     </figure>
 <p>而使用二维距离时，<code>dis[i][j]</code>表示从0号路由器到<code>i</code>号路由器，在新增了<code>j</code>个路由器时的最少总路由器数。因此对于我们命名为<code>x</code>的点时，有两种不同的状态：<code>dis[x][1]=2</code>与<code>dis[x][0]=4</code>。这样，可以通过<code>dis[x][0]=4</code>继续遍历，经过第二个黑点找到到达终点的真正最短路<code>7</code>。其路径如下图所示：</p>
-<figure><a class="lightgallery" href="/img/csp-201403-t4/correct.png" title="/img/csp-201403-t4/correct.png" data-thumbnail="/img/csp-201403-t4/correct.png" data-sub-html="<h2>correct</h2>">
+<figure><a class="lightgallery" href="/img/csp-201403-t4/correct.png" title="/img/csp-201403-t4/correct.png" data-thumbnail="/img/csp-201403-t4/correct.png" data-sub-html="<h2>正确路径</h2>">
         <img
             class="lazyload"
             src="/svg/loading/normal.min.svg"
@@ -211,7 +211,7 @@
             data-srcset="/img/csp-201403-t4/correct.png, /img/csp-201403-t4/correct.png 1.5x, /img/csp-201403-t4/correct.png 2x"
             data-sizes="auto"
             alt="/img/csp-201403-t4/correct.png" width="100px" />
-    </a><figcaption class="image-caption">correct</figcaption>
+    </a><figcaption class="image-caption">正确路径</figcaption>
     </figure>
 <p>通过比较网上一维BFS的结果与二维BFS在这组数据下得到的结果，证明这个问题确实存在。</p>
 <h2 id="代码">代码</h2>
