@@ -1,8 +1,8 @@
 <rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
     <channel>
-        <title>所有文章 - 叉鸽 MrCroxx 的博客</title>
+        <title>所有文章 - 叉鸽 | MrCroxx 的博客</title>
         <link>https://mrcroxx.github.io/posts/</link>
-        <description>所有文章 | 叉鸽 MrCroxx 的博客</description>
+        <description>所有文章 | 叉鸽 | MrCroxx 的博客</description>
         <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>mrcroxx@outlook.com (叉鸽)</managingEditor>
             <webMaster>mrcroxx@outlook.com (叉鸽)</webMaster><lastBuildDate>Tue, 30 Jul 2019 13:36:30 &#43;0800</lastBuildDate><atom:link href="https://mrcroxx.github.io/posts/" rel="self" type="application/rss+xml" /><item>
     <title>CSP 201403 T1 相反数</title>

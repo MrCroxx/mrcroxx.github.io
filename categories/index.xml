@@ -1,8 +1,8 @@
 <rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
     <channel>
-        <title>Categories - 分类 - 叉鸽 MrCroxx 的博客</title>
+        <title>Categories - 分类 - 叉鸽 | MrCroxx 的博客</title>
         <link>https://mrcroxx.github.io/categories/</link>
-        <description>Categories - 分类 - 叉鸽 MrCroxx 的博客</description>
+        <description>Categories - 分类 - 叉鸽 | MrCroxx 的博客</description>
         <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>mrcroxx@outlook.com (叉鸽)</managingEditor>
             <webMaster>mrcroxx@outlook.com (叉鸽)</webMaster><lastBuildDate>Tue, 30 Jul 2019 13:36:30 &#43;0800</lastBuildDate><atom:link href="https://mrcroxx.github.io/categories/" rel="self" type="application/rss+xml" /><item>
     <title>CCF CSP</title>
