@@ -2,23 +2,23 @@
     xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
     xmlns:xhtml="http://www.w3.org/1999/xhtml"
     ><url>
-            <loc>https://mrcroxx.github.io/tags/algorithm/</loc><lastmod>2019-07-30T13:36:30&#43;08:00</lastmod></url><url>
-            <loc>https://mrcroxx.github.io/categories/</loc><lastmod>2019-07-30T13:36:30&#43;08:00</lastmod></url><url>
-            <loc>https://mrcroxx.github.io/categories/ccf-csp/</loc><lastmod>2019-07-30T13:36:30&#43;08:00</lastmod></url><url>
-            <loc>https://mrcroxx.github.io/tags/ccf-csp/</loc><lastmod>2019-07-30T13:36:30&#43;08:00</lastmod></url><url>
-            <loc>https://mrcroxx.github.io/posts/csp-201403-t1/</loc><lastmod>2019-07-30T13:36:30&#43;08:00</lastmod></url><url>
-            <loc>https://mrcroxx.github.io/posts/csp-201403-t2/</loc><lastmod>2019-07-30T13:36:30&#43;08:00</lastmod></url><url>
-            <loc>https://mrcroxx.github.io/posts/csp-201403-t3/</loc><lastmod>2019-07-30T13:36:30&#43;08:00</lastmod></url><url>
-            <loc>https://mrcroxx.github.io/posts/csp-201403-t4/</loc><lastmod>2019-07-30T13:36:30&#43;08:00</lastmod></url><url>
-            <loc>https://mrcroxx.github.io/posts/</loc><lastmod>2019-07-30T13:36:30&#43;08:00</lastmod></url><url>
-            <loc>https://mrcroxx.github.io/tags/</loc><lastmod>2019-07-30T13:36:30&#43;08:00</lastmod></url><url>
-            <loc>https://mrcroxx.github.io/</loc><lastmod>2019-07-30T13:36:30&#43;08:00</lastmod></url><url>
-            <loc>https://mrcroxx.github.io/categories/docker/</loc><lastmod>2019-07-22T16:37:55&#43;08:00</lastmod></url><url>
-            <loc>https://mrcroxx.github.io/categories/ldap/</loc><lastmod>2019-07-22T16:37:55&#43;08:00</lastmod></url><url>
-            <loc>https://mrcroxx.github.io/categories/registry/</loc><lastmod>2019-07-22T16:37:55&#43;08:00</lastmod></url><url>
-            <loc>https://mrcroxx.github.io/posts/private-docker-registry-with-ldap-auth-and-webui/</loc><lastmod>2019-07-22T16:37:55&#43;08:00</lastmod></url><url>
-            <loc>https://mrcroxx.github.io/posts/csp-201312-t1/</loc><lastmod>2019-07-10T15:10:30&#43;08:00</lastmod></url><url>
-            <loc>https://mrcroxx.github.io/posts/csp-201312-t2/</loc><lastmod>2019-07-10T15:10:30&#43;08:00</lastmod></url><url>
-            <loc>https://mrcroxx.github.io/posts/csp-201312-t3/</loc><lastmod>2019-07-10T15:10:30&#43;08:00</lastmod></url><url>
-            <loc>https://mrcroxx.github.io/posts/csp-201312-t4/</loc><lastmod>2019-07-10T15:10:30&#43;08:00</lastmod></url><url>
-            <loc>https://mrcroxx.github.io/posts/csp-201312-t5/</loc><lastmod>2019-07-10T15:10:30&#43;08:00</lastmod></url></urlset>
+            <loc>https://mrcroxx.com/tags/algorithm/</loc><lastmod>2019-07-30T13:36:30&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.com/categories/</loc><lastmod>2019-07-30T13:36:30&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.com/categories/ccf-csp/</loc><lastmod>2019-07-30T13:36:30&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.com/tags/ccf-csp/</loc><lastmod>2019-07-30T13:36:30&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.com/posts/csp-201403-t1/</loc><lastmod>2019-07-30T13:36:30&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.com/posts/csp-201403-t2/</loc><lastmod>2019-07-30T13:36:30&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.com/posts/csp-201403-t3/</loc><lastmod>2019-07-30T13:36:30&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.com/posts/csp-201403-t4/</loc><lastmod>2019-07-30T13:36:30&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.com/posts/</loc><lastmod>2019-07-30T13:36:30&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.com/tags/</loc><lastmod>2019-07-30T13:36:30&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.com/</loc><lastmod>2019-07-30T13:36:30&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.com/categories/docker/</loc><lastmod>2019-07-22T16:37:55&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.com/categories/ldap/</loc><lastmod>2019-07-22T16:37:55&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.com/categories/registry/</loc><lastmod>2019-07-22T16:37:55&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.com/posts/private-docker-registry-with-ldap-auth-and-webui/</loc><lastmod>2019-07-22T16:37:55&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.com/posts/csp-201312-t1/</loc><lastmod>2019-07-10T15:10:30&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.com/posts/csp-201312-t2/</loc><lastmod>2019-07-10T15:10:30&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.com/posts/csp-201312-t3/</loc><lastmod>2019-07-10T15:10:30&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.com/posts/csp-201312-t4/</loc><lastmod>2019-07-10T15:10:30&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.com/posts/csp-201312-t5/</loc><lastmod>2019-07-10T15:10:30&#43;08:00</lastmod></url></urlset>
