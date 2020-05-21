@@ -26,7 +26,7 @@
         "mainEntityOfPage": {
             "@type": "WebPage",
             "@id": "https:\/\/mrcroxx.com\/posts\/csp-201312-t3\/"
-        },"genre": "posts","keywords": "CCF CSP, algorithm","wordcount":  688 ,
+        },"genre": "posts","keywords": "CCF CSP, algorithm","wordcount":  698 ,
         "url": "https:\/\/mrcroxx.com\/posts\/csp-201312-t3\/","datePublished": "2019-07-10T15:10:30+08:00","dateModified": "2019-07-10T15:10:30+08:00","author": {
                 "@type": "Person",
                 "name": "叉鸽"
@@ -101,7 +101,7 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">CSP 201312 T3 最大的矩形</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/ccf-csp/"><i class="far fa-folder fa-fw"></i>CCF CSP</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2019-07-10">2019-07-10</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 688 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2019-07-10">2019-07-10</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 698 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 2 分钟&nbsp;</div>
         </div><div class="details toc" id="toc-static"  kept="">
                 <div class="details-summary toc-title">
@@ -129,25 +129,27 @@
 <h2 id="题目">题目</h2>
 <h3 id="问题描述"><strong>问题描述</strong></h3>
 <p>在横轴上放了n个相邻的矩形，每个矩形的宽度是1，而第i（1 ≤ i ≤ n）个矩形的高度是hi。这n个矩形构成了一个直方图。例如，下图中六个矩形的高度就分别是3, 1, 6, 5, 2, 3。</p>
-<a class="lightgallery" href="/img/csp-201312-t3/1.png" title="/img/csp-201312-t3/1.png" data-thumbnail="/img/csp-201312-t3/1.png">
+<figure><a class="lightgallery" href="/img/csp-201312-t3/1.png" title="/img/csp-201312-t3/1.png" data-thumbnail="/img/csp-201312-t3/1.png" data-sub-html="<h2>样例</h2>">
         <img
             class="lazyload"
             src="/svg/loading/normal.min.svg"
             data-src="/img/csp-201312-t3/1.png"
             data-srcset="/img/csp-201312-t3/1.png, /img/csp-201312-t3/1.png 1.5x, /img/csp-201312-t3/1.png 2x"
             data-sizes="auto"
-            alt="/img/csp-201312-t3/1.png" />
-    </a>
+            alt="/img/csp-201312-t3/1.png" width="200px" />
+    </a><figcaption class="image-caption">样例</figcaption>
+    </figure>
 <p>请找出能放在给定直方图里面积最大的矩形，它的边要与坐标轴平行。对于上面给出的例子，最大矩形如下图所示的阴影部分，面积是10。</p>
-<a class="lightgallery" href="/img/csp-201312-t3/2.png" title="/img/csp-201312-t3/2.png" data-thumbnail="/img/csp-201312-t3/2.png">
+<figure><a class="lightgallery" href="/img/csp-201312-t3/2.png" title="/img/csp-201312-t3/2.png" data-thumbnail="/img/csp-201312-t3/2.png" data-sub-html="<h2>样例</h2>">
         <img
             class="lazyload"
             src="/svg/loading/normal.min.svg"
             data-src="/img/csp-201312-t3/2.png"
             data-srcset="/img/csp-201312-t3/2.png, /img/csp-201312-t3/2.png 1.5x, /img/csp-201312-t3/2.png 2x"
             data-sizes="auto"
-            alt="/img/csp-201312-t3/2.png" />
-    </a>
+            alt="/img/csp-201312-t3/2.png" width="200px" />
+    </a><figcaption class="image-caption">样例</figcaption>
+    </figure>
 <h3 id="输入格式">输入格式</h3>
 <p>第一行包含一个整数n，即矩形的数量(1 ≤ n ≤ 1000)。</p>
 <p>第二行包含n 个整数h1, h2, … , hn，相邻的数之间由空格分隔。(1 ≤ hi ≤ 10000)。hi是第i个矩形的高度。</p>
