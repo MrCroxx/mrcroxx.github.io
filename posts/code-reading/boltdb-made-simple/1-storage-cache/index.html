@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>深入浅出boltdb —— 0x01 存储与缓存 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出boltdb —— 0x01 存储与缓存" />
+<meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/1-storage-cache/" />
+<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/1-storage-cache/bbolt.jpg"/>
+<meta property="article:published_time" content="2021-01-05T18:26:19+08:00" />
+<meta property="article:modified_time" content="2021-01-05T18:26:22+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/1-storage-cache/bbolt.jpg"/>
+<meta name="twitter:title" content="深入浅出boltdb —— 0x01 存储与缓存"/>
+<meta name="twitter:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。"/>
+<meta name="application-name" content="叉鸽 MrCroxx 的博客">
+<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/1-storage-cache/" /><link rel="prev" href="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/0-introduction/" /><link rel="next" href="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/2-b&#43;tree/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "深入浅出boltdb —— 0x01 存储与缓存",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/1-storage-cache\/"
+        },"image": [{
+                            "@type": "ImageObject",
+                            "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/1-storage-cache\/bbolt.jpg",
+                            "width":  1200 ,
+                            "height":  360 
+                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  9010 ,
+        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/1-storage-cache\/","datePublished": "2021-01-05T18:26:19+08:00","dateModified": "2021-01-05T18:26:22+08:00","publisher": {
+            "@type": "Organization",
+            "name": "叉鸽"},"author": {
+                "@type": "Person",
+                "name": "叉鸽"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : '' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-1" class="typeit"></span></a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-2" class="typeit"></span></a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出boltdb —— 0x01 存储与缓存</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAbolt/"><i class="far fa-folder fa-fw"></i>深入浅出bolt</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-05">2021-01-05</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 9010 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 18 分钟&nbsp;</div>
+        </div><div class="featured-image"><img
+        class="lazyload"
+        src="/svg/loading.min.svg"
+        data-src="/posts/code-reading/boltdb-made-simple/1-storage-cache/bbolt.jpg"
+        data-srcset="/posts/code-reading/boltdb-made-simple/1-storage-cache/bbolt.jpg, /posts/code-reading/boltdb-made-simple/1-storage-cache/bbolt.jpg 1.5x, /posts/code-reading/boltdb-made-simple/1-storage-cache/bbolt.jpg 2x"
+        data-sizes="auto"
+        alt="/posts/code-reading/boltdb-made-simple/1-storage-cache/bbolt.jpg"
+        title="/posts/code-reading/boltdb-made-simple/1-storage-cache/bbolt.jpg" /></div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#0-引言">0. 引言</a></li>
+    <li><a href="#1-page">1. page</a>
+      <ul>
+        <li><a href="#11-page的总体结构">1.1 page的总体结构</a></li>
+        <li><a href="#12-page的数据结构">1.2 page的数据结构</a>
+          <ul>
+            <li><a href="#121-meta-page">1.2.1 meta page</a></li>
+            <li><a href="#122-branch-page--leaf-page">1.2.2 branch page &amp; leaf page</a></li>
+          </ul>
+        </li>
+        <li><a href="#13-page溢出结构">1.3 page溢出结构</a></li>
+      </ul>
+    </li>
+    <li><a href="#2-freelist">2. freelist</a>
+      <ul>
+        <li><a href="#21-freelist的逻辑结构">2.1 freelist的逻辑结构</a></li>
+        <li><a href="#22-freelist的存储结构">2.2 freelist的存储结构</a></li>
+        <li><a href="#23-freelist的方法">2.3 freelist的方法</a></li>
+      </ul>
+    </li>
+    <li><a href="#3-boltdb的读写与缓存策略">3. boltdb的读写与缓存策略</a>
+      <ul>
+        <li><a href="#31-读操作与缓存策略">3.1 读操作与缓存策略</a>
+          <ul>
+            <li><a href="#311-boltdb数据库文件结构">3.1.1 boltdb数据库文件结构</a></li>
+            <li><a href="#312-mmap">3.1.2 mmap</a></li>
+          </ul>
+        </li>
+        <li><a href="#32-写操作与缓存策略">3.2 写操作与缓存策略</a>
+          <ul>
+            <li><a href="#321-page-buffermemory-memory">3.2.1 page buffer（memory-&gt;memory）</a></li>
+            <li><a href="#322-pwrite--fdatasyncmemory-disk">3.2.2 pwrite + fdatasync（memory-&gt;disk）</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#4-总结">4. 总结</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
+<h2 id="0-引言">0. 引言</h2>
+<p>boltdb使用单内存映射文件作为存储（single memory-mapped file on disk）。boltdb在启动时会通过mmap系统调用将数据库文件映射到内存，这样可以仅通过内存访问来对文件进行读写，而将磁盘I/O交给操作系统管理，只有在事务提交或更新元数据时，boltdb才会通过fdatasyc系统调用强制将脏页落盘，以保证事务的ACID语义。</p>
+<p>在linux系统中，内存与磁盘间的换入换出是以页为单位的。为了充分利用这一特定，boltdb的数据库文件也是按页组织的，且页大小与操作系统的页大小相等。</p>
+<p>由于mmap与unmmap系统调用的开销相对较大，因此boltdb在每次mmap时会预留一部分空间（小于1GB时倍增，超过1GB时每次额外申请1GB），这会产生一些空闲的页；同时，随着对数据库的操作，在更新值<sup>注1</sup>或删除值时，数据库也可能产生空闲页<sup>注2</sup>。为了高效地管理这些空闲页，boltdb学习操作系统引入了一个简化的空闲页列表。</p>
+<p>boltdb的页与空闲页列表的实现分别在<code>page.go</code>与<code>freelist.go</code>中，本文主要围绕这两个文件，分析boltdb中页与空闲页列表的设计与实现。同时，本文后半部分介绍了boltdb的读写操作与缓存策略。由于boltdb的读写（特别是写入）与事务关系较为密切，因此本文后半部分的分析中可能涉及到一些与事务相关的代码，不了解boltdb事务实现的读者可以先阅读本系列后续的文章。</p>
+<div class="details admonition info open">
+        <div class="details-summary admonition-title">
+            <i class="icon fas fa-info-circle fa-fw"></i>注1<i class="details-icon fas fa-angle-right fa-fw"></i>
+        </div>
+        <div class="details-content">
+            <div class="admonition-content">为了在保证隔离性的同时支持“读读并发”、“读写并发”（boltdb不支持“写写并发”，即同一时刻只能有一个执行中的可写事务），boltdb在更新页时采用了CoW技术（copy-on-wriite）。在可写事务更新页时，boltdb首先会复制原页，然后在副本上更新，再将引用修改为新页上。这样，当可写事务更新页时，只读事务还可以读取原来的页；当只读提交时，boltdb会释放不再使用的页。这样，便实现了在支持“读读并发”、“读写并发”的同时保证事务的隔离性。</div>
+        </div>
+    </div>
+<div class="details admonition info open">
+        <div class="details-summary admonition-title">
+            <i class="icon fas fa-info-circle fa-fw"></i>注2<i class="details-icon fas fa-angle-right fa-fw"></i>
+        </div>
+        <div class="details-content">
+            <div class="admonition-content">boltdb不会将空闲的页归还给系统。其原因有二：</p>
+<ol>
+<li>在不断增大的数据库中，被释放的页之后还会被重用。</li>
+<li>boltdb为了保证读写并发的隔离性，使用CoW来更新页，因此会在任意位置产生空闲页，而不只是在文件末尾产生空闲页（详见<a href="https://github.com/boltdb/bolt/issues/308#issuecomment-74811638" target="_blank" rel="noopener noreffer">issue#308</a>）。</li>
+</ol></div>
+        </div>
+    </div>
+<h2 id="1-page">1. page</h2>
+<h3 id="11-page的总体结构">1.1 page的总体结构</h3>
+<p>boltdb中每个页的元数据保存在该页的开头处，我们可以将其看做页的头部<em>Page Header</em>，页的其余部分为页的数据<em>Page Body</em>，不同用途的页的<em>Page Body</em>中的数据存储格式不同。</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/page-overview.svg" title="页结构" data-thumbnail="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/page-overview.svg" data-sub-html="<h2>页结构</h2><p>页结构</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/page-overview.svg"
+            data-srcset="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/page-overview.svg, assets/page-overview.svg 1.5x, /posts/code-reading/boltdb-made-simple/1-storage-cache/assets/page-overview.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/page-overview.svg" />
+    </a><figcaption class="image-caption">页结构</figcaption>
+    </figure></p>
+<p>页相关的代码主要在<code>page.go</code>中。<em>Page Header</em>是以<code>page</code>结构体表示的，其包含的字段如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="kd">type</span> <span class="nx">pgid</span> <span class="kt">uint64</span>
+
+<span class="kd">type</span> <span class="nx">page</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">id</span>       <span class="nx">pgid</span>
+	<span class="nx">flags</span>    <span class="kt">uint16</span>
+	<span class="nx">count</span>    <span class="kt">uint16</span>
+	<span class="nx">overflow</span> <span class="kt">uint32</span>
+	<span class="nx">ptr</span>      <span class="kt">uintptr</span>
+<span class="p">}</span>
+
+</code></pre></div><table>
+<thead>
+<tr>
+<th align="center">字段</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">id</td>
+<td align="left">页id。页id从0开始，随地址空间单调递增。</td>
+</tr>
+<tr>
+<td align="center">flags</td>
+<td align="left">页标识，用来表示页的类型（用途）。</td>
+</tr>
+<tr>
+<td align="center">count</td>
+<td align="left">页中元素个数。</td>
+</tr>
+<tr>
+<td align="center">overflow</td>
+<td align="left">溢出页个数。当单页无法容纳数据时，可以用与该页相邻的页保存溢出的数据（详见后文中介绍）。</td>
+</tr>
+<tr>
+<td align="center">ptr</td>
+<td align="left">页的数据（<em>Page Body</em>）的起始位置。</td>
+</tr>
+</tbody>
+</table>
+<p>boltdb中的页共有三种用途：保存数据库的元数据（<em>meta page</em>）1、保存空闲页列表(<em>freelist page</em>)、保存数据，因为boltdb中数据是按照B+树组织的，因此保存数据的页又可分为分支节点（<em>branch page</em>）和叶子节点（<em>leaf page</em>）两种。也就是说，boltdb中页的类型共有4种。</p>
+<h3 id="12-page的数据结构">1.2 page的数据结构</h3>
+<p>本节将分别介绍boltdb中<em>meta page</em>、<em>leaf page</em>与<em>branch page</em>的数组结构，<em>free page</em>的数据结构与其行为关系较为密切，将在本文之后的章节中介绍。</p>
+<h4 id="121-meta-page">1.2.1 meta page</h4>
+<p><em>meta page</em>是boltdb记录数据库元数据的页。<em>meta page</em>的格式非常简单，其<em>Page Body</em>就是一个<code>meta</code>结构体。<code>meta</code>结构体的字段如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="kd">type</span> <span class="nx">meta</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">magic</span>    <span class="kt">uint32</span>
+	<span class="nx">version</span>  <span class="kt">uint32</span>
+	<span class="nx">pageSize</span> <span class="kt">uint32</span>
+	<span class="nx">flags</span>    <span class="kt">uint32</span>
+	<span class="nx">root</span>     <span class="nx">bucket</span>
+	<span class="nx">freelist</span> <span class="nx">pgid</span>
+	<span class="nx">pgid</span>     <span class="nx">pgid</span>
+	<span class="nx">txid</span>     <span class="nx">txid</span>
+	<span class="nx">checksum</span> <span class="kt">uint64</span>
+<span class="p">}</span>
+
+<span class="c1">// bucket.go
+</span><span class="c1"></span>
+<span class="kd">type</span> <span class="nx">bucket</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">root</span>     <span class="nx">pgid</span>   <span class="c1">// page id of the bucket&#39;s root-level page
+</span><span class="c1"></span>	<span class="nx">sequence</span> <span class="kt">uint64</span> <span class="c1">// monotonically incrementing, used by NextSequence()
+</span><span class="c1"></span><span class="p">}</span>
+
+</code></pre></div><table>
+<thead>
+<tr>
+<th align="center">字段</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">magic</td>
+<td align="left">一个固定值，用来标识该文件为boltdb数据库文件。</td>
+</tr>
+<tr>
+<td align="center">version</td>
+<td align="left">用来标识该文件采用的数据库版本号。</td>
+</tr>
+<tr>
+<td align="center">pageSize</td>
+<td align="left">用来标识改文件采用的页大小。</td>
+</tr>
+<tr>
+<td align="center">flags</td>
+<td align="left">保留字段，未使用。</td>
+</tr>
+<tr>
+<td align="center">root</td>
+<td align="left">boltdb记录根bucket的结构体，其包含了该bucket的根页id与bucket编号（单调递增）。</td>
+</tr>
+<tr>
+<td align="center">freelist</td>
+<td align="left">空闲页列表的首页id。</td>
+</tr>
+<tr>
+<td align="center">pgid</td>
+<td align="left">下一个分配的页id，即当前最大页id+1，用于mmap扩容时为新页编号。</td>
+</tr>
+<tr>
+<td align="center">txid</td>
+<td align="left">下一个事务的id，全局单调递增。</td>
+</tr>
+<tr>
+<td align="center">checksum</td>
+<td align="left">meta页的校验和。</td>
+</tr>
+</tbody>
+</table>
+<h4 id="122-branch-page--leaf-page">1.2.2 branch page &amp; leaf page</h4>
+<p><em>branch page</em>与<em>leaf page</em>是boltdb中用来保存B+树节点的页。B+树的分支节点仅用来保存索引（key），而叶子节点既保存索引，又保存值（value）。boltdb支持任意长度的key和value，因此无法直接结构化保存key和value的列表。为了解决这一问题，<em>branch page</em>和<em>leaf page</em>的<em>Page Body</em>起始处是一个由定长的索引（<code>branchPageElement</code>或<code>leafPageElement</code>）组成的列表，第$i$个索引记录了第$i$个key或key/value的起始位置与key的长度或key/value各自的长度：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// branchPageElement represents a node on a branch page.
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">branchPageElement</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">pos</span>   <span class="kt">uint32</span>
+	<span class="nx">ksize</span> <span class="kt">uint32</span>
+	<span class="nx">pgid</span>  <span class="nx">pgid</span>
+<span class="p">}</span>
+
+<span class="c1">// key returns a byte slice of the node key.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="o">*</span><span class="nx">branchPageElement</span><span class="p">)</span> <span class="nf">key</span><span class="p">()</span> <span class="p">[]</span><span class="kt">byte</span> <span class="p">{</span>
+	<span class="nx">buf</span> <span class="o">:=</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="nx">n</span><span class="p">))</span>
+	<span class="k">return</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">buf</span><span class="p">[</span><span class="nx">n</span><span class="p">.</span><span class="nx">pos</span><span class="p">]))[:</span><span class="nx">n</span><span class="p">.</span><span class="nx">ksize</span><span class="p">]</span>
+<span class="p">}</span>
+
+</code></pre></div><p><figure><a class="lightgallery" href="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/branch-page.svg" title="branch page结构示意图" data-thumbnail="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/branch-page.svg" data-sub-html="<h2>branch page结构示意图</h2><p>branch page结构示意图</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/branch-page.svg"
+            data-srcset="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/branch-page.svg, assets/branch-page.svg 1.5x, /posts/code-reading/boltdb-made-simple/1-storage-cache/assets/branch-page.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/branch-page.svg" />
+    </a><figcaption class="image-caption">branch page结构示意图</figcaption>
+    </figure></p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// leafPageElement represents a node on a leaf page.
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">leafPageElement</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">flags</span> <span class="kt">uint32</span>
+	<span class="nx">pos</span>   <span class="kt">uint32</span>
+	<span class="nx">ksize</span> <span class="kt">uint32</span>
+	<span class="nx">vsize</span> <span class="kt">uint32</span>
+<span class="p">}</span>
+
+<span class="c1">// key returns a byte slice of the node key.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="o">*</span><span class="nx">leafPageElement</span><span class="p">)</span> <span class="nf">key</span><span class="p">()</span> <span class="p">[]</span><span class="kt">byte</span> <span class="p">{</span>
+	<span class="nx">buf</span> <span class="o">:=</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="nx">n</span><span class="p">))</span>
+	<span class="k">return</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">buf</span><span class="p">[</span><span class="nx">n</span><span class="p">.</span><span class="nx">pos</span><span class="p">]))[:</span><span class="nx">n</span><span class="p">.</span><span class="nx">ksize</span><span class="p">:</span><span class="nx">n</span><span class="p">.</span><span class="nx">ksize</span><span class="p">]</span>
+<span class="p">}</span>
+
+<span class="c1">// value returns a byte slice of the node value.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="o">*</span><span class="nx">leafPageElement</span><span class="p">)</span> <span class="nf">value</span><span class="p">()</span> <span class="p">[]</span><span class="kt">byte</span> <span class="p">{</span>
+	<span class="nx">buf</span> <span class="o">:=</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="nx">n</span><span class="p">))</span>
+	<span class="k">return</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">buf</span><span class="p">[</span><span class="nx">n</span><span class="p">.</span><span class="nx">pos</span><span class="o">+</span><span class="nx">n</span><span class="p">.</span><span class="nx">ksize</span><span class="p">]))[:</span><span class="nx">n</span><span class="p">.</span><span class="nx">vsize</span><span class="p">:</span><span class="nx">n</span><span class="p">.</span><span class="nx">vsize</span><span class="p">]</span>
+<span class="p">}</span>
+
+</code></pre></div><p><figure><a class="lightgallery" href="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/leaf-page.svg" title="leaf page结构示意图" data-thumbnail="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/leaf-page.svg" data-sub-html="<h2>leaf page结构示意图</h2><p>leaf page结构示意图</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/leaf-page.svg"
+            data-srcset="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/leaf-page.svg, assets/leaf-page.svg 1.5x, /posts/code-reading/boltdb-made-simple/1-storage-cache/assets/leaf-page.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/leaf-page.svg" />
+    </a><figcaption class="image-caption">leaf page结构示意图</figcaption>
+    </figure></p>
+<h3 id="13-page溢出结构">1.3 page溢出结构</h3>
+<p>虽然B+树会拆分过大的节点，但当key或value过大时，或freelist过大时，不适合将其拆分为多个page。因此，boltdb允许过大的页的数据溢出到之后紧挨着的连续的页中，如下图所示：</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/overflow.svg" title="page溢出结构" data-thumbnail="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/overflow.svg" data-sub-html="<h2>page溢出结构</h2><p>page溢出结构</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/overflow.svg"
+            data-srcset="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/overflow.svg, assets/overflow.svg 1.5x, /posts/code-reading/boltdb-made-simple/1-storage-cache/assets/overflow.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/overflow.svg" />
+    </a><figcaption class="image-caption">page溢出结构</figcaption>
+    </figure></p>
+<p>如上图所示，一个页和其溢出页共用该页的<em>Page Header</em>，即溢出页只有<em>Page Body</em>部分。这样做的好处是，因为溢出页与首页是连续的且溢出页只有<em>Page Body</em>，那么相当于数据的内存地址是连续的，访问数据时只需要正常计算偏移量即可，不需要特殊处理溢出页。溢出页的数量记录在首页的<em>Page Header</em>的<code>overflow</code>字段中。</p>
+<h2 id="2-freelist">2. freelist</h2>
+<p>boltdb通过<code>freelist</code>实现了空闲页列表。boltdb也将<code>freelist</code>按照一定格式持久化存储在了<code>page</code>中。当数据库初始化或者恢复时，如果能够找到保存在页中的<code>freelist</code>，则直接使用该<code>freelist</code>，否则扫描数据库，构建新的<code>freelist</code>。</p>
+<h3 id="21-freelist的逻辑结构">2.1 freelist的逻辑结构</h3>
+<p><code>freelist</code>结构体中有3个字段：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// freelist represents a list of all pages that are available for allocation.
+</span><span class="c1">// It also tracks pages that have been freed but are still in use by open transactions.
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">freelist</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">ids</span>     <span class="p">[]</span><span class="nx">pgid</span>          <span class="c1">// all free and available free page ids.
+</span><span class="c1"></span>	<span class="nx">pending</span> <span class="kd">map</span><span class="p">[</span><span class="nx">txid</span><span class="p">][]</span><span class="nx">pgid</span> <span class="c1">// mapping of soon-to-be free page ids by tx.
+</span><span class="c1"></span>	<span class="nx">cache</span>   <span class="kd">map</span><span class="p">[</span><span class="nx">pgid</span><span class="p">]</span><span class="kt">bool</span>   <span class="c1">// fast lookup of all free and pending page ids.
+</span><span class="c1"></span><span class="p">}</span>
+
+</code></pre></div><table>
+<thead>
+<tr>
+<th align="center">字段<div style="width: 14em"></th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center"><code>ids []pgid</code></td>
+<td align="left">记录已释放的页id的有序列表。</td>
+</tr>
+<tr>
+<td align="center"><code>pending map[txid][]pgid</code></td>
+<td align="left">事务id到事务待释放的页id。</td>
+</tr>
+<tr>
+<td align="center"><code>cache map[pgid]bool</code></td>
+<td align="left">用来快速查找给定id的页是否被释放的缓存。出现在<code>ids</code>和<code>pending</code>中的页id均为true。</td>
+</tr>
+</tbody>
+</table>
+<p>由于boltdb是通过CoW的方式实现的读写事务并发的隔离性，因此当事务可写事务更新页时，其会复制已有的页，并将旧页加入到<code>pending</code>中该事务id下的待释放页的列表中。因为此时可能还有读事务在读取旧页，所以不能立刻释放该页，而是要等到所有事务都不再依赖该页时，才能将<code>pending</code>中的页加入到<code>ids</code>中。对于boltdb中事务的实现笔者会在本系列后面的文章中介绍，这里不再赘述，这里读者只需要了解<code>pending</code>的作用即可。</p>
+<p>这样做的好处还有，当事务回滚时，可以重用<code>pending</code>中还未释放的页（由于该事务还未提交，因此其之前释放的所有页都可被重用）。而且，重用页时对freelist的操作十分简单，只需要将<code>pending</code>中该事务id对应的列表清空即可。</p>
+<h3 id="22-freelist的存储结构">2.2 freelist的存储结构</h3>
+<p>当数据库将freelist写入page时，会将<code>ids</code>与<code>pending</code>中的页id合并在一起写入<code>ids</code>。因为如果数据库crash了，那么所有事务都会终止，<code>pending</code>中的页都可以安全释放。</p>
+<p>因此，保存freelist的page只需要写入有序的空闲页id列表即可，其结构如下：</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/freelist-page.svg" title="freelist的存储结构" data-thumbnail="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/freelist-page.svg" data-sub-html="<h2>freelist的存储结构</h2><p>freelist的存储结构</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/freelist-page.svg"
+            data-srcset="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/freelist-page.svg, assets/freelist-page.svg 1.5x, /posts/code-reading/boltdb-made-simple/1-storage-cache/assets/freelist-page.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/freelist-page.svg" />
+    </a><figcaption class="image-caption">freelist的存储结构</figcaption>
+    </figure></p>
+<p>freelist页溢出的处理方式与其它page稍有不同。由于<code>page</code>结构体的<code>count</code>字段为<code>uint16</code>类型，其最大值为65535（<code>0xFFFF</code>），假设页大小为4KB，那么<code>count</code>字段能表示的最大的freelist只能记录256MB的页。也就是说，即使允许freelist的page溢出，但是由于受<code>count</code>字段的限制，其仍无法表示足够大的空间。因此，boltdb在写入freelist的page时，会判断空闲页列表的长度。当空闲页列表长度小于<code>0xFF</code>时，采用与其它的类型相同的方式处理；而当空闲页列表长度大于等于<code>0xFF</code>时，则用本应写入第一条pgid的位置（<code>ptr</code>指向的位置）记录空闲页列表的真实长度，而将真正的空闲页列表往后顺延一个条目的位置写入，同时将<code>count</code>置为<code>0xFF</code>。其示意图如下：</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/freelist-page-huge.svg" title="大型freelist的存储结构" data-thumbnail="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/freelist-page-huge.svg" data-sub-html="<h2>大型freelist的存储结构</h2><p>大型freelist的存储结构</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/freelist-page-huge.svg"
+            data-srcset="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/freelist-page-huge.svg, assets/freelist-page-huge.svg 1.5x, /posts/code-reading/boltdb-made-simple/1-storage-cache/assets/freelist-page-huge.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/freelist-page-huge.svg" />
+    </a><figcaption class="image-caption">大型freelist的存储结构</figcaption>
+    </figure></p>
+<p>从page读取freelist与将freelist写入page的相应方法如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// read initializes the freelist from a freelist page.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">f</span> <span class="o">*</span><span class="nx">freelist</span><span class="p">)</span> <span class="nf">read</span><span class="p">(</span><span class="nx">p</span> <span class="o">*</span><span class="nx">page</span><span class="p">)</span> <span class="p">{</span>
+	<span class="c1">// If the page.count is at the max uint16 value (64k) then it&#39;s considered
+</span><span class="c1"></span>	<span class="c1">// an overflow and the size of the freelist is stored as the first element.
+</span><span class="c1"></span>	<span class="nx">idx</span><span class="p">,</span> <span class="nx">count</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">count</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">count</span> <span class="o">==</span> <span class="mh">0xFFFF</span> <span class="p">{</span>
+		<span class="nx">idx</span> <span class="p">=</span> <span class="mi">1</span>
+		<span class="nx">count</span> <span class="p">=</span> <span class="nb">int</span><span class="p">(((</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="nx">pgid</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">ptr</span><span class="p">)))[</span><span class="mi">0</span><span class="p">])</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Copy the list of page ids from the freelist.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">count</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">f</span><span class="p">.</span><span class="nx">ids</span> <span class="p">=</span> <span class="kc">nil</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+		<span class="nx">ids</span> <span class="o">:=</span> <span class="p">((</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="nx">pgid</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">ptr</span><span class="p">)))[</span><span class="nx">idx</span><span class="p">:</span><span class="nx">count</span><span class="p">]</span>
+		<span class="nx">f</span><span class="p">.</span><span class="nx">ids</span> <span class="p">=</span> <span class="nb">make</span><span class="p">([]</span><span class="nx">pgid</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nx">ids</span><span class="p">))</span>
+		<span class="nb">copy</span><span class="p">(</span><span class="nx">f</span><span class="p">.</span><span class="nx">ids</span><span class="p">,</span> <span class="nx">ids</span><span class="p">)</span>
+
+		<span class="c1">// Make sure they&#39;re sorted.
+</span><span class="c1"></span>		<span class="nx">sort</span><span class="p">.</span><span class="nf">Sort</span><span class="p">(</span><span class="nf">pgids</span><span class="p">(</span><span class="nx">f</span><span class="p">.</span><span class="nx">ids</span><span class="p">))</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Rebuild the page cache.
+</span><span class="c1"></span>	<span class="nx">f</span><span class="p">.</span><span class="nf">reindex</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="c1">// write writes the page ids onto a freelist page. All free and pending ids are
+</span><span class="c1">// saved to disk since in the event of a program crash, all pending ids will
+</span><span class="c1">// become free.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">f</span> <span class="o">*</span><span class="nx">freelist</span><span class="p">)</span> <span class="nf">write</span><span class="p">(</span><span class="nx">p</span> <span class="o">*</span><span class="nx">page</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="c1">// Combine the old free pgids and pgids waiting on an open transaction.
+</span><span class="c1"></span>
+	<span class="c1">// Update the header flag.
+</span><span class="c1"></span>	<span class="nx">p</span><span class="p">.</span><span class="nx">flags</span> <span class="o">|=</span> <span class="nx">freelistPageFlag</span>
+
+	<span class="c1">// The page.count can only hold up to 64k elements so if we overflow that
+</span><span class="c1"></span>	<span class="c1">// number then we handle it by putting the size in the first element.
+</span><span class="c1"></span>	<span class="nx">lenids</span> <span class="o">:=</span> <span class="nx">f</span><span class="p">.</span><span class="nf">count</span><span class="p">()</span>
+	<span class="k">if</span> <span class="nx">lenids</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">p</span><span class="p">.</span><span class="nx">count</span> <span class="p">=</span> <span class="nb">uint16</span><span class="p">(</span><span class="nx">lenids</span><span class="p">)</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nx">lenids</span> <span class="p">&lt;</span> <span class="mh">0xFFFF</span> <span class="p">{</span>
+		<span class="nx">p</span><span class="p">.</span><span class="nx">count</span> <span class="p">=</span> <span class="nb">uint16</span><span class="p">(</span><span class="nx">lenids</span><span class="p">)</span>
+		<span class="nx">f</span><span class="p">.</span><span class="nf">copyall</span><span class="p">(((</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="nx">pgid</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">ptr</span><span class="p">)))[:])</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+		<span class="nx">p</span><span class="p">.</span><span class="nx">count</span> <span class="p">=</span> <span class="mh">0xFFFF</span>
+		<span class="p">((</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="nx">pgid</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">ptr</span><span class="p">)))[</span><span class="mi">0</span><span class="p">]</span> <span class="p">=</span> <span class="nf">pgid</span><span class="p">(</span><span class="nx">lenids</span><span class="p">)</span>
+		<span class="nx">f</span><span class="p">.</span><span class="nf">copyall</span><span class="p">(((</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="nx">pgid</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">ptr</span><span class="p">)))[</span><span class="mi">1</span><span class="p">:])</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+</code></pre></div><h3 id="23-freelist的方法">2.3 freelist的方法</h3>
+<p>本节简单介绍freelist提供的方法，以便读者阅读源码时参考。</p>
+<table>
+<thead>
+<tr>
+<th align="center">方法<div style="width: 14em"></th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center"><code>size() int</code></td>
+<td align="left">获取freelist序列化为page后的数据大小。</td>
+</tr>
+<tr>
+<td align="center"><code>count() int</code></td>
+<td align="left">获取freelist中页的个数。</td>
+</tr>
+<tr>
+<td align="center"><code>free_count() int</code></td>
+<td align="left"><code>ids</code>中的空闲页数。</td>
+</tr>
+<tr>
+<td align="center"><code>pending_count() int</code></td>
+<td align="left"><code>pending</code>中待释放的空闲页数。</td>
+</tr>
+<tr>
+<td align="center"><code>copyall(dst []pgid)</code></td>
+<td align="left">将<code>ids</code>与<code>pending</code>中的所有空闲页id合并、排序并写入目标位置。该方法在将freelist写入到page时使用。</td>
+</tr>
+<tr>
+<td align="center"><code>allocate(n int) pgid</code></td>
+<td align="left">尝试从freelist中分配n个连续的页，返回首页的页id。</td>
+</tr>
+<tr>
+<td align="center"><code>free(txid txid, p *page)</code></td>
+<td align="left">将页加入给定事务的<code>pending</code>列表中。</td>
+</tr>
+<tr>
+<td align="center"><code>release(txid txid)</code></td>
+<td align="left">释放给定事务及其之前事务的<code>pending</code>列表中的所有待释放页，将其合并到<code>ids</code>中。</td>
+</tr>
+<tr>
+<td align="center"><code>rollback(txid txid)</code></td>
+<td align="left">当事务回滚时调用该方法，删除该事务的<code>pending</code>列表记录的页id以复用。</td>
+</tr>
+<tr>
+<td align="center"><code>freed(pgid pgid) bool</code></td>
+<td align="left">返回给定页是否在freelist中。</td>
+</tr>
+<tr>
+<td align="center"><code>read(p *page)</code></td>
+<td align="left">从page中读取并构建freelist。</td>
+</tr>
+<tr>
+<td align="center"><code>write(p *page) error</code></td>
+<td align="left">将freelist写入到page中。</td>
+</tr>
+<tr>
+<td align="center"><code>reload(p *page)</code></td>
+<td align="left">从page中重新加载freelist，该方法先调用<code>read</code>方法，接下来从<code>ids</code>中过滤掉<code>pengding</code>中的页。</td>
+</tr>
+<tr>
+<td align="center"><code>reindex()</code></td>
+<td align="left">重建freelist的缓存。</td>
+</tr>
+</tbody>
+</table>
+<p>其中，<code>release</code>调用的时机为新读写事务启动时。在启动新的读写事务时，boltdb会根据事务id释放所有已完成的事务在<code>pending</code>中的页：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="kd">func</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="nf">beginRWTx</span><span class="p">()</span> <span class="p">(</span><span class="o">*</span><span class="nx">Tx</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	
+	<span class="c1">// ... ...
+</span><span class="c1"></span>
+	<span class="c1">// Free any pages associated with closed read-only transactions.
+</span><span class="c1"></span>	<span class="kd">var</span> <span class="nx">minid</span> <span class="nx">txid</span> <span class="p">=</span> <span class="mh">0xFFFFFFFFFFFFFFFF</span>
+	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">t</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">db</span><span class="p">.</span><span class="nx">txs</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">t</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">txid</span> <span class="p">&lt;</span> <span class="nx">minid</span> <span class="p">{</span>
+			<span class="nx">minid</span> <span class="p">=</span> <span class="nx">t</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">txid</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+	<span class="k">if</span> <span class="nx">minid</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">db</span><span class="p">.</span><span class="nx">freelist</span><span class="p">.</span><span class="nf">release</span><span class="p">(</span><span class="nx">minid</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="nx">t</span><span class="p">,</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+</code></pre></div><h2 id="3-boltdb的读写与缓存策略">3. boltdb的读写与缓存策略</h2>
+<p>boltdb的缓存策略主要有两种，一种是使用mmap的读缓存策略，一种是使用page buffer的写缓存策略。</p>
+<h3 id="31-读操作与缓存策略">3.1 读操作与缓存策略</h3>
+<p>boltdb在读取数据库文件时，为了避免频繁进行设备I/O，使用了mmap技术作为缓存。当boltdb打开数据库时，其会将数据库文件通过mmap系统调用映射到内存。这样可以避免使用read系统调用读取I/O设备，而是直接以内存访问的方式读取数据。在通过mmap将数据库文件映射到内存后，boltdb会根据数据库文件构建内存数据结构，如meta、freelist、B+Tree结构。</p>
+<p>根据使用方式的不同，meta、freelist、B+Tree使用mmap中数据的方式各不相同。</p>
+<p>boltdb将其meta直接指向了mmap内存空间的meta page，但仅用来读取，不会直接修改meta page。当创建新事务时，boltdb会复制当前的meta page到一处内存中，作为该事务开始时的meta快照。</p>
+<p>freelist和B+Tree都是根据mmap内存空间的page在内存别处构建的数据结构，但二者的构建策略不同。freelist是在打开数据库时完整地读取mmap内存空间中的freelist page构建的；而B+Tree则是在使用中按需构建的，即在读取B+Tree的node时，如果node已经在缓存中构建过，则读取已经构建好的缓存，如果node还没在缓存中构建过，则读取mmap内存空间中的数据，在内存别处构建node的缓存。</p>
+<p>boltdb的读操作与缓存策略可通过下图表示：</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/bolt-read.svg" title="boltdb读操作与缓存策略示意图" data-thumbnail="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/bolt-read.svg" data-sub-html="<h2>boltdb读操作与缓存策略示意图</h2><p>boltdb读操作与缓存策略示意图</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/bolt-read.svg"
+            data-srcset="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/bolt-read.svg, assets/bolt-read.svg 1.5x, /posts/code-reading/boltdb-made-simple/1-storage-cache/assets/bolt-read.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/bolt-read.svg" />
+    </a><figcaption class="image-caption">boltdb读操作与缓存策略示意图</figcaption>
+    </figure></p>
+<p>B+Tree的构建笔者会在本系列后续的文章中介绍，本节只关注与mmap相关的部分。</p>
+<h4 id="311-boltdb数据库文件结构">3.1.1 boltdb数据库文件结构</h4>
+<p>boltdb的数据库文件由两个meta页、一个freelist页、和若干个用来保存数据与索引的B+树的branchNode页和leafNode页组成（页可能包含若干个overflow页）。当数据库初始化时，其会将0、1号页初始化为meta页、将2号页初始化为freelist页、将3号页初始化为空的leafNodePage。</p>
+<p>由于只有B+树的页是通过CoW方式写入的，所以boltdb设置了两个meta页以进行本地容错。在更新元数据时，boltdb会交替写入两个meta页。这样，如果meta页写入中途数据库挂掉，数据库仍可以使用另一份完整的meta页。</p>
+<h4 id="312-mmap">3.1.2 mmap</h4>
+<p>mmap是boltdb的主要缓存策略。与mmap相关的方法主要有<code>mmap</code>、<code>munmap</code>、<code>mmapSize</code>(位于<code>db.go</code>中)：</p>
+<table>
+<thead>
+<tr>
+<th align="center">方法<div style="width: 14em"></th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center"><code>mmap(minsz int) error</code></td>
+<td align="left">以内存映射文件的方式打开数据库文件并初始化meta引用。参数<code>minsz</code>是最小的mmap大小，其实际mmap大小是通过<code>mmapSize</code>方法获取的。</td>
+</tr>
+<tr>
+<td align="center"><code>munmap() error</code></td>
+<td align="left">取消文件的内存映射。</td>
+</tr>
+<tr>
+<td align="center"><code>mmapSize(size int) (int, error)</code></td>
+<td align="left">计算mmap大小，参数<code>size</code>是最小大小。</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// mmap opens the underlying memory-mapped file and initializes the meta references.
+</span><span class="c1">// minsz is the minimum size that the new mmap can be.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="nf">mmap</span><span class="p">(</span><span class="nx">minsz</span> <span class="kt">int</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="nx">db</span><span class="p">.</span><span class="nx">mmaplock</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+	<span class="k">defer</span> <span class="nx">db</span><span class="p">.</span><span class="nx">mmaplock</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+
+	<span class="nx">info</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">file</span><span class="p">.</span><span class="nf">Stat</span><span class="p">()</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;mmap stat error: %s&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="nx">info</span><span class="p">.</span><span class="nf">Size</span><span class="p">())</span> <span class="p">&lt;</span> <span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span><span class="o">*</span><span class="mi">2</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;file size too small&#34;</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Ensure the size is at least the minimum size.
+</span><span class="c1"></span>	<span class="kd">var</span> <span class="nx">size</span> <span class="p">=</span> <span class="nb">int</span><span class="p">(</span><span class="nx">info</span><span class="p">.</span><span class="nf">Size</span><span class="p">())</span>
+	<span class="k">if</span> <span class="nx">size</span> <span class="p">&lt;</span> <span class="nx">minsz</span> <span class="p">{</span>
+		<span class="nx">size</span> <span class="p">=</span> <span class="nx">minsz</span>
+	<span class="p">}</span>
+	<span class="nx">size</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">db</span><span class="p">.</span><span class="nf">mmapSize</span><span class="p">(</span><span class="nx">size</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">err</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Dereference all mmap references before unmapping.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">db</span><span class="p">.</span><span class="nx">rwtx</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">db</span><span class="p">.</span><span class="nx">rwtx</span><span class="p">.</span><span class="nx">root</span><span class="p">.</span><span class="nf">dereference</span><span class="p">()</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Unmap existing data before continuing.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">db</span><span class="p">.</span><span class="nf">munmap</span><span class="p">();</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">err</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Memory-map the data file as a byte slice.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nf">mmap</span><span class="p">(</span><span class="nx">db</span><span class="p">,</span> <span class="nx">size</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">err</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Save references to the meta pages.
+</span><span class="c1"></span>	<span class="nx">db</span><span class="p">.</span><span class="nx">meta0</span> <span class="p">=</span> <span class="nx">db</span><span class="p">.</span><span class="nf">page</span><span class="p">(</span><span class="mi">0</span><span class="p">).</span><span class="nf">meta</span><span class="p">()</span>
+	<span class="nx">db</span><span class="p">.</span><span class="nx">meta1</span> <span class="p">=</span> <span class="nx">db</span><span class="p">.</span><span class="nf">page</span><span class="p">(</span><span class="mi">1</span><span class="p">).</span><span class="nf">meta</span><span class="p">()</span>
+
+	<span class="c1">// Validate the meta pages. We only return an error if both meta pages fail
+</span><span class="c1"></span>	<span class="c1">// validation, since meta0 failing validation means that it wasn&#39;t saved
+</span><span class="c1"></span>	<span class="c1">// properly -- but we can recover using meta1. And vice-versa.
+</span><span class="c1"></span>	<span class="nx">err0</span> <span class="o">:=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">meta0</span><span class="p">.</span><span class="nf">validate</span><span class="p">()</span>
+	<span class="nx">err1</span> <span class="o">:=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">meta1</span><span class="p">.</span><span class="nf">validate</span><span class="p">()</span>
+	<span class="k">if</span> <span class="nx">err0</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="nx">err1</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">err0</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+<span class="c1">// munmap unmaps the data file from memory.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="nf">munmap</span><span class="p">()</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nf">munmap</span><span class="p">(</span><span class="nx">db</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;unmap error: &#34;</span> <span class="o">+</span> <span class="nx">err</span><span class="p">.</span><span class="nf">Error</span><span class="p">())</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+<span class="c1">// mmapSize determines the appropriate size for the mmap given the current size
+</span><span class="c1">// of the database. The minimum size is 32KB and doubles until it reaches 1GB.
+</span><span class="c1">// Returns an error if the new mmap size is greater than the max allowed.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="nf">mmapSize</span><span class="p">(</span><span class="nx">size</span> <span class="kt">int</span><span class="p">)</span> <span class="p">(</span><span class="kt">int</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="c1">// Double the size from 32KB until 1GB.
+</span><span class="c1"></span>	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="nb">uint</span><span class="p">(</span><span class="mi">15</span><span class="p">);</span> <span class="nx">i</span> <span class="o">&lt;=</span> <span class="mi">30</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">size</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="o">&lt;&lt;</span><span class="nx">i</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="nx">i</span><span class="p">,</span> <span class="kc">nil</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Verify the requested size is not above the maximum allowed.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">size</span> <span class="p">&gt;</span> <span class="nx">maxMapSize</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;mmap too large&#34;</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="c1">// If larger than 1GB then grow by 1GB at a time.
+</span><span class="c1"></span>	<span class="nx">sz</span> <span class="o">:=</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">size</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">remainder</span> <span class="o">:=</span> <span class="nx">sz</span> <span class="o">%</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">maxMmapStep</span><span class="p">);</span> <span class="nx">remainder</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">sz</span> <span class="o">+=</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">maxMmapStep</span><span class="p">)</span> <span class="o">-</span> <span class="nx">remainder</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Ensure that the mmap size is a multiple of the page size.
+</span><span class="c1"></span>	<span class="c1">// This should always be true since we&#39;re incrementing in MBs.
+</span><span class="c1"></span>	<span class="nx">pageSize</span> <span class="o">:=</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span><span class="p">)</span>
+	<span class="k">if</span> <span class="p">(</span><span class="nx">sz</span> <span class="o">%</span> <span class="nx">pageSize</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">sz</span> <span class="p">=</span> <span class="p">((</span><span class="nx">sz</span> <span class="o">/</span> <span class="nx">pageSize</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="nx">pageSize</span>
+	<span class="p">}</span>
+
+	<span class="c1">// If we&#39;ve exceeded the max size then only grow up to the max size.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">sz</span> <span class="p">&gt;</span> <span class="nx">maxMapSize</span> <span class="p">{</span>
+		<span class="nx">sz</span> <span class="p">=</span> <span class="nx">maxMapSize</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="nx">sz</span><span class="p">),</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+</code></pre></div><p>boltdb中mmap会调用Linux的系统调用，其<code>prot</code>参数为<code>PROT_READ</code>，<code>flags</code>为<code>MAP_SHARED</code>与数据库配置中<code>MmapFlags</code>按位或的结果。</p>
+<p>boltdb的mmap大小增长策略如下：最小的mmap大小为32KB，在1GB之前mmap大小每次倍增，在1GB之后每次增长1GB。</p>
+<h3 id="32-写操作与缓存策略">3.2 写操作与缓存策略</h3>
+<p>为了保证事务的ACID性质，数据库系统需要确保事务提交时文件的修改要安全地写入到磁盘或其它I/O设备。由于随机的设备I/O非常耗时，boltdb不会在数据更新时立刻修改底层文件。而是先将修改后的page写入到一块page buffer内存中作为缓存，等事务提交时，再将事务修改的所有page buffer顺序地写入I/O设备。同时，为了保证数据被安全地写入到了I/O设备，boltdb的刷盘采用pwrite+fdatasyc实现。</p>
+<p>boltdb的写操作与缓存策略可通过下图表示：</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/bolt-write.svg" title="boltdb写操作与缓存策略示意图" data-thumbnail="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/bolt-write.svg" data-sub-html="<h2>boltdb写操作与缓存策略示意图</h2><p>boltdb写操作与缓存策略示意图</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/bolt-write.svg"
+            data-srcset="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/bolt-write.svg, assets/bolt-write.svg 1.5x, /posts/code-reading/boltdb-made-simple/1-storage-cache/assets/bolt-write.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/bolt-write.svg" />
+    </a><figcaption class="image-caption">boltdb写操作与缓存策略示意图</figcaption>
+    </figure></p>
+<h4 id="321-page-buffermemory-memory">3.2.1 page buffer（memory-&gt;memory）</h4>
+<p>无论是修改meta、freelist，还是修改或写入新B+Tree的node时，boltdb都会先将数据按照page结构写入mmap内存空间外的page buffer中，等到事务提交时再将page buffer中数据写入到底层数据库文件相应的page处。</p>
+<p>分配page buffer的逻辑在<code>db.go</code>的<code>allocate</code>方法中：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// allocate returns a contiguous block of memory starting at a given page.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="nf">allocate</span><span class="p">(</span><span class="nx">count</span> <span class="kt">int</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="nx">page</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="c1">// Allocate a temporary buffer for the page.
+</span><span class="c1"></span>	<span class="kd">var</span> <span class="nx">buf</span> <span class="p">[]</span><span class="kt">byte</span>
+	<span class="k">if</span> <span class="nx">count</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">{</span>
+		<span class="nx">buf</span> <span class="p">=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">pagePool</span><span class="p">.</span><span class="nf">Get</span><span class="p">().([]</span><span class="kt">byte</span><span class="p">)</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+		<span class="nx">buf</span> <span class="p">=</span> <span class="nb">make</span><span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">count</span><span class="o">*</span><span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="nx">p</span> <span class="o">:=</span> <span class="p">(</span><span class="o">*</span><span class="nx">page</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">buf</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+	<span class="nx">p</span><span class="p">.</span><span class="nx">overflow</span> <span class="p">=</span> <span class="nb">uint32</span><span class="p">(</span><span class="nx">count</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+	<span class="c1">// Use pages from the freelist if they are available.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">p</span><span class="p">.</span><span class="nx">id</span> <span class="p">=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">freelist</span><span class="p">.</span><span class="nf">allocate</span><span class="p">(</span><span class="nx">count</span><span class="p">);</span> <span class="nx">p</span><span class="p">.</span><span class="nx">id</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">p</span><span class="p">,</span> <span class="kc">nil</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Resize mmap() if we&#39;re at the end.
+</span><span class="c1"></span>	<span class="nx">p</span><span class="p">.</span><span class="nx">id</span> <span class="p">=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">rwtx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">pgid</span>
+	<span class="kd">var</span> <span class="nx">minsz</span> <span class="p">=</span> <span class="nb">int</span><span class="p">((</span><span class="nx">p</span><span class="p">.</span><span class="nx">id</span><span class="o">+</span><span class="nf">pgid</span><span class="p">(</span><span class="nx">count</span><span class="p">))</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span>
+	<span class="k">if</span> <span class="nx">minsz</span> <span class="o">&gt;=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">datasz</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">db</span><span class="p">.</span><span class="nf">mmap</span><span class="p">(</span><span class="nx">minsz</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;mmap allocate error: %s&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Move the page id high water mark.
+</span><span class="c1"></span>	<span class="nx">db</span><span class="p">.</span><span class="nx">rwtx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">pgid</span> <span class="o">+=</span> <span class="nf">pgid</span><span class="p">(</span><span class="nx">count</span><span class="p">)</span>
+
+	<span class="k">return</span> <span class="nx">p</span><span class="p">,</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+</code></pre></div><p>通过这段代码可以看出，<code>allocate</code>方法会先创建一段能够容纳给定数量page的连续内存空间，这段空间就是page buffer，然后将这段空间作为page返回给调用者。这样，调用者可以向读写正常page一样读写这段page buffer。</p>
+<p>为了避免分配较小的page buffer造成过多的内存碎片，boltdb通过<code>sync.Pool</code>类型的字段<code>pagePool</code>分配、复用长度为1的page buffer。<code>pagePool</code>的定义与初始化代码如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+	<span class="c1">// in struct db
+</span><span class="c1"></span>	<span class="nx">pagePool</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Pool</span>
+
+	<span class="c1">// in `db.Open`
+</span><span class="c1"></span>	<span class="c1">// Initialize page pool.
+</span><span class="c1"></span>	<span class="nx">db</span><span class="p">.</span><span class="nx">pagePool</span> <span class="p">=</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Pool</span><span class="p">{</span>
+		<span class="nx">New</span><span class="p">:</span> <span class="kd">func</span><span class="p">()</span> <span class="kd">interface</span><span class="p">{}</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="nb">make</span><span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span><span class="p">)</span>
+		<span class="p">},</span>
+	<span class="p">}</span>
+
+</code></pre></div><p>在分配page buffer时，需要分配的page buffer长度为1，boltdb会通过<code>pagePool</code>分配；在事务提交时，boltdb将page buffer中的数据写入到文件后，会将长度为1的page buffer放回<code>pagePool</code>。而如果所需的page buffer长度大于1，则boltdb会通过<code>make</code>分配page buffer的内存空间。</p>
+<h4 id="322-pwrite--fdatasyncmemory-disk">3.2.2 pwrite + fdatasync（memory-&gt;disk）</h4>
+<p>为了保证事务的ACID性质，当事务提交时，boltdb需要保证数据被完整地写入到了磁盘中。在介绍boltdb的数据同步策略前，笔者首先简单介绍Linux系统提供的文件数据同步方式。</p>
+<p>在Linux中，为了性能考虑，<code>write/pwrite</code>等系统调用不会等待设备I/O完成后再返回。<code>write/pwrite</code>等系统调用只会更新page cache，而脏页的同步时间由操作系统控制。<code>sync</code>系统调用会在page cache中的脏页提交到设备I/O队列后返回，但是不会等待设备I/O完成。如果此时I/O设备故障，则数据还可能丢失。而<code>fsync</code>与<code>fdatasync</code>则会等待设备I/O完成后返回，以提供最高的同步保证。<code>fsync</code>与<code>fdatasync</code>的区别在于，<code>fdatasync</code>只会更新文件数据和必要的元数据（如文件大小等），而<code>fsync</code>会更新文件数据和所有相关的元数据（包括文件修改时间等），由于文件元数据与数据的保存位置可能不同，因此在磁盘上<code>fsync</code>往往比<code>fdatasync</code>多一次旋转时延。</p>
+<p>对于内存映射文件，Linux提供了<code>msync</code>系统调用。该系统调用可以更精确地控制同步的内存范围。</p>
+<p>虽然boltdb使用了内存映射文件，但是当事务提交时，其还是通过<code>pwrite + fdatasync</code>的方式同步刷盘。在Linux的文档中并没有详细说明混用普通文件的同步方式与内存映射文件的同步方式的影响。但是通过实践和mmap的<code>MAP_SHARED</code>模式的描述可知，使用SHARED的mmap，当其它进程通过<code>fdatasync</code>等系统调用修改底层文件后，修改能通过mmap的内存访问到。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// write writes any dirty pages to disk.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">tx</span> <span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="nf">write</span><span class="p">()</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="c1">// Sort pages by id.
+</span><span class="c1"></span>	<span class="nx">pages</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="nx">pages</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nx">tx</span><span class="p">.</span><span class="nx">pages</span><span class="p">))</span>
+	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">p</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">pages</span> <span class="p">{</span>
+		<span class="nx">pages</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">pages</span><span class="p">,</span> <span class="nx">p</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="c1">// Clear out page cache early.
+</span><span class="c1"></span>	<span class="nx">tx</span><span class="p">.</span><span class="nx">pages</span> <span class="p">=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="nx">pgid</span><span class="p">]</span><span class="o">*</span><span class="nx">page</span><span class="p">)</span>
+	<span class="nx">sort</span><span class="p">.</span><span class="nf">Sort</span><span class="p">(</span><span class="nx">pages</span><span class="p">)</span>
+
+	<span class="c1">// Write pages to disk in order.
+</span><span class="c1"></span>	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">p</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">pages</span> <span class="p">{</span>
+		<span class="nx">size</span> <span class="o">:=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">overflow</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span>
+		<span class="nx">offset</span> <span class="o">:=</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">id</span><span class="p">)</span> <span class="o">*</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span><span class="p">)</span>
+
+		<span class="c1">// Write out page in &#34;max allocation&#34; sized chunks.
+</span><span class="c1"></span>		<span class="nx">ptr</span> <span class="o">:=</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="nx">p</span><span class="p">))</span>
+		<span class="k">for</span> <span class="p">{</span>
+			<span class="c1">// Limit our write to our max allocation size.
+</span><span class="c1"></span>			<span class="nx">sz</span> <span class="o">:=</span> <span class="nx">size</span>
+			<span class="k">if</span> <span class="nx">sz</span> <span class="p">&gt;</span> <span class="nx">maxAllocSize</span><span class="o">-</span><span class="mi">1</span> <span class="p">{</span>
+				<span class="nx">sz</span> <span class="p">=</span> <span class="nx">maxAllocSize</span> <span class="o">-</span> <span class="mi">1</span>
+			<span class="p">}</span>
+
+			<span class="c1">// Write chunk to disk.
+</span><span class="c1"></span>			<span class="nx">buf</span> <span class="o">:=</span> <span class="nx">ptr</span><span class="p">[:</span><span class="nx">sz</span><span class="p">]</span>
+			<span class="k">if</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">ops</span><span class="p">.</span><span class="nf">writeAt</span><span class="p">(</span><span class="nx">buf</span><span class="p">,</span> <span class="nx">offset</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+				<span class="k">return</span> <span class="nx">err</span>
+			<span class="p">}</span>
+
+			<span class="c1">// Update statistics.
+</span><span class="c1"></span>			<span class="nx">tx</span><span class="p">.</span><span class="nx">stats</span><span class="p">.</span><span class="nx">Write</span><span class="o">++</span>
+
+			<span class="c1">// Exit inner for loop if we&#39;ve written all the chunks.
+</span><span class="c1"></span>			<span class="nx">size</span> <span class="o">-=</span> <span class="nx">sz</span>
+			<span class="k">if</span> <span class="nx">size</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+				<span class="k">break</span>
+			<span class="p">}</span>
+
+			<span class="c1">// Otherwise move offset forward and move pointer to next chunk.
+</span><span class="c1"></span>			<span class="nx">offset</span> <span class="o">+=</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">sz</span><span class="p">)</span>
+			<span class="nx">ptr</span> <span class="p">=</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">ptr</span><span class="p">[</span><span class="nx">sz</span><span class="p">]))</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Ignore file sync if flag is set on DB.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="p">!</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">NoSync</span> <span class="o">||</span> <span class="nx">IgnoreNoSync</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nf">fdatasync</span><span class="p">(</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="nx">err</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Put small pages back to page pool.
+</span><span class="c1"></span>	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">p</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">pages</span> <span class="p">{</span>
+		<span class="c1">// Ignore page sizes over 1 page.
+</span><span class="c1"></span>		<span class="c1">// These are allocated using make() instead of the page pool.
+</span><span class="c1"></span>		<span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">overflow</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">{</span>
+			<span class="k">continue</span>
+		<span class="p">}</span>
+
+		<span class="nx">buf</span> <span class="o">:=</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="nx">p</span><span class="p">))[:</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span><span class="p">]</span>
+
+		<span class="c1">// See https://go.googlesource.com/go/+/f03c9202c43e0abb130669852082117ca50aa9b1
+</span><span class="c1"></span>		<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">buf</span> <span class="p">{</span>
+			<span class="nx">buf</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="p">=</span> <span class="mi">0</span>
+		<span class="p">}</span>
+		<span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">pagePool</span><span class="p">.</span><span class="nf">Put</span><span class="p">(</span><span class="nx">buf</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+</code></pre></div><p>从上面这段来自<code>tx.go</code>的代码中，我们可以看到：在事务提交写入磁盘时，boltdb会先将事务使用的page buffer按照页id排序，然后将page buffer中的内容通过文件的<code>WriteAt</code>方法（go语言通过<code>pwrite</code>系统调用实现）写入到底层数据库文件中。在完成所有<code>pwrite</code>的调用后，boltdb通过<code>fdatasync</code>系统调用等待数据安全地同步到磁盘中。最后，boltdb将待释放的长度为1的page buffer放回到<code>pagePool</code>中，以复用这些单页，减少内存碎片的影响。</p>
+<h2 id="4-总结">4. 总结</h2>
+<p>总的来说，boltdb的读写操作与缓存策略可以概括如下：</p>
+<ul>
+<li>读数据库文件时，通过mmap技术将其映射到内存中，避免频繁的设备I/O；不同的数结构在不同时刻读取mmap内存空间的数据完成构建。</li>
+<li>写数据库文件时，通过page buffer先写入内存缓存，然后在事务提交时将page buffer中的数据通过pwrite + fdatasync系统调用写入底层文件并确保写入的安全性。</li>
+</ul>
+<p>而连接mmap与pwrite + fdatasync的桥梁，是操作系统。操作系统保证了通过<code>MAP_SHARED</code>映射的内存空间在底层文件修改时会更新。</p></div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2021-01-05</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"></div>
+            <div class="post-info-share">
+                <span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/boltdb/">boltdb</a>,&nbsp;<a href="/tags/b&#43;tree/">B&#43;Tree</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/posts/code-reading/boltdb-made-simple/0-introduction/" class="prev" rel="prev" title="深入浅出boltdb —— 0x00 引言"><i class="fas fa-angle-left fa-fw"></i>深入浅出boltdb —— 0x00 引言</a>
+            <a href="/posts/code-reading/boltdb-made-simple/2-b&#43;tree/" class="next" rel="next" title="深入浅出boltdb —— 0x02 B&#43;Tree">深入浅出boltdb —— 0x02 B&#43;Tree<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+</article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"><link rel="stylesheet" href="/lib/katex/katex.min.css"><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"><script type="text/javascript" src="/lib/smooth-scroll/smooth-scroll.min.js"></script><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"id-1":"叉鸽 | MrCroxx","id-2":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"id-1":["id-1"],"id-2":["id-2"]},"duration":null,"speed":null}};</script><script type="text/javascript" src="/js/theme.min.js"></script></body>
+</html>

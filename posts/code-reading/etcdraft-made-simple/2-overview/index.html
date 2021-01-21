@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>深入浅出etcd/raft —— 0x02 etcd/raft总体设计 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出etcd/raft —— 0x02 etcd/raft总体设计" />
+<meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/2-overview/" />
+<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/2-overview/etcd-raft.jpg"/>
+<meta property="article:published_time" content="2020-12-17T17:41:28+08:00" />
+<meta property="article:modified_time" content="2020-12-17T17:41:33+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/2-overview/etcd-raft.jpg"/>
+<meta name="twitter:title" content="深入浅出etcd/raft —— 0x02 etcd/raft总体设计"/>
+<meta name="twitter:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。"/>
+<meta name="application-name" content="叉鸽 MrCroxx 的博客">
+<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/2-overview/" /><link rel="prev" href="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/1-raftexample/" /><link rel="next" href="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/3-election/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "深入浅出etcd/raft —— 0x02 etcd/raft总体设计",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/etcdraft-made-simple\/2-overview\/"
+        },"image": [{
+                            "@type": "ImageObject",
+                            "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/etcdraft-made-simple\/2-overview\/etcd-raft.jpg",
+                            "width":  1200 ,
+                            "height":  360 
+                        }],"genre": "posts","keywords": "etcd, Raft","wordcount":  4532 ,
+        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/etcdraft-made-simple\/2-overview\/","datePublished": "2020-12-17T17:41:28+08:00","dateModified": "2020-12-17T17:41:33+08:00","publisher": {
+            "@type": "Organization",
+            "name": "叉鸽"},"author": {
+                "@type": "Person",
+                "name": "叉鸽"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : '' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-1" class="typeit"></span></a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-2" class="typeit"></span></a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出etcd/raft —— 0x02 etcd/raft总体设计</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAetcd/raft/"><i class="far fa-folder fa-fw"></i>深入浅出etcd/raft</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-12-17">2020-12-17</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 4532 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 10 分钟&nbsp;</div>
+        </div><div class="featured-image"><img
+        class="lazyload"
+        src="/svg/loading.min.svg"
+        data-src="/posts/code-reading/etcdraft-made-simple/2-overview/etcd-raft.jpg"
+        data-srcset="/posts/code-reading/etcdraft-made-simple/2-overview/etcd-raft.jpg, /posts/code-reading/etcdraft-made-simple/2-overview/etcd-raft.jpg 1.5x, /posts/code-reading/etcdraft-made-simple/2-overview/etcd-raft.jpg 2x"
+        data-sizes="auto"
+        alt="/posts/code-reading/etcdraft-made-simple/2-overview/etcd-raft.jpg"
+        title="/posts/code-reading/etcdraft-made-simple/2-overview/etcd-raft.jpg" /></div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#0-引言">0. 引言</a></li>
+    <li><a href="#1-nodenoderawnode">1. Node、node、rawnode</a></li>
+    <li><a href="#2-raft状态机raft">2. Raft状态机——raft</a></li>
+    <li><a href="#3-总结">3. 总结</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
+<h2 id="0-引言">0. 引言</h2>
+<p>在<a href="/posts/code-reading/etcdraft-made-simple/1-raftexample/" rel="">《深入浅出etcd/raft —— 0x01 raftexample》</a>中，我们通过对一个官方提供的基于etcd/raft实现的简单kvstore简单地介绍了etcd/raft的使用，以对etcd/raft有一个初步认识。想要深入分析etcd/raft中对Raft算法的实现与优化，首先，我们必须先要了解etcd/raft的总体设计。</p>
+<p>etcd/raft将Raft算法的实现分为了3个模块：Raft状态机、存储模块、传输模块。</p>
+<p>Raft状态机完全由etcd/raft负责，<code>raft</code>结构体即为其实现。使用etcd/raft的开发者不能直接操作raft结构体，只能通过etcd/raft提供的<code>Node</code>接口对其进行操作。</p>
+<p>存储模块可以划分为两部分：对存储的读取与写入。etcd/raft只需要读取存储，etcd/raft依赖的<code>Storage</code>接口中只有读取存储的方法。而对存储的写入由用户负责，etcd/raft并不关心开发者如何写入存储，对存储的写入方法可以由开发者自己定义。etcd使用的存储模块是在与<code>Storage</code>接口同一文件下的<code>MemoryStorage</code>结构体。<code>MemoryStorage</code>既实现了<code>Storage</code>接口需要的读取存储的方法，也为用户提供了写入存储的方法。</p>
+<div class="details admonition info open">
+        <div class="details-summary admonition-title">
+            <i class="icon fas fa-info-circle fa-fw"></i>说明<i class="details-icon fas fa-angle-right fa-fw"></i>
+        </div>
+        <div class="details-content">
+            <div class="admonition-content"><code>Storage</code>接口定义的是稳定存储的读取方法。之所以etcd使用了基于内存的<code>MemoryStorage</code>，是因为etcd在写入<code>MemoryStorage</code>前，需要先写入预写日志（Write Ahead Log，WAL）或快照。而预写日志和快照是保存在稳定存储中的。这样，在每次重启时，etcd可以基于保存在稳定存储中的快照和预写日志恢复<code>MemoryStorage</code>的状态。也就是说，etcd的稳定存储是通过快照、预写日志、<code>MemoryStorage</code>三者共同实现的。</div>
+        </div>
+    </div>
+<p>通信模块是完全由使用etcd/raft的开发者负责的。etcd/raft不关心开发者如何实现通信模块。</p>
+<p>下图是一张关于etcd/raft的实现中，开发者与etcd/raft对这3个模块的职责的示意图。</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/etcdraft-made-simple/2-overview/assets/overview.svg" title="etcd/raft职责示意图" data-thumbnail="/posts/code-reading/etcdraft-made-simple/2-overview/assets/overview.svg" data-sub-html="<h2>etcd/raft职责示意图</h2><p>etcd/raft职责示意图</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/overview.svg"
+            data-srcset="/posts/code-reading/etcdraft-made-simple/2-overview/assets/overview.svg, assets/overview.svg 1.5x, /posts/code-reading/etcdraft-made-simple/2-overview/assets/overview.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/etcdraft-made-simple/2-overview/assets/overview.svg" />
+    </a><figcaption class="image-caption">etcd/raft职责示意图</figcaption>
+    </figure></p>
+<p>因为<code>Node</code>接口是开发者仅有的操作etcd/raft的方式，所以我们先来看看<code>Node</code>接口与其相关实现。</p>
+<h2 id="1-nodenoderawnode">1. Node、node、rawnode</h2>
+<p><code>Node</code>接口为开发者提供了操作etcd/raft的方法。其接口定义如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// Node represents a node in a raft cluster.
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">Node</span> <span class="kd">interface</span> <span class="p">{</span>
+	<span class="c1">// Tick increments the internal logical clock for the Node by a single tick. Election
+</span><span class="c1"></span>	<span class="c1">// timeouts and heartbeat timeouts are in units of ticks.
+</span><span class="c1"></span>	<span class="nf">Tick</span><span class="p">()</span>
+	<span class="c1">// Campaign causes the Node to transition to candidate state and start campaigning to become leader.
+</span><span class="c1"></span>	<span class="nf">Campaign</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span> <span class="kt">error</span>
+	<span class="c1">// Propose proposes that data be appended to the log. Note that proposals can be lost without
+</span><span class="c1"></span>	<span class="c1">// notice, therefore it is user&#39;s job to ensure proposal retries.
+</span><span class="c1"></span>	<span class="nf">Propose</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">data</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="kt">error</span>
+	<span class="c1">// ProposeConfChange proposes a configuration change. Like any proposal, the
+</span><span class="c1"></span>	<span class="c1">// configuration change may be dropped with or without an error being
+</span><span class="c1"></span>	<span class="c1">// returned. In particular, configuration changes are dropped unless the
+</span><span class="c1"></span>	<span class="c1">// leader has certainty that there is no prior unapplied configuration
+</span><span class="c1"></span>	<span class="c1">// change in its log.
+</span><span class="c1"></span>	<span class="c1">//
+</span><span class="c1"></span>	<span class="c1">// The method accepts either a pb.ConfChange (deprecated) or pb.ConfChangeV2
+</span><span class="c1"></span>	<span class="c1">// message. The latter allows arbitrary configuration changes via joint
+</span><span class="c1"></span>	<span class="c1">// consensus, notably including replacing a voter. Passing a ConfChangeV2
+</span><span class="c1"></span>	<span class="c1">// message is only allowed if all Nodes participating in the cluster run a
+</span><span class="c1"></span>	<span class="c1">// version of this library aware of the V2 API. See pb.ConfChangeV2 for
+</span><span class="c1"></span>	<span class="c1">// usage details and semantics.
+</span><span class="c1"></span>	<span class="nf">ProposeConfChange</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">cc</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">ConfChangeI</span><span class="p">)</span> <span class="kt">error</span>
+
+	<span class="c1">// Step advances the state machine using the given message. ctx.Err() will be returned, if any.
+</span><span class="c1"></span>	<span class="nf">Step</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">msg</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span><span class="p">)</span> <span class="kt">error</span>
+
+	<span class="c1">// Ready returns a channel that returns the current point-in-time state.
+</span><span class="c1"></span>	<span class="c1">// Users of the Node must call Advance after retrieving the state returned by Ready.
+</span><span class="c1"></span>	<span class="c1">//
+</span><span class="c1"></span>	<span class="c1">// NOTE: No committed entries from the next Ready may be applied until all committed entries
+</span><span class="c1"></span>	<span class="c1">// and snapshots from the previous one have finished.
+</span><span class="c1"></span>	<span class="nf">Ready</span><span class="p">()</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="nx">Ready</span>
+
+	<span class="c1">// Advance notifies the Node that the application has saved progress up to the last Ready.
+</span><span class="c1"></span>	<span class="c1">// It prepares the node to return the next available Ready.
+</span><span class="c1"></span>	<span class="c1">//
+</span><span class="c1"></span>	<span class="c1">// The application should generally call Advance after it applies the entries in last Ready.
+</span><span class="c1"></span>	<span class="c1">//
+</span><span class="c1"></span>	<span class="c1">// However, as an optimization, the application may call Advance while it is applying the
+</span><span class="c1"></span>	<span class="c1">// commands. For example. when the last Ready contains a snapshot, the application might take
+</span><span class="c1"></span>	<span class="c1">// a long time to apply the snapshot data. To continue receiving Ready without blocking raft
+</span><span class="c1"></span>	<span class="c1">// progress, it can call Advance before finishing applying the last ready.
+</span><span class="c1"></span>	<span class="nf">Advance</span><span class="p">()</span>
+	<span class="c1">// ApplyConfChange applies a config change (previously passed to
+</span><span class="c1"></span>	<span class="c1">// ProposeConfChange) to the node. This must be called whenever a config
+</span><span class="c1"></span>	<span class="c1">// change is observed in Ready.CommittedEntries, except when the app decides
+</span><span class="c1"></span>	<span class="c1">// to reject the configuration change (i.e. treats it as a noop instead), in
+</span><span class="c1"></span>	<span class="c1">// which case it must not be called.
+</span><span class="c1"></span>	<span class="c1">//
+</span><span class="c1"></span>	<span class="c1">// Returns an opaque non-nil ConfState protobuf which must be recorded in
+</span><span class="c1"></span>	<span class="c1">// snapshots.
+</span><span class="c1"></span>	<span class="nf">ApplyConfChange</span><span class="p">(</span><span class="nx">cc</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">ConfChangeI</span><span class="p">)</span> <span class="o">*</span><span class="nx">pb</span><span class="p">.</span><span class="nx">ConfState</span>
+
+	<span class="c1">// TransferLeadership attempts to transfer leadership to the given transferee.
+</span><span class="c1"></span>	<span class="nf">TransferLeadership</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">lead</span><span class="p">,</span> <span class="nx">transferee</span> <span class="kt">uint64</span><span class="p">)</span>
+
+	<span class="c1">// ReadIndex request a read state. The read state will be set in the ready.
+</span><span class="c1"></span>	<span class="c1">// Read state has a read index. Once the application advances further than the read
+</span><span class="c1"></span>	<span class="c1">// index, any linearizable read requests issued before the read request can be
+</span><span class="c1"></span>	<span class="c1">// processed safely. The read state will have the same rctx attached.
+</span><span class="c1"></span>	<span class="nf">ReadIndex</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">rctx</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="kt">error</span>
+
+	<span class="c1">// Status returns the current status of the raft state machine.
+</span><span class="c1"></span>	<span class="nf">Status</span><span class="p">()</span> <span class="nx">Status</span>
+	<span class="c1">// ReportUnreachable reports the given node is not reachable for the last send.
+</span><span class="c1"></span>	<span class="nf">ReportUnreachable</span><span class="p">(</span><span class="nx">id</span> <span class="kt">uint64</span><span class="p">)</span>
+	<span class="c1">// ReportSnapshot reports the status of the sent snapshot. The id is the raft ID of the follower
+</span><span class="c1"></span>	<span class="c1">// who is meant to receive the snapshot, and the status is SnapshotFinish or SnapshotFailure.
+</span><span class="c1"></span>	<span class="c1">// Calling ReportSnapshot with SnapshotFinish is a no-op. But, any failure in applying a
+</span><span class="c1"></span>	<span class="c1">// snapshot (for e.g., while streaming it from leader to follower), should be reported to the
+</span><span class="c1"></span>	<span class="c1">// leader with SnapshotFailure. When leader sends a snapshot to a follower, it pauses any raft
+</span><span class="c1"></span>	<span class="c1">// log probes until the follower can apply the snapshot and advance its state. If the follower
+</span><span class="c1"></span>	<span class="c1">// can&#39;t do that, for e.g., due to a crash, it could end up in a limbo, never getting any
+</span><span class="c1"></span>	<span class="c1">// updates from the leader. Therefore, it is crucial that the application ensures that any
+</span><span class="c1"></span>	<span class="c1">// failure in snapshot sending is caught and reported back to the leader; so it can resume raft
+</span><span class="c1"></span>	<span class="c1">// log probing in the follower.
+</span><span class="c1"></span>	<span class="nf">ReportSnapshot</span><span class="p">(</span><span class="nx">id</span> <span class="kt">uint64</span><span class="p">,</span> <span class="nx">status</span> <span class="nx">SnapshotStatus</span><span class="p">)</span>
+	<span class="c1">// Stop performs any necessary termination of the Node.
+</span><span class="c1"></span>	<span class="nf">Stop</span><span class="p">()</span>
+<span class="p">}</span>
+
+</code></pre></div><p>看过本系列第一篇文章<a href="/posts/code-reading/etcdraft-made-simple/1-raftexample/" rel="">《深入浅出etcd/raft —— 0x01 raftexample》</a>的读者对这一接口一定不会陌生。这里，我们再简单回顾一下与<code>Node</code>接口交互的方式。</p>
+<p><code>Node</code>结构中的方法按调用时机可以分为三类：</p>
+<table>
+<thead>
+<tr>
+<th align="center">方法<div style="width: 8em"></div></th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center"><code>Tick</code></td>
+<td align="left">由时钟（循环定时器）驱动，每隔一定时间调用一次，驱动<code>raft</code>结构体的内部时钟运行。</td>
+</tr>
+<tr>
+<td align="center"><code>Ready</code>、<code>Advance</code></td>
+<td align="left">这两个方法往往成对出现。准确的说，是<code>Ready</code>方法返回的<code>Ready</code>结构体信道的信号与<code>Advance</code>方法成对出现。每当从<code>Ready</code>结构体信道中收到来自<code>raft</code>的消息时，用户需要按照一定顺序对<code>Ready</code>结构体中的字段进行处理。在完成对<code>Ready</code>的处理后，需要调用<code>Advance</code>方法，通知<code>raft</code>这批数据已经处理完成，可以继续传入下一批。</td>
+</tr>
+<tr>
+<td align="center">其它方法</td>
+<td align="left">需要时随时调用。</td>
+</tr>
+</tbody>
+</table>
+<p>对于<code>Ready</code>结构体，有几个重要的字段需要按照如下顺序处理：</p>
+<ol>
+<li>将<code>HardState</code>、<code>Entries</code>、<code>Snapshot</code>写入稳定存储（其中，<code>Snapshot</code>的写入不需要严格按照此顺序，etcd/raft为快照的传输提供了另一套机制以优化执行效率）。</li>
+<li>本条中的操作可以并行执行：
+<ul>
+<li>将<code>Messages</code>中的消息发送给相应的节点。</li>
+<li>将<code>Snapshot</code>和<code>CommittedEntries</code>应用到本地状态机中。</li>
+</ul>
+</li>
+<li>调用<code>Advance</code>方法。</li>
+</ol>
+<p>在回顾了<code>Node</code>接口的基本使用方式后，我们再看关注一下其实现。</p>
+<p>在etcd/raft中，<code>Node</code>接口的实现一共有两个，分别是<code>node</code>结构体和<code>rawnode</code>结构体。二者都是对etcd/raft中Raft状态机<code>raft</code>结构体进行操作。不同的是，<code>node</code>结构体是线程安全的，其内部封装了<code>rawnode</code>，并通过各种信道实现线程安全的操作；而<code>rawnode</code>是非线程安全的，其直接将<code>Node</code>接口中的方法转为对<code>raft</code>结构体的方法的调用。<code>rawnode</code>是为需要实现Multi-Raft的开发者提供的更底层的接口。</p>
+<p>学习etcd/raft中Raft算法的实现与优化不需要深入<code>node</code>或<code>rawnode</code>的实现，因此这里不对其进行详细的分析。对go语言并发编程感兴趣的读者可以学习一下<code>node</code>的实现，其对信道的使用非常典型。接下来，我们继续深入，概括地分析一下<code>raft</code>结构体的实现。</p>
+<h2 id="2-raft状态机raft">2. Raft状态机——raft</h2>
+<p>etcd/raft的实现的优雅之处之一，在于其很好地剥离了各模块的职责。在etcd/raft的实现中，<code>raft</code>结构体是一个Raft状态机，其通过<code>Step</code>方法进行状态转移。只要涉及到Raft状态机的状态转移，最终都会通过<code>Step</code>方法完成。<code>Step</code>方法的参数是Raft消息（在<em>etcd/raft/raftpb</em>中，是直接通过<code>.proto</code>文件生成的<a href="https://developers.google.com/protocol-buffers" target="_blank" rel="noopener noreffer"><strong>Protocol Buffers</strong></a>的go语言实现）。</p>
+<p>这里我们以<code>Node</code>接口的<code>Tick</code>方法为例。其实<code>Tick</code>方法并不是一个很好地例子，但是由于<code>Tick</code>方法比较特殊，后续文章中不会对其做额外的分析，因此这里就以该方法为例。</p>
+<p>在<code>rawnode</code>的<code>Tick</code>方法实现中，其调用了<code>raft</code>结构体的<code>tick</code>“方法”。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// Tick advances the internal logical clock by a single tick.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">rn</span> <span class="o">*</span><span class="nx">RawNode</span><span class="p">)</span> <span class="nf">Tick</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">rn</span><span class="p">.</span><span class="nx">raft</span><span class="p">.</span><span class="nf">tick</span><span class="p">()</span>
+<span class="p">}</span>
+
+</code></pre></div><p>这里之所以给“方法”打上了引号，是因为<code>tick</code>其实并非一个真正的方法，而是<code>raft</code>的一个字段，其类型为一个无参无返回值的函数。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="kd">type</span> <span class="nx">raft</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="c1">// ... ...
+</span><span class="c1"></span>	<span class="nx">tick</span> <span class="kd">func</span><span class="p">()</span>
+	<span class="c1">// ... ...
+</span><span class="c1"></span><span class="p">}</span>
+
+</code></pre></div><p>这样设计的原因，是leader和follower在<code>tick</code>被调用时的行为不同。<code>tick</code>字段可能的值有两个，分别为<code>tickElection()</code>和<code>tickHeartbeat()</code>，二者分别对应follower（或candidate、pre candidate）和leader的<code>tick</code>行为。我们可以在如下4个方法中找到相应的证据：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">)</span> <span class="nf">becomeFollower</span><span class="p">(</span><span class="nx">term</span> <span class="kt">uint64</span><span class="p">,</span> <span class="nx">lead</span> <span class="kt">uint64</span><span class="p">)</span> <span class="p">{</span>
+	<span class="c1">// ... ...
+</span><span class="c1"></span>	<span class="nx">r</span><span class="p">.</span><span class="nx">tick</span> <span class="p">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">tickElection</span>
+	<span class="c1">// ... ...
+</span><span class="c1"></span><span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">)</span> <span class="nf">becomeCandidate</span><span class="p">()</span> <span class="p">{</span>
+	<span class="c1">// ... ...
+</span><span class="c1"></span>	<span class="nx">r</span><span class="p">.</span><span class="nx">tick</span> <span class="p">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">tickElection</span>
+	<span class="c1">// ... ...
+</span><span class="c1"></span><span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">)</span> <span class="nf">becomePreCandidate</span><span class="p">()</span> <span class="p">{</span>
+	<span class="c1">// ... ...
+</span><span class="c1"></span>	<span class="nx">r</span><span class="p">.</span><span class="nx">tick</span> <span class="p">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">tickElection</span>
+	<span class="c1">// ... ...
+</span><span class="c1"></span><span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">)</span> <span class="nf">becomeLeader</span><span class="p">()</span> <span class="p">{</span>
+	<span class="c1">// ... ...
+</span><span class="c1"></span>	<span class="nx">r</span><span class="p">.</span><span class="nx">tick</span> <span class="p">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">tickHeartbeat</span>
+	<span class="c1">// ... ...
+</span><span class="c1"></span><span class="p">}</span>
+
+</code></pre></div><p>这里我们先以<code>tickElection</code>为例，分析其实如何将这一方法转为对<code>Step</code>方法的调用的。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// tickElection is run by followers and candidates after r.electionTimeout.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">)</span> <span class="nf">tickElection</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nx">electionElapsed</span><span class="o">++</span>
+
+	<span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nf">promotable</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="nx">r</span><span class="p">.</span><span class="nf">pastElectionTimeout</span><span class="p">()</span> <span class="p">{</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nx">electionElapsed</span> <span class="p">=</span> <span class="mi">0</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nf">Step</span><span class="p">(</span><span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span><span class="p">{</span><span class="nx">From</span><span class="p">:</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">Type</span><span class="p">:</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgHup</span><span class="p">})</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+</code></pre></div><p>我们可以看到，<code>tickElection</code>方法会增大<code>electionElapsed</code>的值。当其超过了选举超时且当前节点可提拔为leader时（具体实现会在后续的文章中分析），重置其值，并创建一条<code>MsgHup</code>消息，传给<code>Step</code>方法。<code>Step</code>方法会对该消息进行处理，并适当地转移Raft状态机的状态。</p>
+<p><code>raft</code>结构体中的字段和相应的方法有很多。在后续的文章中，我们会在介绍etcd/raft中Raft算法的各部分实现时，介绍相应的字段与方法。这里仅给出创建<code>node</code>或<code>rawnode</code>时所需的<code>Config</code>结构体的结构，其大部分字段都与<code>raft</code>结构体中的有关字段相对应。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// Config contains the parameters to start a raft.
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">Config</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="c1">// ID is the identity of the local raft. ID cannot be 0.
+</span><span class="c1"></span>	<span class="nx">ID</span> <span class="kt">uint64</span>
+
+	<span class="c1">// peers contains the IDs of all nodes (including self) in the raft cluster. It
+</span><span class="c1"></span>	<span class="c1">// should only be set when starting a new raft cluster. Restarting raft from
+</span><span class="c1"></span>	<span class="c1">// previous configuration will panic if peers is set. peer is private and only
+</span><span class="c1"></span>	<span class="c1">// used for testing right now.
+</span><span class="c1"></span>	<span class="nx">peers</span> <span class="p">[]</span><span class="kt">uint64</span>
+
+	<span class="c1">// learners contains the IDs of all learner nodes (including self if the
+</span><span class="c1"></span>	<span class="c1">// local node is a learner) in the raft cluster. learners only receives
+</span><span class="c1"></span>	<span class="c1">// entries from the leader node. It does not vote or promote itself.
+</span><span class="c1"></span>	<span class="nx">learners</span> <span class="p">[]</span><span class="kt">uint64</span>
+
+	<span class="c1">// ElectionTick is the number of Node.Tick invocations that must pass between
+</span><span class="c1"></span>	<span class="c1">// elections. That is, if a follower does not receive any message from the
+</span><span class="c1"></span>	<span class="c1">// leader of current term before ElectionTick has elapsed, it will become
+</span><span class="c1"></span>	<span class="c1">// candidate and start an election. ElectionTick must be greater than
+</span><span class="c1"></span>	<span class="c1">// HeartbeatTick. We suggest ElectionTick = 10 * HeartbeatTick to avoid
+</span><span class="c1"></span>	<span class="c1">// unnecessary leader switching.
+</span><span class="c1"></span>	<span class="nx">ElectionTick</span> <span class="kt">int</span>
+	<span class="c1">// HeartbeatTick is the number of Node.Tick invocations that must pass between
+</span><span class="c1"></span>	<span class="c1">// heartbeats. That is, a leader sends heartbeat messages to maintain its
+</span><span class="c1"></span>	<span class="c1">// leadership every HeartbeatTick ticks.
+</span><span class="c1"></span>	<span class="nx">HeartbeatTick</span> <span class="kt">int</span>
+
+	<span class="c1">// Storage is the storage for raft. raft generates entries and states to be
+</span><span class="c1"></span>	<span class="c1">// stored in storage. raft reads the persisted entries and states out of
+</span><span class="c1"></span>	<span class="c1">// Storage when it needs. raft reads out the previous state and configuration
+</span><span class="c1"></span>	<span class="c1">// out of storage when restarting.
+</span><span class="c1"></span>	<span class="nx">Storage</span> <span class="nx">Storage</span>
+	<span class="c1">// Applied is the last applied index. It should only be set when restarting
+</span><span class="c1"></span>	<span class="c1">// raft. raft will not return entries to the application smaller or equal to
+</span><span class="c1"></span>	<span class="c1">// Applied. If Applied is unset when restarting, raft might return previous
+</span><span class="c1"></span>	<span class="c1">// applied entries. This is a very application dependent configuration.
+</span><span class="c1"></span>	<span class="nx">Applied</span> <span class="kt">uint64</span>
+
+	<span class="c1">// MaxSizePerMsg limits the max byte size of each append message. Smaller
+</span><span class="c1"></span>	<span class="c1">// value lowers the raft recovery cost(initial probing and message lost
+</span><span class="c1"></span>	<span class="c1">// during normal operation). On the other side, it might affect the
+</span><span class="c1"></span>	<span class="c1">// throughput during normal replication. Note: math.MaxUint64 for unlimited,
+</span><span class="c1"></span>	<span class="c1">// 0 for at most one entry per message.
+</span><span class="c1"></span>	<span class="nx">MaxSizePerMsg</span> <span class="kt">uint64</span>
+	<span class="c1">// MaxCommittedSizePerReady limits the size of the committed entries which
+</span><span class="c1"></span>	<span class="c1">// can be applied.
+</span><span class="c1"></span>	<span class="nx">MaxCommittedSizePerReady</span> <span class="kt">uint64</span>
+	<span class="c1">// MaxUncommittedEntriesSize limits the aggregate byte size of the
+</span><span class="c1"></span>	<span class="c1">// uncommitted entries that may be appended to a leader&#39;s log. Once this
+</span><span class="c1"></span>	<span class="c1">// limit is exceeded, proposals will begin to return ErrProposalDropped
+</span><span class="c1"></span>	<span class="c1">// errors. Note: 0 for no limit.
+</span><span class="c1"></span>	<span class="nx">MaxUncommittedEntriesSize</span> <span class="kt">uint64</span>
+	<span class="c1">// MaxInflightMsgs limits the max number of in-flight append messages during
+</span><span class="c1"></span>	<span class="c1">// optimistic replication phase. The application transportation layer usually
+</span><span class="c1"></span>	<span class="c1">// has its own sending buffer over TCP/UDP. Setting MaxInflightMsgs to avoid
+</span><span class="c1"></span>	<span class="c1">// overflowing that sending buffer. TODO (xiangli): feedback to application to
+</span><span class="c1"></span>	<span class="c1">// limit the proposal rate?
+</span><span class="c1"></span>	<span class="nx">MaxInflightMsgs</span> <span class="kt">int</span>
+
+	<span class="c1">// CheckQuorum specifies if the leader should check quorum activity. Leader
+</span><span class="c1"></span>	<span class="c1">// steps down when quorum is not active for an electionTimeout.
+</span><span class="c1"></span>	<span class="nx">CheckQuorum</span> <span class="kt">bool</span>
+
+	<span class="c1">// PreVote enables the Pre-Vote algorithm described in raft thesis section
+</span><span class="c1"></span>	<span class="c1">// 9.6. This prevents disruption when a node that has been partitioned away
+</span><span class="c1"></span>	<span class="c1">// rejoins the cluster.
+</span><span class="c1"></span>	<span class="nx">PreVote</span> <span class="kt">bool</span>
+
+	<span class="c1">// ReadOnlyOption specifies how the read only request is processed.
+</span><span class="c1"></span>	<span class="c1">//
+</span><span class="c1"></span>	<span class="c1">// ReadOnlySafe guarantees the linearizability of the read only request by
+</span><span class="c1"></span>	<span class="c1">// communicating with the quorum. It is the default and suggested option.
+</span><span class="c1"></span>	<span class="c1">//
+</span><span class="c1"></span>	<span class="c1">// ReadOnlyLeaseBased ensures linearizability of the read only request by
+</span><span class="c1"></span>	<span class="c1">// relying on the leader lease. It can be affected by clock drift.
+</span><span class="c1"></span>	<span class="c1">// If the clock drift is unbounded, leader might keep the lease longer than it
+</span><span class="c1"></span>	<span class="c1">// should (clock can move backward/pause without any bound). ReadIndex is not safe
+</span><span class="c1"></span>	<span class="c1">// in that case.
+</span><span class="c1"></span>	<span class="c1">// CheckQuorum MUST be enabled if ReadOnlyOption is ReadOnlyLeaseBased.
+</span><span class="c1"></span>	<span class="nx">ReadOnlyOption</span> <span class="nx">ReadOnlyOption</span>
+
+	<span class="c1">// Logger is the logger used for raft log. For multinode which can host
+</span><span class="c1"></span>	<span class="c1">// multiple raft group, each raft group can have its own logger
+</span><span class="c1"></span>	<span class="nx">Logger</span> <span class="nx">Logger</span>
+
+	<span class="c1">// DisableProposalForwarding set to true means that followers will drop
+</span><span class="c1"></span>	<span class="c1">// proposals, rather than forwarding them to the leader. One use case for
+</span><span class="c1"></span>	<span class="c1">// this feature would be in a situation where the Raft leader is used to
+</span><span class="c1"></span>	<span class="c1">// compute the data of a proposal, for example, adding a timestamp from a
+</span><span class="c1"></span>	<span class="c1">// hybrid logical clock to data in a monotonically increasing way. Forwarding
+</span><span class="c1"></span>	<span class="c1">// should be disabled to prevent a follower with an inaccurate hybrid
+</span><span class="c1"></span>	<span class="c1">// logical clock from assigning the timestamp and then forwarding the data
+</span><span class="c1"></span>	<span class="c1">// to the leader.
+</span><span class="c1"></span>	<span class="nx">DisableProposalForwarding</span> <span class="kt">bool</span>
+<span class="p">}</span>
+
+</code></pre></div><h2 id="3-总结">3. 总结</h2>
+<p>本文主要从顶层的视角，简单地分析了etcd/raft的总体设计。本文主要目的是给读者对etcd/raft的结构的整体认识，便于读者接下来学习etcd/raft中Raft算法的实现与优化。</p></div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2020-12-17</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"></div>
+            <div class="post-info-share">
+                <span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/etcd/">etcd</a>,&nbsp;<a href="/tags/raft/">Raft</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/posts/code-reading/etcdraft-made-simple/1-raftexample/" class="prev" rel="prev" title="深入浅出etcd/raft —— 0x01 raftexample"><i class="fas fa-angle-left fa-fw"></i>深入浅出etcd/raft —— 0x01 raftexample</a>
+            <a href="/posts/code-reading/etcdraft-made-simple/3-election/" class="next" rel="next" title="深入浅出etcd/raft —— 0x03 Raft选举">深入浅出etcd/raft —— 0x03 Raft选举<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+</article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"><link rel="stylesheet" href="/lib/katex/katex.min.css"><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"><script type="text/javascript" src="/lib/smooth-scroll/smooth-scroll.min.js"></script><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"id-1":"叉鸽 | MrCroxx","id-2":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"id-1":["id-1"],"id-2":["id-2"]},"duration":null,"speed":null}};</script><script type="text/javascript" src="/js/theme.min.js"></script></body>
+</html>

@@ -1,0 +1,78 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>Translation - 标签 - 叉鸽 MrCroxx 的博客</title>
+        <link>https://mrcroxx.github.io/tags/translation/</link>
+        <description>Translation - 标签 - 叉鸽 MrCroxx 的博客</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>mrcroxx@outlook.com (叉鸽)</managingEditor>
+            <webMaster>mrcroxx@outlook.com (叉鸽)</webMaster><lastBuildDate>Fri, 23 Oct 2020 13:00:19 &#43;0800</lastBuildDate><atom:link href="https://mrcroxx.github.io/tags/translation/" rel="self" type="application/rss+xml" /><item>
+    <title>《Spanner: Google’s Globally-Distributed Database》论文翻译</title>
+    <link>https://mrcroxx.github.io/posts/paper-reading/spanner-osdi2012/</link>
+    <pubDate>Fri, 23 Oct 2020 13:00:19 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://mrcroxx.github.io/posts/paper-reading/spanner-osdi2012/</guid>
+    <description><![CDATA[<p><em>本篇文章是对论文<a href="https://dl.acm.org/doi/pdf/10.1145/2491245" target="_blank" rel="noopener noreffer">Spanner: Google’s Globally-Distributed Database</a>的原创翻译，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>]]></description>
+</item><item>
+    <title>《An Empirical Evaluation of In-Memory Multi-Version Concurrency Control》论文翻译</title>
+    <link>https://mrcroxx.github.io/posts/paper-reading/wu-vldb2017/</link>
+    <pubDate>Thu, 08 Oct 2020 16:02:56 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://mrcroxx.github.io/posts/paper-reading/wu-vldb2017/</guid>
+    <description><![CDATA[<p><em>本篇文章是对论文<a href="https://15721.courses.cs.cmu.edu/spring2019/papers/03-mvcc1/wu-vldb2017.pdf" target="_blank" rel="noopener noreffer">An Empirical Evaluation of In-Memory Multi-Version Concurrency Control</a>的原创翻译，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>]]></description>
+</item><item>
+    <title>《CRUSH: Controlled, Scalable, Decentralized Placement of Replicated Data》论文翻译</title>
+    <link>https://mrcroxx.github.io/posts/paper-reading/weil-crush-sc06/</link>
+    <pubDate>Thu, 01 Oct 2020 16:28:29 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://mrcroxx.github.io/posts/paper-reading/weil-crush-sc06/</guid>
+    <description><![CDATA[<p><em>本篇文章是对论文<a href="http://tom.nos-eastchina1.126.net/weil-crush-sc06.pdf" target="_blank" rel="noopener noreffer">CRUSH: Controlled, Scalable, Decentralized Placement of Replicated Data</a>的原创翻译，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>]]></description>
+</item><item>
+    <title>《In Search of an Understandable Consensus Algorithm (Extended Version)》论文翻译</title>
+    <link>https://mrcroxx.github.io/posts/paper-reading/raft-extended/</link>
+    <pubDate>Sun, 27 Sep 2020 19:26:30 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://mrcroxx.github.io/posts/paper-reading/raft-extended/</guid>
+    <description><![CDATA[<p><em>本篇文章是对论文<a href="http://pages.cs.wisc.edu/~remzi/Classes/739/Spring2004/Papers/raft.pdf" target="_blank" rel="noopener noreffer">In Search of an Understandable Consensus Algorithm (Extended Version)</a>的原创翻译，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>]]></description>
+</item><item>
+    <title>《Paxos Made Live - An Engineering Perspective》论文翻译</title>
+    <link>https://mrcroxx.github.io/posts/paper-reading/paxos-made-live/</link>
+    <pubDate>Thu, 24 Sep 2020 11:42:43 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://mrcroxx.github.io/posts/paper-reading/paxos-made-live/</guid>
+    <description><![CDATA[<p><em>本篇文章是对论文<a href="http://www8.cs.umu.se/kurser/5DV153/HT14/literature/chandra2006paxos.pdf" target="_blank" rel="noopener noreffer">Paxos Made Live - An Engineering Perspective</a>的原创翻译，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>]]></description>
+</item><item>
+    <title>《Paxos Made Simple》论文翻译</title>
+    <link>https://mrcroxx.github.io/posts/paper-reading/paxos-made-simple/</link>
+    <pubDate>Mon, 21 Sep 2020 13:34:37 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://mrcroxx.github.io/posts/paper-reading/paxos-made-simple/</guid>
+    <description><![CDATA[<p><em>本篇文章是对论文<a href="http://www.cs.utexas.edu/users/lorenzo/corsi/cs380d/past/03F/notes/paxos-simple.pdf" target="_blank" rel="noopener noreffer">Paxos Made Simple</a>的原创翻译，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>]]></description>
+</item><item>
+    <title>《Ceph: A Scalable, High-Performance Distributed File System》论文翻译</title>
+    <link>https://mrcroxx.github.io/posts/paper-reading/weil-osde06/</link>
+    <pubDate>Mon, 14 Sep 2020 17:38:45 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://mrcroxx.github.io/posts/paper-reading/weil-osde06/</guid>
+    <description><![CDATA[<p><em>本篇文章是对论文<a href="https://www.usenix.org/legacy/events/osdi06/tech/full_papers/weil/weil_html/" target="_blank" rel="noopener noreffer">weil-osdi06</a>的原创翻译，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>]]></description>
+</item><item>
+    <title>《Web caching with consistent hashing》论文翻译</title>
+    <link>https://mrcroxx.github.io/posts/paper-reading/web-caching-with-consistent-hashing/</link>
+    <pubDate>Thu, 10 Sep 2020 15:45:45 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://mrcroxx.github.io/posts/paper-reading/web-caching-with-consistent-hashing/</guid>
+    <description><![CDATA[<p><em>本篇文章是对论文<a href="http://www.academia.edu/download/49325809/pd1.pdf" target="_blank" rel="noopener noreffer">Web caching with consistent hashing</a>的原创翻译，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>]]></description>
+</item><item>
+    <title>《Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing》论文翻译（RDD-NSDI12-FINAL138）</title>
+    <link>https://mrcroxx.github.io/posts/paper-reading/rdd-nsdi12-final138/</link>
+    <pubDate>Mon, 07 Sep 2020 11:14:45 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://mrcroxx.github.io/posts/paper-reading/rdd-nsdi12-final138/</guid>
+    <description><![CDATA[<p><em>本篇文章是对论文<a href="https://www.usenix.org/system/files/conference/nsdi12/nsdi12-final138.pdf" target="_blank" rel="noopener noreffer">RDD-NSDI12-FINAL138</a>的原创翻译，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>]]></description>
+</item><item>
+    <title>《XORing Elephants: Novel Erasure Codes for Big Data》论文翻译（arXiv:1301.3791v1）</title>
+    <link>https://mrcroxx.github.io/posts/paper-reading/xoring-elephants/</link>
+    <pubDate>Thu, 03 Sep 2020 12:01:45 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://mrcroxx.github.io/posts/paper-reading/xoring-elephants/</guid>
+    <description><![CDATA[<p><em>本篇文章是对论文<a href="https://arxiv.org/pdf/1301.3791.pdf" target="_blank" rel="noopener noreffer">XORing Elephants: Novel Erasure Codes for Big Data</a>的原创翻译，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>]]></description>
+</item></channel>
+</rss>

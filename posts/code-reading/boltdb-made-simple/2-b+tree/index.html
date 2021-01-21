@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>深入浅出boltdb —— 0x02 B&#43;Tree - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出boltdb —— 0x02 B&#43;Tree" />
+<meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/2-b&#43;tree/" />
+<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/2-b&#43;tree/bbolt.jpg"/>
+<meta property="article:published_time" content="2021-01-19T21:25:36+08:00" />
+<meta property="article:modified_time" content="2021-01-19T21:25:39+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/2-b&#43;tree/bbolt.jpg"/>
+<meta name="twitter:title" content="深入浅出boltdb —— 0x02 B&#43;Tree"/>
+<meta name="twitter:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。"/>
+<meta name="application-name" content="叉鸽 MrCroxx 的博客">
+<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/2-b&#43;tree/" /><link rel="prev" href="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/1-storage-cache/" /><link rel="next" href="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/3-bucket-cursor/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "深入浅出boltdb —— 0x02 B+Tree",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/2-b\x2btree\/"
+        },"image": [{
+                            "@type": "ImageObject",
+                            "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/2-b\x2btree\/bbolt.jpg",
+                            "width":  1200 ,
+                            "height":  360 
+                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  7331 ,
+        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/2-b\x2btree\/","datePublished": "2021-01-19T21:25:36+08:00","dateModified": "2021-01-19T21:25:39+08:00","publisher": {
+            "@type": "Organization",
+            "name": "叉鸽"},"author": {
+                "@type": "Person",
+                "name": "叉鸽"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : '' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-1" class="typeit"></span></a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-2" class="typeit"></span></a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出boltdb —— 0x02 B&#43;Tree</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAbolt/"><i class="far fa-folder fa-fw"></i>深入浅出bolt</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-19">2021-01-19</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 7331 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 15 分钟&nbsp;</div>
+        </div><div class="featured-image"><img
+        class="lazyload"
+        src="/svg/loading.min.svg"
+        data-src="/posts/code-reading/boltdb-made-simple/2-b&#43;tree/bbolt.jpg"
+        data-srcset="/posts/code-reading/boltdb-made-simple/2-b&#43;tree/bbolt.jpg, /posts/code-reading/boltdb-made-simple/2-b&#43;tree/bbolt.jpg 1.5x, /posts/code-reading/boltdb-made-simple/2-b&#43;tree/bbolt.jpg 2x"
+        data-sizes="auto"
+        alt="/posts/code-reading/boltdb-made-simple/2-b&#43;tree/bbolt.jpg"
+        title="/posts/code-reading/boltdb-made-simple/2-b&#43;tree/bbolt.jpg" /></div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#0-引言">0. 引言</a></li>
+    <li><a href="#1-boltdb中btree的实现">1. boltdb中B+Tree的实现</a>
+      <ul>
+        <li><a href="#11-node结构体">1.1 node结构体</a></li>
+        <li><a href="#12-node在内存与存储中的关系">1.2 node在内存与存储中的关系</a></li>
+        <li><a href="#13-node中用于查询的方法">1.3 node中用于查询的方法</a></li>
+        <li><a href="#14-node中用于修改的方法">1.4 node中用于修改的方法</a></li>
+        <li><a href="#15-btree的调整">1.5 B+Tree的调整</a>
+          <ul>
+            <li><a href="#151-rebalance">1.5.1 rebalance</a></li>
+            <li><a href="#152-spill">1.5.2 spill</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#2-总结">2. 总结</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
+<h2 id="0-引言">0. 引言</h2>
+<p>boltdb是需要通过磁盘来持久化数据的kv数据库。为了平衡内存与磁盘的读写性能，boltdb使用了B+Tree来保存并索引数据。B+Tree（B+树）是B-Tree（B树）的一种变体，本文不会详细介绍有关B-Tree或B+Tree的具体操作，而仅给出B-Tree与B+Tree的概念，并通过boltdb对B+Tree的实现介绍。</p>
+<p>一棵$m$阶B-Tree的性质如下：</p>
+<ol>
+<li>每个节点最多有$m$个孩子。</li>
+<li>除根节点外的每个非叶子节点至少有$\lceil m/2 \rceil$个孩子。</li>
+<li>如果根节点不是叶子节点，那么根节点至少有2个孩子。</li>
+<li>非叶子节点有$k$个孩子，$k-1$个key，key从小到大排列，且$k-1$个key划分了$k$个孩子中key的范围。</li>
+<li>所有叶子节点都在同一层。</li>
+</ol>
+<p>B-Tree有如下的优点：</p>
+<ol>
+<li>树高度低，$\lceil \log_{m}{(n+1)} \rceil -1 \le h \le \lfloor \log_{ \lceil m/2 \rceil }{\frac{n+1}{2}} \rfloor$。底数为$O(m)$。</li>
+<li>与平衡二叉树相比，I/O次数少，适合基于磁盘的实现。</li>
+<li>读取节点数据时能够充分利用缓存。</li>
+</ol>
+<p>B+Tree在B-Tree的基础上，进一步做了一些优化。一棵$m$阶B+Tree的性质如下：</p>
+<ol>
+<li>每个节点最多有$m$个孩子。</li>
+<li>除根节点外的每个非叶子节点至少有$\lceil m/2 \rceil$个孩子。</li>
+<li>中间节点的key只作为索引，key同时存在于其孩子中，且是相应孩子的最大（或最小）的key。</li>
+<li>数据由且仅由叶子节点保存，叶子节点还有一个链指针，按从小到大的顺序指向下一个叶子节点。</li>
+</ol>
+<p>相比B-Tree，B+Tree还有如下优点：</p>
+<ol>
+<li>中间节点不保存数据，一个块中能保存更多元素，I/O次数更少。</li>
+<li>所有查询都要落到叶子节点，性能更加稳定。</li>
+<li>叶子节点形成有序链表，范围查询更方便。</li>
+</ol>
+<p>无论B-Tree还是B+Tree都是为优化磁盘I/O设计的高级数据结构。其实现涉及到很多与I/O、缓存相关问题。因此，B+Tree并没有一种“标准”的实现，B+Tree的设计也与存储系统的使用场景、硬件环境密相关。由于boltdb是一个基于磁盘的kv数据库，其保存的key与value都是变长的，因此，boltdb中B+Tree的实现有如下特点：</p>
+<ol>
+<li>由于boltdb的key是变长的，其没有使用$m$阶的概念，而是使用<em>数据填充率</em>来限制节点大小。数据填充率为节点大小与<code>pageSize</code>的比值。理论上，节点的数据填充率不能大于1，除根节点外的每个非叶子节点的数据填充率不小于设置的参数<code>fillPercent</code>。但实际上，由于一些key/value数据过大，节点填充率可能超过1但不可再分，这样的节点也是合法的节点。</li>
+<li>叶子节点的value直接保存在叶子节点中，而不是通过指针指向其它页。这样可以减少一次I/O且在范围查询时可以充分利用缓存。</li>
+<li>为了简化实现，boltdb的叶子节点没有实现链指针。因此在进行范围查询时，cursor需要通过栈来保存遍历路径。</li>
+<li>为了保证事务的ACID性质并减少I/O次数，boltdb的B+Tree只有在需要写入到文件时才会进行调整以保持平衡。也就是说，在内存中，boltdb的B+Tree可能并不是平衡的。</li>
+</ol>
+<h2 id="1-boltdb中btree的实现">1. boltdb中B+Tree的实现</h2>
+<p>boltdb的B+Tree节点实现可分为存储中的实现（mmap memory）与内存中的实现（heap memory）两部分。</p>
+<p>B+Tree节点存储部分的实现即branchNodePage与leafNodePage。branchNodePage中每个<code>branchPageElement</code>的<code>pos</code>与<code>ksize</code>字段标识了branch node中的每个key的位置、<code>pgid</code>字段标识了该key所对应的孩子节点的页id；leafNodePage中<code>pos</code>、<code>ksize</code>、<code>vsize</code>字段标识的leaf node中每个实际存储的key/value的位置、<code>flags</code>字段标识了该元素的类型（是普通的key/value还是bucket）。</p>
+<p>虽然boltdb通过mmap的方式将数据库文件映射到了内存中，但是page是copy-on-write的，相当于mmap的page是只读的。因此，boltdb还需要一种通过heap memory表示的B+Tree节点。</p>
+<p>B+Tree节点内存部分主要由node结构体实现。本节将详细介绍node结构体及其相关方法的实现。</p>
+<p>boltdb中node是按需实例化的，对于不需要修改的node，boltdb直接从page中读取数据；而当boltdb需要修改B+Tree的某个节点时，则会将该节点从page实例化为node。在修改node时，boltdb会为其分配page buffer（dirty page），等到事务提交时，才会将这些page buffer中的数据统一落盘。</p>
+<p>本文主要关注boltdb中B+Tree在内存中的实现（heap memory），B+Tree在存储中的实现（mmap memory - page）笔者已经在本系列的<a href="/posts/code-reading/boltdb-made-simple/1-storage-cache/" rel="">存储与缓存</a>中介绍过，这里不再赘述。而node实例化的具体时机与boltdb中cursor的实现有关，因此笔者将其留到了本系列的后续文章中介绍。</p>
+<h3 id="11-node结构体">1.1 node结构体</h3>
+<p>boltdb中B+Tree的实现主要在<code>node.go</code>中。node结构体表示了boltdb中B+Tree的节点，其实现如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// node represents an in-memory, deserialized page.
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">node</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">bucket</span>     <span class="o">*</span><span class="nx">Bucket</span>
+	<span class="nx">isLeaf</span>     <span class="kt">bool</span>
+	<span class="nx">unbalanced</span> <span class="kt">bool</span>
+	<span class="nx">spilled</span>    <span class="kt">bool</span>
+	<span class="nx">key</span>        <span class="p">[]</span><span class="kt">byte</span>
+	<span class="nx">pgid</span>       <span class="nx">pgid</span>
+	<span class="nx">parent</span>     <span class="o">*</span><span class="nx">node</span>
+	<span class="nx">children</span>   <span class="nx">nodes</span>
+	<span class="nx">inodes</span>     <span class="nx">inodes</span>
+<span class="p">}</span>
+
+<span class="c1">// inode represents an internal node inside of a node.
+</span><span class="c1">// It can be used to point to elements in a page or point
+</span><span class="c1">// to an element which hasn&#39;t been added to a page yet.
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">inode</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">flags</span> <span class="kt">uint32</span>
+	<span class="nx">pgid</span>  <span class="nx">pgid</span>
+	<span class="nx">key</span>   <span class="p">[]</span><span class="kt">byte</span>
+	<span class="nx">value</span> <span class="p">[]</span><span class="kt">byte</span>
+<span class="p">}</span>
+
+<span class="kd">type</span> <span class="nx">inodes</span> <span class="p">[]</span><span class="nx">inode</span>
+
+</code></pre></div><table>
+<thead>
+<tr>
+<th align="center">字段<div style="width: 14em"></th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center"><code>bucket *Bucket</code></td>
+<td align="left">该node所属的bucket指针。</td>
+</tr>
+<tr>
+<td align="center"><code>isLeaf bool</code></td>
+<td align="left">当前node是否为叶子节点。</td>
+</tr>
+<tr>
+<td align="center"><code>unbalanced bool</code></td>
+<td align="left">当前node是否可能不平衡。</td>
+</tr>
+<tr>
+<td align="center"><code>spilled bool</code></td>
+<td align="left">当前node是否已被调整过。</td>
+</tr>
+<tr>
+<td align="center"><code>key []byte</code></td>
+<td align="left">保存node初始化时的第一个key，用于在调整时索引。</td>
+</tr>
+<tr>
+<td align="center"><code>pgid pgid</code></td>
+<td align="left">当前node在mmap内存中相应的页id。</td>
+</tr>
+<tr>
+<td align="center"><code>parent *node</code></td>
+<td align="left">父节点指针。</td>
+</tr>
+<tr>
+<td align="center"><code>children nodes</code></td>
+<td align="left">初始化时孩子节点列表，用于在调整时索引。</td>
+</tr>
+<tr>
+<td align="center"><code>inodes inodes</code></td>
+<td align="left">该node的内部节点，即该node所包含的元素。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="12-node在内存与存储中的关系">1.2 node在内存与存储中的关系</h3>
+<p>node的存储结构即为branchNodePage或leafNodePage，因此，boltdb仅持久化保存了node的<code>isLeaf</code>、<code>pgid</code>、<code>inodes</code>信息，其它信息都是在node创建或加载时指定的。node的<code>write</code>、<code>read</code>方法揭示了node是怎样被序列化或反序列化的：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// read initializes the node from a page.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="o">*</span><span class="nx">node</span><span class="p">)</span> <span class="nf">read</span><span class="p">(</span><span class="nx">p</span> <span class="o">*</span><span class="nx">page</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">n</span><span class="p">.</span><span class="nx">pgid</span> <span class="p">=</span> <span class="nx">p</span><span class="p">.</span><span class="nx">id</span>
+	<span class="nx">n</span><span class="p">.</span><span class="nx">isLeaf</span> <span class="p">=</span> <span class="p">((</span><span class="nx">p</span><span class="p">.</span><span class="nx">flags</span> <span class="o">&amp;</span> <span class="nx">leafPageFlag</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>
+	<span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span> <span class="p">=</span> <span class="nb">make</span><span class="p">(</span><span class="nx">inodes</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">count</span><span class="p">))</span>
+
+	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nb">int</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">count</span><span class="p">);</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+		<span class="nx">inode</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span>
+		<span class="k">if</span> <span class="nx">n</span><span class="p">.</span><span class="nx">isLeaf</span> <span class="p">{</span>
+			<span class="nx">elem</span> <span class="o">:=</span> <span class="nx">p</span><span class="p">.</span><span class="nf">leafPageElement</span><span class="p">(</span><span class="nb">uint16</span><span class="p">(</span><span class="nx">i</span><span class="p">))</span>
+			<span class="nx">inode</span><span class="p">.</span><span class="nx">flags</span> <span class="p">=</span> <span class="nx">elem</span><span class="p">.</span><span class="nx">flags</span>
+			<span class="nx">inode</span><span class="p">.</span><span class="nx">key</span> <span class="p">=</span> <span class="nx">elem</span><span class="p">.</span><span class="nf">key</span><span class="p">()</span>
+			<span class="nx">inode</span><span class="p">.</span><span class="nx">value</span> <span class="p">=</span> <span class="nx">elem</span><span class="p">.</span><span class="nf">value</span><span class="p">()</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+			<span class="nx">elem</span> <span class="o">:=</span> <span class="nx">p</span><span class="p">.</span><span class="nf">branchPageElement</span><span class="p">(</span><span class="nb">uint16</span><span class="p">(</span><span class="nx">i</span><span class="p">))</span>
+			<span class="nx">inode</span><span class="p">.</span><span class="nx">pgid</span> <span class="p">=</span> <span class="nx">elem</span><span class="p">.</span><span class="nx">pgid</span>
+			<span class="nx">inode</span><span class="p">.</span><span class="nx">key</span> <span class="p">=</span> <span class="nx">elem</span><span class="p">.</span><span class="nf">key</span><span class="p">()</span>
+		<span class="p">}</span>
+		<span class="nf">_assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">inode</span><span class="p">.</span><span class="nx">key</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&#34;read: zero-length inode key&#34;</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Save first key so we can find the node in the parent when we spill.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">n</span><span class="p">.</span><span class="nx">key</span> <span class="p">=</span> <span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">key</span>
+		<span class="nf">_assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">key</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&#34;read: zero-length node key&#34;</span><span class="p">)</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+		<span class="nx">n</span><span class="p">.</span><span class="nx">key</span> <span class="p">=</span> <span class="kc">nil</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// write writes the items onto one or more pages.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="o">*</span><span class="nx">node</span><span class="p">)</span> <span class="nf">write</span><span class="p">(</span><span class="nx">p</span> <span class="o">*</span><span class="nx">page</span><span class="p">)</span> <span class="p">{</span>
+	<span class="c1">// Initialize page.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">n</span><span class="p">.</span><span class="nx">isLeaf</span> <span class="p">{</span>
+		<span class="nx">p</span><span class="p">.</span><span class="nx">flags</span> <span class="o">|=</span> <span class="nx">leafPageFlag</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+		<span class="nx">p</span><span class="p">.</span><span class="nx">flags</span> <span class="o">|=</span> <span class="nx">branchPageFlag</span>
+	<span class="p">}</span>
+
+	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mh">0xFFFF</span> <span class="p">{</span>
+		<span class="nb">panic</span><span class="p">(</span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;inode overflow: %d (pgid=%d)&#34;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">),</span> <span class="nx">p</span><span class="p">.</span><span class="nx">id</span><span class="p">))</span>
+	<span class="p">}</span>
+	<span class="nx">p</span><span class="p">.</span><span class="nx">count</span> <span class="p">=</span> <span class="nb">uint16</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">))</span>
+
+	<span class="c1">// Stop here if there are no items to write.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">p</span><span class="p">.</span><span class="nx">count</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Loop over each item and write it to the page.
+</span><span class="c1"></span>	<span class="nx">b</span> <span class="o">:=</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">ptr</span><span class="p">))[</span><span class="nx">n</span><span class="p">.</span><span class="nf">pageElementSize</span><span class="p">()</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">):]</span>
+	<span class="k">for</span> <span class="nx">i</span><span class="p">,</span> <span class="nx">item</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span> <span class="p">{</span>
+		<span class="nf">_assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">item</span><span class="p">.</span><span class="nx">key</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&#34;write: zero-length inode key&#34;</span><span class="p">)</span>
+
+		<span class="c1">// Write the page element.
+</span><span class="c1"></span>		<span class="k">if</span> <span class="nx">n</span><span class="p">.</span><span class="nx">isLeaf</span> <span class="p">{</span>
+			<span class="nx">elem</span> <span class="o">:=</span> <span class="nx">p</span><span class="p">.</span><span class="nf">leafPageElement</span><span class="p">(</span><span class="nb">uint16</span><span class="p">(</span><span class="nx">i</span><span class="p">))</span>
+			<span class="nx">elem</span><span class="p">.</span><span class="nx">pos</span> <span class="p">=</span> <span class="nb">uint32</span><span class="p">(</span><span class="nb">uintptr</span><span class="p">(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">b</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span> <span class="o">-</span> <span class="nb">uintptr</span><span class="p">(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="nx">elem</span><span class="p">)))</span>
+			<span class="nx">elem</span><span class="p">.</span><span class="nx">flags</span> <span class="p">=</span> <span class="nx">item</span><span class="p">.</span><span class="nx">flags</span>
+			<span class="nx">elem</span><span class="p">.</span><span class="nx">ksize</span> <span class="p">=</span> <span class="nb">uint32</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">item</span><span class="p">.</span><span class="nx">key</span><span class="p">))</span>
+			<span class="nx">elem</span><span class="p">.</span><span class="nx">vsize</span> <span class="p">=</span> <span class="nb">uint32</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">item</span><span class="p">.</span><span class="nx">value</span><span class="p">))</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+			<span class="nx">elem</span> <span class="o">:=</span> <span class="nx">p</span><span class="p">.</span><span class="nf">branchPageElement</span><span class="p">(</span><span class="nb">uint16</span><span class="p">(</span><span class="nx">i</span><span class="p">))</span>
+			<span class="nx">elem</span><span class="p">.</span><span class="nx">pos</span> <span class="p">=</span> <span class="nb">uint32</span><span class="p">(</span><span class="nb">uintptr</span><span class="p">(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">b</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span> <span class="o">-</span> <span class="nb">uintptr</span><span class="p">(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="nx">elem</span><span class="p">)))</span>
+			<span class="nx">elem</span><span class="p">.</span><span class="nx">ksize</span> <span class="p">=</span> <span class="nb">uint32</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">item</span><span class="p">.</span><span class="nx">key</span><span class="p">))</span>
+			<span class="nx">elem</span><span class="p">.</span><span class="nx">pgid</span> <span class="p">=</span> <span class="nx">item</span><span class="p">.</span><span class="nx">pgid</span>
+			<span class="nf">_assert</span><span class="p">(</span><span class="nx">elem</span><span class="p">.</span><span class="nx">pgid</span> <span class="o">!=</span> <span class="nx">p</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="s">&#34;write: circular dependency occurred&#34;</span><span class="p">)</span>
+		<span class="p">}</span>
+
+		<span class="c1">// If the length of key+value is larger than the max allocation size
+</span><span class="c1"></span>		<span class="c1">// then we need to reallocate the byte array pointer.
+</span><span class="c1"></span>		<span class="c1">//
+</span><span class="c1"></span>		<span class="c1">// See: https://github.com/boltdb/bolt/pull/335
+</span><span class="c1"></span>		<span class="nx">klen</span><span class="p">,</span> <span class="nx">vlen</span> <span class="o">:=</span> <span class="nb">len</span><span class="p">(</span><span class="nx">item</span><span class="p">.</span><span class="nx">key</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="nx">item</span><span class="p">.</span><span class="nx">value</span><span class="p">)</span>
+		<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">b</span><span class="p">)</span> <span class="p">&lt;</span> <span class="nx">klen</span><span class="o">+</span><span class="nx">vlen</span> <span class="p">{</span>
+			<span class="nx">b</span> <span class="p">=</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">b</span><span class="p">[</span><span class="mi">0</span><span class="p">]))[:]</span>
+		<span class="p">}</span>
+
+		<span class="c1">// Write data for the element to the end of the page.
+</span><span class="c1"></span>		<span class="nb">copy</span><span class="p">(</span><span class="nx">b</span><span class="p">[</span><span class="mi">0</span><span class="p">:],</span> <span class="nx">item</span><span class="p">.</span><span class="nx">key</span><span class="p">)</span>
+		<span class="nx">b</span> <span class="p">=</span> <span class="nx">b</span><span class="p">[</span><span class="nx">klen</span><span class="p">:]</span>
+		<span class="nb">copy</span><span class="p">(</span><span class="nx">b</span><span class="p">[</span><span class="mi">0</span><span class="p">:],</span> <span class="nx">item</span><span class="p">.</span><span class="nx">value</span><span class="p">)</span>
+		<span class="nx">b</span> <span class="p">=</span> <span class="nx">b</span><span class="p">[</span><span class="nx">vlen</span><span class="p">:]</span>
+	<span class="p">}</span>
+
+	<span class="c1">// DEBUG ONLY: n.dump()
+</span><span class="c1"></span><span class="p">}</span>
+
+</code></pre></div><p>需要注意的是，当读取page构建node时，<code>inode</code>的key与value是直接引用的page的地址，即node构建后并非完全不在依赖其page中的数据。但是随着数据库增大，当boltdb需要重新mmap以扩展存储空间时，boltdb需要执行<code>dereference</code>操作：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// dereference causes the node to copy all its inode key/value references to heap memory.
+</span><span class="c1">// This is required when the mmap is reallocated so inodes are not pointing to stale data.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="o">*</span><span class="nx">node</span><span class="p">)</span> <span class="nf">dereference</span><span class="p">()</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="nx">n</span><span class="p">.</span><span class="nx">key</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">key</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">key</span><span class="p">))</span>
+		<span class="nb">copy</span><span class="p">(</span><span class="nx">key</span><span class="p">,</span> <span class="nx">n</span><span class="p">.</span><span class="nx">key</span><span class="p">)</span>
+		<span class="nx">n</span><span class="p">.</span><span class="nx">key</span> <span class="p">=</span> <span class="nx">key</span>
+		<span class="nf">_assert</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">pgid</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">||</span> <span class="nb">len</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">key</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&#34;dereference: zero-length node key on existing node&#34;</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span> <span class="p">{</span>
+		<span class="nx">inode</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span>
+
+		<span class="nx">key</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nx">inode</span><span class="p">.</span><span class="nx">key</span><span class="p">))</span>
+		<span class="nb">copy</span><span class="p">(</span><span class="nx">key</span><span class="p">,</span> <span class="nx">inode</span><span class="p">.</span><span class="nx">key</span><span class="p">)</span>
+		<span class="nx">inode</span><span class="p">.</span><span class="nx">key</span> <span class="p">=</span> <span class="nx">key</span>
+		<span class="nf">_assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">inode</span><span class="p">.</span><span class="nx">key</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&#34;dereference: zero-length inode key&#34;</span><span class="p">)</span>
+
+		<span class="nx">value</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nx">inode</span><span class="p">.</span><span class="nx">value</span><span class="p">))</span>
+		<span class="nb">copy</span><span class="p">(</span><span class="nx">value</span><span class="p">,</span> <span class="nx">inode</span><span class="p">.</span><span class="nx">value</span><span class="p">)</span>
+		<span class="nx">inode</span><span class="p">.</span><span class="nx">value</span> <span class="p">=</span> <span class="nx">value</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Recursively dereference children.
+</span><span class="c1"></span>	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">child</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">n</span><span class="p">.</span><span class="nx">children</span> <span class="p">{</span>
+		<span class="nx">child</span><span class="p">.</span><span class="nf">dereference</span><span class="p">()</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Update statistics.
+</span><span class="c1"></span>	<span class="nx">n</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">tx</span><span class="p">.</span><span class="nx">stats</span><span class="p">.</span><span class="nx">NodeDeref</span><span class="o">++</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>dereference</code>会递归向下地将整个B+Tree的数据拷贝到heap memory中（非mmap映射的内存空间），以避免unmmap时node还在引用旧的mmap的内存地址。执行<code>dereference</code>前后，node在内存中的示意图如下：</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/boltdb-made-simple/2-b&#43;tree/assets/dereference.svg" title="dereference执行前后node在内存中的示意图" data-thumbnail="/posts/code-reading/boltdb-made-simple/2-b&#43;tree/assets/dereference.svg" data-sub-html="<h2>dereference执行前后node在内存中的示意图</h2><p>dereference执行前后node在内存中的示意图</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/dereference.svg"
+            data-srcset="/posts/code-reading/boltdb-made-simple/2-b&#43;tree/assets/dereference.svg, assets/dereference.svg 1.5x, /posts/code-reading/boltdb-made-simple/2-b&#43;tree/assets/dereference.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/boltdb-made-simple/2-b&#43;tree/assets/dereference.svg" />
+    </a><figcaption class="image-caption">dereference执行前后node在内存中的示意图</figcaption>
+    </figure></p>
+<h3 id="13-node中用于查询的方法">1.3 node中用于查询的方法</h3>
+<p>除了node的字段外，node的一些方法也用来查询或索引数据（leafNode没有孩子，其child指其内部元素，即inode）：</p>
+<table>
+<thead>
+<tr>
+<th align="center">方法<div style="width: 14em"></th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center"><code>root() *node</code></td>
+<td align="left">当前node所在B+Tree的根节点。</td>
+</tr>
+<tr>
+<td align="center"><code>minKeys() int</code></td>
+<td align="left">节点至少应有的key的个数，leafNode返回1，branchNode返回2。</td>
+</tr>
+<tr>
+<td align="center"><code>size() int</code></td>
+<td align="left">当前节点序列化后的字节数。</td>
+</tr>
+<tr>
+<td align="center"><code> sizeLessThan(v int) bool</code></td>
+<td align="left">判断当前节点序列化后字节数是否小于给定值，当累加计算超出给定值时立即返回false，用于比较时性能比直接调用<code>size</code>方法好一些。</td>
+</tr>
+<tr>
+<td align="center"><code>pageElementSize() int</code></td>
+<td align="left">当前类型节点的inode的header大小，用于计算序列化后字节数。</td>
+</tr>
+<tr>
+<td align="center"><code>childAt(index int) *node</code></td>
+<td align="left">返回节点当前第<code>index</code>个孩子的指针（而不是初始时的第<code>index</code>个孩子）。</td>
+</tr>
+<tr>
+<td align="center"><code>childIndex(child *node) int</code></td>
+<td align="left">返回给定的节点在当前节点的inode中的序号（而不是初始时的序号）。</td>
+</tr>
+<tr>
+<td align="center"><code>numChildren() int</code></td>
+<td align="left">当前节点的孩子（inode）的个数。</td>
+</tr>
+<tr>
+<td align="center"><code>nextSibling() *node</code></td>
+<td align="left">当前节点的下一个兄弟节点（通过查询父节点获取）。</td>
+</tr>
+<tr>
+<td align="center"><code>prevSibling() *node</code></td>
+<td align="left">当前节点的上一个兄弟节点（通过查询父节点获取）。</td>
+</tr>
+</tbody>
+</table>
+<p>需要注意的是，这些查询孩子、兄弟的方法，都是继续节点的<code>inodes</code>查询的，即节点实时状态；而不是基于<code>children</code>查询的，只有在节点调整时才需要使用<code>children</code>以便于索引节点。这些方法的实现都非常简单，这里不再赘述。</p>
+<h3 id="14-node中用于修改的方法">1.4 node中用于修改的方法</h3>
+<p>node还提供了在当前节点上插入（或修改）与删除inode的<code>put</code>、<code>del</code>方法：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// put inserts a key/value.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="o">*</span><span class="nx">node</span><span class="p">)</span> <span class="nf">put</span><span class="p">(</span><span class="nx">oldKey</span><span class="p">,</span> <span class="nx">newKey</span><span class="p">,</span> <span class="nx">value</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">pgid</span> <span class="nx">pgid</span><span class="p">,</span> <span class="nx">flags</span> <span class="kt">uint32</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="nx">pgid</span> <span class="o">&gt;=</span> <span class="nx">n</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">tx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">pgid</span> <span class="p">{</span>
+		<span class="nb">panic</span><span class="p">(</span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;pgid (%d) above high water mark (%d)&#34;</span><span class="p">,</span> <span class="nx">pgid</span><span class="p">,</span> <span class="nx">n</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">tx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">pgid</span><span class="p">))</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">oldKey</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nb">panic</span><span class="p">(</span><span class="s">&#34;put: zero-length old key&#34;</span><span class="p">)</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">newKey</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nb">panic</span><span class="p">(</span><span class="s">&#34;put: zero-length new key&#34;</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Find insertion index.
+</span><span class="c1"></span>	<span class="nx">index</span> <span class="o">:=</span> <span class="nx">sort</span><span class="p">.</span><span class="nf">Search</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">),</span> <span class="kd">func</span><span class="p">(</span><span class="nx">i</span> <span class="kt">int</span><span class="p">)</span> <span class="kt">bool</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">bytes</span><span class="p">.</span><span class="nf">Compare</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">key</span><span class="p">,</span> <span class="nx">oldKey</span><span class="p">)</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span> <span class="p">})</span>
+
+	<span class="c1">// Add capacity and shift nodes if we don&#39;t have an exact match and need to insert.
+</span><span class="c1"></span>	<span class="nx">exact</span> <span class="o">:=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="nx">index</span> <span class="p">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="nx">bytes</span><span class="p">.</span><span class="nf">Equal</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">[</span><span class="nx">index</span><span class="p">].</span><span class="nx">key</span><span class="p">,</span> <span class="nx">oldKey</span><span class="p">))</span>
+	<span class="k">if</span> <span class="p">!</span><span class="nx">exact</span> <span class="p">{</span>
+		<span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">,</span> <span class="nx">inode</span><span class="p">{})</span>
+		<span class="nb">copy</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">[</span><span class="nx">index</span><span class="o">+</span><span class="mi">1</span><span class="p">:],</span> <span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">[</span><span class="nx">index</span><span class="p">:])</span>
+	<span class="p">}</span>
+
+	<span class="nx">inode</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">[</span><span class="nx">index</span><span class="p">]</span>
+	<span class="nx">inode</span><span class="p">.</span><span class="nx">flags</span> <span class="p">=</span> <span class="nx">flags</span>
+	<span class="nx">inode</span><span class="p">.</span><span class="nx">key</span> <span class="p">=</span> <span class="nx">newKey</span>
+	<span class="nx">inode</span><span class="p">.</span><span class="nx">value</span> <span class="p">=</span> <span class="nx">value</span>
+	<span class="nx">inode</span><span class="p">.</span><span class="nx">pgid</span> <span class="p">=</span> <span class="nx">pgid</span>
+	<span class="nf">_assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">inode</span><span class="p">.</span><span class="nx">key</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&#34;put: zero-length inode key&#34;</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// del removes a key from the node.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="o">*</span><span class="nx">node</span><span class="p">)</span> <span class="nf">del</span><span class="p">(</span><span class="nx">key</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="p">{</span>
+	<span class="c1">// Find index of key.
+</span><span class="c1"></span>	<span class="nx">index</span> <span class="o">:=</span> <span class="nx">sort</span><span class="p">.</span><span class="nf">Search</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">),</span> <span class="kd">func</span><span class="p">(</span><span class="nx">i</span> <span class="kt">int</span><span class="p">)</span> <span class="kt">bool</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">bytes</span><span class="p">.</span><span class="nf">Compare</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">key</span><span class="p">,</span> <span class="nx">key</span><span class="p">)</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span> <span class="p">})</span>
+
+	<span class="c1">// Exit if the key isn&#39;t found.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">index</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">)</span> <span class="o">||</span> <span class="p">!</span><span class="nx">bytes</span><span class="p">.</span><span class="nf">Equal</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">[</span><span class="nx">index</span><span class="p">].</span><span class="nx">key</span><span class="p">,</span> <span class="nx">key</span><span class="p">)</span> <span class="p">{</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Delete inode from the node.
+</span><span class="c1"></span>	<span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">[:</span><span class="nx">index</span><span class="p">],</span> <span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">[</span><span class="nx">index</span><span class="o">+</span><span class="mi">1</span><span class="p">:]</span><span class="o">...</span><span class="p">)</span>
+
+	<span class="c1">// Mark the node as needing rebalancing.
+</span><span class="c1"></span>	<span class="nx">n</span><span class="p">.</span><span class="nx">unbalanced</span> <span class="p">=</span> <span class="kc">true</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>put</code>方法与<code>del</code>方法的实现思路相似，二者都是在node的<code>inodes</code>上进行二分搜索，找到第一个大于等于用于查询的key（<code>put</code>中为<code>oldKey</code>，<code>del</code>中为<code>key</code>）的位置，然后判断当前位置的key与用于查询的key是否相等。若二者相等，则修改或删除该key，否则插入新key或直接返回。此外，因为<code>del</code>操作可能导致node的数据填充率低于阈值，因此<code>del</code>会将node的<code>unbalanced</code>置为true，以便后续操作检查该节点是否需要进行<code>rebalance</code>操作。</p>
+<h3 id="15-btree的调整">1.5 B+Tree的调整</h3>
+<p>在上文中笔者介绍过，boltdb只有在需要将B+Tree写入到文件时才需要调整B+Tree的结构，因此<code>put</code>和<code>del</code>不需要调整B+Tree的结构，实现非常简单。</p>
+<p>boltdb的B+Tree实现中，用来调整B+Tree结构的方法有两个：<code>rebalance</code>和<code>spill</code>。<code>rebalance</code>用于检查node是否由于删除了inode而导致数据填充率低于阈值，并将数据填充率低于阈值的node与其兄弟节点合并，<code>rebalance</code>还会将只有一个孩子的根节点与该其唯一的孩子合并。<code>spill</code>则可以进一步分为两个步骤，<code>spill</code>首先会检查并将填充率过高的节点拆分为多个小节点（split），并维护B+Tree的结构，然后将更新后的节点写到新的page中。因此，在事务提交时，boltdb会先对B+Tree执行<code>rebalance</code>操作再执行<code>spill</code>操作。</p>
+<h4 id="151-rebalance">1.5.1 rebalance</h4>
+<p>首先分析<code>rebalance</code>的实现：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// rebalance attempts to combine the node with sibling nodes if the node fill
+</span><span class="c1">// size is below a threshold or if there are not enough keys.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="o">*</span><span class="nx">node</span><span class="p">)</span> <span class="nf">rebalance</span><span class="p">()</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="p">!</span><span class="nx">n</span><span class="p">.</span><span class="nx">unbalanced</span> <span class="p">{</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+	<span class="nx">n</span><span class="p">.</span><span class="nx">unbalanced</span> <span class="p">=</span> <span class="kc">false</span>
+
+	<span class="c1">// Update statistics.
+</span><span class="c1"></span>	<span class="nx">n</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">tx</span><span class="p">.</span><span class="nx">stats</span><span class="p">.</span><span class="nx">Rebalance</span><span class="o">++</span>
+
+	<span class="c1">// Ignore if node is above threshold (25%) and has enough keys.
+</span><span class="c1"></span>	<span class="kd">var</span> <span class="nx">threshold</span> <span class="p">=</span> <span class="nx">n</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span> <span class="o">/</span> <span class="mi">4</span>
+	<span class="k">if</span> <span class="nx">n</span><span class="p">.</span><span class="nf">size</span><span class="p">()</span> <span class="p">&gt;</span> <span class="nx">threshold</span> <span class="o">&amp;&amp;</span> <span class="nb">len</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">)</span> <span class="p">&gt;</span> <span class="nx">n</span><span class="p">.</span><span class="nf">minKeys</span><span class="p">()</span> <span class="p">{</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Root node has special handling.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">n</span><span class="p">.</span><span class="nx">parent</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="c1">// If root node is a branch and only has one node then collapse it.
+</span><span class="c1"></span>		<span class="k">if</span> <span class="p">!</span><span class="nx">n</span><span class="p">.</span><span class="nx">isLeaf</span> <span class="o">&amp;&amp;</span> <span class="nb">len</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">{</span>
+			<span class="c1">// Move root&#39;s child up.
+</span><span class="c1"></span>			<span class="nx">child</span> <span class="o">:=</span> <span class="nx">n</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nf">node</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">pgid</span><span class="p">,</span> <span class="nx">n</span><span class="p">)</span>
+			<span class="nx">n</span><span class="p">.</span><span class="nx">isLeaf</span> <span class="p">=</span> <span class="nx">child</span><span class="p">.</span><span class="nx">isLeaf</span>
+			<span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span> <span class="p">=</span> <span class="nx">child</span><span class="p">.</span><span class="nx">inodes</span><span class="p">[:]</span>
+			<span class="nx">n</span><span class="p">.</span><span class="nx">children</span> <span class="p">=</span> <span class="nx">child</span><span class="p">.</span><span class="nx">children</span>
+
+			<span class="c1">// Reparent all child nodes being moved.
+</span><span class="c1"></span>			<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">inode</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span> <span class="p">{</span>
+				<span class="k">if</span> <span class="nx">child</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">n</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">nodes</span><span class="p">[</span><span class="nx">inode</span><span class="p">.</span><span class="nx">pgid</span><span class="p">];</span> <span class="nx">ok</span> <span class="p">{</span>
+					<span class="nx">child</span><span class="p">.</span><span class="nx">parent</span> <span class="p">=</span> <span class="nx">n</span>
+				<span class="p">}</span>
+			<span class="p">}</span>
+
+			<span class="c1">// Remove old child.
+</span><span class="c1"></span>			<span class="nx">child</span><span class="p">.</span><span class="nx">parent</span> <span class="p">=</span> <span class="kc">nil</span>
+			<span class="nb">delete</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">nodes</span><span class="p">,</span> <span class="nx">child</span><span class="p">.</span><span class="nx">pgid</span><span class="p">)</span>
+			<span class="nx">child</span><span class="p">.</span><span class="nf">free</span><span class="p">()</span>
+		<span class="p">}</span>
+
+		<span class="k">return</span>
+	<span class="p">}</span>
+
+	<span class="c1">// If node has no keys then just remove it.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">n</span><span class="p">.</span><span class="nf">numChildren</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">n</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nf">del</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">key</span><span class="p">)</span>
+		<span class="nx">n</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nf">removeChild</span><span class="p">(</span><span class="nx">n</span><span class="p">)</span>
+		<span class="nb">delete</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">nodes</span><span class="p">,</span> <span class="nx">n</span><span class="p">.</span><span class="nx">pgid</span><span class="p">)</span>
+		<span class="nx">n</span><span class="p">.</span><span class="nf">free</span><span class="p">()</span>
+		<span class="nx">n</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nf">rebalance</span><span class="p">()</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+
+	<span class="nf">_assert</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nf">numChildren</span><span class="p">()</span> <span class="p">&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&#34;parent must have at least 2 children&#34;</span><span class="p">)</span>
+
+	<span class="c1">// Destination node is right sibling if idx == 0, otherwise left sibling.
+</span><span class="c1"></span>	<span class="kd">var</span> <span class="nx">target</span> <span class="o">*</span><span class="nx">node</span>
+	<span class="kd">var</span> <span class="nx">useNextSibling</span> <span class="p">=</span> <span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nf">childIndex</span><span class="p">(</span><span class="nx">n</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">useNextSibling</span> <span class="p">{</span>
+		<span class="nx">target</span> <span class="p">=</span> <span class="nx">n</span><span class="p">.</span><span class="nf">nextSibling</span><span class="p">()</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+		<span class="nx">target</span> <span class="p">=</span> <span class="nx">n</span><span class="p">.</span><span class="nf">prevSibling</span><span class="p">()</span>
+	<span class="p">}</span>
+
+	<span class="c1">// If both this node and the target node are too small then merge them.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">useNextSibling</span> <span class="p">{</span>
+		<span class="c1">// Reparent all child nodes being moved.
+</span><span class="c1"></span>		<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">inode</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">target</span><span class="p">.</span><span class="nx">inodes</span> <span class="p">{</span>
+			<span class="k">if</span> <span class="nx">child</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">n</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">nodes</span><span class="p">[</span><span class="nx">inode</span><span class="p">.</span><span class="nx">pgid</span><span class="p">];</span> <span class="nx">ok</span> <span class="p">{</span>
+				<span class="nx">child</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nf">removeChild</span><span class="p">(</span><span class="nx">child</span><span class="p">)</span>
+				<span class="nx">child</span><span class="p">.</span><span class="nx">parent</span> <span class="p">=</span> <span class="nx">n</span>
+				<span class="nx">child</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nx">children</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">child</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nx">children</span><span class="p">,</span> <span class="nx">child</span><span class="p">)</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+
+		<span class="c1">// Copy over inodes from target and remove target.
+</span><span class="c1"></span>		<span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">,</span> <span class="nx">target</span><span class="p">.</span><span class="nx">inodes</span><span class="o">...</span><span class="p">)</span>
+		<span class="nx">n</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nf">del</span><span class="p">(</span><span class="nx">target</span><span class="p">.</span><span class="nx">key</span><span class="p">)</span>
+		<span class="nx">n</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nf">removeChild</span><span class="p">(</span><span class="nx">target</span><span class="p">)</span>
+		<span class="nb">delete</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">nodes</span><span class="p">,</span> <span class="nx">target</span><span class="p">.</span><span class="nx">pgid</span><span class="p">)</span>
+		<span class="nx">target</span><span class="p">.</span><span class="nf">free</span><span class="p">()</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+		<span class="c1">// Reparent all child nodes being moved.
+</span><span class="c1"></span>		<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">inode</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span> <span class="p">{</span>
+			<span class="k">if</span> <span class="nx">child</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">n</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">nodes</span><span class="p">[</span><span class="nx">inode</span><span class="p">.</span><span class="nx">pgid</span><span class="p">];</span> <span class="nx">ok</span> <span class="p">{</span>
+				<span class="nx">child</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nf">removeChild</span><span class="p">(</span><span class="nx">child</span><span class="p">)</span>
+				<span class="nx">child</span><span class="p">.</span><span class="nx">parent</span> <span class="p">=</span> <span class="nx">target</span>
+				<span class="nx">child</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nx">children</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">child</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nx">children</span><span class="p">,</span> <span class="nx">child</span><span class="p">)</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+
+		<span class="c1">// Copy over inodes to target and remove node.
+</span><span class="c1"></span>		<span class="nx">target</span><span class="p">.</span><span class="nx">inodes</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">target</span><span class="p">.</span><span class="nx">inodes</span><span class="p">,</span> <span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="o">...</span><span class="p">)</span>
+		<span class="nx">n</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nf">del</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">key</span><span class="p">)</span>
+		<span class="nx">n</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nf">removeChild</span><span class="p">(</span><span class="nx">n</span><span class="p">)</span>
+		<span class="nb">delete</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">nodes</span><span class="p">,</span> <span class="nx">n</span><span class="p">.</span><span class="nx">pgid</span><span class="p">)</span>
+		<span class="nx">n</span><span class="p">.</span><span class="nf">free</span><span class="p">()</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Either this node or the target node was deleted from the parent so rebalance it.
+</span><span class="c1"></span>	<span class="nx">n</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nf">rebalance</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="c1">// removes a node from the list of in-memory children.
+</span><span class="c1">// This does not affect the inodes.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="o">*</span><span class="nx">node</span><span class="p">)</span> <span class="nf">removeChild</span><span class="p">(</span><span class="nx">target</span> <span class="o">*</span><span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">for</span> <span class="nx">i</span><span class="p">,</span> <span class="nx">child</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">n</span><span class="p">.</span><span class="nx">children</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">child</span> <span class="o">==</span> <span class="nx">target</span> <span class="p">{</span>
+			<span class="nx">n</span><span class="p">.</span><span class="nx">children</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">children</span><span class="p">[:</span><span class="nx">i</span><span class="p">],</span> <span class="nx">n</span><span class="p">.</span><span class="nx">children</span><span class="p">[</span><span class="nx">i</span><span class="o">+</span><span class="mi">1</span><span class="p">:]</span><span class="o">...</span><span class="p">)</span>
+			<span class="k">return</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// free adds the node&#39;s underlying page to the freelist.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="o">*</span><span class="nx">node</span><span class="p">)</span> <span class="nf">free</span><span class="p">()</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="nx">n</span><span class="p">.</span><span class="nx">pgid</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">n</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">freelist</span><span class="p">.</span><span class="nf">free</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">tx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">txid</span><span class="p">,</span> <span class="nx">n</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">tx</span><span class="p">.</span><span class="nf">page</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">pgid</span><span class="p">))</span>
+		<span class="nx">n</span><span class="p">.</span><span class="nx">pgid</span> <span class="p">=</span> <span class="mi">0</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>rebalance</code>方法依次做了如下操作：</p>
+<ol>
+<li>如果当前节点没执行过<code>del</code>方法（<code>unbalanced</code>为<code>false</code>），跳过当前节点。</li>
+<li>如果当前节点的填充率大于25%且inode数量比最少数量大，则不处理该节点，以免<code>rebalance</code>操作太频繁导致性能下降。</li>
+<li>如果当前节点为根节点且只有一个孩子，那么将该根节点与唯一的孩子合并。需要注意的是，该孩子节点可能还有孩子，因此合并的时候需要修改相应的指针。合并后，释放孩子节点使用的page。</li>
+<li>如果当前节点为空节点，删除当前节点并释放占用的page，并递归对父节点执行<code>rebalance</code>操作。</li>
+<li>否则，与兄弟节点合并。此时，如果当前节点在父节点中不是首个孩子，则默认与后继兄弟节点合并，否则与前驱兄弟节点合并。合并后，释放占用的page，并递归对父节点执行<code>rebalance</code>操作。</li>
+</ol>
+<p>注意，这里“释放page”，指将占用的page加到当前事务的<code>pending</code>列表中，而不是立即释放，因此此时可能仍有只读事务正在读取旧page。由于在合并时，一定在父节点中删除了当前节点的key，因此父节点会变为<code>unbalanced</code>状态，所以需要递归对父节点进行<code>rebalance</code>操作。</p>
+<h4 id="152-spill">1.5.2 spill</h4>
+<p>接下来分析<code>spill</code>及相关方法的实现：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// split breaks up a node into multiple smaller nodes, if appropriate.
+</span><span class="c1">// This should only be called from the spill() function.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="o">*</span><span class="nx">node</span><span class="p">)</span> <span class="nf">split</span><span class="p">(</span><span class="nx">pageSize</span> <span class="kt">int</span><span class="p">)</span> <span class="p">[]</span><span class="o">*</span><span class="nx">node</span> <span class="p">{</span>
+	<span class="kd">var</span> <span class="nx">nodes</span> <span class="p">[]</span><span class="o">*</span><span class="nx">node</span>
+
+	<span class="nx">node</span> <span class="o">:=</span> <span class="nx">n</span>
+	<span class="k">for</span> <span class="p">{</span>
+		<span class="c1">// Split node into two.
+</span><span class="c1"></span>		<span class="nx">a</span><span class="p">,</span> <span class="nx">b</span> <span class="o">:=</span> <span class="nx">node</span><span class="p">.</span><span class="nf">splitTwo</span><span class="p">(</span><span class="nx">pageSize</span><span class="p">)</span>
+		<span class="nx">nodes</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">nodes</span><span class="p">,</span> <span class="nx">a</span><span class="p">)</span>
+
+		<span class="c1">// If we can&#39;t split then exit the loop.
+</span><span class="c1"></span>		<span class="k">if</span> <span class="nx">b</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">break</span>
+		<span class="p">}</span>
+
+		<span class="c1">// Set node to b so it gets split on the next iteration.
+</span><span class="c1"></span>		<span class="nx">node</span> <span class="p">=</span> <span class="nx">b</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="nx">nodes</span>
+<span class="p">}</span>
+
+<span class="c1">// splitTwo breaks up a node into two smaller nodes, if appropriate.
+</span><span class="c1">// This should only be called from the split() function.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="o">*</span><span class="nx">node</span><span class="p">)</span> <span class="nf">splitTwo</span><span class="p">(</span><span class="nx">pageSize</span> <span class="kt">int</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="nx">node</span><span class="p">,</span> <span class="o">*</span><span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
+	<span class="c1">// Ignore the split if the page doesn&#39;t have at least enough nodes for
+</span><span class="c1"></span>	<span class="c1">// two pages or if the nodes can fit in a single page.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="p">(</span><span class="nx">minKeysPerPage</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span> <span class="o">||</span> <span class="nx">n</span><span class="p">.</span><span class="nf">sizeLessThan</span><span class="p">(</span><span class="nx">pageSize</span><span class="p">)</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">n</span><span class="p">,</span> <span class="kc">nil</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Determine the threshold before starting a new node.
+</span><span class="c1"></span>	<span class="kd">var</span> <span class="nx">fillPercent</span> <span class="p">=</span> <span class="nx">n</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">FillPercent</span>
+	<span class="k">if</span> <span class="nx">fillPercent</span> <span class="p">&lt;</span> <span class="nx">minFillPercent</span> <span class="p">{</span>
+		<span class="nx">fillPercent</span> <span class="p">=</span> <span class="nx">minFillPercent</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nx">fillPercent</span> <span class="p">&gt;</span> <span class="nx">maxFillPercent</span> <span class="p">{</span>
+		<span class="nx">fillPercent</span> <span class="p">=</span> <span class="nx">maxFillPercent</span>
+	<span class="p">}</span>
+	<span class="nx">threshold</span> <span class="o">:=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">float64</span><span class="p">(</span><span class="nx">pageSize</span><span class="p">)</span> <span class="o">*</span> <span class="nx">fillPercent</span><span class="p">)</span>
+
+	<span class="c1">// Determine split position and sizes of the two pages.
+</span><span class="c1"></span>	<span class="nx">splitIndex</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">n</span><span class="p">.</span><span class="nf">splitIndex</span><span class="p">(</span><span class="nx">threshold</span><span class="p">)</span>
+
+	<span class="c1">// Split node into two separate nodes.
+</span><span class="c1"></span>	<span class="c1">// If there&#39;s no parent then we&#39;ll need to create one.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">n</span><span class="p">.</span><span class="nx">parent</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">n</span><span class="p">.</span><span class="nx">parent</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">node</span><span class="p">{</span><span class="nx">bucket</span><span class="p">:</span> <span class="nx">n</span><span class="p">.</span><span class="nx">bucket</span><span class="p">,</span> <span class="nx">children</span><span class="p">:</span> <span class="p">[]</span><span class="o">*</span><span class="nx">node</span><span class="p">{</span><span class="nx">n</span><span class="p">}}</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Create a new node and add it to the parent.
+</span><span class="c1"></span>	<span class="nx">next</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">node</span><span class="p">{</span><span class="nx">bucket</span><span class="p">:</span> <span class="nx">n</span><span class="p">.</span><span class="nx">bucket</span><span class="p">,</span> <span class="nx">isLeaf</span><span class="p">:</span> <span class="nx">n</span><span class="p">.</span><span class="nx">isLeaf</span><span class="p">,</span> <span class="nx">parent</span><span class="p">:</span> <span class="nx">n</span><span class="p">.</span><span class="nx">parent</span><span class="p">}</span>
+	<span class="nx">n</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nx">children</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nx">children</span><span class="p">,</span> <span class="nx">next</span><span class="p">)</span>
+
+	<span class="c1">// Split inodes across two nodes.
+</span><span class="c1"></span>	<span class="nx">next</span><span class="p">.</span><span class="nx">inodes</span> <span class="p">=</span> <span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">[</span><span class="nx">splitIndex</span><span class="p">:]</span>
+	<span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span> <span class="p">=</span> <span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">[:</span><span class="nx">splitIndex</span><span class="p">]</span>
+
+	<span class="c1">// Update the statistics.
+</span><span class="c1"></span>	<span class="nx">n</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">tx</span><span class="p">.</span><span class="nx">stats</span><span class="p">.</span><span class="nx">Split</span><span class="o">++</span>
+
+	<span class="k">return</span> <span class="nx">n</span><span class="p">,</span> <span class="nx">next</span>
+<span class="p">}</span>
+
+<span class="c1">// splitIndex finds the position where a page will fill a given threshold.
+</span><span class="c1">// It returns the index as well as the size of the first page.
+</span><span class="c1">// This is only be called from split().
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="o">*</span><span class="nx">node</span><span class="p">)</span> <span class="nf">splitIndex</span><span class="p">(</span><span class="nx">threshold</span> <span class="kt">int</span><span class="p">)</span> <span class="p">(</span><span class="nx">index</span><span class="p">,</span> <span class="nx">sz</span> <span class="kt">int</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">sz</span> <span class="p">=</span> <span class="nx">pageHeaderSize</span>
+
+	<span class="c1">// Loop until we only have the minimum number of keys required for the second page.
+</span><span class="c1"></span>	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">)</span><span class="o">-</span><span class="nx">minKeysPerPage</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+		<span class="nx">index</span> <span class="p">=</span> <span class="nx">i</span>
+		<span class="nx">inode</span> <span class="o">:=</span> <span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span>
+		<span class="nx">elsize</span> <span class="o">:=</span> <span class="nx">n</span><span class="p">.</span><span class="nf">pageElementSize</span><span class="p">()</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="nx">inode</span><span class="p">.</span><span class="nx">key</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="nx">inode</span><span class="p">.</span><span class="nx">value</span><span class="p">)</span>
+
+		<span class="c1">// If we have at least the minimum number of keys and adding another
+</span><span class="c1"></span>		<span class="c1">// node would put us over the threshold then exit and return.
+</span><span class="c1"></span>		<span class="k">if</span> <span class="nx">i</span> <span class="o">&gt;=</span> <span class="nx">minKeysPerPage</span> <span class="o">&amp;&amp;</span> <span class="nx">sz</span><span class="o">+</span><span class="nx">elsize</span> <span class="p">&gt;</span> <span class="nx">threshold</span> <span class="p">{</span>
+			<span class="k">break</span>
+		<span class="p">}</span>
+
+		<span class="c1">// Add the element size to the total size.
+</span><span class="c1"></span>		<span class="nx">sz</span> <span class="o">+=</span> <span class="nx">elsize</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span>
+<span class="p">}</span>
+
+<span class="c1">// spill writes the nodes to dirty pages and splits nodes as it goes.
+</span><span class="c1">// Returns an error if dirty pages cannot be allocated.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="o">*</span><span class="nx">node</span><span class="p">)</span> <span class="nf">spill</span><span class="p">()</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="kd">var</span> <span class="nx">tx</span> <span class="p">=</span> <span class="nx">n</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">tx</span>
+	<span class="k">if</span> <span class="nx">n</span><span class="p">.</span><span class="nx">spilled</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="kc">nil</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Spill child nodes first. Child nodes can materialize sibling nodes in
+</span><span class="c1"></span>	<span class="c1">// the case of split-merge so we cannot use a range loop. We have to check
+</span><span class="c1"></span>	<span class="c1">// the children size on every loop iteration.
+</span><span class="c1"></span>	<span class="nx">sort</span><span class="p">.</span><span class="nf">Sort</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">children</span><span class="p">)</span>
+	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">children</span><span class="p">);</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">n</span><span class="p">.</span><span class="nx">children</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nf">spill</span><span class="p">();</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="nx">err</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+
+	<span class="c1">// We no longer need the child list because it&#39;s only used for spill tracking.
+</span><span class="c1"></span>	<span class="nx">n</span><span class="p">.</span><span class="nx">children</span> <span class="p">=</span> <span class="kc">nil</span>
+
+	<span class="c1">// Split nodes into appropriate sizes. The first node will always be n.
+</span><span class="c1"></span>	<span class="kd">var</span> <span class="nx">nodes</span> <span class="p">=</span> <span class="nx">n</span><span class="p">.</span><span class="nf">split</span><span class="p">(</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span><span class="p">)</span>
+	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">node</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">nodes</span> <span class="p">{</span>
+		<span class="c1">// Add node&#39;s page to the freelist if it&#39;s not new.
+</span><span class="c1"></span>		<span class="k">if</span> <span class="nx">node</span><span class="p">.</span><span class="nx">pgid</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+			<span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">freelist</span><span class="p">.</span><span class="nf">free</span><span class="p">(</span><span class="nx">tx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">txid</span><span class="p">,</span> <span class="nx">tx</span><span class="p">.</span><span class="nf">page</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">pgid</span><span class="p">))</span>
+			<span class="nx">node</span><span class="p">.</span><span class="nx">pgid</span> <span class="p">=</span> <span class="mi">0</span>
+		<span class="p">}</span>
+
+		<span class="c1">// Allocate contiguous space for the node.
+</span><span class="c1"></span>		<span class="nx">p</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">tx</span><span class="p">.</span><span class="nf">allocate</span><span class="p">((</span><span class="nx">node</span><span class="p">.</span><span class="nf">size</span><span class="p">()</span> <span class="o">/</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="nx">err</span>
+		<span class="p">}</span>
+
+		<span class="c1">// Write the node.
+</span><span class="c1"></span>		<span class="k">if</span> <span class="nx">p</span><span class="p">.</span><span class="nx">id</span> <span class="o">&gt;=</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">pgid</span> <span class="p">{</span>
+			<span class="nb">panic</span><span class="p">(</span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;pgid (%d) above high water mark (%d)&#34;</span><span class="p">,</span> <span class="nx">p</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">pgid</span><span class="p">))</span>
+		<span class="p">}</span>
+		<span class="nx">node</span><span class="p">.</span><span class="nx">pgid</span> <span class="p">=</span> <span class="nx">p</span><span class="p">.</span><span class="nx">id</span>
+		<span class="nx">node</span><span class="p">.</span><span class="nf">write</span><span class="p">(</span><span class="nx">p</span><span class="p">)</span>
+		<span class="nx">node</span><span class="p">.</span><span class="nx">spilled</span> <span class="p">=</span> <span class="kc">true</span>
+
+		<span class="c1">// Insert into parent inodes.
+</span><span class="c1"></span>		<span class="k">if</span> <span class="nx">node</span><span class="p">.</span><span class="nx">parent</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="kd">var</span> <span class="nx">key</span> <span class="p">=</span> <span class="nx">node</span><span class="p">.</span><span class="nx">key</span>
+			<span class="k">if</span> <span class="nx">key</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+				<span class="nx">key</span> <span class="p">=</span> <span class="nx">node</span><span class="p">.</span><span class="nx">inodes</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">key</span>
+			<span class="p">}</span>
+
+			<span class="nx">node</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nf">put</span><span class="p">(</span><span class="nx">key</span><span class="p">,</span> <span class="nx">node</span><span class="p">.</span><span class="nx">inodes</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">key</span><span class="p">,</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">node</span><span class="p">.</span><span class="nx">pgid</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+			<span class="nx">node</span><span class="p">.</span><span class="nx">key</span> <span class="p">=</span> <span class="nx">node</span><span class="p">.</span><span class="nx">inodes</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">key</span>
+			<span class="nf">_assert</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">key</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&#34;spill: zero-length node key&#34;</span><span class="p">)</span>
+		<span class="p">}</span>
+
+		<span class="c1">// Update the statistics.
+</span><span class="c1"></span>		<span class="nx">tx</span><span class="p">.</span><span class="nx">stats</span><span class="p">.</span><span class="nx">Spill</span><span class="o">++</span>
+	<span class="p">}</span>
+
+	<span class="c1">// If the root node split and created a new root then we need to spill that
+</span><span class="c1"></span>	<span class="c1">// as well. We&#39;ll clear out the children to make sure it doesn&#39;t try to respill.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">n</span><span class="p">.</span><span class="nx">parent</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="nx">n</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nx">pgid</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">n</span><span class="p">.</span><span class="nx">children</span> <span class="p">=</span> <span class="kc">nil</span>
+		<span class="k">return</span> <span class="nx">n</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nf">spill</span><span class="p">()</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+</code></pre></div><p>在分析<code>spill</code>前，先分析其依赖的<code>split</code>方法的实现。<code>split</code>方法用于将当前节点分割为若干个较小的节点。随着数据库的运行，node的数据大小会超过pageSize。此时，如果该node中key的个数可以拆分到两个node中（因为单个key或key/value过大无法拆分），则应拆分node以使其符合B+Tree的性质。<code>split</code>会遍历当前节点及从当前节点拆分出的新节点，调用<code>splitTwo</code>方法试图将其拆分为一个符合B+Tree性质的节点和余下的部分，知道无法再拆分。</p>
+<p><code>spill</code>方法依次做了如下操作：</p>
+<ol>
+<li>如果当前节点已经执行过<code>spill</code>，则跳过当前节点（为了避免特殊情况下node被二次<code>spill</code>的问题，详见<a href="https://github.com/boltdb/bolt/pull/227" target="_blank" rel="noopener noreffer">pull#227</a>）。</li>
+<li>对<code>children</code>中保存初始时的孩子递归调用<code>spill</code>方法。</li>
+<li><code>split</code>当前节点。</li>
+<li>遍历当前节点拆分出的若干个节点，并执行如下操作：
+<ol>
+<li>如果当前节点引用的page非空（<code>split</code>出的新节点的页引用为空），则将释放当前占用的page。</li>
+<li>分配足以容下当前节点的page（page buffer）。</li>
+<li>将当前节点写入到分配出的page中，并设置相关字段。</li>
+<li>若当前节点不是根节点，则将当前节点插入到父节点的<code>inodes</code>中。同时设置当前节点的<code>key</code>字段，用来在父节点中索引当前节点。</li>
+</ol>
+</li>
+<li>如果当前节点不是根节点，且父节点不是新节点（因为如果父节点是新节点则其会在之后执行<code>spill</code>操作），那么递归对父节点执行<code>spill</code>操作。</li>
+</ol>
+<p>由于boltdb是在需要写文件时才调整B+Tree的结构，因此在<code>node.go</code>中只有<code>rebalance</code>和<code>spill</code>的实现，其调用在事务相关的逻辑中。</p>
+<h2 id="2-总结">2. 总结</h2>
+<p>本文介绍了B-Tree及其变体B+Tree的基本概念，并分析了boltdb中B+Tree的实现。</p>
+<p>由于boltdb使用了mmap方式将数据库文件映射到了内存中，且mmap仅作为读取的方式而不作为写入的方式，所以当没有接触过类似实现的读者阅读分析其源码时经常会因混淆mmap memory和heap memory而困惑。对此比较困惑的读者可以再次阅读本系列《深入浅出boltdb —— 0x01 存储与缓存》中<a href="/posts/code-reading/boltdb-made-simple/1-storage-cache/#3-boltdb%e7%9a%84%e8%af%bb%e5%86%99%e4%b8%8e%e7%bc%93%e5%ad%98%e7%ad%96%e7%95%a5" rel="">3. boltdb的读写与缓存策略</a>一节。</p></div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2021-01-19</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"></div>
+            <div class="post-info-share">
+                <span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/boltdb/">boltdb</a>,&nbsp;<a href="/tags/b&#43;tree/">B&#43;Tree</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/posts/code-reading/boltdb-made-simple/1-storage-cache/" class="prev" rel="prev" title="深入浅出boltdb —— 0x01 存储与缓存"><i class="fas fa-angle-left fa-fw"></i>深入浅出boltdb —— 0x01 存储与缓存</a>
+            <a href="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/" class="next" rel="next" title="深入浅出boltdb —— 0x03 Bucket &amp; Cursor">深入浅出boltdb —— 0x03 Bucket &amp; Cursor<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+</article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"><link rel="stylesheet" href="/lib/katex/katex.min.css"><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"><script type="text/javascript" src="/lib/smooth-scroll/smooth-scroll.min.js"></script><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"id-1":"叉鸽 | MrCroxx","id-2":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"id-1":["id-1"],"id-2":["id-2"]},"duration":null,"speed":null}};</script><script type="text/javascript" src="/js/theme.min.js"></script></body>
+</html>

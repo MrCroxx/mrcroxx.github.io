@@ -1,0 +1,15 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>RDD - 标签 - 叉鸽 MrCroxx 的博客</title>
+        <link>https://mrcroxx.github.io/tags/rdd/</link>
+        <description>RDD - 标签 - 叉鸽 MrCroxx 的博客</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>mrcroxx@outlook.com (叉鸽)</managingEditor>
+            <webMaster>mrcroxx@outlook.com (叉鸽)</webMaster><lastBuildDate>Mon, 07 Sep 2020 11:14:45 &#43;0800</lastBuildDate><atom:link href="https://mrcroxx.github.io/tags/rdd/" rel="self" type="application/rss+xml" /><item>
+    <title>《Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing》论文翻译（RDD-NSDI12-FINAL138）</title>
+    <link>https://mrcroxx.github.io/posts/paper-reading/rdd-nsdi12-final138/</link>
+    <pubDate>Mon, 07 Sep 2020 11:14:45 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://mrcroxx.github.io/posts/paper-reading/rdd-nsdi12-final138/</guid>
+    <description><![CDATA[<p><em>本篇文章是对论文<a href="https://www.usenix.org/system/files/conference/nsdi12/nsdi12-final138.pdf" target="_blank" rel="noopener noreffer">RDD-NSDI12-FINAL138</a>的原创翻译，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>]]></description>
+</item></channel>
+</rss>

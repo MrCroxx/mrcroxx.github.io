@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>深入浅出etcd/raft —— 0x03 Raft选举 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出etcd/raft —— 0x03 Raft选举" />
+<meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/3-election/" />
+<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/3-election/etcd-raft.jpg"/>
+<meta property="article:published_time" content="2020-12-17T21:13:37+08:00" />
+<meta property="article:modified_time" content="2020-12-17T21:13:44+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/3-election/etcd-raft.jpg"/>
+<meta name="twitter:title" content="深入浅出etcd/raft —— 0x03 Raft选举"/>
+<meta name="twitter:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。"/>
+<meta name="application-name" content="叉鸽 MrCroxx 的博客">
+<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/3-election/" /><link rel="prev" href="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/2-overview/" /><link rel="next" href="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/4-log/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "深入浅出etcd/raft —— 0x03 Raft选举",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/etcdraft-made-simple\/3-election\/"
+        },"image": [{
+                            "@type": "ImageObject",
+                            "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/etcdraft-made-simple\/3-election\/etcd-raft.jpg",
+                            "width":  1200 ,
+                            "height":  360 
+                        }],"genre": "posts","keywords": "etcd, Raft","wordcount":  14111 ,
+        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/etcdraft-made-simple\/3-election\/","datePublished": "2020-12-17T21:13:37+08:00","dateModified": "2020-12-17T21:13:44+08:00","publisher": {
+            "@type": "Organization",
+            "name": "叉鸽"},"author": {
+                "@type": "Person",
+                "name": "叉鸽"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : '' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-1" class="typeit"></span></a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-2" class="typeit"></span></a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出etcd/raft —— 0x03 Raft选举</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAetcd/raft/"><i class="far fa-folder fa-fw"></i>深入浅出etcd/raft</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-12-17">2020-12-17</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 14111 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 29 分钟&nbsp;</div>
+        </div><div class="featured-image"><img
+        class="lazyload"
+        src="/svg/loading.min.svg"
+        data-src="/posts/code-reading/etcdraft-made-simple/3-election/etcd-raft.jpg"
+        data-srcset="/posts/code-reading/etcdraft-made-simple/3-election/etcd-raft.jpg, /posts/code-reading/etcdraft-made-simple/3-election/etcd-raft.jpg 1.5x, /posts/code-reading/etcdraft-made-simple/3-election/etcd-raft.jpg 2x"
+        data-sizes="auto"
+        alt="/posts/code-reading/etcdraft-made-simple/3-election/etcd-raft.jpg"
+        title="/posts/code-reading/etcdraft-made-simple/3-election/etcd-raft.jpg" /></div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#0-引言">0. 引言</a></li>
+    <li><a href="#1-raft选举算法优化">1. Raft选举算法优化</a>
+      <ul>
+        <li><a href="#11-pre-vote">1.1 Pre-Vote</a></li>
+        <li><a href="#12-check-quorum">1.2 Check Quorum</a></li>
+        <li><a href="#13-leader-lease">1.3 Leader Lease</a></li>
+        <li><a href="#14-引入的新问题与解决方案">1.4 引入的新问题与解决方案</a></li>
+      </ul>
+    </li>
+    <li><a href="#2-etcdraft中raft选举的实现">2. etcd/raft中Raft选举的实现</a>
+      <ul>
+        <li><a href="#21-msghup与hup">2.1 MsgHup与hup</a></li>
+        <li><a href="#22-campaign">2.2 campaign</a></li>
+        <li><a href="#23-step方法与step">2.3 Step方法与step</a>
+          <ul>
+            <li><a href="#231-对term为0的消息的预处理">2.3.1 对Term为0的消息的预处理</a></li>
+            <li><a href="#232-对term大于当前节点term的消息的预处理">2.3.2 对Term大于当前节点Term的消息的预处理</a></li>
+            <li><a href="#233-对term小于当前节点term的消息的预处理">2.3.3 对Term小于当前节点Term的消息的预处理</a></li>
+            <li><a href="#234-不通过step处理的情况">2.3.4 不通过step处理的情况</a></li>
+          </ul>
+        </li>
+        <li><a href="#24-becomexxx与stepxxx">2.4 becomeXXX与stepXXX</a>
+          <ul>
+            <li><a href="#241-candidateprecandidate">2.4.1 Candidate、PreCandidate</a></li>
+            <li><a href="#242-leader">2.4.2 Leader</a></li>
+            <li><a href="#243-follower">2.4.3 Follower</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#3-总结">3. 总结</a></li>
+    <li><a href="#参考文献">参考文献</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
+<h2 id="0-引言">0. 引言</h2>
+<p>本文会对etcd/raft中Raft选举算法的实现与优化进行分析。这里假定读者阅读过Diego Ongaro的《In Search of an Understandable Consensus Algorithm (Extended Version)》（这里有笔者的<a href="/posts/paper-reading/raft-extended/" rel="">翻译</a>，笔者英语水平一般，欢迎指正。），其中提到的部分，本文中不会做详细的解释。对etcd/raft的总体结构不熟悉的读者，可以先阅读<a href="/posts/code-reading/etcdraft-made-simple/2-overview/" rel="">《深入浅出etcd/raft —— 0x02 etcd/raft总体设计》</a>。</p>
+<p>本文首先会简单介绍etcd/raft对Raft选举部分的算法优化，然后通过源码分析etcd/raft的选举实现。</p>
+<div class="details admonition info open">
+        <div class="details-summary admonition-title">
+            <i class="icon fas fa-info-circle fa-fw"></i>提示<i class="details-icon fas fa-angle-right fa-fw"></i>
+        </div>
+        <div class="details-content">
+            <div class="admonition-content">由于选举是Raft算法中重要且复杂的部分，因此其代码分布比较零散。只想了解etcd/raft中对Raft算法做出的优化的读者可以只看本文的第一章。对于想要深入etcd/raft源码实现的读者，建议自己先按照自己的节奏阅读源码，对于不太理解的地方可以参考本文的分析，如果直接从本文的分析入手，可能会感觉有些绕。</div>
+        </div>
+    </div>
+<h2 id="1-raft选举算法优化">1. Raft选举算法优化</h2>
+<p>在leader选举方面，etcd/raft对《In Search of an Understandable Consensus Algorithm (Extended Version)》中介绍的基本Raft算法做了三种优化。这三种优化都在Diego Ongaro的博士论文《CONSENSUS: BRIDGING THEORY AND PRACTICE》的<em>6.4 Processing read-only queries more efficiently</em>和<em>9.6 Preventing disruptions when a server rejoins the cluster</em>中有提到。</p>
+<p>etcd/raft实现的与选举有关的优化有<strong>Pre-Vote</strong>、<strong>Check Quorum</strong>、和<strong>Leader Lease</strong>。在这三种优化中，只有<strong>Pre-Vote</strong>和<strong>Leader Lease</strong>最初是对选举过程的优化，<strong>Check Quorum</strong>期初是为了更高效地实现线性一致性读（Linearizable Read）而做出的优化，但是由于<strong>Leader Lease</strong>需要依赖<strong>Check Quorum</strong>，因此笔者也将其放在这里一起讲解。本系列将etcd/raft对实现线性一致性读的优化留在了后续的文章中，本文仅介绍为了实现更高效的线性一致性读需要在选举部分做出的优化。</p>
+<p>除此之外，etcd/raft还实现了<strong>Leader Transfer</strong>，即主动地进行leader的交接。其实现方式比较简单，只需要让希望成为新leader节点主动发起投票请求即可，这里不再过多讲解。需要注意的是，<strong>Leader Transfer</strong>不保证交接一定成功，只有目标节点能够得到数量达到quorum的选票时才能当选leader，<strong>Leader Transfer</strong>类型的投票不受<strong>Pre-Vote</strong>、<strong>Check Quorum</strong>、<strong>Leader Lease</strong>机制约束。</p>
+<h3 id="11-pre-vote">1.1 Pre-Vote</h3>
+<p>如下图所示，当Raft集群的网络发生分区时，会出现节点数达不到quorum（达成共识至少需要的节点数）的分区，如图中的<em>Partition 1</em>。</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/etcdraft-made-simple/3-election/assets/partition.svg" title="网络分区示意图" data-thumbnail="/posts/code-reading/etcdraft-made-simple/3-election/assets/partition.svg" data-sub-html="<h2>网络分区示意图</h2><p>网络分区示意图</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/partition.svg"
+            data-srcset="/posts/code-reading/etcdraft-made-simple/3-election/assets/partition.svg, assets/partition.svg 1.5x, /posts/code-reading/etcdraft-made-simple/3-election/assets/partition.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/etcdraft-made-simple/3-election/assets/partition.svg" />
+    </a><figcaption class="image-caption">网络分区示意图</figcaption>
+    </figure></p>
+<p>在节点数能够达到quorum的分区中，选举流程会正常进行，该分区中的所有节点的term最终会稳定为新选举出的leader节点的term。不幸的是，在节点数无法达到quorum的分区中，如果该分区中没有leader节点，因为节点总是无法收到数量达到quorum的投票而不会选举出新的leader，所以该分区中的节点在<em>election timeout</em>超时后，会增大term并发起下一轮选举，这导致该分区中的节点的term会不断增大。</p>
+<p>如果网络一直没有恢复，这是没有问题的。但是，如果网络分区恢复，此时，达不到quorum的分区中的节点的term值会远大于能够达到quorum的分区中的节点的term，这会导致能够达到quorum的分区的leader退位（step down）并增大自己的term到更大的term，使集群产生一轮不必要的选举。</p>
+<p><strong>Pre-Vote</strong>机制就是为了解决这一问题而设计的，其解决的思路在于不允许达不到quorum的分区正常进入投票流程，也就避免了其term号的增大。为此，<strong>Pre-Vote</strong>引入了“预投票”，也就是说，当节点<em>election timeout</em>超时时，它们不会立即增大自身的term并请求投票，而是先发起一轮预投票。收到预投票请求的节点不会退位。只有当节点收到了达到quorum的预投票响应时，节点才能增大自身term号并发起投票请求。这样，达不到quorum的分区中的节点永远无法增大term，也就不会在分区恢复后引起不必要的一轮投票。</p>
+<h3 id="12-check-quorum">1.2 Check Quorum</h3>
+<p>在Raft算法中，保证线性一致性读取的最简单的方式，就是讲读请求同样当做一条Raft提议，通过与其它日志相同的方式执行，因此这种方式也叫作<em>Log Read</em>。显然，<em>Log Read</em>的性能很差。而在很多系统中，读多写少的负载是很常见的场景。因此，为了提高读取的性能，就要试图绕过日志机制。</p>
+<p>但是，直接绕过日志机制从leader读取，可能会读到陈旧的数据，也就是说存在<em>stale read</em>的问题。在下图的场景中，假设网络分区前，<em>Node 5</em>是整个集群的leader。在网络发生分区后，<em>Partition 0</em>分区中选举出了新leader，也就是图中的<em>Node 1</em>。</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/etcdraft-made-simple/3-election/assets/stale-read.svg" title="stale read示意图" data-thumbnail="/posts/code-reading/etcdraft-made-simple/3-election/assets/stale-read.svg" data-sub-html="<h2>stale read示意图</h2><p>stale read示意图</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/stale-read.svg"
+            data-srcset="/posts/code-reading/etcdraft-made-simple/3-election/assets/stale-read.svg, assets/stale-read.svg 1.5x, /posts/code-reading/etcdraft-made-simple/3-election/assets/stale-read.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/etcdraft-made-simple/3-election/assets/stale-read.svg" />
+    </a><figcaption class="image-caption">stale read示意图</figcaption>
+    </figure></p>
+<p>但是，由于网络分区，<em>Node 5</em>无法收到<em>Partition 0</em>中节点的消息，<em>Node 5</em>不会意识到集群中出现了新的leader。此时，虽然它不能成功地完成日志提交，但是如果读取时绕过了日志，它还是能够提供读取服务的。这会导致连接到<em>Node 5</em>的client读取到陈旧的数据。</p>
+<p><strong>Check Quorum</strong>可以减轻这一问题带来的影响，其机制也非常简单：让leader每隔一段时间主动地检查follower是否活跃。如果活跃的follower数量达不到quorum，那么说明该leader可能是分区前的旧leader，所以此时该leader会主动退位转为follower。</p>
+<p>需要注意的是，<strong>Check Quorum</strong>并不能完全避免<em>stale read</em>的发生，只能减小其发生时间，降低影响。如果需要严格的线性一致性，需要通过其它机制实现。</p>
+<h3 id="13-leader-lease">1.3 Leader Lease</h3>
+<p>分布式系统中的网络环境十分复杂，有时可能出现网络不完全分区的情况，即整个整个网络拓补图是一个连通图，但是可能并非任意的两个节点都能互相访问。</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/etcdraft-made-simple/3-election/assets/partial-partition.svg" title="不完全分区示意图" data-thumbnail="/posts/code-reading/etcdraft-made-simple/3-election/assets/partial-partition.svg" data-sub-html="<h2>不完全分区示意图</h2><p>不完全分区示意图</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/partial-partition.svg"
+            data-srcset="/posts/code-reading/etcdraft-made-simple/3-election/assets/partial-partition.svg, assets/partial-partition.svg 1.5x, /posts/code-reading/etcdraft-made-simple/3-election/assets/partial-partition.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/etcdraft-made-simple/3-election/assets/partial-partition.svg" />
+    </a><figcaption class="image-caption">不完全分区示意图</figcaption>
+    </figure></p>
+<p>这种现象不止会出现在网络故障中，还会出现在成员变更中。在通过<code>ConfChange</code>移除节点时，不同节点应用该<code>ConfChange</code>的时间可能不同，这也可能导致这一现象发生。</p>
+<p>在上图的场景下，<em>Node 1</em>与<em>Node 2</em>之间无法通信。如果它们之间的通信中断前，<em>Node 1</em>是集群的leader，在通信中断后，<em>Node 2</em>无法再收到来自<em>Node 1</em>的心跳。因此，<em>Node 2</em>会开始选举。如果在<em>Node 2</em>发起选举前，<em>Node 1</em>和<em>Node 3</em>中都没有新的日志，那么<em>Node 2</em>仍可以收到能达到quorum的投票（来自<em>Node 2</em>本身的投票和来自<em>Node 3</em>的投票），并成为leader。</p>
+<p><strong>Leader Lease</strong>机制对投票引入了一条新的约束以解决这一问题：当节点在<em>election timeout</em>超时前，如果收到了leader的消息，那么它不会为其它发起投票或预投票请求的节点投票。也就是说，<strong>Leader Lease</strong>机制会阻止了正常工作的集群中的节点给其它节点投票。</p>
+<p><strong>Leader Lease</strong>需要依赖<strong>Check Quorum</strong>机制才能正常工作。接下来笔者通过一个例子说明其原因。</p>
+<p>假如在一个5个节点组成的Raft集群中，出现了下图中的分区情况：<em>Node 1</em>与<em>Node 2</em>互通，<em>Node 3</em>、<em>Node 4</em>、<em>Node 5</em>之间两两互通、<em>Node 5</em>与任一节点不通。在网络分区前，<em>Node 1</em>是集群的leader。</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/etcdraft-made-simple/3-election/assets/leader-lease-without-check-quorum.svg" title="一种可能的网络分区示意图" data-thumbnail="/posts/code-reading/etcdraft-made-simple/3-election/assets/leader-lease-without-check-quorum.svg" data-sub-html="<h2>一种可能的网络分区示意图</h2><p>一种可能的网络分区示意图</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/leader-lease-without-check-quorum.svg"
+            data-srcset="/posts/code-reading/etcdraft-made-simple/3-election/assets/leader-lease-without-check-quorum.svg, assets/leader-lease-without-check-quorum.svg 1.5x, /posts/code-reading/etcdraft-made-simple/3-election/assets/leader-lease-without-check-quorum.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/etcdraft-made-simple/3-election/assets/leader-lease-without-check-quorum.svg" />
+    </a><figcaption class="image-caption">一种可能的网络分区示意图</figcaption>
+    </figure></p>
+<p>在既没有<strong>Leader Lease</strong>也没有<strong>Check Quorum</strong>的情况下，<em>Node 3</em>、<em>Node 4</em>会因收不到leader的心跳而发起投票，因为<em>Node 2</em>、<em>Node 3</em>、<em>Node 4</em>互通，该分区节点数能达到quorum，因此它们可以选举出新的leader。</p>
+<p>而在使用了<strong>Leader Lease</strong>而不使用<strong>Check Quorum</strong>的情况下，由于<em>Node 2</em>仍能够收到原leader <em>Node 1</em>的心跳，受<strong>Leader Lease</strong>机制的约束，它不会为其它节点投票。这会导致即使整个集群中存在可用节点数达到quorum的分区，但是集群仍无法正常工作。</p>
+<p>而如果同时使用了<strong>Leader Lease</strong>和<strong>Check Quorum</strong>，那么在上图的情况下，<em>Node 1</em>会在<em>election timeout</em>超时后因检测不到数量达到quorum的活跃节点而退位为follower。这样，<em>Node 2</em>、<em>Node 3</em>、<em>Node 4</em>之间的选举可以正常进行。</p>
+<h3 id="14-引入的新问题与解决方案">1.4 引入的新问题与解决方案</h3>
+<p>引入<strong>Pre-Vote</strong>和<strong>Check Quorum</strong>（etcd/raft的实现中，开启<strong>Check Quorum</strong>会自动开启<strong>Leader Lease</strong>）会为Raft算法引入一些新的问题。</p>
+<p>当一个节点收到了term比自己低的消息时，原本的逻辑是直接忽略该消息，因为term比自己低的消息仅可能是因网络延迟的迟到的旧消息。然而，开启了这些机制后，在如下的场景中会出现问题：</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/etcdraft-made-simple/3-election/assets/check-quorum-leader-lease-bug.svg" title="场景1示意图" data-thumbnail="/posts/code-reading/etcdraft-made-simple/3-election/assets/check-quorum-leader-lease-bug.svg" data-sub-html="<h2>场景1示意图</h2><p>场景1示意图</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/check-quorum-leader-lease-bug.svg"
+            data-srcset="/posts/code-reading/etcdraft-made-simple/3-election/assets/check-quorum-leader-lease-bug.svg, assets/check-quorum-leader-lease-bug.svg 1.5x, /posts/code-reading/etcdraft-made-simple/3-election/assets/check-quorum-leader-lease-bug.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/etcdraft-made-simple/3-election/assets/check-quorum-leader-lease-bug.svg" />
+    </a><figcaption class="image-caption">场景1示意图</figcaption>
+    </figure></p>
+<p><strong>场景1：</strong> 如上图所示，在开启了<strong>Check Quorum / Leader Lease</strong>后（假设没有开启<strong>Pre-Vote</strong>，<strong>Pre-Vote</strong>的问题在下一场景中讨论），数量达不到quorum的分区中的leader会退位，且该分区中的节点永远都无法选举出leader，因此该分区的节点的term会不断增大。当该分区与整个集群的网络恢复后，由于开启了<strong>Check Quorum / Leader Lease</strong>，即使该分区中的节点有更大的term，由于原分区的节点工作正常，它们的选举请求会被丢弃。同时，由于该节点的term比原分区的leader节点的term大，因此它会丢弃原分区的leader的请求。这样，该节点永远都无法重新加入集群，也无法当选新leader。（详见<a href="https://github.com/etcd-io/etcd/pull/5451" target="_blank" rel="noopener noreffer">issue #5451</a>、<a href="https://github.com/etcd-io/etcd/pull/5468" target="_blank" rel="noopener noreffer">issue #5468</a>）。</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/etcdraft-made-simple/3-election/assets/pre-vote-bug.svg" title="场景2示意图" data-thumbnail="/posts/code-reading/etcdraft-made-simple/3-election/assets/pre-vote-bug.svg" data-sub-html="<h2>场景2示意图</h2><p>场景2示意图</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/pre-vote-bug.svg"
+            data-srcset="/posts/code-reading/etcdraft-made-simple/3-election/assets/pre-vote-bug.svg, assets/pre-vote-bug.svg 1.5x, /posts/code-reading/etcdraft-made-simple/3-election/assets/pre-vote-bug.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/etcdraft-made-simple/3-election/assets/pre-vote-bug.svg" />
+    </a><figcaption class="image-caption">场景2示意图</figcaption>
+    </figure></p>
+<p><strong>场景2：</strong> <strong>Pre-Vote</strong>机制也有类似的问题。如上图所示，假如发起预投票的节点，在预投票通过后正要发起正式投票的请求时出现网络分区。此时，该节点的term会高于原集群的term。而原集群因没有收到真正的投票请求，不会更新term，继续正常运行。在网络分区恢复后，原集群的term低于分区节点的term，但是日志比分区节点更新。此时，该节点发起的预投票请求因没有日志落后会被丢弃，而原集群leader发给该节点的请求会因term比该节点小而被丢弃。同样，该节点永远都无法重新加入集群，也无法当选新leader。（详见<a href="https://github.com/etcd-io/etcd/issues/8501" target="_blank" rel="noopener noreffer">issue #8501</a>、<a href="https://github.com/etcd-io/etcd/pull/8525" target="_blank" rel="noopener noreffer">issue #8525</a>）。</p>
+<p><strong>场景3：</strong> 在更复杂的情况中，比如，在变更配置时，开启了原本没有开启的<strong>Pre-Vote</strong>机制。此时可能会出现与上一条类似的情况，即可能因term更高但是log更旧的节点的存在导致整个集群的死锁，所有节点都无法预投票成功。这种情况比上一种情况更危险，上一种情况只有之前分区的节点无法加入集群，在这种情况下，整个集群都会不可用。（详见<a href="https://github.com/etcd-io/etcd/issues/8501" target="_blank" rel="noopener noreffer">issue #8501</a>、<a href="https://github.com/etcd-io/etcd/pull/8525" target="_blank" rel="noopener noreffer">issue #8525</a>）。</p>
+<p>为了解决以上问题，节点在收到term比自己低的请求时，需要做特殊的处理。处理逻辑也很简单：</p>
+<ol>
+<li>如果收到了term比当前节点term低的leader的消息，且集群开启了<strong>Check Quorum / Leader Lease</strong>或<strong>Pre-Vote</strong>，那么发送一条term为当前term的消息，令term低的节点成为follower。（针对<strong>场景1</strong>、<strong>场景2</strong>）</li>
+<li>对于term比当前节点term低的预投票请求，无论是否开启了<strong>Check Quorum / Leader Lease</strong>或<strong>Pre-Vote</strong>，都要通过一条term为当前term的消息，迫使其转为follower并更新term。（针对<strong>场景3</strong>）</li>
+</ol>
+<h2 id="2-etcdraft中raft选举的实现">2. etcd/raft中Raft选举的实现</h2>
+<p>本节中，笔者将分析etcd/raft中选举部分的实现。</p>
+<h3 id="21-msghup与hup">2.1 MsgHup与hup</h3>
+<p>在etcd/raft的实现中，选举的触发是通过<code>MsgHup</code>消息实现的，无论是主动触发选举还是因<em>election timeout</em>超时都是如此：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// *** node.go ***
+</span><span class="c1"></span>
+<span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="o">*</span><span class="nx">node</span><span class="p">)</span> <span class="nf">Campaign</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">n</span><span class="p">.</span><span class="nf">step</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span><span class="p">{</span><span class="nx">Type</span><span class="p">:</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgHup</span><span class="p">})</span> <span class="p">}</span>
+
+<span class="c1">// *** rawnode.go ***
+</span><span class="c1"></span>
+<span class="kd">func</span> <span class="p">(</span><span class="nx">rn</span> <span class="o">*</span><span class="nx">RawNode</span><span class="p">)</span> <span class="nf">Campaign</span><span class="p">()</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="nx">rn</span><span class="p">.</span><span class="nx">raft</span><span class="p">.</span><span class="nf">Step</span><span class="p">(</span><span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span><span class="p">{</span>
+		<span class="nx">Type</span><span class="p">:</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgHup</span><span class="p">,</span>
+	<span class="p">})</span>
+<span class="p">}</span>
+
+<span class="c1">// *** raft.go ***
+</span><span class="c1"></span>
+<span class="c1">// tickElection is run by followers and candidates after r.electionTimeout.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">)</span> <span class="nf">tickElection</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nx">electionElapsed</span><span class="o">++</span>
+
+	<span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nf">promotable</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="nx">r</span><span class="p">.</span><span class="nf">pastElectionTimeout</span><span class="p">()</span> <span class="p">{</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nx">electionElapsed</span> <span class="p">=</span> <span class="mi">0</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nf">Step</span><span class="p">(</span><span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span><span class="p">{</span><span class="nx">From</span><span class="p">:</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">Type</span><span class="p">:</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgHup</span><span class="p">})</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+</code></pre></div><p>因此可以跟着<code>MsgHup</code>的处理流程，分析etcd/raft中选举的实现。正如笔者在<a href="/posts/code-reading/etcdraft-made-simple/2-overview/" rel="">《深入浅出etcd/raft —— 0x02 etcd/raft总体设计》</a>中所说，etcd/raft通过<code>raft</code>结构体的<code>Step</code>方法实现Raft状态机的状态转移。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">)</span> <span class="nf">Step</span><span class="p">(</span><span class="nx">m</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="c1">// ... ...
+</span><span class="c1"></span>	<span class="k">switch</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Type</span> <span class="p">{</span>
+	<span class="k">case</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgHup</span><span class="p">:</span>
+		<span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">preVote</span> <span class="p">{</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nf">hup</span><span class="p">(</span><span class="nx">campaignPreElection</span><span class="p">)</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nf">hup</span><span class="p">(</span><span class="nx">campaignElection</span><span class="p">)</span>
+		<span class="p">}</span>
+	<span class="c1">// ... ...
+</span><span class="c1"></span>	<span class="p">}</span>
+	<span class="c1">// ... ...
+</span><span class="c1"></span><span class="p">}</span>
+
+</code></pre></div><p><code>Step</code>方法在处理<code>MsgHup</code>消息时，会根据当前配置中是否开启了<code>Pre-Vote</code>机制，以不同的<code>CampaignType</code>调用<code>hup</code>方法。<code>CampaignType</code>是一种枚举类型（go语言的枚举实现方式），其可能值如下表所示。</p>
+<table>
+<thead>
+<tr>
+<th>值</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>campaignPreElection</code></td>
+<td>表示<strong>Pre-Vote</strong>的预选举阶段。</td>
+</tr>
+<tr>
+<td><code>campaignElection</code></td>
+<td>表示正常的选举阶段（仅超时选举，不包括<strong>Leader Transfer</strong>）。</td>
+</tr>
+<tr>
+<td><code>campaignTransfer</code></td>
+<td>表示<strong>Leader Transfer</strong>阶段。</td>
+</tr>
+</tbody>
+</table>
+<p>接下来对<code>hup</code>的实现进行分析。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">)</span> <span class="nf">hup</span><span class="p">(</span><span class="nx">t</span> <span class="nx">CampaignType</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">state</span> <span class="o">==</span> <span class="nx">StateLeader</span> <span class="p">{</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Debugf</span><span class="p">(</span><span class="s">&#34;%x ignoring MsgHup because already leader&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">)</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+
+	<span class="k">if</span> <span class="p">!</span><span class="nx">r</span><span class="p">.</span><span class="nf">promotable</span><span class="p">()</span> <span class="p">{</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Warningf</span><span class="p">(</span><span class="s">&#34;%x is unpromotable and can not campaign&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">)</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+	<span class="nx">ents</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nf">slice</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nx">applied</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nx">committed</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="nx">noLimit</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Panicf</span><span class="p">(</span><span class="s">&#34;unexpected error getting unapplied entries (%v)&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="k">if</span> <span class="nx">n</span> <span class="o">:=</span> <span class="nf">numOfPendingConf</span><span class="p">(</span><span class="nx">ents</span><span class="p">);</span> <span class="nx">n</span> <span class="o">!=</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nx">committed</span> <span class="p">&gt;</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nx">applied</span> <span class="p">{</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Warningf</span><span class="p">(</span><span class="s">&#34;%x cannot campaign at term %d since there are still %d pending configuration changes to apply&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">,</span> <span class="nx">n</span><span class="p">)</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+
+	<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;%x is starting a new election at term %d&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">)</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nf">campaign</span><span class="p">(</span><span class="nx">t</span><span class="p">)</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>hup</code>方法会对节点当前状态进行一些检查，如果检查通过才会试图让当前节点发起投票或预投票。首先，<code>hup</code>会检查当前节点是否已经是leader，如果已经是leader那么直接返回。接下来，<code>hup</code>通过<code>promotable()</code>方法判断当前节点能否提升为leader。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// promotable indicates whether state machine can be promoted to leader,
+</span><span class="c1">// which is true when its own id is in progress list.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">)</span> <span class="nf">promotable</span><span class="p">()</span> <span class="kt">bool</span> <span class="p">{</span>
+	<span class="nx">pr</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">prs</span><span class="p">.</span><span class="nx">Progress</span><span class="p">[</span><span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">]</span>
+	<span class="k">return</span> <span class="nx">pr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="p">!</span><span class="nx">pr</span><span class="p">.</span><span class="nx">IsLearner</span> <span class="o">&amp;&amp;</span> <span class="p">!</span><span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nf">hasPendingSnapshot</span><span class="p">()</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>promotable()</code>的判定规则有三条：</p>
+<ol>
+<li>当前节点是否已被集群移除。（通过<code>ProgressTracker.ProgressMap</code>映射中是否有当前节点的id的映射判断。当节点被从集群中移除后，被移除的节点id会被从该映射中移除。笔者会在后续讲解集群配置变更的文章中详细分析其实现。）</li>
+<li>当前节点是否为learner节点。</li>
+<li>当前节点是否还有未被保存到稳定存储中的快照。</li>
+</ol>
+<p>这三条规则中，只要有一条为真，那么当前节点就无法成为leader。在<code>hup</code>方法中，除了需要<code>promotable()</code>为真，还需要判断一条规则：</p>
+<ol>
+<li>当前的节点已提交的日志中，是否有还未被应用的集群配置变更<code>ConfChange</code>消息。</li>
+</ol>
+<p>如果当前节点已提交的日志中还有未应用的<code>ConfChange</code>消息，那么该节点也无法提升为leader。</p>
+<p>只有当以上条件都满足后，<code>hup</code>方法才会调用<code>campaign</code>方法，根据配置，开始投票或预投票。</p>
+<h3 id="22-campaign">2.2 campaign</h3>
+<p><code>campaign</code>是用来发起投票或预投票的重要方法。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// campaign transitions the raft instance to candidate state. This must only be
+</span><span class="c1">// called after verifying that this is a legitimate transition.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">)</span> <span class="nf">campaign</span><span class="p">(</span><span class="nx">t</span> <span class="nx">CampaignType</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="p">!</span><span class="nx">r</span><span class="p">.</span><span class="nf">promotable</span><span class="p">()</span> <span class="p">{</span>
+		<span class="c1">// This path should not be hit (callers are supposed to check), but
+</span><span class="c1"></span>		<span class="c1">// better safe than sorry.
+</span><span class="c1"></span>		<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Warningf</span><span class="p">(</span><span class="s">&#34;%x is unpromotable; campaign() should have been called&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="kd">var</span> <span class="nx">term</span> <span class="kt">uint64</span>
+	<span class="kd">var</span> <span class="nx">voteMsg</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MessageType</span>
+	<span class="k">if</span> <span class="nx">t</span> <span class="o">==</span> <span class="nx">campaignPreElection</span> <span class="p">{</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nf">becomePreCandidate</span><span class="p">()</span>
+		<span class="nx">voteMsg</span> <span class="p">=</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgPreVote</span>
+		<span class="c1">// PreVote RPCs are sent for the next term before we&#39;ve incremented r.Term.
+</span><span class="c1"></span>		<span class="nx">term</span> <span class="p">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span> <span class="o">+</span> <span class="mi">1</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nf">becomeCandidate</span><span class="p">()</span>
+		<span class="nx">voteMsg</span> <span class="p">=</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgVote</span>
+		<span class="nx">term</span> <span class="p">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span>
+	<span class="p">}</span>
+	<span class="k">if</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">res</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nf">poll</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nf">voteRespMsgType</span><span class="p">(</span><span class="nx">voteMsg</span><span class="p">),</span> <span class="kc">true</span><span class="p">);</span> <span class="nx">res</span> <span class="o">==</span> <span class="nx">quorum</span><span class="p">.</span><span class="nx">VoteWon</span> <span class="p">{</span>
+		<span class="c1">// We won the election after voting for ourselves (which must mean that
+</span><span class="c1"></span>		<span class="c1">// this is a single-node cluster). Advance to the next state.
+</span><span class="c1"></span>		<span class="k">if</span> <span class="nx">t</span> <span class="o">==</span> <span class="nx">campaignPreElection</span> <span class="p">{</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nf">campaign</span><span class="p">(</span><span class="nx">campaignElection</span><span class="p">)</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nf">becomeLeader</span><span class="p">()</span>
+		<span class="p">}</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+	<span class="kd">var</span> <span class="nx">ids</span> <span class="p">[]</span><span class="kt">uint64</span>
+	<span class="p">{</span>
+		<span class="nx">idMap</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">prs</span><span class="p">.</span><span class="nx">Voters</span><span class="p">.</span><span class="nf">IDs</span><span class="p">()</span>
+		<span class="nx">ids</span> <span class="p">=</span> <span class="nb">make</span><span class="p">([]</span><span class="kt">uint64</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nx">idMap</span><span class="p">))</span>
+		<span class="k">for</span> <span class="nx">id</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">idMap</span> <span class="p">{</span>
+			<span class="nx">ids</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">ids</span><span class="p">,</span> <span class="nx">id</span><span class="p">)</span>
+		<span class="p">}</span>
+		<span class="nx">sort</span><span class="p">.</span><span class="nf">Slice</span><span class="p">(</span><span class="nx">ids</span><span class="p">,</span> <span class="kd">func</span><span class="p">(</span><span class="nx">i</span><span class="p">,</span> <span class="nx">j</span> <span class="kt">int</span><span class="p">)</span> <span class="kt">bool</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">ids</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="p">&lt;</span> <span class="nx">ids</span><span class="p">[</span><span class="nx">j</span><span class="p">]</span> <span class="p">})</span>
+	<span class="p">}</span>
+	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">id</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">ids</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">id</span> <span class="o">==</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span> <span class="p">{</span>
+			<span class="k">continue</span>
+		<span class="p">}</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;%x [logterm: %d, index: %d] sent %s request to %x at term %d&#34;</span><span class="p">,</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nf">lastTerm</span><span class="p">(),</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nf">lastIndex</span><span class="p">(),</span> <span class="nx">voteMsg</span><span class="p">,</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">)</span>
+
+		<span class="kd">var</span> <span class="nx">ctx</span> <span class="p">[]</span><span class="kt">byte</span>
+		<span class="k">if</span> <span class="nx">t</span> <span class="o">==</span> <span class="nx">campaignTransfer</span> <span class="p">{</span>
+			<span class="nx">ctx</span> <span class="p">=</span> <span class="p">[]</span><span class="nb">byte</span><span class="p">(</span><span class="nx">t</span><span class="p">)</span>
+		<span class="p">}</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nf">send</span><span class="p">(</span><span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span><span class="p">{</span><span class="nx">Term</span><span class="p">:</span> <span class="nx">term</span><span class="p">,</span> <span class="nx">To</span><span class="p">:</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">Type</span><span class="p">:</span> <span class="nx">voteMsg</span><span class="p">,</span> <span class="nx">Index</span><span class="p">:</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nf">lastIndex</span><span class="p">(),</span> <span class="nx">LogTerm</span><span class="p">:</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nf">lastTerm</span><span class="p">(),</span> <span class="nx">Context</span><span class="p">:</span> <span class="nx">ctx</span><span class="p">})</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+</code></pre></div><p>因为调用<code>campaign</code>的方法不止有<code>hup</code>，<code>campaign</code>方法首先还是会检查<code>promotable()</code>是否为真。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+	<span class="k">if</span> <span class="nx">t</span> <span class="o">==</span> <span class="nx">campaignPreElection</span> <span class="p">{</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nf">becomePreCandidate</span><span class="p">()</span>
+		<span class="nx">voteMsg</span> <span class="p">=</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgPreVote</span>
+		<span class="c1">// PreVote RPCs are sent for the next term before we&#39;ve incremented r.Term.
+</span><span class="c1"></span>		<span class="nx">term</span> <span class="p">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span> <span class="o">+</span> <span class="mi">1</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nf">becomeCandidate</span><span class="p">()</span>
+		<span class="nx">voteMsg</span> <span class="p">=</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgVote</span>
+		<span class="nx">term</span> <span class="p">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span>
+	<span class="p">}</span>
+
+</code></pre></div><p>在开启<strong>Pre-Vote</strong>后，首次调用<code>campaign</code>时，参数为<code>campaignPreElection</code>。此时会调用<code>becomePreCandidate</code>方法，该方法不会修改当前节点的<code>Term</code>值，因此发送的<code>MsgPreVote</code>消息的<code>Term</code>应为当前的<code>Term + 1 </code>。而如果没有开启<strong>Pre-Vote</strong>或已经完成预投票进入正式投票的流程或是<strong>Leader Transfer</strong>时（即使开启了<strong>Pre-Vote</strong>，<strong>Leader Transfer</strong>也不会进行预投票），会调用<code>becomeCandidate</code>方法。该方法会增大当前节点的<code>Term</code>，因此发送<code>MsgVote</code>消息的<code>Term</code>就是此时的<code>Term</code>。<code>becomeXXX</code>用来将当前状态机的状态与相关行为切换相应的角色，笔者会在后文详细分析其实现与修改后的行为。</p>
+<p>接下来，<code>campaign</code>方法开始发送投票请求。在向其它节点发送请求之前，该节点会先投票给自己：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+		<span class="k">if</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">res</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nf">poll</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nf">voteRespMsgType</span><span class="p">(</span><span class="nx">voteMsg</span><span class="p">),</span> <span class="kc">true</span><span class="p">);</span> <span class="nx">res</span> <span class="o">==</span> <span class="nx">quorum</span><span class="p">.</span><span class="nx">VoteWon</span> <span class="p">{</span>
+		<span class="c1">// We won the election after voting for ourselves (which must mean that
+</span><span class="c1"></span>		<span class="c1">// this is a single-node cluster). Advance to the next state.
+</span><span class="c1"></span>		<span class="k">if</span> <span class="nx">t</span> <span class="o">==</span> <span class="nx">campaignPreElection</span> <span class="p">{</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nf">campaign</span><span class="p">(</span><span class="nx">campaignElection</span><span class="p">)</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nf">becomeLeader</span><span class="p">()</span>
+		<span class="p">}</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+
+</code></pre></div><p><code>poll</code>方法会在更新本地的投票状态并获取当前投票结果。如果节点投票给自己后就赢得了选举，这说明集群是以单节点的模式启动的，那么如果当前是预投票阶段当前节点就能立刻开启投票流程、如果已经在投票流程中或是在<strong>Leader Transfer</strong>就直接当选leader即可。如果集群不是以单节点的模式运行的，那么就需要向其它有资格投票的节点发送投票请求：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+	<span class="kd">var</span> <span class="nx">ids</span> <span class="p">[]</span><span class="kt">uint64</span>
+	<span class="p">{</span>
+		<span class="nx">idMap</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">prs</span><span class="p">.</span><span class="nx">Voters</span><span class="p">.</span><span class="nf">IDs</span><span class="p">()</span>
+		<span class="nx">ids</span> <span class="p">=</span> <span class="nb">make</span><span class="p">([]</span><span class="kt">uint64</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nx">idMap</span><span class="p">))</span>
+		<span class="k">for</span> <span class="nx">id</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">idMap</span> <span class="p">{</span>
+			<span class="nx">ids</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">ids</span><span class="p">,</span> <span class="nx">id</span><span class="p">)</span>
+		<span class="p">}</span>
+		<span class="nx">sort</span><span class="p">.</span><span class="nf">Slice</span><span class="p">(</span><span class="nx">ids</span><span class="p">,</span> <span class="kd">func</span><span class="p">(</span><span class="nx">i</span><span class="p">,</span> <span class="nx">j</span> <span class="kt">int</span><span class="p">)</span> <span class="kt">bool</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">ids</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="p">&lt;</span> <span class="nx">ids</span><span class="p">[</span><span class="nx">j</span><span class="p">]</span> <span class="p">})</span>
+	<span class="p">}</span>
+	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">id</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">ids</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">id</span> <span class="o">==</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span> <span class="p">{</span>
+			<span class="k">continue</span>
+		<span class="p">}</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;%x [logterm: %d, index: %d] sent %s request to %x at term %d&#34;</span><span class="p">,</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nf">lastTerm</span><span class="p">(),</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nf">lastIndex</span><span class="p">(),</span> <span class="nx">voteMsg</span><span class="p">,</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">)</span>
+
+		<span class="kd">var</span> <span class="nx">ctx</span> <span class="p">[]</span><span class="kt">byte</span>
+		<span class="k">if</span> <span class="nx">t</span> <span class="o">==</span> <span class="nx">campaignTransfer</span> <span class="p">{</span>
+			<span class="nx">ctx</span> <span class="p">=</span> <span class="p">[]</span><span class="nb">byte</span><span class="p">(</span><span class="nx">t</span><span class="p">)</span>
+		<span class="p">}</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nf">send</span><span class="p">(</span><span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span><span class="p">{</span><span class="nx">Term</span><span class="p">:</span> <span class="nx">term</span><span class="p">,</span> <span class="nx">To</span><span class="p">:</span> <span class="nx">id</span><span class="p">,</span> <span class="nx">Type</span><span class="p">:</span> <span class="nx">voteMsg</span><span class="p">,</span> <span class="nx">Index</span><span class="p">:</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nf">lastIndex</span><span class="p">(),</span> <span class="nx">LogTerm</span><span class="p">:</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nf">lastTerm</span><span class="p">(),</span> <span class="nx">Context</span><span class="p">:</span> <span class="nx">ctx</span><span class="p">})</span>
+	<span class="p">}</span>
+
+</code></pre></div><p>请求的<code>Term</code>字段就是之前记录的<code>term</code>，即预投票阶段为当前<code>Term + 1</code>、投票阶段为当前的<code>Term</code>。</p>
+<h3 id="23-step方法与step">2.3 Step方法与step</h3>
+<p>在前文中，笔者提到过<code>Step</code>函数是Raft状态机状态转移的入口方法，<code>Step</code>方法的参数是Raft消息。<code>Step</code>方法会检查消息的<code>Term</code>字段，对不同的情况进行不同的处理。<code>Step</code>方法还会对与选举相关的一些的消息进行特殊的处理。最后，<code>Step</code>会调用<code>raft</code>接口体<code>step</code>字段中记录的函数签名。<code>step</code>字段的定义如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// Definition of `stepFunc`
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">stepFunc</span> <span class="kd">func</span><span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">,</span> <span class="nx">m</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span><span class="p">)</span> <span class="kt">error</span>
+
+<span class="c1">// step field in struct `raft`
+</span><span class="c1"></span><span class="nx">step</span> <span class="nx">stepFunc</span>
+
+</code></pre></div><p>上一节中提到的<code>becomeXXX</code>函数会让状态机切换到相应角色，并切换<code>raft</code>结构体的<code>step</code>字段中记录的函数。让不同角色的节点能够用不同的逻辑来处理Raft消息。</p>
+<p>在调用<code>step</code>字段记录的函数处理请求前，<code>Step</code>会根据消息的<code>Term</code>字段，进行一些预处理。</p>
+<h4 id="231-对term为0的消息的预处理">2.3.1 对Term为0的消息的预处理</h4>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+	<span class="c1">// Handle the message term, which may result in our stepping down to a follower.
+</span><span class="c1"></span>	<span class="k">switch</span> <span class="p">{</span>
+	<span class="k">case</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Term</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+		<span class="c1">// local message
+</span><span class="c1"></span>	
+	<span class="c1">// case ... ...
+</span><span class="c1"></span>	
+	<span class="p">}</span>
+
+</code></pre></div><p>etcd/raft使用<code>Term</code>为0的消息作为本地消息，<code>Step</code>不会对本地消息进行特殊处理，直接进入之后的逻辑。</p>
+<h4 id="232-对term大于当前节点term的消息的预处理">2.3.2 对Term大于当前节点Term的消息的预处理</h4>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+	<span class="k">case</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Term</span> <span class="p">&gt;</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">:</span>
+		<span class="k">if</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Type</span> <span class="o">==</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgVote</span> <span class="o">||</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Type</span> <span class="o">==</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgPreVote</span> <span class="p">{</span>
+			<span class="nx">force</span> <span class="o">:=</span> <span class="nx">bytes</span><span class="p">.</span><span class="nf">Equal</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="p">[]</span><span class="nb">byte</span><span class="p">(</span><span class="nx">campaignTransfer</span><span class="p">))</span>
+			<span class="nx">inLease</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">checkQuorum</span> <span class="o">&amp;&amp;</span> <span class="nx">r</span><span class="p">.</span><span class="nx">lead</span> <span class="o">!=</span> <span class="nx">None</span> <span class="o">&amp;&amp;</span> <span class="nx">r</span><span class="p">.</span><span class="nx">electionElapsed</span> <span class="p">&lt;</span> <span class="nx">r</span><span class="p">.</span><span class="nx">electionTimeout</span>
+			<span class="k">if</span> <span class="p">!</span><span class="nx">force</span> <span class="o">&amp;&amp;</span> <span class="nx">inLease</span> <span class="p">{</span>
+				<span class="c1">// If a server receives a RequestVote request within the minimum election timeout
+</span><span class="c1"></span>				<span class="c1">// of hearing from a current leader, it does not update its term or grant its vote
+</span><span class="c1"></span>				<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;%x [logterm: %d, index: %d, vote: %x] ignored %s from %x [logterm: %d, index: %d] at term %d: lease is not expired (remaining ticks: %d)&#34;</span><span class="p">,</span>
+					<span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nf">lastTerm</span><span class="p">(),</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nf">lastIndex</span><span class="p">(),</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Vote</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Type</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">LogTerm</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Index</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">electionTimeout</span><span class="o">-</span><span class="nx">r</span><span class="p">.</span><span class="nx">electionElapsed</span><span class="p">)</span>
+				<span class="k">return</span> <span class="kc">nil</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+		<span class="k">switch</span> <span class="p">{</span>
+		<span class="k">case</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Type</span> <span class="o">==</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgPreVote</span><span class="p">:</span>
+			<span class="c1">// Never change our term in response to a PreVote
+</span><span class="c1"></span>		<span class="k">case</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Type</span> <span class="o">==</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgPreVoteResp</span> <span class="o">&amp;&amp;</span> <span class="p">!</span><span class="nx">m</span><span class="p">.</span><span class="nx">Reject</span><span class="p">:</span>
+			<span class="c1">// We send pre-vote requests with a term in our future. If the
+</span><span class="c1"></span>			<span class="c1">// pre-vote is granted, we will increment our term when we get a
+</span><span class="c1"></span>			<span class="c1">// quorum. If it is not, the term comes from the node that
+</span><span class="c1"></span>			<span class="c1">// rejected our vote so we should become a follower at the new
+</span><span class="c1"></span>			<span class="c1">// term.
+</span><span class="c1"></span>		<span class="k">default</span><span class="p">:</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;%x [term: %d] received a %s message with higher term from %x [term: %d]&#34;</span><span class="p">,</span>
+				<span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Type</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Term</span><span class="p">)</span>
+			<span class="k">if</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Type</span> <span class="o">==</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgApp</span> <span class="o">||</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Type</span> <span class="o">==</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgHeartbeat</span> <span class="o">||</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Type</span> <span class="o">==</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgSnap</span> <span class="p">{</span>
+				<span class="nx">r</span><span class="p">.</span><span class="nf">becomeFollower</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">Term</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span><span class="p">)</span>
+			<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+				<span class="nx">r</span><span class="p">.</span><span class="nf">becomeFollower</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">Term</span><span class="p">,</span> <span class="nx">None</span><span class="p">)</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+
+
+</code></pre></div><p>对于<code>Term</code>大于当前节点的<code>Term</code>的消息，如果消息类型为<code>MsgVote</code>或<code>MsgPreVote</code>，先要检查这些消息是否需要处理。其判断规则如下：</p>
+<ol>
+<li><code>force</code>：如果该消息的<code>CampaignType</code>为<code>campaignTransfer</code>，<code>force</code>为真，表示该消息必须被处理。</li>
+<li><code>inLease</code>：如果开启了<strong>Check Quorum</strong>（开启<strong>Check Quorum</strong>会自动开启<strong>Leader Lease</strong>），且<em>election timeout</em>超时前收到过leader的消息，那么<code>inLease</code>为真，表示当前Leader Lease还没有过期。</li>
+</ol>
+<p>如果<code>!force &amp;&amp; inLease</code>，说明该消息不需要被处理，可以直接返回。</p>
+<p>对于<code>Term</code>大于当前节点的<code>Term</code>的消息，<code>Step</code>还需要判断是否需要切换自己的身份为follower，其判断规则如下：</p>
+<ol>
+<li>如果消息为<code>MsgPreVote</code>消息，那么不需要转为follower。</li>
+<li>如果消息为<code>MsgPreVoteResp</code>且<code>Reject</code>字段不为真时，那么不需要转为follower。</li>
+<li>否则，转为follower。</li>
+</ol>
+<p>在转为follower时，新的<code>Term</code>就是该消息的<code>Term</code>。如果消息类型是<code>MsgApp</code>、<code>MsgHeartbeat</code>、<code>MsgSnap</code>，说明这是来自leader的消息，那么将<code>lead</code>字段直接置为该消息的发送者的id，否则暂时不知道当前的leader节点是谁。</p>
+<h4 id="233-对term小于当前节点term的消息的预处理">2.3.3 对Term小于当前节点Term的消息的预处理</h4>
+<p>最后，如果消息的<code>Term</code>比当前<code>Term</code>小，因存在<a href="#14-%e5%bc%95%e5%85%a5%e7%9a%84%e6%96%b0%e9%97%ae%e9%a2%98%e4%b8%8e%e8%a7%a3%e5%86%b3%e6%96%b9%e6%a1%88" rel="">1.4节</a>中提到的问题，除了忽略消息外，还要做额外的处理：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="k">case</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Term</span> <span class="p">&lt;</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">:</span>
+		<span class="k">if</span> <span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">checkQuorum</span> <span class="o">||</span> <span class="nx">r</span><span class="p">.</span><span class="nx">preVote</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">Type</span> <span class="o">==</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgHeartbeat</span> <span class="o">||</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Type</span> <span class="o">==</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgApp</span><span class="p">)</span> <span class="p">{</span>
+			<span class="c1">// We have received messages from a leader at a lower term. It is possible
+</span><span class="c1"></span>			<span class="c1">// that these messages were simply delayed in the network, but this could
+</span><span class="c1"></span>			<span class="c1">// also mean that this node has advanced its term number during a network
+</span><span class="c1"></span>			<span class="c1">// partition, and it is now unable to either win an election or to rejoin
+</span><span class="c1"></span>			<span class="c1">// the majority on the old term. If checkQuorum is false, this will be
+</span><span class="c1"></span>			<span class="c1">// handled by incrementing term numbers in response to MsgVote with a
+</span><span class="c1"></span>			<span class="c1">// higher term, but if checkQuorum is true we may not advance the term on
+</span><span class="c1"></span>			<span class="c1">// MsgVote and must generate other messages to advance the term. The net
+</span><span class="c1"></span>			<span class="c1">// result of these two features is to minimize the disruption caused by
+</span><span class="c1"></span>			<span class="c1">// nodes that have been removed from the cluster&#39;s configuration: a
+</span><span class="c1"></span>			<span class="c1">// removed node will send MsgVotes (or MsgPreVotes) which will be ignored,
+</span><span class="c1"></span>			<span class="c1">// but it will not receive MsgApp or MsgHeartbeat, so it will not create
+</span><span class="c1"></span>			<span class="c1">// disruptive term increases, by notifying leader of this node&#39;s activeness.
+</span><span class="c1"></span>			<span class="c1">// The above comments also true for Pre-Vote
+</span><span class="c1"></span>			<span class="c1">//
+</span><span class="c1"></span>			<span class="c1">// When follower gets isolated, it soon starts an election ending
+</span><span class="c1"></span>			<span class="c1">// up with a higher term than leader, although it won&#39;t receive enough
+</span><span class="c1"></span>			<span class="c1">// votes to win the election. When it regains connectivity, this response
+</span><span class="c1"></span>			<span class="c1">// with &#34;pb.MsgAppResp&#34; of higher term would force leader to step down.
+</span><span class="c1"></span>			<span class="c1">// However, this disruption is inevitable to free this stuck node with
+</span><span class="c1"></span>			<span class="c1">// fresh election. This can be prevented with Pre-Vote phase.
+</span><span class="c1"></span>			<span class="nx">r</span><span class="p">.</span><span class="nf">send</span><span class="p">(</span><span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span><span class="p">{</span><span class="nx">To</span><span class="p">:</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span><span class="p">,</span> <span class="nx">Type</span><span class="p">:</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgAppResp</span><span class="p">})</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Type</span> <span class="o">==</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgPreVote</span> <span class="p">{</span>
+			<span class="c1">// Before Pre-Vote enable, there may have candidate with higher term,
+</span><span class="c1"></span>			<span class="c1">// but less log. After update to Pre-Vote, the cluster may deadlock if
+</span><span class="c1"></span>			<span class="c1">// we drop messages with a lower term.
+</span><span class="c1"></span>			<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;%x [logterm: %d, index: %d, vote: %x] rejected %s from %x [logterm: %d, index: %d] at term %d&#34;</span><span class="p">,</span>
+				<span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nf">lastTerm</span><span class="p">(),</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nf">lastIndex</span><span class="p">(),</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Vote</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Type</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">LogTerm</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Index</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">)</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nf">send</span><span class="p">(</span><span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span><span class="p">{</span><span class="nx">To</span><span class="p">:</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span><span class="p">,</span> <span class="nx">Term</span><span class="p">:</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">,</span> <span class="nx">Type</span><span class="p">:</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgPreVoteResp</span><span class="p">,</span> <span class="nx">Reject</span><span class="p">:</span> <span class="kc">true</span><span class="p">})</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+			<span class="c1">// ignore other cases
+</span><span class="c1"></span>			<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;%x [term: %d] ignored a %s message with lower term from %x [term: %d]&#34;</span><span class="p">,</span>
+				<span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Type</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Term</span><span class="p">)</span>
+		<span class="p">}</span>
+		<span class="k">return</span> <span class="kc">nil</span>
+	<span class="p">}</span>
+
+</code></pre></div><p>这段代码实现了<a href="#14-%e5%bc%95%e5%85%a5%e7%9a%84%e6%96%b0%e9%97%ae%e9%a2%98%e4%b8%8e%e8%a7%a3%e5%86%b3%e6%96%b9%e6%a1%88" rel="">1.4节</a>中的解决方案，这里不再赘述。</p>
+<div class="details admonition warning open">
+        <div class="details-summary admonition-title">
+            <i class="icon fas fa-exclamation-triangle fa-fw"></i>注意<i class="details-icon fas fa-angle-right fa-fw"></i>
+        </div>
+        <div class="details-content">
+            <div class="admonition-content">这里修复逻辑可能有些奇怪，例如采用<code>MsgAppResp</code>类型的消息作为回复，这只是因为etcd社区认为没必要为其新增一种消息类型。所以这里的代码建议读者阅读相应的commit与issue下的讨论（相应的issue已在<a href="#14-%e5%bc%95%e5%85%a5%e7%9a%84%e6%96%b0%e9%97%ae%e9%a2%98%e4%b8%8e%e8%a7%a3%e5%86%b3%e6%96%b9%e6%a1%88" rel="">1.4节</a>中给出）。</div>
+        </div>
+    </div>
+<h4 id="234-不通过step处理的情况">2.3.4 不通过step处理的情况</h4>
+<p>除了在预处理阶段中直接丢弃的消息外，还有一些消息不会通过<code>step</code>字段记录的函数处理。笔者先来介绍这些消息，之后分角色介绍<code>step</code>与<code>becomeXXX</code>在不同情况下的处理方式。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+	<span class="k">switch</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Type</span> <span class="p">{</span>
+	<span class="k">case</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgHup</span><span class="p">:</span>
+		<span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">preVote</span> <span class="p">{</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nf">hup</span><span class="p">(</span><span class="nx">campaignPreElection</span><span class="p">)</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nf">hup</span><span class="p">(</span><span class="nx">campaignElection</span><span class="p">)</span>
+		<span class="p">}</span>
+
+	<span class="k">case</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgVote</span><span class="p">,</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgPreVote</span><span class="p">:</span>
+		<span class="c1">// We can vote if this is a repeat of a vote we&#39;ve already cast...
+</span><span class="c1"></span>		<span class="nx">canVote</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Vote</span> <span class="o">==</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span> <span class="o">||</span>
+			<span class="c1">// ...we haven&#39;t voted and we don&#39;t think there&#39;s a leader yet in this term...
+</span><span class="c1"></span>			<span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">Vote</span> <span class="o">==</span> <span class="nx">None</span> <span class="o">&amp;&amp;</span> <span class="nx">r</span><span class="p">.</span><span class="nx">lead</span> <span class="o">==</span> <span class="nx">None</span><span class="p">)</span> <span class="o">||</span>
+			<span class="c1">// ...or this is a PreVote for a future term...
+</span><span class="c1"></span>			<span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">Type</span> <span class="o">==</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgPreVote</span> <span class="o">&amp;&amp;</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Term</span> <span class="p">&gt;</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">)</span>
+		<span class="c1">// ...and we believe the candidate is up to date.
+</span><span class="c1"></span>		<span class="k">if</span> <span class="nx">canVote</span> <span class="o">&amp;&amp;</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nf">isUpToDate</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">Index</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">LogTerm</span><span class="p">)</span> <span class="p">{</span>
+			<span class="c1">// Note: it turns out that that learners must be allowed to cast votes.
+</span><span class="c1"></span>			<span class="c1">// This seems counter- intuitive but is necessary in the situation in which
+</span><span class="c1"></span>			<span class="c1">// a learner has been promoted (i.e. is now a voter) but has not learned
+</span><span class="c1"></span>			<span class="c1">// about this yet.
+</span><span class="c1"></span>			<span class="c1">// For example, consider a group in which id=1 is a learner and id=2 and
+</span><span class="c1"></span>			<span class="c1">// id=3 are voters. A configuration change promoting 1 can be committed on
+</span><span class="c1"></span>			<span class="c1">// the quorum `{2,3}` without the config change being appended to the
+</span><span class="c1"></span>			<span class="c1">// learner&#39;s log. If the leader (say 2) fails, there are de facto two
+</span><span class="c1"></span>			<span class="c1">// voters remaining. Only 3 can win an election (due to its log containing
+</span><span class="c1"></span>			<span class="c1">// all committed entries), but to do so it will need 1 to vote. But 1
+</span><span class="c1"></span>			<span class="c1">// considers itself a learner and will continue to do so until 3 has
+</span><span class="c1"></span>			<span class="c1">// stepped up as leader, replicates the conf change to 1, and 1 applies it.
+</span><span class="c1"></span>			<span class="c1">// Ultimately, by receiving a request to vote, the learner realizes that
+</span><span class="c1"></span>			<span class="c1">// the candidate believes it to be a voter, and that it should act
+</span><span class="c1"></span>			<span class="c1">// accordingly. The candidate&#39;s config may be stale, too; but in that case
+</span><span class="c1"></span>			<span class="c1">// it won&#39;t win the election, at least in the absence of the bug discussed
+</span><span class="c1"></span>			<span class="c1">// in:
+</span><span class="c1"></span>			<span class="c1">// https://github.com/etcd-io/etcd/issues/7625#issuecomment-488798263.
+</span><span class="c1"></span>			<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;%x [logterm: %d, index: %d, vote: %x] cast %s for %x [logterm: %d, index: %d] at term %d&#34;</span><span class="p">,</span>
+				<span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nf">lastTerm</span><span class="p">(),</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nf">lastIndex</span><span class="p">(),</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Vote</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Type</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">LogTerm</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Index</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">)</span>
+			<span class="c1">// When responding to Msg{Pre,}Vote messages we include the term
+</span><span class="c1"></span>			<span class="c1">// from the message, not the local term. To see why, consider the
+</span><span class="c1"></span>			<span class="c1">// case where a single node was previously partitioned away and
+</span><span class="c1"></span>			<span class="c1">// it&#39;s local term is now out of date. If we include the local term
+</span><span class="c1"></span>			<span class="c1">// (recall that for pre-votes we don&#39;t update the local term), the
+</span><span class="c1"></span>			<span class="c1">// (pre-)campaigning node on the other end will proceed to ignore
+</span><span class="c1"></span>			<span class="c1">// the message (it ignores all out of date messages).
+</span><span class="c1"></span>			<span class="c1">// The term in the original message and current local term are the
+</span><span class="c1"></span>			<span class="c1">// same in the case of regular votes, but different for pre-votes.
+</span><span class="c1"></span>			<span class="nx">r</span><span class="p">.</span><span class="nf">send</span><span class="p">(</span><span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span><span class="p">{</span><span class="nx">To</span><span class="p">:</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span><span class="p">,</span> <span class="nx">Term</span><span class="p">:</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Term</span><span class="p">,</span> <span class="nx">Type</span><span class="p">:</span> <span class="nf">voteRespMsgType</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">Type</span><span class="p">)})</span>
+			<span class="k">if</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Type</span> <span class="o">==</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgVote</span> <span class="p">{</span>
+				<span class="c1">// Only record real votes.
+</span><span class="c1"></span>				<span class="nx">r</span><span class="p">.</span><span class="nx">electionElapsed</span> <span class="p">=</span> <span class="mi">0</span>
+				<span class="nx">r</span><span class="p">.</span><span class="nx">Vote</span> <span class="p">=</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span>
+			<span class="p">}</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;%x [logterm: %d, index: %d, vote: %x] rejected %s from %x [logterm: %d, index: %d] at term %d&#34;</span><span class="p">,</span>
+				<span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nf">lastTerm</span><span class="p">(),</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nf">lastIndex</span><span class="p">(),</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Vote</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Type</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">LogTerm</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Index</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">)</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nf">send</span><span class="p">(</span><span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span><span class="p">{</span><span class="nx">To</span><span class="p">:</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span><span class="p">,</span> <span class="nx">Term</span><span class="p">:</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">,</span> <span class="nx">Type</span><span class="p">:</span> <span class="nf">voteRespMsgType</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">Type</span><span class="p">),</span> <span class="nx">Reject</span><span class="p">:</span> <span class="kc">true</span><span class="p">})</span>
+		<span class="p">}</span>
+
+	<span class="k">default</span><span class="p">:</span>
+		<span class="nx">err</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nf">step</span><span class="p">(</span><span class="nx">r</span><span class="p">,</span> <span class="nx">m</span><span class="p">)</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="nx">err</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+</code></pre></div><p>第一种情况是大家熟悉的<code>MsgHup</code>消息，这种消息的处理见<a href="#21-msghup%e4%b8%8ehup" rel="">2.1节</a>。</p>
+<p>第二种情况是<code>MsgVote</code>和<code>MsgPreVote</code>消息。首先需要判断该节点能否为其投票。其判断规则有3条：</p>
+<ol>
+<li>如果该节点当前已为消息的发送者投过票，说明这可能是重复的消息，该节点可以安全地为其重新投票。</li>
+<li>如果该节点还没有投过票且当前term内还没有leader，那么该节点可以为其投票。</li>
+<li>如果这是<code>MsgPreVote</code>消息且其<code>Term</code>大于当前节点的<code>Term</code>，那么该节点可以为其投票。</li>
+</ol>
+<p>如果满足以上3个条件中的任一条，且该消息中的<code>Index</code>和<code>Term</code>至少与当前节点的日志一样新，那么该节点为其发送相应的投票消息。如果该消息的是<code>MsgVote</code>消息，该节点需要记录其将选票投给了谁，并重置<code>election timeout</code>的计时器。</p>
+<p>否则，节点会拒绝该请求，为其发送一条<code>Reject</code>为true的<code>MsgVoteResp</code>或<code>MsgPreVote</code>消息。，以避免<a href="#14-%e5%bc%95%e5%85%a5%e7%9a%84%e6%96%b0%e9%97%ae%e9%a2%98%e4%b8%8e%e8%a7%a3%e5%86%b3%e6%96%b9%e6%a1%88" rel="">1.4节</a>中提到的问题。</p>
+<p>除了这些情况外，消息都会通过<code>step</code>字段记录的函数，按照不同的节点角色进行处理。</p>
+<h3 id="24-becomexxx与stepxxx">2.4 becomeXXX与stepXXX</h3>
+<p>在上文中笔者介绍过，<code>becomeXXX</code>函数用于将切换Raft状态机的角色，<code>stepXXX</code>是Raft状态机的相应角色下状态转移的行为。etcd/raft中<code>becomeXXX</code>共有四种：<code>becomeFollower</code>、<code>becomeCandidate</code>、<code>becomePreCandidate</code>、<code>becomeLeader</code>，<code>stepXXX</code>共有三种：<code>stepLeader</code>、<code>stepCandidate</code>、<code>stepFollower</code>，<code>becomeCandidate</code>和<code>becomePreCandidate</code>相应的行为均为<code>stepCandidate</code>。</p>
+<p>本节中，笔者将介绍<code>becomeXXX</code>和<code>stepXXX</code>中与选举相关的逻辑。</p>
+<h4 id="241-candidateprecandidate">2.4.1 Candidate、PreCandidate</h4>
+<p><code>Candidate</code>和<code>PreCandidate</code>的行为有很多相似之处，本节笔者将分析二者行为并比对异同之处。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">)</span> <span class="nf">becomeCandidate</span><span class="p">()</span> <span class="p">{</span>
+	<span class="c1">// ... ...
+</span><span class="c1"></span>	<span class="nx">r</span><span class="p">.</span><span class="nx">step</span> <span class="p">=</span> <span class="nx">stepCandidate</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nf">reset</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">Term</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nx">tick</span> <span class="p">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">tickElection</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nx">Vote</span> <span class="p">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nx">state</span> <span class="p">=</span> <span class="nx">StateCandidate</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;%x became candidate at term %d&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">)</span> <span class="nf">becomePreCandidate</span><span class="p">()</span> <span class="p">{</span>
+	<span class="c1">// ... ...
+</span><span class="c1"></span>	<span class="c1">// Becoming a pre-candidate changes our step functions and state,
+</span><span class="c1"></span>	<span class="c1">// but doesn&#39;t change anything else. In particular it does not increase
+</span><span class="c1"></span>	<span class="c1">// r.Term or change r.Vote.
+</span><span class="c1"></span>	<span class="nx">r</span><span class="p">.</span><span class="nx">step</span> <span class="p">=</span> <span class="nx">stepCandidate</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nx">prs</span><span class="p">.</span><span class="nf">ResetVotes</span><span class="p">()</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nx">tick</span> <span class="p">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">tickElection</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nx">lead</span> <span class="p">=</span> <span class="nx">None</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nx">state</span> <span class="p">=</span> <span class="nx">StatePreCandidate</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;%x became pre-candidate at term %d&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">)</span> <span class="nf">reset</span><span class="p">(</span><span class="nx">term</span> <span class="kt">uint64</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span> <span class="o">!=</span> <span class="nx">term</span> <span class="p">{</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nx">Term</span> <span class="p">=</span> <span class="nx">term</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nx">Vote</span> <span class="p">=</span> <span class="nx">None</span>
+	<span class="p">}</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nx">lead</span> <span class="p">=</span> <span class="nx">None</span>
+
+	<span class="nx">r</span><span class="p">.</span><span class="nx">electionElapsed</span> <span class="p">=</span> <span class="mi">0</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nx">heartbeatElapsed</span> <span class="p">=</span> <span class="mi">0</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nf">resetRandomizedElectionTimeout</span><span class="p">()</span>
+
+	<span class="nx">r</span><span class="p">.</span><span class="nf">abortLeaderTransfer</span><span class="p">()</span>
+
+	<span class="nx">r</span><span class="p">.</span><span class="nx">prs</span><span class="p">.</span><span class="nf">ResetVotes</span><span class="p">()</span>
+	
+	<span class="c1">// ... ...
+</span><span class="c1"></span>
+<span class="p">}</span>
+
+</code></pre></div><p>预选举与选举的区别在主要在于预选举不会改变状态机的term也不会修改当前term的该节点投出的选票。下表列出了<code>becomePreCandidate</code>和<code>becomeCandidate</code>修改或未修改的与选举相关的重要字段：</p>
+<table>
+<thead>
+<tr>
+<th align="center">重要字段<div style="width: 6em"></div></th>
+<th align="center">becomePreCandidate</th>
+<th align="center">becomCandidate</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center"><code>step</code></td>
+<td align="center"><code>stepCandidate</code></td>
+<td align="center"><code>stepCandidate</code></td>
+<td align="left"><code>step</code>行为</td>
+</tr>
+<tr>
+<td align="center"><code>tick</code></td>
+<td align="center"><code>tickElection</code></td>
+<td align="center"><code>tickElection</code></td>
+<td align="left"><code>tick</code>行为</td>
+</tr>
+<tr>
+<td align="center"><code>Vote</code></td>
+<td align="center"><em>mot modified</em></td>
+<td align="center"><em>current node</em>.<code>id</code></td>
+<td align="left">当前term将选票投给谁</td>
+</tr>
+<tr>
+<td align="center"><code>state</code></td>
+<td align="center"><code>StatePreCandidate</code></td>
+<td align="center"><code>StateCandidate</code></td>
+<td align="left">状态机角色</td>
+</tr>
+<tr>
+<td align="center"><code>lead</code></td>
+<td align="center">None</td>
+<td align="center">None</td>
+<td align="left">当前term的leader</td>
+</tr>
+<tr>
+<td align="center"><code>prs.Votes</code></td>
+<td align="center"><em>rest</em></td>
+<td align="center"><em>reset</em></td>
+<td align="left">收到的选票</td>
+</tr>
+</tbody>
+</table>
+<p>无论是<code>PreCandidate</code>还是<code>PreCandidate</code>，其行为都是<code>stepCandidate</code>。其中，部分字段是通过<code>reset</code>函数修改的。<code>reset</code>方法用于状态机切换角色时初始化相关字段。因为切换到<code>PreCandidate</code>严格来说并不算真正地切换角色，因此<code>becomePreCandidate</code>中没有调用<code>reset</code>方法，而<code>becomeCandidate</code>、<code>becomeLeader</code>、<code>becomeFollower</code>都调用了<code>reset</code>方法。本文仅关注<code>reset</code>中与选举有关的部分，<code>reset</code>中还有一些与日志复制相关的逻辑，笔者会在后续的文章中分析。</p>
+<p>接下来分析<code>stepCandiate</code>中与选举相关的逻辑：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// stepCandidate is shared by StateCandidate and StatePreCandidate; the difference is
+</span><span class="c1">// whether they respond to MsgVoteResp or MsgPreVoteResp.
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">stepCandidate</span><span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">,</span> <span class="nx">m</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="c1">// Only handle vote responses corresponding to our candidacy (while in
+</span><span class="c1"></span>	<span class="c1">// StateCandidate, we may get stale MsgPreVoteResp messages in this term from
+</span><span class="c1"></span>	<span class="c1">// our pre-candidate state).
+</span><span class="c1"></span>	<span class="kd">var</span> <span class="nx">myVoteRespType</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MessageType</span>
+	<span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">state</span> <span class="o">==</span> <span class="nx">StatePreCandidate</span> <span class="p">{</span>
+		<span class="nx">myVoteRespType</span> <span class="p">=</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgPreVoteResp</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+		<span class="nx">myVoteRespType</span> <span class="p">=</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgVoteResp</span>
+	<span class="p">}</span>
+	<span class="k">switch</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Type</span> <span class="p">{</span>
+	<span class="k">case</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgProp</span><span class="p">:</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;%x no leader at term %d; dropping proposal&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">)</span>
+		<span class="k">return</span> <span class="nx">ErrProposalDropped</span>
+	<span class="k">case</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgApp</span><span class="p">:</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nf">becomeFollower</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">Term</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span><span class="p">)</span> <span class="c1">// always m.Term == r.Term
+</span><span class="c1"></span>		<span class="nx">r</span><span class="p">.</span><span class="nf">handleAppendEntries</span><span class="p">(</span><span class="nx">m</span><span class="p">)</span>
+	<span class="k">case</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgHeartbeat</span><span class="p">:</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nf">becomeFollower</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">Term</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span><span class="p">)</span> <span class="c1">// always m.Term == r.Term
+</span><span class="c1"></span>		<span class="nx">r</span><span class="p">.</span><span class="nf">handleHeartbeat</span><span class="p">(</span><span class="nx">m</span><span class="p">)</span>
+	<span class="k">case</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgSnap</span><span class="p">:</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nf">becomeFollower</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">Term</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span><span class="p">)</span> <span class="c1">// always m.Term == r.Term
+</span><span class="c1"></span>		<span class="nx">r</span><span class="p">.</span><span class="nf">handleSnapshot</span><span class="p">(</span><span class="nx">m</span><span class="p">)</span>
+	<span class="k">case</span> <span class="nx">myVoteRespType</span><span class="p">:</span>
+		<span class="nx">gr</span><span class="p">,</span> <span class="nx">rj</span><span class="p">,</span> <span class="nx">res</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nf">poll</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">From</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Type</span><span class="p">,</span> <span class="p">!</span><span class="nx">m</span><span class="p">.</span><span class="nx">Reject</span><span class="p">)</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;%x has received %d %s votes and %d vote rejections&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">gr</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Type</span><span class="p">,</span> <span class="nx">rj</span><span class="p">)</span>
+		<span class="k">switch</span> <span class="nx">res</span> <span class="p">{</span>
+		<span class="k">case</span> <span class="nx">quorum</span><span class="p">.</span><span class="nx">VoteWon</span><span class="p">:</span>
+			<span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">state</span> <span class="o">==</span> <span class="nx">StatePreCandidate</span> <span class="p">{</span>
+				<span class="nx">r</span><span class="p">.</span><span class="nf">campaign</span><span class="p">(</span><span class="nx">campaignElection</span><span class="p">)</span>
+			<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+				<span class="nx">r</span><span class="p">.</span><span class="nf">becomeLeader</span><span class="p">()</span>
+				<span class="nx">r</span><span class="p">.</span><span class="nf">bcastAppend</span><span class="p">()</span>
+			<span class="p">}</span>
+		<span class="k">case</span> <span class="nx">quorum</span><span class="p">.</span><span class="nx">VoteLost</span><span class="p">:</span>
+			<span class="c1">// pb.MsgPreVoteResp contains future term of pre-candidate
+</span><span class="c1"></span>			<span class="c1">// m.Term &gt; r.Term; reuse r.Term
+</span><span class="c1"></span>			<span class="nx">r</span><span class="p">.</span><span class="nf">becomeFollower</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">,</span> <span class="nx">None</span><span class="p">)</span>
+		<span class="p">}</span>
+	<span class="k">case</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgTimeoutNow</span><span class="p">:</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Debugf</span><span class="p">(</span><span class="s">&#34;%x [term %d state %v] ignored MsgTimeoutNow from %x&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">state</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+</code></pre></div><p>从如上代码中，可以看到<code>PreCandidate</code>或<code>Candidate</code>对不同种消息的处理方式：</p>
+<ol>
+<li><code>MsgProp</code>、<code>MsgTimeoutNow</code>：丢弃。</li>
+<li><code>MsgApp</code>、<code>MsgHeartbeat</code>、<code>MsgSnap</code>：收到了来自leader的消息，转为follower。</li>
+<li>相应地<code>MsgPreVoteResp</code>或<code>MsgVoteResp</code>：通过<code>poll</code>记录选票并获取当前选举状态。</li>
+</ol>
+<p>在条件3中，当前节点在获取选举状态后，会根据不同的状态做出不同的处理：</p>
+<ol>
+<li><code>VotePending</code>：暂无选举结果，不做处理。</li>
+<li><code>VoteWon</code>：赢得选举，如果当前状态机的角色是<code>PreCandidate</code>，那么调用<code>campaign</code>进行正式选举；如果当前状态机的角色是<code>Candidate</code>，那么当选leader，并向集群广播<code>MsgAppend</code>消息以通知集群中节点已有leader产生。</li>
+<li><code>VoteLost</code>：选举失败，变为follower。</li>
+</ol>
+<div class="details admonition info open">
+        <div class="details-summary admonition-title">
+            <i class="icon fas fa-info-circle fa-fw"></i>提示<i class="details-icon fas fa-angle-right fa-fw"></i>
+        </div>
+        <div class="details-content">
+            <div class="admonition-content"><code>stepXXX</code>中处理的消息都是已经在<code>Step</code>中预处理后的消息，有些消息可能被过滤掉了。其详细的逻辑见<a href="#23-step%e6%96%b9%e6%b3%95%e4%b8%8estep" rel="">2.3节</a>。</div>
+        </div>
+    </div>
+<h4 id="242-leader">2.4.2 Leader</h4>
+<p>leader中与选举相关逻辑的比重较少，这里简单介绍一下。</p>
+<p>首先，是<code>becomeLeader</code>及其修改的选举相关的重要字段：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">)</span> <span class="nf">becomeLeader</span><span class="p">()</span> <span class="p">{</span>
+	<span class="c1">// ... ...
+</span><span class="c1"></span>	<span class="nx">r</span><span class="p">.</span><span class="nx">step</span> <span class="p">=</span> <span class="nx">stepLeader</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nf">reset</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">)</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nx">tick</span> <span class="p">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">tickHeartbeat</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nx">lead</span> <span class="p">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nx">state</span> <span class="p">=</span> <span class="nx">StateLeader</span>
+	<span class="c1">// ... ...
+</span><span class="c1"></span><span class="p">}</span>
+
+</code></pre></div><table>
+<thead>
+<tr>
+<th align="center">重要字段<div style="width: 6em"></div></th>
+<th align="center">becomeLeader</th>
+<th align="center">描述</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center"><code>step</code></td>
+<td align="center"><code>stepLeader</code></td>
+<td align="center"><code>step</code>行为</td>
+<td></td>
+</tr>
+<tr>
+<td align="center"><code>tick</code></td>
+<td align="center"><code>tickHeartbeat</code></td>
+<td align="center"><code>tick</code>行为</td>
+<td></td>
+</tr>
+<tr>
+<td align="center"><code>Vote</code></td>
+<td align="center">None or <em>not modified</em></td>
+<td align="center">当前term将选票投给谁，如果term没有更新，那么不会修改该字段。</td>
+<td></td>
+</tr>
+<tr>
+<td align="center"><code>state</code></td>
+<td align="center"><code>StateLeader</code></td>
+<td align="center">状态机角色</td>
+<td></td>
+</tr>
+<tr>
+<td align="center"><code>lead</code></td>
+<td align="center"><em>current node</em>.id</td>
+<td align="center">当前term的leader</td>
+<td></td>
+</tr>
+<tr>
+<td align="center"><code>prs.Votes</code></td>
+<td align="center"><em>rest</em></td>
+<td align="center">收到的选票</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>接下来，分析<code>stepLeader</code>中与选举相关的逻辑：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="kd">func</span> <span class="nf">stepLeader</span><span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">,</span> <span class="nx">m</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="c1">// These message types do not require any progress for m.From.
+</span><span class="c1"></span>	<span class="k">switch</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Type</span> <span class="p">{</span>
+	<span class="k">case</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgBeat</span><span class="p">:</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nf">bcastHeartbeat</span><span class="p">()</span>
+		<span class="k">return</span> <span class="kc">nil</span>
+	<span class="k">case</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgCheckQuorum</span><span class="p">:</span>
+		<span class="c1">// The leader should always see itself as active. As a precaution, handle
+</span><span class="c1"></span>		<span class="c1">// the case in which the leader isn&#39;t in the configuration any more (for
+</span><span class="c1"></span>		<span class="c1">// example if it just removed itself).
+</span><span class="c1"></span>		<span class="c1">//
+</span><span class="c1"></span>		<span class="c1">// TODO(tbg): I added a TODO in removeNode, it doesn&#39;t seem that the
+</span><span class="c1"></span>		<span class="c1">// leader steps down when removing itself. I might be missing something.
+</span><span class="c1"></span>		<span class="k">if</span> <span class="nx">pr</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">prs</span><span class="p">.</span><span class="nx">Progress</span><span class="p">[</span><span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">];</span> <span class="nx">pr</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="nx">pr</span><span class="p">.</span><span class="nx">RecentActive</span> <span class="p">=</span> <span class="kc">true</span>
+		<span class="p">}</span>
+		<span class="k">if</span> <span class="p">!</span><span class="nx">r</span><span class="p">.</span><span class="nx">prs</span><span class="p">.</span><span class="nf">QuorumActive</span><span class="p">()</span> <span class="p">{</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Warningf</span><span class="p">(</span><span class="s">&#34;%x stepped down to follower since quorum is not active&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">)</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nf">becomeFollower</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">,</span> <span class="nx">None</span><span class="p">)</span>
+		<span class="p">}</span>
+		<span class="c1">// Mark everyone (but ourselves) as inactive in preparation for the next
+</span><span class="c1"></span>		<span class="c1">// CheckQuorum.
+</span><span class="c1"></span>		<span class="nx">r</span><span class="p">.</span><span class="nx">prs</span><span class="p">.</span><span class="nf">Visit</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">id</span> <span class="kt">uint64</span><span class="p">,</span> <span class="nx">pr</span> <span class="o">*</span><span class="nx">tracker</span><span class="p">.</span><span class="nx">Progress</span><span class="p">)</span> <span class="p">{</span>
+			<span class="k">if</span> <span class="nx">id</span> <span class="o">!=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span> <span class="p">{</span>
+				<span class="nx">pr</span><span class="p">.</span><span class="nx">RecentActive</span> <span class="p">=</span> <span class="kc">false</span>
+			<span class="p">}</span>
+		<span class="p">})</span>
+		<span class="k">return</span> <span class="kc">nil</span>
+	<span class="c1">// ... ...
+</span><span class="c1"></span>	<span class="p">}</span>
+
+	<span class="c1">// All other message types require a progress for m.From (pr).
+</span><span class="c1"></span>	<span class="nx">pr</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">prs</span><span class="p">.</span><span class="nx">Progress</span><span class="p">[</span><span class="nx">m</span><span class="p">.</span><span class="nx">From</span><span class="p">]</span>
+	<span class="k">if</span> <span class="nx">pr</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Debugf</span><span class="p">(</span><span class="s">&#34;%x no progress available for %x&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span><span class="p">)</span>
+		<span class="k">return</span> <span class="kc">nil</span>
+	<span class="p">}</span>
+	<span class="k">switch</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Type</span> <span class="p">{</span>
+	<span class="c1">// ... ...
+</span><span class="c1"></span>	<span class="k">case</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgTransferLeader</span><span class="p">:</span>
+		<span class="k">if</span> <span class="nx">pr</span><span class="p">.</span><span class="nx">IsLearner</span> <span class="p">{</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Debugf</span><span class="p">(</span><span class="s">&#34;%x is learner. Ignored transferring leadership&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">)</span>
+			<span class="k">return</span> <span class="kc">nil</span>
+		<span class="p">}</span>
+		<span class="nx">leadTransferee</span> <span class="o">:=</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span>
+		<span class="nx">lastLeadTransferee</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">leadTransferee</span>
+		<span class="k">if</span> <span class="nx">lastLeadTransferee</span> <span class="o">!=</span> <span class="nx">None</span> <span class="p">{</span>
+			<span class="k">if</span> <span class="nx">lastLeadTransferee</span> <span class="o">==</span> <span class="nx">leadTransferee</span> <span class="p">{</span>
+				<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;%x [term %d] transfer leadership to %x is in progress, ignores request to same node %x&#34;</span><span class="p">,</span>
+					<span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">,</span> <span class="nx">leadTransferee</span><span class="p">,</span> <span class="nx">leadTransferee</span><span class="p">)</span>
+				<span class="k">return</span> <span class="kc">nil</span>
+			<span class="p">}</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nf">abortLeaderTransfer</span><span class="p">()</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;%x [term %d] abort previous transferring leadership to %x&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">,</span> <span class="nx">lastLeadTransferee</span><span class="p">)</span>
+		<span class="p">}</span>
+		<span class="k">if</span> <span class="nx">leadTransferee</span> <span class="o">==</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span> <span class="p">{</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Debugf</span><span class="p">(</span><span class="s">&#34;%x is already leader. Ignored transferring leadership to self&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">)</span>
+			<span class="k">return</span> <span class="kc">nil</span>
+		<span class="p">}</span>
+		<span class="c1">// Transfer leadership to third party.
+</span><span class="c1"></span>		<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;%x [term %d] starts to transfer leadership to %x&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">,</span> <span class="nx">leadTransferee</span><span class="p">)</span>
+		<span class="c1">// Transfer leadership should be finished in one electionTimeout, so reset r.electionElapsed.
+</span><span class="c1"></span>		<span class="nx">r</span><span class="p">.</span><span class="nx">electionElapsed</span> <span class="p">=</span> <span class="mi">0</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nx">leadTransferee</span> <span class="p">=</span> <span class="nx">leadTransferee</span>
+		<span class="k">if</span> <span class="nx">pr</span><span class="p">.</span><span class="nx">Match</span> <span class="o">==</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nf">lastIndex</span><span class="p">()</span> <span class="p">{</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nf">sendTimeoutNow</span><span class="p">(</span><span class="nx">leadTransferee</span><span class="p">)</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;%x sends MsgTimeoutNow to %x immediately as %x already has up-to-date log&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">leadTransferee</span><span class="p">,</span> <span class="nx">leadTransferee</span><span class="p">)</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nf">sendAppend</span><span class="p">(</span><span class="nx">leadTransferee</span><span class="p">)</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>stepLeader</code>中处理的消息可以分为两类，一类是不需要知道谁是发送者的消息（大多数为本地消息），另一类需要知道谁是发送者的消息（大多数为来自其它节点的消息）。</p>
+<p><code>stepLeader</code>中对第一类消息的处理方式如下：</p>
+<ol>
+<li><code>MsgBeat</code>：该消息为<em>heartbeat timeout</em>超时后通知leader广播心跳消息的消息。因此，收到该消息后，广播心跳消息。</li>
+<li><code>MsgCheckQuorum</code>：该消息为开启<strong>Check Quorum</strong>时<em>election timeout</em>超时后通知leader进行相关操作的消息。因此，检查活跃的节点数是否达到quorum，如果无法达到，那么退位为follower（其相关操作涉及<code>ProgressTracker</code>，笔者会在后续的文章中分析，这里只需要知道其作用即可）。</li>
+</ol>
+<p>第二类消息中，与选举相关的只有<code>MsgTransferLeader</code>消息：</p>
+<ol>
+<li>忽略来自learner的<code>MsgTransferLeader</code>消息。</li>
+<li>判断是否正在进行<strong>Leader Transfer</strong>，如果正在进行但转移的目标相同，那么不再做处理；如果正在进行但转移的目标不同，那么打断正在进行的<strong>Leader Transfer</strong>，而执行新的转移。</li>
+<li>如果转移目标是当前节点，而当前节点已经是leader了，那么不做处理。</li>
+<li>记录转移目标，以用做第2步中是否打断上次转移的依据。</li>
+<li>判断转移目标的日志是否跟上了leader。如果跟上了，向其发送<code>MsgTimeoutNow</code>消息，让其立即超时并进行新的选举；否则正常向其发送日志。如果转移目标的日志没有跟上leader，则leader在处理转移目标对其日志复制消息的响应时，会判断其是否跟上了leader，如果那时跟上了则向其发送<code>MsgTimeoutNow</code>消息，让其立即超时并进行新的选举。这部分代码可在处理<code>MsgAppResp</code>消息时找到：</li>
+</ol>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// Transfer leadership is in progress.
+</span><span class="c1"></span><span class="k">if</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span> <span class="o">==</span> <span class="nx">r</span><span class="p">.</span><span class="nx">leadTransferee</span> <span class="o">&amp;&amp;</span> <span class="nx">pr</span><span class="p">.</span><span class="nx">Match</span> <span class="o">==</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nf">lastIndex</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;%x sent MsgTimeoutNow to %x after received MsgAppResp&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span><span class="p">)</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nf">sendTimeoutNow</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">From</span><span class="p">)</span>
+<span class="p">}</span>
+
+</code></pre></div><p>此处代码只会在follower跟上了其<em>match index</em>才会执行，详情请见本系列后续文章。</p>
+<h4 id="243-follower">2.4.3 Follower</h4>
+<p>follower中与选举相关的逻辑不是很多。</p>
+<p>首先，还是对<code>becomeFollower</code>中的与选举相关的逻辑进行分析：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">)</span> <span class="nf">becomeFollower</span><span class="p">(</span><span class="nx">term</span> <span class="kt">uint64</span><span class="p">,</span> <span class="nx">lead</span> <span class="kt">uint64</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nx">step</span> <span class="p">=</span> <span class="nx">stepFollower</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nf">reset</span><span class="p">(</span><span class="nx">term</span><span class="p">)</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nx">tick</span> <span class="p">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">tickElection</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nx">lead</span> <span class="p">=</span> <span class="nx">lead</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nx">state</span> <span class="p">=</span> <span class="nx">StateFollower</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;%x became follower at term %d&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">)</span>
+<span class="p">}</span>
+
+</code></pre></div><table>
+<thead>
+<tr>
+<th align="center">重要字段<div style="width: 6em"></div></th>
+<th align="center">becomeFollower</th>
+<th align="center">描述</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center"><code>step</code></td>
+<td align="center"><code>stepFollower</code></td>
+<td align="center"><code>step</code>行为</td>
+<td></td>
+</tr>
+<tr>
+<td align="center"><code>tick</code></td>
+<td align="center"><code>tickElection</code></td>
+<td align="center"><code>tick</code>行为</td>
+<td></td>
+</tr>
+<tr>
+<td align="center"><code>state</code></td>
+<td align="center"><code>StateFollower</code></td>
+<td align="center">状态机角色</td>
+<td></td>
+</tr>
+<tr>
+<td align="center"><code>lead</code></td>
+<td align="center">参数<code>lead</code></td>
+<td align="center">当前term的leader</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>接下来分析<code>stepFollower</code>中对与选举相关的消息的处理：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="kd">func</span> <span class="nf">stepFollower</span><span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">,</span> <span class="nx">m</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="k">switch</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Type</span> <span class="p">{</span>
+	<span class="c1">// ... ...
+</span><span class="c1"></span>	<span class="k">case</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgApp</span><span class="p">:</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nx">electionElapsed</span> <span class="p">=</span> <span class="mi">0</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nx">lead</span> <span class="p">=</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span>
+		<span class="c1">// ... ...
+</span><span class="c1"></span>	<span class="k">case</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgHeartbeat</span><span class="p">:</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nx">electionElapsed</span> <span class="p">=</span> <span class="mi">0</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nx">lead</span> <span class="p">=</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span>
+		<span class="c1">// ... ...
+</span><span class="c1"></span>	<span class="k">case</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgSnap</span><span class="p">:</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nx">electionElapsed</span> <span class="p">=</span> <span class="mi">0</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nx">lead</span> <span class="p">=</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span>
+		<span class="c1">// ... ...
+</span><span class="c1"></span>	<span class="k">case</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgTransferLeader</span><span class="p">:</span>
+		<span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">lead</span> <span class="o">==</span> <span class="nx">None</span> <span class="p">{</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;%x no leader at term %d; dropping leader transfer msg&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">)</span>
+			<span class="k">return</span> <span class="kc">nil</span>
+		<span class="p">}</span>
+		<span class="nx">m</span><span class="p">.</span><span class="nx">To</span> <span class="p">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">lead</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nf">send</span><span class="p">(</span><span class="nx">m</span><span class="p">)</span>
+	<span class="k">case</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgTimeoutNow</span><span class="p">:</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;%x [term %d] received MsgTimeoutNow from %x and starts an election to get leadership.&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span><span class="p">)</span>
+		<span class="c1">// Leadership transfers never use pre-vote even if r.preVote is true; we
+</span><span class="c1"></span>		<span class="c1">// know we are not recovering from a partition so there is no need for the
+</span><span class="c1"></span>		<span class="c1">// extra round trip.
+</span><span class="c1"></span>		<span class="nx">r</span><span class="p">.</span><span class="nf">hup</span><span class="p">(</span><span class="nx">campaignTransfer</span><span class="p">)</span>
+	<span class="c1">// ... ...
+</span><span class="c1"></span>	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+</code></pre></div><p>可以看到，follower在收到来自leader的<code>MsgApp</code>、<code>MsgHeartbeat</code>、<code>MsgSnap</code>消息后，会更新当前记录的leader并重置<code>election timeout</code>定时器。而收到应发给leader的消息后，会把消息转发给leader（如<code>MsgTransferLeader</code>消息，这里给出的代码中还省略了一些消息）。因此，这里真正需要关心的与选举相关的消息只有<code>MsgTimeoutNow</code>。</p>
+<p>在<a href="#242-leader" rel="">2.4.2节</a>中可以看到，<code>MsgTimeoutNow</code>消息是发生<strong>Leader Transfer</strong>时，leader通知目标节点立即超时并发起选举请求的消息。因此，这里直接以<code>campaignTransfer</code>作为参数调用了<code>hup</code>方法。在<a href="#21-msghup%e4%b8%8ehup" rel="">2.1节</a>和<a href="#22-campaign" rel="">2.2节</a>中可以看到，<code>hup</code>和<code>campaign</code>方法对<code>campaignTransfer</code>和<code>campaignVote</code>的处理几乎一致，只有在写入发起投票的消息时，如果进行的是<strong>Leader Transfer</strong>，那么会将<code>campaignTransfer</code>写入到消息的<code>Context</code>字段中。在消息的接收方处理该消息时，如果<code>Context</code>字段为<code>campaignTransfer</code>，那么不会直接忽略该消息，这一点我们可以在<a href="#232-%e5%af%b9term%e5%a4%a7%e4%ba%8e%e5%bd%93%e5%89%8d%e8%8a%82%e7%82%b9term%e7%9a%84%e6%b6%88%e6%81%af%e7%9a%84%e9%a2%84%e5%a4%84%e7%90%86" rel="">2.3.2节</a>中看到。</p>
+<h2 id="3-总结">3. 总结</h2>
+<p>本文首先介绍了etcd/raft实现的Raft选举优化，并介绍了使用选举优化后引入的新问题与解决方案，接着对etcd/raft中与选举有关的源码层层深入地分析。</p>
+<p>由于选举是Raft算法中重要且复杂的部分，因此其代码分布比较零散。只想了解etcd/raft中对Raft算法做出的优化的读者可以只看本文的第一章。对于想要深入etcd/raft源码实现的读者，建议自己先按照自己的节奏阅读源码，对于不太理解的地方可以参考本文的分析，如果直接从本文的分析入手，可能会感觉有些绕。</p>
+<h2 id="参考文献">参考文献</h2>
+<div class="reference">
+<p>[1] Ongaro D, Ousterhout J. In search of an understandable consensus algorithm[C]//2014 {USENIX} Annual Technical Conference ({USENIX}{ATC} 14). 2014: 305-319.</p>
+<p>[2] Ongaro D, Ousterhout J. In search of an understandable consensus algorithm (extended version)[J]. Retrieved July, 2016, 20: 2018.</p>
+<p>[3] Ongaro D. Consensus: Bridging theory and practice[D]. Stanford University, 2014.</p>
+<p>[4] <a href="https://youjiali1995.github.io/raft/etcd-raft-leader-election/" target="_blank" rel="noopener noreffer">Raft 笔记(四) – Leader election. 我叫尤加利（技术博客）</a></p>
+</div></div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2020-12-17</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"></div>
+            <div class="post-info-share">
+                <span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/etcd/">etcd</a>,&nbsp;<a href="/tags/raft/">Raft</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/posts/code-reading/etcdraft-made-simple/2-overview/" class="prev" rel="prev" title="深入浅出etcd/raft —— 0x02 etcd/raft总体设计"><i class="fas fa-angle-left fa-fw"></i>深入浅出etcd/raft —— 0x02 etcd/raft总体设计</a>
+            <a href="/posts/code-reading/etcdraft-made-simple/4-log/" class="next" rel="next" title="深入浅出etcd/raft —— 0x04 Raft日志">深入浅出etcd/raft —— 0x04 Raft日志<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+</article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"><link rel="stylesheet" href="/lib/katex/katex.min.css"><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"><script type="text/javascript" src="/lib/smooth-scroll/smooth-scroll.min.js"></script><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"id-1":"叉鸽 | MrCroxx","id-2":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"id-1":["id-1"],"id-2":["id-2"]},"duration":null,"speed":null}};</script><script type="text/javascript" src="/js/theme.min.js"></script></body>
+</html>

@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>深入浅出etcd/raft —— 0x06 只读请求优化 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出etcd/raft —— 0x06 只读请求优化" />
+<meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/6-readonly/" />
+<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/6-readonly/etcd-raft.jpg"/>
+<meta property="article:published_time" content="2021-01-01T21:10:17+08:00" />
+<meta property="article:modified_time" content="2021-01-01T21:10:20+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/6-readonly/etcd-raft.jpg"/>
+<meta name="twitter:title" content="深入浅出etcd/raft —— 0x06 只读请求优化"/>
+<meta name="twitter:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。"/>
+<meta name="application-name" content="叉鸽 MrCroxx 的博客">
+<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/6-readonly/" /><link rel="prev" href="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/5-confchange/" /><link rel="next" href="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/0-introduction/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "深入浅出etcd/raft —— 0x06 只读请求优化",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/etcdraft-made-simple\/6-readonly\/"
+        },"image": [{
+                            "@type": "ImageObject",
+                            "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/etcdraft-made-simple\/6-readonly\/etcd-raft.jpg",
+                            "width":  1200 ,
+                            "height":  360 
+                        }],"genre": "posts","keywords": "etcd, Raft","wordcount":  7488 ,
+        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/etcdraft-made-simple\/6-readonly\/","datePublished": "2021-01-01T21:10:17+08:00","dateModified": "2021-01-01T21:10:20+08:00","publisher": {
+            "@type": "Organization",
+            "name": "叉鸽"},"author": {
+                "@type": "Person",
+                "name": "叉鸽"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : '' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-1" class="typeit"></span></a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-2" class="typeit"></span></a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出etcd/raft —— 0x06 只读请求优化</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAetcd/raft/"><i class="far fa-folder fa-fw"></i>深入浅出etcd/raft</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-01">2021-01-01</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 7488 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 15 分钟&nbsp;</div>
+        </div><div class="featured-image"><img
+        class="lazyload"
+        src="/svg/loading.min.svg"
+        data-src="/posts/code-reading/etcdraft-made-simple/6-readonly/etcd-raft.jpg"
+        data-srcset="/posts/code-reading/etcdraft-made-simple/6-readonly/etcd-raft.jpg, /posts/code-reading/etcdraft-made-simple/6-readonly/etcd-raft.jpg 1.5x, /posts/code-reading/etcdraft-made-simple/6-readonly/etcd-raft.jpg 2x"
+        data-sizes="auto"
+        alt="/posts/code-reading/etcdraft-made-simple/6-readonly/etcd-raft.jpg"
+        title="/posts/code-reading/etcdraft-made-simple/6-readonly/etcd-raft.jpg" /></div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#0-引言">0. 引言</a></li>
+    <li><a href="#1-处理只读请求算法与优化">1. 处理只读请求算法与优化</a>
+      <ul>
+        <li><a href="#11-log-read">1.1 Log Read</a></li>
+        <li><a href="#12-readindex">1.2 ReadIndex</a></li>
+        <li><a href="#13-lease-read">1.3 Lease Read</a></li>
+      </ul>
+    </li>
+    <li><a href="#2-etcdraft中只读请求优化的实现">2. etcd/raft中只读请求优化的实现</a>
+      <ul>
+        <li><a href="#21-etcdraft中readindex方法的使用">2.1 etcd/raft中ReadIndex方法的使用</a></li>
+        <li><a href="#22-etcdraft中获取read-index的实现">2.2 etcd/raft中获取read index的实现</a>
+          <ul>
+            <li><a href="#221-readonly结构体">2.2.1 readOnly结构体</a></li>
+            <li><a href="#222-获取read-index流程与实现">2.2.2 获取read index流程与实现</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
+    <li><a href="#3-总结">3. 总结</a></li>
+    <li><a href="#参考文献">参考文献</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
+<h2 id="0-引言">0. 引言</h2>
+<p>本文介绍了etcd/raft中只读请求算法优化与实现。这里假定读者阅读过Diego Ongaro的《In Search of an Understandable Consensus Algorithm (Extended Version)》（这里有笔者的<a href="/posts/paper-reading/raft-extended/" rel="">翻译</a>，笔者英语水平一般，欢迎指正。），其中提到的部分，本文中不会做详细的解释。对etcd/raft的总体结构不熟悉的读者，可以先阅读<a href="/posts/code-reading/etcdraft-made-simple/2-overview/" rel="">《深入浅出etcd/raft —— 0x02 etcd/raft总体设计》</a>。</p>
+<h2 id="1-处理只读请求算法与优化">1. 处理只读请求算法与优化</h2>
+<p>Raft算法的目标之一是实现**线性一致性（Linearizability）**的语义。一般在介绍“线性一致性”时，会称其为“强一致性”的一种，但笔者认为这种叫法可能会令读者产生误会。本文不会介绍线性一致性的概念，笔者之后可能会专门写一篇介绍各种一致性的文章，或翻译有关一致性的优质文章。有关线性一致性等各种一致性，笔者推荐阅读<a href="https://jepsen.io/consistency" target="_blank" rel="noopener noreffer">Consistency Models. JEPSEN</a>与<a href="https://aphyr.com/posts/313-strong-consistency-models" target="_blank" rel="noopener noreffer">Strong consistency models. Aphyr</a>，前者对各种一致性进行了全面且正式的介绍，后者通俗地介绍了常用的一致性与其产生的历史等。本文假设读者已经理解线性一致性的含义。</p>
+<p>需要注意的，线性一致性的实现不仅与Raft算法本身有关，还与整个系统的实现（即状态机）有关。即使Raft算法本身保证了其日志的故障容错有序共识，但是在通过Raft算法实现系统时，仍会存在有关消息服务质量（Quality of Service，QoS；如至多一次、至少一次、恰好一次等语义问题）、系统整体线性一致性语义等问题。因此《CONSENSUS: BRIDGING THEORY AND PRACTICE》的“Chapter 6 Client interaction”，专门介绍了实现系统时客户端与系统交互的相关问题。需要实现基于Raft算法的读者应详细阅读该章节中介绍的问题与解决方案。</p>
+<p>本文仅着眼于只读请求算法优化与实现，因为这一主题与Raft算法本身关系较大，而像“恰好一次”语义等问题的解决方式可能与Raft算法本身关系不大，而是系统实现的常见问题。</p>
+<h3 id="11-log-read">1.1 Log Read</h3>
+<p>Raft算法通过Raft算法实现线性一致性读最简单的方法就是让读请求也通过Raft算法的日志机制实现。即将读请求也作为一条普通的Raft日志，在应用该日志时将读取的状态返回给客户端。这种方法被称为<strong>Log Read</strong>。</p>
+<p><strong>Log Read</strong>的实现非常简单，其仅依赖Raft算法已有的机制。但显然，<strong>Log Read</strong>算法的延迟、吞吐量都很低。因为其既有达成一轮共识所需的开销，又有将这条Raft日志落盘的开销。因此，为了优化只读请求的性能，就要想办法绕过Raft算法完整的日志机制。然而，直接绕过日志机制存在一致性问题，因为Raft算法是基于quorum确认的算法，因此即使日志被提交，也无法保证所有节点都能反映该应用了该日志后的结果。</p>
+<p>在Raft算法中，所有的日志写入操作都需要通过leader节点进行。只有leader确认一条日志复制到了quorum数量的节点上，才能确认日志被提交。因此，只要仅通过leader读取数据，那么一定是能保证只读操作的线性一致性的。然而，在一些情况下，leader可能无法及时发现其已经不是合法的leader。这一问题在介绍Raft选举算法的<strong>Check Quorum</strong>优化是讨论过这一问题。当网络分区出现时，处于小分区的leader可能无法得知集群中已经选举出了新的leader。如果此时原leader还在为客户端提供只读请求的服务，可能会出现<em>stale read</em>的问题。为了解决这一问题，《CONSENSUS: BRIDGING THEORY AND PRACTICE》给出了两个方案：<strong>Read Index</strong>和<strong>Lease Read</strong>。</p>
+<h3 id="12-readindex">1.2 ReadIndex</h3>
+<p>显然，只读请求并没有需要写入的数据，因此并不需要将其写入Raft日志，而只需要关注收到请求时leader的<em>commit index</em>。只要在该<em>commit index</em>被应用到状态机后执行读操作，就能保证其线性一致性。因此使用了<strong>ReadIndex</strong>的leader在收到只读请求时，会按如下方式处理：</p>
+<ol>
+<li>记录当前的<em>commit index</em>，作为<em>read index</em>。</li>
+<li>向集群中的所有节点广播一次心跳，如果收到了数量达到quorum的心跳响应，leader可以得知当收到该只读请求时，其一定是集群的合法leader。</li>
+<li>继续执行，直到leader本地的<em>apply index</em>大于等于之前记录的<em>read index</em>。此时可以保证只读操作的线性一致性。</li>
+<li>让状态机执行只读操作，并将结果返回给客户端。</li>
+</ol>
+<p>可以看出，<strong>ReadIndex</strong>的方法只需要一轮心跳广播，既不需要落盘，且其网络开销也很小。<strong>ReadIndex</strong>方法对吞吐量的提升十分显著，但由于其仍需要一轮心跳广播，其对延迟的优化并不明显。</p>
+<p>需要注意的是，实现<strong>ReadIndex</strong>时需要注意一个特殊情况。当新leader刚刚当选时，其<em>commit index</em>可能并不是此时集群的<em>commit index</em>。因此，需要等到新leader至少提交了一条日志时，才能保证其<em>commit index</em>能反映集群此时的<em>commit index</em>。幸运的是，新leader当选时为了提交非本term的日志，会提交一条空日志。因此，leader只需要等待该日志提交就能开始提供<strong>ReadIndex</strong>服务，而无需再提交额外的空日志。</p>
+<p>通过<strong>ReadIndex</strong>机制，还能实现<em>follower read</em>。当follower收到只读请求后，可以给leader发送一条获取<em>read index</em>的消息，当leader通过心跳广播确认自己是合法的leader后，将其记录的<em>read index</em>返回给follower，follower等到自己的<em>apply index</em>大于等于其收到的<em>read index</em>后，即可以安全地提供满足线性一致性的只读服务。</p>
+<h3 id="13-lease-read">1.3 Lease Read</h3>
+<p><strong>ReadIndex</strong>虽然提升了只读请求的吞吐量，但是由于其还需要一轮心跳广播，因此只读请求延迟的优化并不明显。而<strong>Lease Read</strong>在损失了一定的安全性的前提下，进一步地优化了延迟。</p>
+<p><strong>Lease Read</strong>同样是为了确认当前的leader为合法的leader，但是其实通过心跳与时钟来检查自身合法性的。当leader的<em>heartbeat timeout</em>超时时，其需要向所有节点广播心跳消息。设心跳广播前的时间戳为$start$，当leader收到了至少quorum数量的节点的响应时，该leader可以认为其lease的有效期为$[start, start + election \ timeout / clock\ drift\ bound)$。因为如果在$start$时发送的心跳获得了至少quorum数量节点的响应，那么至少要在<em>election timeout</em>后，集群才会选举出新的leader。但是，由于不同节点的cpu时钟可能有不同程度的漂移，这会导致在一个很小的时间窗口内，即使leader认为其持有lease，但集群已经选举出了新的leader。这与Raft选举优化<em>Leader Lease</em>存在同样的问题。因此，一些系统在实现<strong>Lease Read</strong>时缩小了leader持有lease的时间，选择了一个略小于<em>election timeout</em>的时间，以减小时钟漂移带来的影响。</p>
+<p>当leader持有lease时，leader认为此时其为合法的leader，因此可以直接将其<em>commit index</em>作为<em>read index</em>。后续的处理流程与<strong>ReadIndex</strong>相同。</p>
+<p>需要注意的是，与<strong>Leader Lease</strong>相同，<strong>Lease Read</strong>机制同样需要在选举时开启<strong>Check Quorum</strong>机制。其原因与<strong>Leader Lease</strong>相同，详见<a href="/posts/code-reading/etcdraft-made-simple/3-election/#13-leader-lease" rel="">深入浅出etcd/raft —— 0x03 Raft选举</a>，这里不再赘述。</p>
+<div class="details admonition info open">
+        <div class="details-summary admonition-title">
+            <i class="icon fas fa-info-circle fa-fw"></i>提示<i class="details-icon fas fa-angle-right fa-fw"></i>
+        </div>
+        <div class="details-content">
+            <div class="admonition-content"><p>有些文章中常常将实现线性一致性只读请求优化<strong>Lease Read</strong>机制和选举优化<strong>Leader Lease</strong>混淆。</p>
+<p><strong>Leader Lease</strong>是保证follower在能收到合法的leader的消息时拒绝其它candidate，以避免不必要的选举的机制。</p>
+<p><strong>Lease Read</strong>时leader为确认自己是合法leader，以保证只通过leader为只读请求提供服务时，满足线性一致性的机制。</p>
+</div>
+        </div>
+    </div>
+<h2 id="2-etcdraft中只读请求优化的实现">2. etcd/raft中只读请求优化的实现</h2>
+<h3 id="21-etcdraft中readindex方法的使用">2.1 etcd/raft中ReadIndex方法的使用</h3>
+<p>在etcd/raft中，使用<strong>ReadIndex</strong>还是<strong>Lease Read</strong>方法由通过<code>raft</code>的配置<code>Config</code>的<code>ReadOnlyOption</code>字段决定的：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+	<span class="c1">// ReadOnlyOption specifies how the read only request is processed.
+</span><span class="c1"></span>	<span class="c1">//
+</span><span class="c1"></span>	<span class="c1">// ReadOnlySafe guarantees the linearizability of the read only request by
+</span><span class="c1"></span>	<span class="c1">// communicating with the quorum. It is the default and suggested option.
+</span><span class="c1"></span>	<span class="c1">//
+</span><span class="c1"></span>	<span class="c1">// ReadOnlyLeaseBased ensures linearizability of the read only request by
+</span><span class="c1"></span>	<span class="c1">// relying on the leader lease. It can be affected by clock drift.
+</span><span class="c1"></span>	<span class="c1">// If the clock drift is unbounded, leader might keep the lease longer than it
+</span><span class="c1"></span>	<span class="c1">// should (clock can move backward/pause without any bound). ReadIndex is not safe
+</span><span class="c1"></span>	<span class="c1">// in that case.
+</span><span class="c1"></span>	<span class="c1">// CheckQuorum MUST be enabled if ReadOnlyOption is ReadOnlyLeaseBased.
+</span><span class="c1"></span>	<span class="nx">ReadOnlyOption</span> <span class="nx">ReadOnlyOption</span>
+
+</code></pre></div><p>该字段的取值有两种：<code>ReadOnlySafe</code>与<code>ReadOnlyLeaseBased</code>，分别对应<strong>ReadIndex</strong>方法与<strong>Lease Read</strong>方法：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="kd">const</span> <span class="p">(</span>
+	<span class="c1">// ReadOnlySafe guarantees the linearizability of the read only request by
+</span><span class="c1"></span>	<span class="c1">// communicating with the quorum. It is the default and suggested option.
+</span><span class="c1"></span>	<span class="nx">ReadOnlySafe</span> <span class="nx">ReadOnlyOption</span> <span class="p">=</span> <span class="kc">iota</span>
+	<span class="c1">// ReadOnlyLeaseBased ensures linearizability of the read only request by
+</span><span class="c1"></span>	<span class="c1">// relying on the leader lease. It can be affected by clock drift.
+</span><span class="c1"></span>	<span class="c1">// If the clock drift is unbounded, leader might keep the lease longer than it
+</span><span class="c1"></span>	<span class="c1">// should (clock can move backward/pause without any bound). ReadIndex is not safe
+</span><span class="c1"></span>	<span class="c1">// in that case.
+</span><span class="c1"></span>	<span class="nx">ReadOnlyLeaseBased</span>
+<span class="p">)</span>
+
+</code></pre></div><p>无论是<strong>ReadIndex</strong>方法还是<strong>Lease Read</strong>方法，都需要获取<em>read index</em>。<code>Node</code>的<code>ReadIndex</code>方法就是用来获取<em>read index</em>的方法：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">	<span class="c1">// node.go
+</span><span class="c1"></span>	<span class="c1">// type Node interface
+</span><span class="c1"></span>
+	<span class="c1">// ReadIndex request a read state. The read state will be set in the ready.
+</span><span class="c1"></span>	<span class="c1">// Read state has a read index. Once the application advances further than the read
+</span><span class="c1"></span>	<span class="c1">// index, any linearizable read requests issued before the read request can be
+</span><span class="c1"></span>	<span class="c1">// processed safely. The read state will have the same rctx attached.
+</span><span class="c1"></span>	<span class="nf">ReadIndex</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">rctx</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="kt">error</span>
+
+</code></pre></div><p>当etcd/raft模块的调用者需要获取<em>read index</em>时，需要调用<code>ReadIndex</code>方法。<code>ReadIndex</code>方法不会直接返回<em>read index</em>，而是会在后续的<code>Ready</code>结构体的<code>ReadStates</code>字段中返回多次<code>ReadIndex</code>调用对应的<code>ReadState</code>。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+	<span class="c1">// node.go
+</span><span class="c1"></span>	<span class="c1">// type Ready struct
+</span><span class="c1"></span>
+	<span class="c1">// ReadStates can be used for node to serve linearizable read requests locally
+</span><span class="c1"></span>	<span class="c1">// when its applied index is greater than the index in ReadState.
+</span><span class="c1"></span>	<span class="c1">// Note that the readState will be returned when raft receives msgReadIndex.
+</span><span class="c1"></span>	<span class="c1">// The returned is only valid for the request that requested to read.
+</span><span class="c1"></span>	<span class="nx">ReadStates</span> <span class="p">[]</span><span class="nx">ReadState</span>
+
+</code></pre></div><div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// ReadState provides state for read only query.
+</span><span class="c1">// It&#39;s caller&#39;s responsibility to call ReadIndex first before getting
+</span><span class="c1">// this state from ready, it&#39;s also caller&#39;s duty to differentiate if this
+</span><span class="c1">// state is what it requests through RequestCtx, eg. given a unique id as
+</span><span class="c1">// RequestCtx
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">ReadState</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">Index</span>      <span class="kt">uint64</span>
+	<span class="nx">RequestCtx</span> <span class="p">[]</span><span class="kt">byte</span>
+<span class="p">}</span>
+
+</code></pre></div><p>为了让调用者能够区分<code>ReadState</code>是哪次调用的结果，<code>ReadIndex</code>方法需要传入一个唯一的<code>rctx</code>字段进行标识，之后相应的的<code>ReadState</code>的<code>RequestCtx</code>字段会透传<code>rctx</code>的值，以便调用者区分多次调用的结果。</p>
+<p>当调用者应用的日志的index大于等于<code>ReadState</code>的<code>Index</code>字段的值时，就可以安全地执行相应的只读请求并返回结果。</p>
+<h3 id="22-etcdraft中获取read-index的实现">2.2 etcd/raft中获取read index的实现</h3>
+<h4 id="221-readonly结构体">2.2.1 readOnly结构体</h4>
+<p>在分析etcd/raft中获取<em>read index</em>的实现使用了<code>raft</code>结构体中的两个字段：<code>readStates</code>与<code>readOnly</code>。<code>readStates</code>字段是已经获取的<em>read index</em>，etcd/raft返回的下一个<code>Ready</code>结构体的<code>ReadStates</code>字段会获取<code>readStates</code>字段中的全量数据并清空该字段。而<code>readOnly</code>字段就是一个<code>readOnly</code>结构体的指针。<code>readOnly</code>结构体是leader仅使用<strong>ReadIndex</strong>时，用来记录等待心跳确认的<em>read index</em>的结构体，其声明如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="kd">type</span> <span class="nx">readOnly</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">option</span>           <span class="nx">ReadOnlyOption</span>
+	<span class="nx">pendingReadIndex</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="o">*</span><span class="nx">readIndexStatus</span>
+	<span class="nx">readIndexQueue</span>   <span class="p">[]</span><span class="kt">string</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>readOnly</code>结构体的<code>option</code>字段记录了etcd/raft配置中实现<em>read index</em>的方法。<code>readIndexQueue</code>是多次调用<code>ReadIndex</code>方法时产生的<code>rctx</code>参数队列，其反映了<code>ReadIndex</code>的调用顺序。<code>pendingReadIndex</code>是<code>rctx</code>到其相应的状态<code>readIndexStatus</code>的映射。<code>readIndexStatus</code>结构体的<code>req</code>字段记录了该<code>rctx</code>对应的原消息（在发送该消息的响应时需要用到），<code>index</code>字段记录了待确认的<em>read index</em>的值，<code>ack</code>字段记录了已收到的确认该<em>read index</em>的心跳响应。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="kd">type</span> <span class="nx">readIndexStatus</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">req</span>   <span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span>
+	<span class="nx">index</span> <span class="kt">uint64</span>
+	<span class="c1">// NB: this never records &#39;false&#39;, but it&#39;s more convenient to use this
+</span><span class="c1"></span>	<span class="c1">// instead of a map[uint64]struct{} due to the API of quorum.VoteResult. If
+</span><span class="c1"></span>	<span class="c1">// this becomes performance sensitive enough (doubtful), quorum.VoteResult
+</span><span class="c1"></span>	<span class="c1">// can change to an API that is closer to that of CommittedIndex.
+</span><span class="c1"></span>	<span class="nx">acks</span> <span class="kd">map</span><span class="p">[</span><span class="kt">uint64</span><span class="p">]</span><span class="kt">bool</span>
+<span class="p">}</span>
+
+</code></pre></div><p>如果<code>readOnly</code>的<code>option</code>字段的值为<code>ReadOnlyLeaseBased</code>，说明<em>read index</em>的实现使用了<strong>Lease Read</strong>，不需要在获取<em>read index</em>前广播心跳，因此不会用到<code>pendingReadIndex</code>与<code>readIndexQueue</code>字段。</p>
+<p><code>readOnly</code>还封装了如下方法：</p>
+<table>
+<thead>
+<tr>
+<th align="center">方法<div style="width: 12em"></div></th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center"><code>addRequest(index uint64, m pb.Message)</code></td>
+<td align="left">在广播用来确认<em>read index</em>的心跳消息前，需要调用该方法将该<em>read index</em>加入待确认队列。</td>
+</tr>
+<tr>
+<td align="center"><code>recvAck(id uint64, context []byte) map[uint64]bool</code></td>
+<td align="left">当收到确认<em>read index</em>的心跳响应时，需要调用该方法更新该<em>read index</em>的确认状态，该方法会返回收到的确认心跳响应的发送者的id集合。</td>
+</tr>
+<tr>
+<td align="center"><code>advance(m pb.Message) []*readIndexStatus</code></td>
+<td align="left">当有<em>read index</em>得到了达到quorum数量节点的ack时，调用该方法返回相应的<code>ReadState</code>，并从待确认的队列中移除相应的<em>read index</em>及其状态。该方法支持批量与流水线操作，因为如果队列中靠后的<em>read index</em>被确认，则其之前的<em>read index</em>也可以确认，因此该方法会返回所有已确认的<code>ReadState</code>。</td>
+</tr>
+<tr>
+<td align="center"><code>lastPendingRequestCtx() string</code></td>
+<td align="left">该方法用来获取待确认的最后一条<em>read index</em>对应的<code>rctx</code>。在<em>heartbeat timeout</em>超时构造心跳消息时，其携带的<em>read index</em>标识为最后一条待确认的<em>read index</em>的标识，因为如果队列中靠后的<em>read index</em>被确认，则其之前的<em>read index</em>也可以确认，该方法是为支持批量与流水线操作而设计的。</td>
+</tr>
+</tbody>
+</table>
+<h4 id="222-获取read-index流程与实现">2.2.2 获取read index流程与实现</h4>
+<p><code>Node</code>接口的<code>ReadIndex</code>方法会为Raft状态机应用一条<code>MsgReadIndex</code>消息。etcd/raft实现了<strong>Follower Read</strong>（<a href="#12-readindex" rel="">1.2节</a>介绍了<strong>Follower Read</strong>的简单实现），即follower需要将获取<em>read index</em>的请求转发给leader，leader确认自己是合法的leader后将<em>read index</em>返回给follower，然后follower根据其自己的<em>apply index</em>与<em>read index</em>确定什么时候可以执行只读请求。因此，如果应用<code>MsgReadIndex</code>消息的节点是follower，其会将该请求转发给leader：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+	<span class="c1">// stepFollower
+</span><span class="c1"></span>	<span class="c1">// ... ...
+</span><span class="c1"></span>
+	<span class="k">case</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgReadIndex</span><span class="p">:</span>
+		<span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">lead</span> <span class="o">==</span> <span class="nx">None</span> <span class="p">{</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;%x no leader at term %d; dropping index reading msg&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">)</span>
+			<span class="k">return</span> <span class="kc">nil</span>
+		<span class="p">}</span>
+		<span class="nx">m</span><span class="p">.</span><span class="nx">To</span> <span class="p">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">lead</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nf">send</span><span class="p">(</span><span class="nx">m</span><span class="p">)</span>
+
+</code></pre></div><p>当leader处理<code>MsgReadIndex</code>请求时（可能来自本地节点，也可能来自follower），其会执行如下逻辑：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+	<span class="k">case</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgReadIndex</span><span class="p">:</span>
+		<span class="c1">// only one voting member (the leader) in the cluster
+</span><span class="c1"></span>		<span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">prs</span><span class="p">.</span><span class="nf">IsSingleton</span><span class="p">()</span> <span class="p">{</span>
+			<span class="k">if</span> <span class="nx">resp</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nf">responseToReadIndexReq</span><span class="p">(</span><span class="nx">m</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nx">committed</span><span class="p">);</span> <span class="nx">resp</span><span class="p">.</span><span class="nx">To</span> <span class="o">!=</span> <span class="nx">None</span> <span class="p">{</span>
+				<span class="nx">r</span><span class="p">.</span><span class="nf">send</span><span class="p">(</span><span class="nx">resp</span><span class="p">)</span>
+			<span class="p">}</span>
+			<span class="k">return</span> <span class="kc">nil</span>
+		<span class="p">}</span>
+
+		<span class="c1">// Reject read only request when this leader has not committed any log entry at its term.
+</span><span class="c1"></span>		<span class="k">if</span> <span class="p">!</span><span class="nx">r</span><span class="p">.</span><span class="nf">committedEntryInCurrentTerm</span><span class="p">()</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="kc">nil</span>
+		<span class="p">}</span>
+
+		<span class="c1">// thinking: use an interally defined context instead of the user given context.
+</span><span class="c1"></span>		<span class="c1">// We can express this in terms of the term and index instead of a user-supplied value.
+</span><span class="c1"></span>		<span class="c1">// This would allow multiple reads to piggyback on the same message.
+</span><span class="c1"></span>		<span class="k">switch</span> <span class="nx">r</span><span class="p">.</span><span class="nx">readOnly</span><span class="p">.</span><span class="nx">option</span> <span class="p">{</span>
+		<span class="c1">// If more than the local vote is needed, go through a full broadcast.
+</span><span class="c1"></span>		<span class="k">case</span> <span class="nx">ReadOnlySafe</span><span class="p">:</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nx">readOnly</span><span class="p">.</span><span class="nf">addRequest</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nx">committed</span><span class="p">,</span> <span class="nx">m</span><span class="p">)</span>
+			<span class="c1">// The local node automatically acks the request.
+</span><span class="c1"></span>			<span class="nx">r</span><span class="p">.</span><span class="nx">readOnly</span><span class="p">.</span><span class="nf">recvAck</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Entries</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">Data</span><span class="p">)</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nf">bcastHeartbeatWithCtx</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">Entries</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">Data</span><span class="p">)</span>
+		<span class="k">case</span> <span class="nx">ReadOnlyLeaseBased</span><span class="p">:</span>
+			<span class="k">if</span> <span class="nx">resp</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nf">responseToReadIndexReq</span><span class="p">(</span><span class="nx">m</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nx">committed</span><span class="p">);</span> <span class="nx">resp</span><span class="p">.</span><span class="nx">To</span> <span class="o">!=</span> <span class="nx">None</span> <span class="p">{</span>
+				<span class="nx">r</span><span class="p">.</span><span class="nf">send</span><span class="p">(</span><span class="nx">resp</span><span class="p">)</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+		<span class="k">return</span> <span class="kc">nil</span>
+	<span class="p">}</span>
+
+</code></pre></div><p>首先，leader检查当前是否是以单节点模式运行的（即voter集合是否只有一个节点，但可以有任意数量的learner），如果是，那么该leader一定是合法的leader，因此可以直接返回相应的<code>ReadState</code>。返回<code>ReadState</code>的方法为<code>responseToReadIndexReq</code>方法。该方法会判断获取<em>read index</em>的请求是来自leader本地还是来自follower，如果来自本地则直接将相应的<code>ReadState</code>追加到当前<code>raft</code>结构体的<code>readStates</code>字段中，并返回空消息；如果请求时来自follower，该方法会返回一条用来发送给相应follower的<code>MsgReadIndexResp</code>消息。因此，如果<code>responseToReadIndexReq</code>方法返回的请求的<code>To</code>字段为0，不需要做额外的处理；如果<code>To</code>字段非0，则需要将该消息放入信箱等待发送。</p>
+<p>接着，leader需要判断当前的term是否提交过日志，这是为了解决<a href="#12-readindex" rel="">1.2节</a>中提到的新leader当选时<em>commit index</em>落后的问题。如果leader在当前term还没提交过消息，则其会忽略该<code>MsgReadIndex</code>消息。</p>
+<p>然后，leader会根据配置的获取<em>read index</em>的方法执行不同的逻辑。当使用<strong>Lease Read</strong>时，leader可以直接返回相应的<code>ReadState</code>，因为etcd/raft的<strong>Lease Read</strong>是通过<strong>Check Quorum</strong>实现的。即只要leader没有退位，说明其仍持有lease；而当leader无法为lease续约时，<strong>Check Quorum</strong>机制会让leader退位为follower，其也就不会通过<code>stepLeader</code>方法处理<code>MsgReadIndex</code>请求。</p>
+<p>当仅使用<strong>ReadIndex</strong>时，leader会将当前的<em>commit index</em>作为<em>read index</em>并通过<code>readOnly</code>的<code>addRequest</code>方法将其加入到待确认的队列中。然后leader节点自己先确认该<em>read index</em>，然后广播心跳等待其它节点确认该<em>read index</em>。leader在主动请求确认<em>read index</em>时，发送的心跳消息携带的<code>rctx</code>就是该<em>read index</em>相应的<code>rctx</code>；而当leader因<em>heartbeat timeout</em>超时而广播心跳消息时，携带的是待确认的最后一条<em>read index</em>相应的<code>rctx</code>，以批量确认所有待确认的<em>read index</em>。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// bcastHeartbeat sends RPC, without entries to all the peers.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">)</span> <span class="nf">bcastHeartbeat</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">lastCtx</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">readOnly</span><span class="p">.</span><span class="nf">lastPendingRequestCtx</span><span class="p">()</span>
+	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">lastCtx</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nf">bcastHeartbeatWithCtx</span><span class="p">(</span><span class="kc">nil</span><span class="p">)</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nf">bcastHeartbeatWithCtx</span><span class="p">([]</span><span class="nb">byte</span><span class="p">(</span><span class="nx">lastCtx</span><span class="p">))</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">)</span> <span class="nf">bcastHeartbeatWithCtx</span><span class="p">(</span><span class="nx">ctx</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nx">prs</span><span class="p">.</span><span class="nf">Visit</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">id</span> <span class="kt">uint64</span><span class="p">,</span> <span class="nx">_</span> <span class="o">*</span><span class="nx">tracker</span><span class="p">.</span><span class="nx">Progress</span><span class="p">)</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">id</span> <span class="o">==</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span> <span class="p">{</span>
+			<span class="k">return</span>
+		<span class="p">}</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nf">sendHeartbeat</span><span class="p">(</span><span class="nx">id</span><span class="p">,</span> <span class="nx">ctx</span><span class="p">)</span>
+	<span class="p">})</span>
+<span class="p">}</span>
+
+</code></pre></div><p>follower在响应心跳消息时，会透传记录了<code>rctx</code>的<code>Context</code>字段，当leader收到心跳响应时，会根据该字段更新待确认的<em>read index</em>的状态：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+	<span class="c1">// stepLeader
+</span><span class="c1"></span>	<span class="c1">// ... ...
+</span><span class="c1"></span>
+	<span class="k">case</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgHeartbeatResp</span><span class="p">:</span>
+		
+		<span class="c1">// ... ...
+</span><span class="c1"></span>
+		<span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">readOnly</span><span class="p">.</span><span class="nx">option</span> <span class="o">!=</span> <span class="nx">ReadOnlySafe</span> <span class="o">||</span> <span class="nb">len</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="kc">nil</span>
+		<span class="p">}</span>
+
+		<span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">prs</span><span class="p">.</span><span class="nx">Voters</span><span class="p">.</span><span class="nf">VoteResult</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">readOnly</span><span class="p">.</span><span class="nf">recvAck</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">From</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Context</span><span class="p">))</span> <span class="o">!=</span> <span class="nx">quorum</span><span class="p">.</span><span class="nx">VoteWon</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="kc">nil</span>
+		<span class="p">}</span>
+
+		<span class="nx">rss</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">readOnly</span><span class="p">.</span><span class="nf">advance</span><span class="p">(</span><span class="nx">m</span><span class="p">)</span>
+		<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">rs</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">rss</span> <span class="p">{</span>
+			<span class="k">if</span> <span class="nx">resp</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nf">responseToReadIndexReq</span><span class="p">(</span><span class="nx">rs</span><span class="p">.</span><span class="nx">req</span><span class="p">,</span> <span class="nx">rs</span><span class="p">.</span><span class="nx">index</span><span class="p">);</span> <span class="nx">resp</span><span class="p">.</span><span class="nx">To</span> <span class="o">!=</span> <span class="nx">None</span> <span class="p">{</span>
+				<span class="nx">r</span><span class="p">.</span><span class="nf">send</span><span class="p">(</span><span class="nx">resp</span><span class="p">)</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+
+</code></pre></div><p>当仅使用<strong>ReadIndex</strong>时，leader在收到心跳响应时会更新待确认的<em>read index</em>的状态。如果<em>read index</em>收到了达到quorum数量的相应，则可以确认该<em>read index</em>及其之前的所有<em>read index</em>，返回相应的<code>ReadState</code>。</p>
+<h2 id="3-总结">3. 总结</h2>
+<p>本文介绍了etcd/raft中只读请求算法优化与实现。etcd/raft中只读请求优化几乎完全是按照论文实现的。在其它的一些基于Raft算法的系统中，其实现的方式可能稍有不同，如不通过<strong>Check Quorum</strong>实现leader的lease，而是通过日志复制消息为lease续约，且lease的时间也小于<em>election timeout</em>，以减小时钟漂移对一致性的影响。</p>
+<h2 id="参考文献">参考文献</h2>
+<div class="reference">
+<p>[1] Ongaro D, Ousterhout J. In search of an understandable consensus algorithm[C]//2014 {USENIX} Annual Technical Conference ({USENIX}{ATC} 14). 2014: 305-319.</p>
+<p>[2] Ongaro D, Ousterhout J. In search of an understandable consensus algorithm (extended version)[J]. Retrieved July, 2016, 20: 2018.</p>
+<p>[3] Ongaro D. Consensus: Bridging theory and practice[D]. Stanford University, 2014.</p>
+<p>[4] <a href="https://jepsen.io/consistency" target="_blank" rel="noopener noreffer">Consistency Models. JEPSEN</a></p>
+<p>[5] <a href="https://aphyr.com/posts/313-strong-consistency-models" target="_blank" rel="noopener noreffer">Strong consistency models. Aphyr</a></p>
+</div></div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2021-01-01</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"></div>
+            <div class="post-info-share">
+                <span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/etcd/">etcd</a>,&nbsp;<a href="/tags/raft/">Raft</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/posts/code-reading/etcdraft-made-simple/5-confchange/" class="prev" rel="prev" title="深入浅出etcd/raft —— 0x05 Raft成员变更"><i class="fas fa-angle-left fa-fw"></i>深入浅出etcd/raft —— 0x05 Raft成员变更</a>
+            <a href="/posts/code-reading/boltdb-made-simple/0-introduction/" class="next" rel="next" title="深入浅出boltdb —— 0x00 引言">深入浅出boltdb —— 0x00 引言<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+</article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"><link rel="stylesheet" href="/lib/katex/katex.min.css"><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"><script type="text/javascript" src="/lib/smooth-scroll/smooth-scroll.min.js"></script><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"id-1":"叉鸽 | MrCroxx","id-2":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"id-1":["id-1"],"id-2":["id-2"]},"duration":null,"speed":null}};</script><script type="text/javascript" src="/js/theme.min.js"></script></body>
+</html>

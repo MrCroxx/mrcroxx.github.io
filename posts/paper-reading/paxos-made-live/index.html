@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>《Paxos Made Live - An Engineering Perspective》论文翻译 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《Paxos Made Live - An Engineering Perspective》论文翻译" />
+<meta property="og:description" content="本篇文章是对论文Paxos Made Live - An Engineering Perspective的原创翻译，转载请严格遵守CC BY-NC-SA协议。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/paxos-made-live/" />
+<meta property="og:image" content="https://mrcroxx.github.io/posts/paper-reading/paxos-made-live/paper-reading.jpg"/>
+<meta property="article:published_time" content="2020-09-24T11:42:43+08:00" />
+<meta property="article:modified_time" content="2020-09-27T17:18:01+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://mrcroxx.github.io/posts/paper-reading/paxos-made-live/paper-reading.jpg"/>
+<meta name="twitter:title" content="《Paxos Made Live - An Engineering Perspective》论文翻译"/>
+<meta name="twitter:description" content="本篇文章是对论文Paxos Made Live - An Engineering Perspective的原创翻译，转载请严格遵守CC BY-NC-SA协议。"/>
+<meta name="application-name" content="叉鸽 MrCroxx 的博客">
+<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/paper-reading/paxos-made-live/" /><link rel="prev" href="https://mrcroxx.github.io/posts/paper-reading/paxos-made-simple/" /><link rel="next" href="https://mrcroxx.github.io/posts/paper-reading/raft-extended/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "《Paxos Made Live - An Engineering Perspective》论文翻译",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/paxos-made-live\/"
+        },"image": [{
+                            "@type": "ImageObject",
+                            "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/paxos-made-live\/paper-reading.jpg",
+                            "width":  1200 ,
+                            "height":  360 
+                        }],"genre": "posts","keywords": "Paxos, Translation","wordcount":  18637 ,
+        "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/paxos-made-live\/","datePublished": "2020-09-24T11:42:43+08:00","dateModified": "2020-09-27T17:18:01+08:00","publisher": {
+            "@type": "Organization",
+            "name": "叉鸽"},"author": {
+                "@type": "Person",
+                "name": "叉鸽"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : '' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-1" class="typeit"></span></a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-2" class="typeit"></span></a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">《Paxos Made Live - An Engineering Perspective》论文翻译</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-24">2020-09-24</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 18637 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 38 分钟&nbsp;</div>
+        </div><div class="featured-image"><img
+        class="lazyload"
+        src="/svg/loading.min.svg"
+        data-src="/posts/paper-reading/paxos-made-live/paper-reading.jpg"
+        data-srcset="/posts/paper-reading/paxos-made-live/paper-reading.jpg, /posts/paper-reading/paxos-made-live/paper-reading.jpg 1.5x, /posts/paper-reading/paxos-made-live/paper-reading.jpg 2x"
+        data-sizes="auto"
+        alt="/posts/paper-reading/paxos-made-live/paper-reading.jpg"
+        title="/posts/paper-reading/paxos-made-live/paper-reading.jpg" /></div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#作者">作者</a></li>
+    <li><a href="#摘要">摘要</a></li>
+    <li><a href="#1-引言">1. 引言</a></li>
+    <li><a href="#2-背景">2. 背景</a></li>
+    <li><a href="#3-架构概要">3. 架构概要</a></li>
+    <li><a href="#4-回顾paxos">4. 回顾Paxos</a>
+      <ul>
+        <li><a href="#41-paxos基础">4.1 Paxos基础</a></li>
+        <li><a href="#42-multi-paxos">4.2 Multi-Paxos</a></li>
+      </ul>
+    </li>
+    <li><a href="#5-算法上的挑战">5. 算法上的挑战</a>
+      <ul>
+        <li><a href="#51-硬盘损坏">5.1 硬盘损坏</a></li>
+        <li><a href="#52-master租约">5.2 master租约</a></li>
+        <li><a href="#53-epoch号">5.3 epoch号</a></li>
+        <li><a href="#54-组成员">5.4 组成员</a></li>
+        <li><a href="#55-快照">5.5 快照</a></li>
+        <li><a href="#56-数据库事务">5.6 数据库事务</a></li>
+      </ul>
+    </li>
+    <li><a href="#6-软件工程上的挑战">6. 软件工程上的挑战</a>
+      <ul>
+        <li><a href="#61-算法的有效表达">6.1 算法的有效表达</a></li>
+        <li><a href="#62-运行时一致性检查">6.2 运行时一致性检查</a></li>
+        <li><a href="#63-测试">6.3 测试</a></li>
+        <li><a href="#64-并发">6.4 并发</a></li>
+      </ul>
+    </li>
+    <li><a href="#7-意外地故障">7. 意外地故障</a></li>
+    <li><a href="#8-评估">8. 评估</a></li>
+    <li><a href="#9-总结与未解决的问题">9. 总结与未解决的问题</a></li>
+    <li><a href="#10-致谢">10. 致谢</a></li>
+    <li><a href="#11-参考文献">11. 参考文献</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p><em>本篇文章是对论文<a href="http://www8.cs.umu.se/kurser/5DV153/HT14/literature/chandra2006paxos.pdf" target="_blank" rel="noopener noreffer">Paxos Made Live - An Engineering Perspective</a>的原创翻译，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
+<h2 id="作者">作者</h2>
+<p>Tushar Chandra, Robert Griesemer, and Joshua Redstone</p>
+<p>Google Inc.</p>
+<h2 id="摘要">摘要</h2>
+<p>我们描述了我们在使用Paxos共识算法构建一个容错的数据库的经历。尽管在该领域已经有文献，但是事实上构建这样一个数据库并非易事。我们描述了选取算法和遇到的工程问题，及我们对这些问题的解决方案。我们的度量表明我们构建了一个很有竞争力的系统。</p>
+<h2 id="1-引言">1. 引言</h2>
+<p>众所周知，在商用硬件上的容错可通过副本实现<sup>[17, 18]</sup>。一个更通用的方法是使用共识算法<sup>[7]</sup>来确保所有副本相互一致<sup>[8, 14, 17]</sup>。通过对输入值的序列反复应用这样的算法，使为每个副本构建相同的值的日志成为可能。如果值是对某个数据结构的操作，那么建立在所有副本的相同日志上的应用程序可被用作实现所有副本中相互一致的数据结构。例如，如果日志由数据库操作序列组成，且对每个副本上的（本地）数据库应用了相同的操作序列，那么最终所有副本会有相同的数据库内容（前提是它们都从相同的初始数据库状态开始）。</p>
+<p>这种通用的方法可被用作实现很多种容错基本组件，可容错数据库仅是一个例子。因此，在过去20年中，共识问题被大量研究。其中有几个众所周知的共识算法，它们可以在多种设置下执行，并能够容忍各种故障。Paxos算法<sup>[8]</sup>已经被从理论<sup>[16]</sup>和应用<sup>[10, 11, 12]</sup>的社区中被讨论了超过10年。</p>
+<p>我们使用Paxos算法（Paxos）作为实现了容错日志的框架的基础。接着，我们依赖这个框架构建了一个容错数据库。尽管在这个方向已经有文献，但是构建一个生产级的系统并非易事，其原因有如下几点：</p>
+<ul>
+<li>
+<p>尽管Paxos能被一页伪代码描述出来，但是我们的完整实现却有几千行C++代码。代码量的爆炸并非由于我们使用了C++而不是伪代码，也不是由于我们的代码风格很啰嗦。将算法转化为实用的、可用于生产的系统，需要实现很多特性和优化——其中一些在文献中发表过，而一些却没有。</p>
+</li>
+<li>
+<p>容错算法社区习惯于证明短算法的正确性（一页伪代码）。但是这种方法不适用于证明由几千行代码组成的系统的正确性。为了在真实系统中获取对“正确性”的自信，我们使用了很多不同的方法。</p>
+</li>
+<li>
+<p>容错算法能够容忍一系列被小心选取的故障。然而，真实世界中的软件面对着各种各样的故障模式，包括算法中的错误、实现中的bug、和操作错误。我们必须设计软件并设计操作程序，以更健壮地处理更大范围的故障模式。</p>
+</li>
+<li>
+<p>一个真是的系统很少能够精确地定义。甚至更糟的是，定义可能在实现阶段变化。因此，系统的实现应该是易修改的。最后，系统构建可能因为在其定义阶段的误解而失败。</p>
+</li>
+</ul>
+<p>本文挑选了我们在将Paxos从理论搬到实践过程中遇到的一些算法和工程挑战。这一工作比直接将伪代码翻译为C++多出很多研究与开发上的努力。</p>
+<p>本文剩下的部分按照如下方式组织。接下来两章将展开讲解本项目的动机并描述我们构建的系统所处的一般环境。接着，我们重新回顾一下Paxos。我们将我们的经验分为三类并一次讨论：文献中算法的漏洞、软件工程上的挑战、和没有预期到的故障。最后我们通过度量我们的系统来进行总结，并对我们的领域的技术状况进行了更广泛的观察。</p>
+<h2 id="2-背景">2. 背景</h2>
+<p>Chubby<sup>[1]</sup>是Google的容错系统，其提供了分布式锁机制并存储小文件。通常，每个数据中心有一个Chubby实例，或成为“cell”。一些Google的系统，如Google File System（GFS）<sup>[4]</sup>和Bigtable<sup>[2]</sup>，使用Chubby进行分布式协作并存储少量元数据。</p>
+<p>Chubby通过副本的方式来实现容错。通常，一个Chubby cell有5个运行相同代码的副本组成，每个副本都运行在一个专用的机器上。每个Chubby对象（例如Chubby锁、或Chubby文件）被作为数据库的一个条目存储。因此其实这些就是数据库的副本。在任意时间，这些副本之一会作为“master”。</p>
+<p>Chubby的客户端（例如GFS和Bigtable）通过与Chubby cell通信来获取服务。master副本为所有Chubby请求提供服务。如果Chubby通信的副本不是master，那么该副本会回复master副本的网络地址。随后Chubby可以联系master副本。如果master宕机，那么新的master会被自动选举，随后新的master副本会基于其本地的数据库副本继续提供服务。因此，数据库的副本保证了在master故障转移过程中Chubby状态的连续性。</p>
+<p>Chubby的第一个版本基于第三方商业容错数据库，我们在本文的余下部分称这个数据库为“3DB”。这个数据库有与副本相关的bug历史。事实上，据我们所知，其副本机制没有基于被证明过的算法，且我们不知道其是否正确。考虑到这个产品的历史原因和Chubby的重要性，我们最终决定使用我们自己的基于Paxos算法的方案替换3DB。</p>
+<h2 id="3-架构概要">3. 架构概要</h2>
+<p><strong>图1</strong>阐述了单Chubby副本的架构。基于Paxos算法的容错副本日志坐落在协议栈的底层。每个副本维护一个本地的日志拷贝。Paxos算法按照需求反复运行以确保所有副本在它们的本地日志中要相同的条目序列。副本间互相通过Paxos专用的协议通信。</p>
+<p><figure><a class="lightgallery" href="/posts/paper-reading/paxos-made-live/figure-1.png" title="图1 单Chubby副本" data-thumbnail="/posts/paper-reading/paxos-made-live/figure-1.png" data-sub-html="<h2>图1 单Chubby副本</h2><p>图1 单Chubby副本</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="figure-1.png"
+            data-srcset="/posts/paper-reading/paxos-made-live/figure-1.png, figure-1.png 1.5x, /posts/paper-reading/paxos-made-live/figure-1.png 2x"
+            data-sizes="auto"
+            alt="/posts/paper-reading/paxos-made-live/figure-1.png" />
+    </a><figcaption class="image-caption">图1 单Chubby副本</figcaption>
+    </figure></p>
+<p>下一层是一个多副本容错数据库，其每个副本都有一个数据库的本地拷贝。数据库由一个本地的snapshot（快照）和replay（重放日志，数据库操作的日志）组成。新的数据库操作会被提交到多副本的日志中。当数据库操作出现在副本中时，其会被应用到副本的本地数据库拷贝中。</p>
+<p>最后，Chubby使用了容错数据库来存储其状态。Chubby的客户端通过Chubby专用协议与单个Chubby副本通信。</p>
+<p>我们致力于设计将Paxos框架、数据库、和Chubby分离的清晰的接口。这部分是为了系统开发的清晰性，也同样为了能在其它应用程序中复用多副本日志层。我们预计Google之后的系统会通过副本的方式实现容错。我们相信容错日志对于构建这样的系统来说是一个强大的组件。</p>
+<p><figure><a class="lightgallery" href="/posts/paper-reading/paxos-made-live/figure-2.png" title="图2 容错日志的API" data-thumbnail="/posts/paper-reading/paxos-made-live/figure-2.png" data-sub-html="<h2>图2 容错日志的API</h2><p>图2 容错日志的API</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="figure-2.png"
+            data-srcset="/posts/paper-reading/paxos-made-live/figure-2.png, figure-2.png 1.5x, /posts/paper-reading/paxos-made-live/figure-2.png 2x"
+            data-sizes="auto"
+            alt="/posts/paper-reading/paxos-made-live/figure-2.png" />
+    </a><figcaption class="image-caption">图2 容错日志的API</figcaption>
+    </figure></p>
+<p>我们的容错日志的API如<strong>图2</strong>所示。其包括一个用来将新的值提交（submit）到日志中的调用。一旦被提交的值进入容错日志，我们的系统会调用每个客户端应用程序中的回调，并传递被提交的值。</p>
+<p>我们的系统是多线程的，多个值可在不同的线程中被并发提交。多副本的日志不会创建其自己的线程，但是可在任意数量的线程中被并发调用。这种线程化的系统有助于我们测试系统，我们将在后文中详细介绍。</p>
+<h2 id="4-回顾paxos">4. 回顾Paxos</h2>
+<p>本章中我们将介绍基本Paxos算法的概要，并概括地介绍我们如何将运行的多个Paxos联系到一起（Multi-Paxos）。想要了解更多形式化的描述和正确性证明的读者可以参考文献<sup>[8, 9, 16]</sup>。熟悉Paxos的读者可以跳过这一章。</p>
+<h3 id="41-paxos基础">4.1 Paxos基础</h3>
+<p>Paxos是一种共识算法，由一个进程（被称为副本，replica）集合执行，用于在有故障的情况下就单个值达成一致。副本可能崩溃也可能随后恢复。网络可能丢失信息也可能导致信息重复。副本可以访问持久化存储，其可在崩溃时幸存。一些副本可以提交（submit）值以达成共识。如果最终大部分副本运行了足够长的时间而没有崩溃且没有故障，那么所有运行中的副本会对被提交的值之一达成一致（agree）。在我们的系统中，要达成一致的值是（多副本）日志的下一个条目，正如引言中描述的那样。</p>
+<p>该算法由3个阶段组成，每个阶段都有可能重复（因为失败）：</p>
+<ol>
+<li>
+<p>选举一个副本作为coordinator（协调者）。</p>
+</li>
+<li>
+<p>coordinator选取一个值，并通过被称为“accept消息”的消息将其广播给所有的副本。其他副本或者“acknowledge（确认）”该消息，或者“reject（拒绝）”该消息。</p>
+</li>
+<li>
+<p>当大部分副本确认了该coordinator后，共识就会被达成，coordinator会广播一条“commit消息”来通知所有副本。</p>
+</li>
+</ol>
+<p>为了直观地了解该算法是如何工作的，首先考虑仅有一个coordinator且没有故障的情况。一旦大部分的副本收到了来自coordinator的accept消息并确认它后，就会达成共识。接下来，如果任意的少部分副本故障，我们仍能够保证至少一个收到了共识值的副本存活。</p>
+<p>在现实中，coordinator可能故障。Paxos不需要在同一时间只有一个副本作为coordinator。在任何时间，都可以有多个副本可能决定变为coordinator并执行算法。通常，系统会被设计为限制coordinator的更替，因为其会推迟共识的达成。</p>
+<p>这种宽松的选取策略意味着同时可能有多个认为自己是coordinator的副本。而且，这些coordinator可能选取了不同的值。Paxos通过两种额外的机制确保仅有一个值会达成共识（该值可能来自任一coordinator），这两个机制为：（1）对连续的coordinator排序（2）限制每个coordinator的选择中只能选取一个值。</p>
+<p>对coordinator排序让每个副本都能区分当前的coordinator和过去的coordinator。通过这种方式，副本可以拒绝来自旧coordinator的消息，并防止这些消息破坏已达成的共识。Paxos通过给coordinator分配递增的序列号的方式对它们进行排序。每个副本追踪其上一次见到的序列号。当副本想要变为coordinator时，它会生成一个唯一的<sup>注1</sup>比其之前见过的更高的序列号，并将其在proposer消息中广播给所有副本。如果大部分副本作出回复并标明它们没有见过更大的序列号，那么该副本就会作为coordinator。这些回复被称为promise消息，因为副本承诺从此以后拒绝来自旧的coordinator的消息。proposer/promise消息交换构成了上面列出的步骤1。</p>
+<blockquote>
+<p>注1：例如，在有$n$个副本的系统中，为每个副本$r$分配一个$0$到$n-1$的唯一的id $i_r$。副本$r$选取比起见过的序列号$s$要大的最小序列号，且$s \mod n = i_r$。</p>
+</blockquote>
+<p>一旦对一个值的共识达成，Paxos必须强制后面的coordinator选取与其相同的值，以确保持续的一致。为了确保这一点，来自副本的promise消息包含它们上一次听说的值（如果存在）和它们听说的值来自的coordinator的序列号。新的coordinator选取最近的coordinator的值。如果promise消息都没包含值，那么coordinator可以自由地选取提交的值。</p>
+<p>算法能工作的原理有些微妙，但大致如下。新的coordinator需要来自大多数副本的对proposer消息的响应。因此，如果之前的coordinator达成了一个共识，那么可以保证新的coordinator能够至少从一个副本听到决定的值。通过归纳，该值将会有所有收到的响应中最大的序列号，所以其将会被选取为新的coordinator。</p>
+<h3 id="42-multi-paxos">4.2 Multi-Paxos</h3>
+<p>使用的系统使用Paxos作为构建单元来实现<em>值序列</em>的共识，如多副本日志。实现它的简单方式是反复执行Paxos算法。我们把每次执行称为Paxos算法的一个<em>实例（instance）</em>。“像Paxos提交（submit）一个值”表示“执行一个Paxos的实例同时提交该值”。</p>
+<p>在Multi-Paxos中，一些缓慢（slow，lagging）的副本可能不会参与最近的Paxos实例。我们使用了*追赶（catch-up）*机制来使缓慢的副本能够追赶上领先的副本。</p>
+<p>每个副本维护了一个本地的持久化日志来记录Paxos的行为。当副本崩溃并随后恢复后，它会重放持久化日志来重构其崩溃前的状态。副本还会在帮助落后的副本追赶时使用这个日志。目前为止，我们描述的Paxos算法要求所有消息的发送者在发送消息前记录它们的状态——因此，该算法的关键路径上会对磁盘进行5次写入（每次proposer、promise、accept、acknowledgement、commit消息会写入一次）。需要注意的是，所有的写入在系统可以继续进行任何操作之前必须立即刷盘。在副本在网络中邻近的系统中，刷盘时间可能会主导该实现的整体延迟。</p>
+<p>一个用来减少消息数的常用优化是将多个Paxos实例连接到一起<sup>[9]</sup>。如果coordinator身份不会在实例间发生变化，那么propsoer消息可以被省略。因为任何副本在任何时间仍然可以通过广播有更高序列号的proposer消息来试图变为coordinator，所以Paxos的性质不会受影响。为了利用这一优化，Multi-Paxos算法会被设计为选取一个coordinator并长时间保持，尽量不要使coordinator改变。我们称这样的coordinator为master。通过这种优化，Paxos算法的每个副本的每个实例仅需要单次磁盘写入，且可以与其他实例并行执行。master在发送accept消息后立即落盘，其他副本在它们发送acknowledge消息前落盘。</p>
+<p>为了在并发系统中获得额外的吞吐量，可以将不同应用程序线程中提交的值分批到单个Paxos实例中。</p>
+<h2 id="5-算法上的挑战">5. 算法上的挑战</h2>
+<p>虽然Paxos核心算法被描述得很好，但是实现一个基于Paxos算法的容错日志并非易事。现实中的不完美之处增加了一些复杂性（例如硬盘故障或资源有限），额外的需求又带来了一些复杂性（如“master租约”）。许多这些挑战的算法上的挑战都与Paxos核心算法密切相关。接下来，我们我们将描述一些我们引入的机制。</p>
+<h3 id="51-硬盘损坏">5.1 硬盘损坏</h3>
+<p>副本有时可能会遇到磁盘损坏的情况。磁盘损坏可能由于媒介故障或操作错误（操作员可能意外地删除了关键数据）造成。当副本的磁盘损坏且丢失了持久化状态时，其可能违背它之前对其它副本做出的承诺。这会违背Paxos算法的一个关键的假设。我们通过如下机制来解决这一问题<sup>[14]</sup>。</p>
+<p>磁盘损坏有两种表现形式。或者文件内容可能改变，或者文件可能变得无法访问。为了检测前者，我们在一个文件中存储了每个文件的内容的校验和<sup>注2</sup>。后者可能与有空白磁盘的新副本的情况无法区分——我们通过让新副本在启动后在GFS中留下一个标记的方式检测这种情况。如果副本重启且棋盘为空，它将发现GFS中的标记，并意识到其磁盘发生了损坏。</p>
+<blockquote>
+<p>注2：该机制不会检测被回滚到旧状态的文件。我们认为这种情况发生的可能性很小，所以我们选择不去显式地处理它。稍后，我们将描述可以检测这类问题的校验和机制。</p>
+</blockquote>
+<p>磁盘损坏的副本会按照如下方式重建其状态。其作为一个不投票的成员参与到Paxos中，这意味着它使用追赶机制来追赶日志，但是不会响应promise或acknowledge消息。该副本会一直保持这一状态，直到它观察到了在该副本开始重构它的状态后，有一个完整的Paxos实例启动了。通过等待额外的Paxos实例，我们可以确保该副本不会违背之前的承诺。</p>
+<p>这种机制让如下改进系统延迟的机制成为可能。因为系统现在可以处理偶然的磁盘损坏，在一些情况下，可以接受不将写入的内容立即落盘<sup>注3</sup>。虽然我们考虑了利用这一性质的策略，但是我们还没有实现它们。</p>
+<blockquote>
+<p>注3：例如，如果每个副本的操作系统和底层硬件极少故障，且不同副本间的故障相互独立，那么可以修改我们的系统，使其不需要将写入落盘。</p>
+</blockquote>
+<h3 id="52-master租约">5.2 master租约</h3>
+<p>当使用基本Paxos算法来实现多副本数据结构时，对数据结构的读取需要执行一个Paxos实例。这会串行化与更新相关的读取操作，并确保读取的内容是当前状态。另外，读操作不能由master的数据结构副本提供，因为有可能其它副本已经选举了另一个master，修改了数据结构，且没有通知旧的master。在这种情况下，由master提供的读操作有返回陈旧数据的风险。因为读操作通常在所有操作中占很大比例，所以通过Paxos的串行读取开销很高。</p>
+<p>其解决方案是实现带有以下语义的*master 租约（master leases）*<sup>[5]</sup>：一旦master持有租约，它将确保其它副本不能成功地向Paxos提交值。因此，持有租约的master的本地数据结构有最新的信息，其可被用作直接通过本地提供读操作。通过让master在租约过期前试图刷新租约，我们可以确保master在大部分时间都持有租约。在我们的系统中，master可以一次性保持租约长达几天。</p>
+<p>在我们的实现中，所有副本隐式地向之前的Paxos实例的master颁发租约，并在租约期间拒绝处理来自任何其他副本的Paxos消息。master会维护比副本更短的租约超时时间——这可以避免系统时钟漂移。master定期向Paxos提交一个虚拟的心跳值以刷新租约。</p>
+<p>当存在间歇性网络中断时，Multi-Paxos优化有如下稳定性问题。当master的连接临时中断时，Paxos会选举一个新的master。新的master会维护一个跨Paxos实例的固定的序列号。同时，当连接中断的旧master试图运行Paxos算法时，如果它成功地连接到另一个副本时，它会增大它的序列号。当旧master重新连接时，它可能有比新的master更高的序列号，且有可能取到新的master。稍后它可能再次失去连接，重复这个循环。</p>
+<p>这样的行为是不可取的，因为Chubby的master变化会对其部分用户有负面影响。另外，这种行为在连接情况较差的网络中可能会更糟，变为master反复快速变更。在我们的实现中，master会通过一轮Paxos算法（包括发送propsoer消息<sup>注4</sup>）周期性地增大自己的序列号。在大多数情况下，通过以正确的频率增大序列号可以避免这种master频繁变更的情况。</p>
+<blockquote>
+<p>注4：在有负载的系统中，仅有低于1%的实例运行了一整轮Paxos算法。（译注：由于存在分批提交等优化。）</p>
+</blockquote>
+<p>注意，足月的概念可以扩展到所有副本中。可将让任意持有曲乐的副本能够从它的本地数据结构中为读请求提供服务。当读取流量显著超过写入流量时，这种扩展的租约机制非常有用。我们已经研究了副本租约的算法，但是目前还没有实现它们。</p>
+<h3 id="53-epoch号">5.3 epoch号</h3>
+<p>（通过Chubby客户端）提交到Chubby cell的请求会被定向到Chubby当前的master副本中。从master副本收到请求到请求引起底层数据库更新的这段时间内，该副本可能会丢失其master状态，甚至可能在丢失master状态后又重新获得了master状态。如果在处理请求期间，master的所有权丢失和（或）重新获得了master所有权，Chubby需要中断将要到来请求。我们需要一种机制来可靠地检测master的转移并在必要时中断操作。</p>
+<p>我们通过引入一种有如下语义的全局epoch号的方式解决了这一问题。若master副本收到了两个获取epoch号的请求，那么当且仅当该副本在这两个请求间一直是master时，这两个请求会收到相同的值。epoch号会被存储为数据库条目，且所有数据库操作都以epoch号的值为条件。</p>
+<h3 id="54-组成员">5.4 组成员</h3>
+<p>实用的系统必须能够处理副本集合的变化。在文献<sup>[3]</sup>中，这被称为“组成员”问题。一些Paxos的论文指出，组成员可通过Paxos算法本身实现<sup>[3]</sup>。虽然实用Paxos核心算法实现组成员很简单，但当我们引入了Multi-Paxos、磁盘损坏等优化时，其具体细节就不再简单。不幸的是，文献中没有详细说明这一点，也没有对使用Paxos实现组成员变更的算法正确性进行证明。我们必须填补这些空白，以使组成员能够在我们的系统中工作。尽管其实现细节相对较小，但是仍然很微妙，这超出了本文讨论的范围。</p>
+<h3 id="55-快照">5.5 快照</h3>
+<p>如目前描述的那样，这种反复应用共识算法来创建多副本日志的方式会引起日志持续增长。这会有两个问题：这需要无限大的磁盘空间；更糟的是，因为恢复副本必须在其追赶上其他副本前重放一个可能非常长的日志，这会导致恢复时间无限长。日志通常是一个要被应用到某个数据结构的操作序列，因此，日志（通过重放）可以隐式表示数据结构的持久化的形式。问题在于寻找一种为其中的数据结构找到一种替代的持久化表示方法。一种显而易见的机制是直接持久化该数据结构或对其做快照（snapshot），这样就不再需要引导数据结构到当前状态的日志了。例如，如果数据结构在内存中，我们通过将其序列化到磁盘上的方式为它做快照。如果数据结构保存在磁盘上，快照可以是其在磁盘上的一个副本。</p>
+<p>Paxos框架仅通过自身不能得知我们想要备份的数据结构，它仅关注多副本日志的一致性。使用Paxos框架的应用程序才有所有有关多副本数据结构的信息。因此，应用程序必须负责制作快照。我们的框架提供了一个让客户端应用程序（如我们的容错数据库）通知框架快照创建完成的机制。客户端应用程序可以在任意时间制作快照。当Paxos被通知有快照时，它会通过删除在快照前的日志的方式裁剪日志。如果副本故障，在随后的恢复过程中，它简单地安装最新的快照并重放裁剪后的日志来重构其状态即可。快照不会跨副本同步，每个副本单独决定其什么时候创建快照。</p>
+<p>起初，这一机制看上去很简单，且文献<sup>[8]</sup>中有提到过它。然而，它为系统引入了相当多的复杂性：现在副本的持久化状态包括日志和快照，它们都必须保持一致。日志完全受框架的控制，而快照格式是由应用程序指定的。快照机制的某些方面很令人关注：</p>
+<ul>
+<li>
+<p>快照和日志需要相互一致。每个快照需要有与其内容对应的容错日志相关的信息。为此，我们的框架引入了*快照句柄（snapshot handle）*的概念。快照句柄包含与特定快照相关的所有Paxos指定的信息。当创建快照时（其受应用程序控制），相应的快照句柄（由框架提供）同样需要被应用程序存储。当恢复快照时，应用程序必须将快照句柄返回给框架，随后框架会使用句柄中的信息来协调快照与日志。</p>
+<p>需要注意的是，句柄其实是对Paxos状态本身的快照。在我们的系统中，其包含与该（日志）快照相关的Paxos实例号和当前的组成员。</p>
+</li>
+<li>
+<p>制作快照需要一定时间，且在一些情况下，我们无法承担制作快照时冻结（freeze）副本日志的代价。在我们的框架中，制作副本被分为三个阶段。首先，当客户端程序决定制作快照时，它会请求一个快照句柄。接着，该客户端程序会制作其快照。制作快照期间可能阻塞系统，更可能的情况是，创建一个在副本继续参与Paxos的同时制作快照的线程。快照必须对应于日志中客户端获取句柄时的状态。因此，如果副本在制作快照时继续参与Paxos，则必须采取特殊的预防措施，来在客户端的数据结构被更新时更新快照<sup>注5</sup>。最后，当快照被创建完成时，客户端程序告知框架该快照，并传递相应的快照句柄。随后框架会适当地裁剪日志。</p>
+</li>
+</ul>
+<blockquote>
+<p>注5：我们最初实现的容错数据库会在对（小型）数据库做内存拷贝时短暂地阻塞系统。随后它会将拷贝的数据通过另一个线程落盘。后来，我们实现了虚拟的无暂停（pause-less）快照。现在我们使用一个“影子（shadow）”数据结构来在下层数据库被序列化到磁盘时跟踪数据结构的更新。</p>
+</blockquote>
+<ul>
+<li>
+<p>创建快照可能失败。我们的框架仅在其被通知快照已经创建完且接收完相应的快照句柄时才会裁剪日志。因此，只要客户端程序没有通知框架，从框架的视角来看，就没有创建快照。这让客户端程序可以校验快照的完整性，并在必要时丢弃快照。如果快照存在问题，那么客户端不会让框架裁剪日志。通过这个机制，客户端程序甚至可以试图同时创建多个快照。</p>
+</li>
+<li>
+<p>在“追赶”时，副本可能试图获取丢失的日志记录。如果副本不能获取它们（因为没有副本有足够老且可用的日志条目），该副本会被告知从另外一个副本获取快照。这个快照的句柄包含直到它捕获到的状态的Paxos实例的相关信息。在大多数情况下，一旦快照被接收并安装，落后的副本将会接近领先的副本。为了完全赶上，落后的副本会向领先的副本请求并接收剩余的日志记录。</p>
+<p>注意，领先的副本可能在落后的副本正在安装较旧的快照时创建了一个新的快照——在容错系统中这是不可避免的。在这种情况下，落后的副本可能无法获得任何剩余日志记录，因为快照的提供者（和所有其它副本）可能已经将它们删除了。落后的副本将需要获取一个更近的快照。</p>
+<p>此外，领先的副本可能在发送其快照后故障。追赶机制必须能够通过让落灰的副本联系另一个副本来从这样的问题中恢复。</p>
+</li>
+<li>
+<p>我们需要一种定位最近快照的机制。一些应用程序可能选择直接在领先的副本和落后的副本间传输快照，而其它的应用程序可能让落后的副本在GFS上查找快照。我们实现了一种通用的机制，让应用程序在领先的副本和落后的副本间传递快照位置信息。</p>
+</li>
+</ul>
+<h3 id="56-数据库事务">5.6 数据库事务</h3>
+<p>Chubby对数据库的需求非常简单：数据库需要存储键值对（键和值可以使任意字符串），并支持常用的操作，如：<em>insert</em>、<em>delete</em>、<em>lookup</em>、原子性的<em>compare and swap（cas）</em>、和遍历所有条目。我们使用对整个数据库的快照实现了一个日志结构设计的数据库，每条数据库操作日志可被应用到快照上。操作日志是Paxos日志。该实现定期创建数据库状态的快照，并裁剪相应的日志。</p>
+<p>相对于其它数据库操作，<em>cas</em>操作（可能由不同的副本提出）需要是原子性的。这可以通过将所有<em>cas</em>相关数据提交到Paxos的一个“值”中实现。我们意识到，我们可以扩展这种机制，在不需要实现真正的数据库事务的情况下提供像事务一样的支持。我们描述了我们的解决方案中的更多细节，因为我们认为这可能在其他场景中也很有用。</p>
+<p>我们的实现围绕一个我们称为<strong>MultiOp</strong>的强大的原语。除了遍历的所有其他数据库操作都通过一次<strong>MultiOp</strong>调用实现。<strong>MultiOp</strong>会被原子性地应用，它由3个组件组成：</p>
+<ol>
+<li>
+<p>一组被称为<strong>guard</strong>的校验（test）。<strong>guard</strong>中的每个校验会检查数据库中的一个条目。它会检查值是否存在，或与给定值比较。<strong>guard</strong>中的两个不同的校验可能应用到相同或不同额数据库条目。<strong>guard</strong>中所有的校验都会被应用，且<strong>MultiOp</strong>会返回结果。如果所有的校验都是ture，<strong>MultiOp</strong>会执行<strong>t_op</strong>（见第2点），否则其会执行<strong>f_op</strong>（见第3点）。</p>
+</li>
+<li>
+<p>一组被称为<strong>t_op</strong>的数据库操作。其中每个操作可能是一个<em>insert</em>、<em>delete</em>、或<em>lookup</em>操作，它们会应用到数据库的一个条目上。一组中两个不同的操作可能会被应用到数据库中相同或不同的条目上。这些操作会在<strong>guard</strong>的值为true时执行<sup>注6</sup>。</p>
+</li>
+<li>
+<p>一组被称为<strong>f_op</strong>的数据库操作。类似<strong>t_op</strong>，但是在<strong>guard</strong>的值为false时执行。</p>
+</li>
+</ol>
+<blockquote>
+<p>注6：与其它操作不同，每个<strong>MultiOp</strong>操作会原子性地串行执行。一组中的各个操作会在数据库上按顺序执行。</p>
+</blockquote>
+<p>在我们的后期开发中（在我们已经实现了数据库和<strong>MultiOp</strong>后），我们意识到我们还需要使用epoch号来实现Chubby的数据操作。因为这个额外需求，所有的Chubby操作都变得与epoch有关，且当Paxos的epoch变化时需要执行失败。<strong>MultiOp</strong>在适应这个新需求时被证实很有帮助。在我们把Paxos的epoch作为数据库的一个条目后，我们可以改变所有之前的对数据库的调用，来引入用来检查epoch号的额外的<strong>guard</strong>。</p>
+<h2 id="6-软件工程上的挑战">6. 软件工程上的挑战</h2>
+<p>人们期望容错系统能够连续运行很长时间。用户对容错系统的bug容忍度比其他系统要低得多。例如，文档编辑器的布局bug可能会让用户很烦，但这个问题是可以“通融”的，尽管事实上这是软件核心功能的bug。而在容错系统中，相同分量的bug可能会使系统不可用。</p>
+<p>我们采用了多种软件工程方法来容我们对我们的实现的健壮性有信心。本章中，我们描述了一些我们是用了的方法。</p>
+<h3 id="61-算法的有效表达">6.1 算法的有效表达</h3>
+<p>众所周知，容错算法很难正确表达，即使是伪代码也是如此。当这些算法与其他一起构建完整的系统时，这一问题可能会变得更糟。当出现bug时，核心代码难以分辨、推导、或调试。这还会使需求变化时难以修改核心代码。</p>
+<p>我们通过将核心算法编写成两个显式的状态机的方式解决这一问题。为此，我们设计了一个简答的状态机专用语言，并构建了一个将该语言翻译为C++的编译器。该语言被设计得非常简洁，因此整个算法可在一屏中显示。它的另一个好处是，状态机编译器还能自动生成代码来记录状态转移并测量代码覆盖率，以帮助调试和测试。</p>
+<p>我们认为选择专用语言比混在系统其它部分中的显式代码实现更容易推断和修改我们的状态机。我们通过如下的经历阐述了这一点。在我们开发容错日志的最后阶段，我们不得不对我们的组成员算法做根本性的修改。在修改前，我们的系统大致会经历三个状态。最初系统等待加入组，然后系统加入到组中，最后系统离开组。一旦一个副本离开了组，它就不再被允许重新加入该组。因为间歇性故障的副本可能无法加入组且会使组长时间混乱，所以我们认为这种方法是最好的。然而，因为正常的副本有时也会间歇故障，间歇性故障比我们最初预期的更常见。因此，我们需要将算法改为有两个状态。即副本在组中或副本不在组中。在系统的生命周期中，副本可以在这两种状态间频繁切换。做出这些修改花了我们一个小时的时间，修改相关的测试花了我们三天时间。如果我们将状态机和系统其它部分混在一起编写，那么这些修改将会更难实现。</p>
+<h3 id="62-运行时一致性检查">6.2 运行时一致性检查</h3>
+<p>不一致发生的可能性会随着代码库大小、项目持续时间、和同时编写同一处代码的人的增加而增加。我们使用了各种主动自我检查机制，如使用了很多assert（断言）以及使用测试数据结构一致性的显式验证代码。</p>
+<p>例如，我们使用了如下的数据库一致性检查。master定期向数据库日志提交checksum（校验和）请求。收到该请求后，每个副本会计算其本地数据库的校验和<sup>注7</sup>。因为Paxos日志对所有副本的所有操作进行了相同的串行化，我们期望所有副本会计算出相同的校验和。在master完成校验和计算后，它会把它的校验和发送给所有副本，副本会将master的校验和与它们计算出的校验和进行比较。</p>
+<blockquote>
+<p>注7：我们使用了影子数据结构来在处理数据库操作的同时并发处理校验和操作。</p>
+</blockquote>
+<p>到目前为止，我们发生了三种数据库不一致事故：</p>
+<ul>
+<li>
+<p>第一个事故原因是一名操作员错误。</p>
+</li>
+<li>
+<p>我们没有发现第二个事故的原因。在重放故障副本的日志时，我们发现它与其它副本是一致的。因此这可能是由随即发生的硬件内存损坏造成的。</p>
+</li>
+<li>
+<p>我们换衣第三次事故是由我们使用的代码库（其大小相当可观）的不正常的非法内存访问导致的。为了防止未来再次发生，我们维护了第二个校验和数据库，并通过校验和对每次数据库访问进行双重校验。</p>
+</li>
+</ul>
+<p>在这所有三种情况下，我们在Chubby发生问题前就通过人工解决了这些问题。</p>
+<h3 id="63-测试">6.3 测试</h3>
+<p>鉴于目前的技术水平，想要证明像我们的系统一样的真实的系统的正确性是不现实的。为了实现健壮性，除了精细的软件工程外，最佳的方式是对系统进行彻底的测试。我们的系统从一开始就被设计为可测试的，目前其包含一套范围很广的测试。本节中，我们将描述两种测试，它们会让系统经历较长的一系列随机故障，并验证其行为是否符合预期。两个测试都可在以下两种模式下运行：</p>
+<ol>
+<li>
+<p><strong>安全模式：</strong> 在这个模式下，测试会验证系统是否一致的。系统不需要能够取得进展（译注：即Paxos算法不断执行）。例如，可以接受一个让系统故障、或执行完成、或报告系统不可用的操作。</p>
+</li>
+<li>
+<p><strong>存活模式：</strong> 在这个模式下，测试会验证系统是否一致，且系统是否取得了进展。所有操作都被期望会完成，且系统需要保持一致。</p>
+</li>
+</ol>
+<p>我们的测试从安全模式开始，并向系统中注入了随机的故障。在运行了预定的一段时间后，我们停止向系统注入故障，并给系统时间使其完全恢复。然后我们将测试转为存活模式。存活模式的目的是验证系统在一系列故障后没有发生死锁。</p>
+<p>我们的测试之一会验证容错日志。该测试会模拟一个由随机数量的副本组成的分布式系统，并让容错日志经历随机的网络中断、消息延迟、超时、进程崩溃与恢复、文件损坏、交叉编排（schedule interleaving）等故障序列。我们希望这个测试可以重复进行，以助于调试。为此，我们通过随机数生成器来确定故障的编排。随机数生成器的种子在测试运行开始时给出。我们通过在单线程中运行测试，来消除我们不想在多线程中看到的比确定性，以确保两个有相同随机数种子的测试会按同样的方式运行。正是因为容错日志不会创建其自己的线程，且可在单线程的环境中运行（即使通常它会运行在多线程环境下），所以这样做可以的。</p>
+<p>每个测试执行后会报告其成功或失败。如果测试失败，我们会返回该测试的随机数种子和调试器中的详细日志，以确定哪里出了问题。正是因为测试是可重复的，所以可以这样做。</p>
+<p>实践证明，这个测试对发现各种微妙的协议错误有很大帮助，这些错误有我们的组成员实现错误和我们为了应对磁盘损坏而做出的修改错误。为了衡量该测试的强度，我们在系统中留下了一些审查代码和设计时发现的协议bug。在修复了一些bug后，该测试变得非常稳定。为了让它能发现更多bug，我们开始同时在数百台Google的机器上运行这一测试。这样，我们发现了其它bug，其中一些bug需要花数周的时间（并以极高的故障率）模拟执行才能发现。</p>
+<p>另一侧测试会验证新的Chubby系统面对下层系统和硬件故障时的健壮性。我们在容错日志中实现了多个钩子（hook）以注入故障。该测试将随机地调用这写钩子并验证上层系统能否处理。这些钩子可以导致副本崩溃、在一定时间内中断副本与其他副本的连接、或强制副本假装其不再是master。该测试在头两周找到了Chubby中与master故障转移的5个微妙的bug。我们以同样的方式构建了一个带有钩子的文件系统，以通过编程对其注入故障，并用它来测试我们处理文件系统故障的能力。</p>
+<p>最后，我们指出一个我们在测试系统时面对的挑战，对此我们没有系统的解决方案。容错系统本质上是要试图掩盖问题。因此，它们会在掩盖bug或配置问题时，会难以察觉地地降低了自身的容错能力。例如，我们观察到了如下的情况。有一次我们启动了一个有5个副本的系统，但是我们在初始化组的时候拼错了一个副本的名字。因为四个配置正确的副本能够继续执行，所以系统看上去似乎是正常运行的。另外，第五个副本一直在以追赶模式<sup>注8</sup>运行，因此其似乎也在正确运行。然而，在该配置下，系统只能容忍一个副本故障，而不是预期的两个副本故障。现在，我们有了检测这种特定类型故障的流程。我们无法得知是否存在其他的被容错掩盖了的bug或配置问题。</p>
+<h3 id="64-并发">6.4 并发</h3>
+<p>在开始项目的时候，我们考虑了测试并发容错代码的问题。特别是，我们希望我们的测试是可重复的。就像之前描述的一样，我们的容错日志没有任何自己的线程（尽管它可以在不同线程上处理并发的请求）。线程是在代码的边缘引入的——即我们接受来自网络层的调用。通过将我们的测试编写成可重复的，我们可以在测试期间找出许多模糊的协议错误。</p>
+<p>随着项目进行，我们不得不使几个子系统变得比我们预期的更具有并发性，且不得不牺牲可重复性。Chubby的核心是多线程的，因此我们不能在整个系统运行可重复的测试。接着，我们不得不将我们的数据库多线程化，这样它可以创建快照、计算校验和、并在为数据库请求提供服务的同时处理遍历请求。最后，我们被迫将处理日志本地副本的代码也并行化（其原因超出了本文探讨的范围）。</p>
+<p>总之，我们认为我们为了执行的可重复性而约束并发性是正确的的。但不幸的是，随着产品需求增长，我们无法坚持这些目标。</p>
+<h2 id="7-意外地故障">7. 意外地故障</h2>
+<p>目前，我们的系统已经在生产环境中良好地记录了超过100“机器年”的日志。在这段时间中，我们目睹了如下的意外故障：</p>
+<ul>
+<li>
+<p>我们为第一个版本提供了原来的Chubby10倍的工作线程数量。我们希望通过这一改变可以让我们处理更多请求。不幸的是，在负载下，工作线程最终耗尽了其他关键线程，并导致了系统频繁超时。这引起了快速的master故障转移，随后大量客户端一起迁移到新的master，这又导致了新的master过载，随后又会发生master故障转移，如此往复。</p>
+<p>当问题首次出现时，我们还不知道其确切的原因，我们必须保证不受系统中潜在的危险的bug的影响。我们觉得谨慎行事，将我们其中一个数据中心的Chubby会滚到旧版本（基于3DB的版本）。那时，回滚机制没有适当的文档（因为我们从没预期到会使用它），其使用很不直观，执行回滚的操作员对此没有经验，且当回滚执行时，没有开发团队的成员在场。这导致回滚中意外地使用了旧快照。当我们发现在这个错误的时候，已经丢失了15个小时的数据，一些关键数据集必须被重建。</p>
+</li>
+<li>
+<p>当我们在几个月后再次试图升级Chubby cell的时候，因为我们忽略了删除上次升级生成的文件，我们的升级脚本发生了故障。最后在我们发现问题前，Chubby cell运行了几分钟的几个月前的快照。这导致我们丢失了30分钟的数据。幸运的是，Chubby的所有客户端都从这次故障中恢复了过来。</p>
+</li>
+<li>
+<p>在我们首次发行的几个月后，我们意识到我们的数据库提供的语义与Chubby期望的不同。如果Chubby向数据库提交了一个操作，且数据库失去了master状态，Chubby期望该操作将失败。而在我们的系统中，在数据库操作的时间内，副本可能重新作为master，这样操作可能成功。这个修复需要对Chubby和我们的框架间的集成层进行大量重做（我们需要实现epoch号）。事实证明，<strong>MultiOp</strong>对解决该意外问题提供了很大帮助——这表明<strong>MultiOp</strong>是一个强大的原语。</p>
+</li>
+<li>
+<p>正如之前提到的，我们三次发现Chubby中数据库的其中一个副本与其它的不同。因为我们的系统定期对所有副本计算校验和并对比它们，我们才找到了这个问题。</p>
+</li>
+<li>
+<p>我们负责将cell从3DB的Chubby迁移到Paxos版本的升级脚本因各种问题发生了几次故障。例如，它曾因基本Google程序没被安装到我们的cell之一而发生过故障。</p>
+</li>
+<li>
+<p>我们遇到过因底层操作系统导致的bug。例如，在Linux 2.4内核中，当我们试图将小文件落盘时，如果缓冲区中有很多其它文件的写入，该调用会被挂起很长时间。这会在我们将数据库快照写入到磁盘时立刻发生。</p>
+<p>在这种情况下，我们观察到，内核需要花数秒的时间将不相关的小写入冲刷到Paxos日志中。我们的解决方案是对所有大文件的小块写入，在每个小块被写入后冲刷到磁盘。尽管这会稍微影响写入性能，但这可以避免更重要的日志写入不会有意外的延迟。</p>
+</li>
+</ul>
+<p>对于大多数生产系统来说，在100机器年中仅发生很少几次故障是非常好的。然而，我们认为目前你的故障率对于Chubby来说还是过高，我们决定我们需要进一步降低故障率。</p>
+<p>其中有三次故障发生在升级时（或回滚时）。每次在升级过程中遇到问题时，我们会相应地更新升级脚本。一旦cell升级完成，这类故障会消失。</p>
+<p>其中有两次故障来自我们已经修复的bug。为了减少发生其它bug的可能性，我们会继续改进并运行之前描述的Chubby验证测试。</p>
+<p>我们的两个意外问题与新版本发布期间操作员的错误有关，其造成了数据丢失。在Google，系统的日常监控与管理由系统操作员完成。尽管他们做的很棒，但是由于他们通常不是构建系统的开发团队，因此不熟悉系统中复杂的细节。这可能会导致在不可预见的情况下偶尔发生的错误。现在，我们依赖小心地编写代码并使用良好测试过的脚本来自动化部署并减少操作员的参与。这样，我们最近能够在提供服务的同时无故障地在几百台机器上无故障地发行主要的Chubby版本。</p>
+<p>其中的一次故障由于内存损坏。因为我们的系统是日志结构的，且维护了数日的日志和快照，因此可以重放数据库直到故障发生的具体位置。我们验证了我们的日志是正确的，并得出内存损坏是由于不正常的软件或硬件问题的结论。我们添加了额外的校验和数据来在以后检测这种问题，并在检测到这种问题时使副本崩溃。</p>
+<h2 id="8-评估">8. 评估</h2>
+<p>我们系统最初的目标是用我们自己的数据库替代3DB。因此，我们的系统必须有与3DB等同或更好的性能。我们测量了使用了我们的容错多副本数据库的完整的Chubby系统（客户端、服务器、及网络延迟）的性能。我们还将我们的系统与机遇3DB的系统进行了benchmark测试（见<strong>表1</strong>）。在我们的测试中，我们在相同的5个服务器（奔腾级的机器）上运行了两个Chubby的副本。Chubby的其中一份副本使用了我们的数据库，另一份副本使用了3DB。我们在工作站上运行Chubby客户端，以生成服务器的负载。在我们的测试中，我们测量了这个那个系统的吞吐量。每次调用包括Chubby客户端、网络、Chubby服务器、和我们的容错数据库。虽然这些测试会低估我们数据库的性能，但它提供了对基于Paxos系统的整个系统吞吐量的感知。</p>
+<p>尽管在实际情况下，Chubby的读请求占大多数，我们仍将测试编写为写密集型。因为读请求完全由master处理，其通常持有租约，不会执行Paxos算法。</p>
+<p>在我们的测试中，每个worker会在Chubby中反复地创建文件并等待Chubby返回。因此，每个操作都会对底层数据库进行一次写入调用。如果文件内容很小且只有一个worker，测试会测量系统延迟。日过文件内容很大，测试会测量以MB/s为单位测量系统吞吐量。通过使用多个并发的worker，我们还能测量系统在不同submissions/s下的吞吐量。</p>
+<p>所有使用超过1个worker的测试展示了将提交值分批的影响。通过将一些数据库事务中的更新打包应该可以对3DB有一些提速。最后两个吞吐量测试展示了创建快照的影响。该系统被配置为只要副本日志超过了100MB就创建快照。在这两个测试中，提供大概每100秒创建一个快照。在创建快照时，系统会为数据库创建另一个副本并将其落盘。这样，其性能会暂时下降。</p>
+<p>我们的系统没有性能上的优化，我们相信它有很大的提速空间。然而，既然其性能已经超过了3DB，进一步的优化目前不是优先考虑的。</p>
+<p><figure><a class="lightgallery" href="/posts/paper-reading/paxos-made-live/table-1.png" title="表1 我们的系统与3DB的对比（数值越高越好）。" data-thumbnail="/posts/paper-reading/paxos-made-live/table-1.png" data-sub-html="<h2>表1 我们的系统与3DB的对比（数值越高越好）。</h2><p>表1 我们的系统与3DB的对比（数值越高越好）。</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="table-1.png"
+            data-srcset="/posts/paper-reading/paxos-made-live/table-1.png, table-1.png 1.5x, /posts/paper-reading/paxos-made-live/table-1.png 2x"
+            data-sizes="auto"
+            alt="/posts/paper-reading/paxos-made-live/table-1.png" />
+    </a><figcaption class="image-caption">表1 我们的系统与3DB的对比（数值越高越好）。</figcaption>
+    </figure></p>
+<h2 id="9-总结与未解决的问题">9. 总结与未解决的问题</h2>
+<p>我们描述了我们的基于Paxos共识算法的容错数据库的实现。尽管该领域有大量论文、算法可以追溯到15年前、我们的团队有相关经验（我们团队中有一个人过去设计过类似的系统，其他人过去构建过其他类型的复杂系统），构建该系统仍比我们最初预期的要困难得多。我们将其归咎于一下几点：</p>
+<ul>
+<li>
+<p>现实系统的需求的与Paxos算法的描述之间有很大的隔阂。为了构建现实的系统，专家需要使用分散在各种文献中的许多思想，并作出一些较小的协议扩展。这些不断累积的扩展会非常多，最后系统会基于一个未被证明的协议。</p>
+</li>
+<li>
+<p>容错计算社区还没有开发能使实现它们的算法变得简单的工具。</p>
+</li>
+<li>
+<p>容错计算社区对测试没有给予足够的关注，这是构建容错系统中关键的部分。</p>
+</li>
+</ul>
+<p>因此，核心算法工作仍是相对理论性的，且在更大的计算社区中可能无法使用。我们认为，为了使其能有更大的影响，该领域的研究人员应该专注于解决这些缺陷。</p>
+<p>相反，在编译器构造领域，尽管该领域的理论很复杂，但是它们能被广泛地接受。在解析的理论被充分理解后不久，就出现了像yacc<sup>[6]</sup>这样的工业级解析工具。且现在不光有像ANTLR<sup>[15]</sup>或CoCo/R<sup>[13]</sup>这样的前端工具，还有能够帮助优化、指令选择的树重写工具（tree-rewriting tool），和帮助生成二进制代码的汇编器，等等。因此，在软件工程的这个领域中，有一整套工具出现，这大大地简化了编译器的构造，或者至少减少了出错的可能性。编译器构造领域中，像解析这样的问题曾经处于研究的前言，现在已经被认为是“已经解决了”，并在许多学校的本科阶段中都有常规的教学。</p>
+<p>容错分布式计算社区似乎没有像编译器社区那样，开发出能够弥补理论和实践之间差距的工具和技术。我们的经验表明，这些差距并不是微不足道的，值得研究团体的关注。</p>
+<h2 id="10-致谢">10. 致谢</h2>
+<p>Google中的许多人为这个项目提供了帮助。实现了Chubby的Mike Burrows建议我们用基于Paxos的系统替换3DB。它和Sharon Perl审查了我们的设计并提供了非常棒的反馈。他们向我们介绍了处理磁盘损坏的机制并建议我们实现master租约。Michal Cierniak将最初的状态机编译器从Perl前移到了C++，并做了后续的修改（现在它也再Google的地方中被使用）。Vadim Furman帮助我们编写了Chubby验证测试。Salim Virji和他的团队负责将我们的系统在Google的数据中心上运行。</p>
+<p>Mike Burrows、Bill Coughran、Gregory Eitzman、Peter Mckenzie、Sharon Perl、Rob Pike、David Presotto、Sean Quinlan、和Salim Virji审查了本文的早期版本并提供了有价值的反馈。</p>
+<h2 id="11-参考文献">11. 参考文献</h2>
+<div class="reference">
+<p>[1] Burrows, M. The Chubby lock service for loosely-coupled distributed systems. In Proceedings of the 7th USENIX Symposium on Operating Systems Design and Implementation, pp. 335-350</p>
+<p>[2] Chang, F., Dean, J., Ghemawat, S., Hsieh, W. C., Wallach, D. A., Burrows, M., Chandra, T., Fikes, A., and Gruber, R. E. Bigtable: A distributed storage system for structured data. In Proceedings of the 7th USENIX Symposium on Operating Systems Design and Implementation, pp. 205-218</p>
+<p>[3] Cristian, F. Reaching agreement on processor-group membership in synchronous distributed systems. Distributed Computing 4, 4 (1991), 175–188.</p>
+<p>[4] Ghemawat, S., Gobioff, H., and Leung, S.-T. The Google file system. In Proceedings of the 19th ACM Symposium on Operating Systems Principles (Dec. 2003), pp. 29–43.</p>
+<p>[5] Gray, C., Cheriton, D. Leases: An efficient fault-tolerant mechanism for distributed file cache consistency. In Proceedings of the 12th ACM Symposium on Operating Systems Principles (1989), pp. 202–210.</p>
+<p>[6] Johnson, S. C. Yacc: Yet another compiler-compiler.</p>
+<p>[7] Lamport, Shostak, and Pease. The byzantine generals problem. In Advances in Ultra-Dependable Distributed Systems, N. Suri, C. J. Walter, and M. M. Hugue (Eds.), IEEE Computer Society Press. 1995.</p>
+<p>[8] Lamport, L. The part-time parliament. ACM Transactions on Computer Systems 16, 2 (1998), 133–169.</p>
+<p>[9] Lamport, L. Paxos made simple. ACM SIGACT News 32, 4 (Dec. 2001), 18–25.</p>
+<p>[10] Lampson, B. W. How to build a highly available system using consensus. In 10th International Workshop on Distributed Algorithms (WDAG 96) (1996), Babaoglu and Marzullo, Eds., vol. 1151, Springer-Verlag, Berlin Germany, pp. 1–17.</p>
+<p>[11] Lee, E. K., and Thekkath, C. A. Petal: Distributed virtual disks. In Proceedings of the Seventh International Conference on Architectural Support for Programming Languages and Operating Systems (Cambridge, MA, 1996), pp. 84–92.</p>
+<p>[12] MacCormick, J., Murphy, N., Najork, M., Thekkath, C. A., and Zhou, L. Boxwood: Abstractions as the foundation for storage infrastructure. In Proceedings of the 6th Symposium on Operating Systems Design and Implementation (2004), pp. 105–120.</p>
+<p>[13] Moessenboeck, H. A generator for production quality compilers. In Proceedings of the 3rd International Workshop on Compiler Compilers - Lecture Notes in Computer Science 477 (Berlin, Heidelberg, New York, Tokyo, 1990), Springer-Verlag, pp. 42–55.</p>
+<p>[14] Oki, Brian M., and Liskov, Barbara H. Viewstamped Replication: A New Primary Copy Method to Support Highly-Available Distributed Systems. In Proceedings of the 7th annual ACM Symposium on Principles of Distributed Computing (1988), pp. 8–17.</p>
+<p>[15] Parr, T. J., and QUONG, R. W. Antlr: A predicated-ll(k) parser generator. Software–Practice and Experience 25, 7 (JULY 1995), 789–810.</p>
+<p>[16] Prisco, R. D., Lampson, B. W., and Lynch, N. A. Revisiting the paxos algorithm. In 11th International Workshop on Distributed Algorithms (WDAG 96) (1997), pp. 111–125.</p>
+<p>[17] Schneider, F. B. Implementing fault-tolerant services using the state machine approach: A tutorial. ACM Computing Surveys 22, 4 (1990), 299–319.</p>
+<p>[18] von Neumann, J. Probabilistic logics and synthesis of reliable organisms from unreliable components. Automata Studies (1956), 43–98.</p>
+</div></div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2020-09-27</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"></div>
+            <div class="post-info-share">
+                <span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/paxos/">Paxos</a>,&nbsp;<a href="/tags/translation/">Translation</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/posts/paper-reading/paxos-made-simple/" class="prev" rel="prev" title="《Paxos Made Simple》论文翻译"><i class="fas fa-angle-left fa-fw"></i>《Paxos Made Simple》论文翻译</a>
+            <a href="/posts/paper-reading/raft-extended/" class="next" rel="next" title="《In Search of an Understandable Consensus Algorithm (Extended Version)》论文翻译">《In Search of an Understandable Consensus Algorithm (Extended Version)》论文翻译<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+</article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"><link rel="stylesheet" href="/lib/katex/katex.min.css"><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"><script type="text/javascript" src="/lib/smooth-scroll/smooth-scroll.min.js"></script><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"id-1":"叉鸽 | MrCroxx","id-2":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"id-1":["id-1"],"id-2":["id-2"]},"duration":null,"speed":null}};</script><script type="text/javascript" src="/js/theme.min.js"></script></body>
+</html>

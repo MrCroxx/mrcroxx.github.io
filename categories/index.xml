@@ -1,36 +1,50 @@
 <rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
     <channel>
-        <title>Categories - 分类 - 叉鸽 | MrCroxx 的博客</title>
-        <link>https://mrcroxx.com/categories/</link>
-        <description>Categories - 分类 - 叉鸽 | MrCroxx 的博客</description>
+        <title>Categories - 分类 - 叉鸽 MrCroxx 的博客</title>
+        <link>https://mrcroxx.github.io/categories/</link>
+        <description>Categories - 分类 - 叉鸽 MrCroxx 的博客</description>
         <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>mrcroxx@outlook.com (叉鸽)</managingEditor>
-            <webMaster>mrcroxx@outlook.com (叉鸽)</webMaster><lastBuildDate>Tue, 30 Jul 2019 13:36:30 &#43;0800</lastBuildDate><atom:link href="https://mrcroxx.com/categories/" rel="self" type="application/rss+xml" /><item>
+            <webMaster>mrcroxx@outlook.com (叉鸽)</webMaster><lastBuildDate>Wed, 20 Jan 2021 23:55:22 &#43;0800</lastBuildDate><atom:link href="https://mrcroxx.github.io/categories/" rel="self" type="application/rss+xml" /><item>
+    <title>深入浅出bolt</title>
+    <link>https://mrcroxx.github.io/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAbolt/</link>
+    <pubDate>Wed, 20 Jan 2021 23:55:22 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://mrcroxx.github.io/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAbolt/</guid>
+    <description><![CDATA[]]></description>
+</item><item>
+    <title>深入浅出bbolt</title>
+    <link>https://mrcroxx.github.io/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAbbolt/</link>
+    <pubDate>Tue, 05 Jan 2021 18:20:36 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://mrcroxx.github.io/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAbbolt/</guid>
+    <description><![CDATA[]]></description>
+</item><item>
+    <title>Paper Reading</title>
+    <link>https://mrcroxx.github.io/categories/paper-reading/</link>
+    <pubDate>Fri, 23 Oct 2020 13:00:19 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://mrcroxx.github.io/categories/paper-reading/</guid>
+    <description><![CDATA[]]></description>
+</item><item>
     <title>CCF CSP</title>
-    <link>https://mrcroxx.com/categories/ccf-csp/</link>
+    <link>https://mrcroxx.github.io/categories/ccf-csp/</link>
     <pubDate>Tue, 30 Jul 2019 13:36:30 &#43;0800</pubDate>
     <author>作者</author>
-    <guid>https://mrcroxx.com/categories/ccf-csp/</guid>
+    <guid>https://mrcroxx.github.io/categories/ccf-csp/</guid>
     <description><![CDATA[]]></description>
 </item><item>
-    <title>docker</title>
-    <link>https://mrcroxx.com/categories/docker/</link>
+    <title>Docker</title>
+    <link>https://mrcroxx.github.io/categories/docker/</link>
     <pubDate>Mon, 22 Jul 2019 16:37:55 &#43;0800</pubDate>
     <author>作者</author>
-    <guid>https://mrcroxx.com/categories/docker/</guid>
+    <guid>https://mrcroxx.github.io/categories/docker/</guid>
     <description><![CDATA[]]></description>
 </item><item>
-    <title>LDAP</title>
-    <link>https://mrcroxx.com/categories/ldap/</link>
-    <pubDate>Mon, 22 Jul 2019 16:37:55 &#43;0800</pubDate>
+    <title>深入浅出etcd/raft</title>
+    <link>https://mrcroxx.github.io/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAetcd/raft/</link>
+    <pubDate>Mon, 01 Jan 0001 00:00:00 &#43;0000</pubDate>
     <author>作者</author>
-    <guid>https://mrcroxx.com/categories/ldap/</guid>
-    <description><![CDATA[]]></description>
-</item><item>
-    <title>registry</title>
-    <link>https://mrcroxx.com/categories/registry/</link>
-    <pubDate>Mon, 22 Jul 2019 16:37:55 &#43;0800</pubDate>
-    <author>作者</author>
-    <guid>https://mrcroxx.com/categories/registry/</guid>
+    <guid>https://mrcroxx.github.io/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAetcd/raft/</guid>
     <description><![CDATA[]]></description>
 </item></channel>
 </rss>

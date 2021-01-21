@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>深入浅出etcd/raft —— 0x05 Raft成员变更 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出etcd/raft —— 0x05 Raft成员变更" />
+<meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/5-confchange/" />
+<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/5-confchange/etcd-raft.jpg"/>
+<meta property="article:published_time" content="2020-12-29T16:36:16+08:00" />
+<meta property="article:modified_time" content="2020-12-29T16:36:19+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/5-confchange/etcd-raft.jpg"/>
+<meta name="twitter:title" content="深入浅出etcd/raft —— 0x05 Raft成员变更"/>
+<meta name="twitter:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。"/>
+<meta name="application-name" content="叉鸽 MrCroxx 的博客">
+<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/5-confchange/" /><link rel="prev" href="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/4-log/" /><link rel="next" href="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/6-readonly/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "深入浅出etcd/raft —— 0x05 Raft成员变更",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/etcdraft-made-simple\/5-confchange\/"
+        },"image": [{
+                            "@type": "ImageObject",
+                            "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/etcdraft-made-simple\/5-confchange\/etcd-raft.jpg",
+                            "width":  1200 ,
+                            "height":  360 
+                        }],"genre": "posts","keywords": "etcd, Raft","wordcount":  8873 ,
+        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/etcdraft-made-simple\/5-confchange\/","datePublished": "2020-12-29T16:36:16+08:00","dateModified": "2020-12-29T16:36:19+08:00","publisher": {
+            "@type": "Organization",
+            "name": "叉鸽"},"author": {
+                "@type": "Person",
+                "name": "叉鸽"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : '' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-1" class="typeit"></span></a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-2" class="typeit"></span></a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出etcd/raft —— 0x05 Raft成员变更</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAetcd/raft/"><i class="far fa-folder fa-fw"></i>深入浅出etcd/raft</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-12-29">2020-12-29</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 8873 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 18 分钟&nbsp;</div>
+        </div><div class="featured-image"><img
+        class="lazyload"
+        src="/svg/loading.min.svg"
+        data-src="/posts/code-reading/etcdraft-made-simple/5-confchange/etcd-raft.jpg"
+        data-srcset="/posts/code-reading/etcdraft-made-simple/5-confchange/etcd-raft.jpg, /posts/code-reading/etcdraft-made-simple/5-confchange/etcd-raft.jpg 1.5x, /posts/code-reading/etcdraft-made-simple/5-confchange/etcd-raft.jpg 2x"
+        data-sizes="auto"
+        alt="/posts/code-reading/etcdraft-made-simple/5-confchange/etcd-raft.jpg"
+        title="/posts/code-reading/etcdraft-made-simple/5-confchange/etcd-raft.jpg" /></div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#0-引言">0. 引言</a></li>
+    <li><a href="#1-成员变更算法">1. 成员变更算法</a></li>
+    <li><a href="#2-etcdraft配置的实现">2. etcd/raft配置的实现</a>
+      <ul>
+        <li><a href="#21-majorityconfig">2.1 MajorityConfig</a></li>
+        <li><a href="#22-jointconfig">2.2 JointConfig</a></li>
+        <li><a href="#23-config">2.3 Config</a></li>
+        <li><a href="#24-progresstracker">2.4 ProgressTracker</a></li>
+      </ul>
+    </li>
+    <li><a href="#3-etcdraft配置变更的实现">3. etcd/raft配置变更的实现</a>
+      <ul>
+        <li><a href="#31-confchange类型">3.1 ConfChange类型</a></li>
+        <li><a href="#32-提议confchange">3.2 提议ConfChange</a></li>
+        <li><a href="#33-应用confchange">3.3 应用ConfChange</a></li>
+        <li><a href="#34-autoleave">3.4 AutoLeave</a></li>
+        <li><a href="#35-补充说明">3.5 补充说明</a></li>
+        <li><a href="#4-总结">4. 总结</a></li>
+      </ul>
+    </li>
+    <li><a href="#参考文献">参考文献</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
+<h2 id="0-引言">0. 引言</h2>
+<p>本文会对etcd/raft中Raft成员变更算法的实现与优化进行分析。这里假定读者阅读过Diego Ongaro的《In Search of an Understandable Consensus Algorithm (Extended Version)》（这里有笔者的<a href="/posts/paper-reading/raft-extended/" rel="">翻译</a>，笔者英语水平一般，欢迎指正。），其中提到的部分，本文中不会做详细的解释。对etcd/raft的总体结构不熟悉的读者，可以先阅读<a href="/posts/code-reading/etcdraft-made-simple/2-overview/" rel="">《深入浅出etcd/raft —— 0x02 etcd/raft总体设计》</a>。</p>
+<div class="details admonition info open">
+        <div class="details-summary admonition-title">
+            <i class="icon fas fa-info-circle fa-fw"></i>提示<i class="details-icon fas fa-angle-right fa-fw"></i>
+        </div>
+        <div class="details-content">
+            <div class="admonition-content">本文不严格区分成员变更（membership changes）与配置变更(configuration chagnes)。</div>
+        </div>
+    </div>
+<h2 id="1-成员变更算法">1. 成员变更算法</h2>
+<p>《CONSENSUS: BRIDGING THEORY AND PRACTICE》的<em>Chapter 4 Cluster membership changes</em>介绍了两种成员变更算法，一种是一次操作一个节点的简单算法，另一种是联合共识（joint consensus）算法。两种算法都是为了避免由于节点切换配置时间不同导致的同一term出现不只一个leader的问题，如下图所示。</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/etcdraft-made-simple/5-confchange/assets/disjoint.png" title="由于不同节点切换配置时间不同而导致的多主问题" data-thumbnail="/posts/code-reading/etcdraft-made-simple/5-confchange/assets/disjoint.png" data-sub-html="<h2>由于不同节点切换配置时间不同而导致的多主问题</h2><p>由于不同节点切换配置时间不同而导致的多主问题</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/disjoint.png"
+            data-srcset="/posts/code-reading/etcdraft-made-simple/5-confchange/assets/disjoint.png, assets/disjoint.png 1.5x, /posts/code-reading/etcdraft-made-simple/5-confchange/assets/disjoint.png 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/etcdraft-made-simple/5-confchange/assets/disjoint.png" />
+    </a><figcaption class="image-caption">由于不同节点切换配置时间不同而导致的多主问题</figcaption>
+    </figure></p>
+<p>为了本文的连贯性，这里简单地介绍一下这两种算法，详细内容请读者自行阅读《CONSENSUS: BRIDGING THEORY AND PRACTICE》的<em>Chapter 4 Cluster membership changes</em>。</p>
+<p>简单成员变更算法限制每次只能增加或移除一个节点。这样可以保证新配置与旧配置的quorum至少有一个相同的节点，因为一个节点在同一term仅能给一个节点投票，所以这能避免多主问题。</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/etcdraft-made-simple/5-confchange/assets/simple-membership-changes.png" title="简单成员变更算法" data-thumbnail="/posts/code-reading/etcdraft-made-simple/5-confchange/assets/simple-membership-changes.png" data-sub-html="<h2>简单成员变更算法</h2><p>简单成员变更算法</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/simple-membership-changes.png"
+            data-srcset="/posts/code-reading/etcdraft-made-simple/5-confchange/assets/simple-membership-changes.png, assets/simple-membership-changes.png 1.5x, /posts/code-reading/etcdraft-made-simple/5-confchange/assets/simple-membership-changes.png 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/etcdraft-made-simple/5-confchange/assets/simple-membership-changes.png" />
+    </a><figcaption class="image-caption">简单成员变更算法</figcaption>
+    </figure></p>
+<p>联合共识算法可以一次变更多个成员，但是需要在进入新配置前先进入一个“联合配置（joint configuration）”，在联合配置的quorum分别需要新配置和旧配置的majority（大多数）节点，以避免多主问题。当联合配置成功提交后，集群可以开始进入新配置。</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/etcdraft-made-simple/5-confchange/assets/joint-consensus.png" title="联合共识算法" data-thumbnail="/posts/code-reading/etcdraft-made-simple/5-confchange/assets/joint-consensus.png" data-sub-html="<h2>联合共识算法</h2><p>联合共识算法</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/joint-consensus.png"
+            data-srcset="/posts/code-reading/etcdraft-made-simple/5-confchange/assets/joint-consensus.png, assets/joint-consensus.png 1.5x, /posts/code-reading/etcdraft-made-simple/5-confchange/assets/joint-consensus.png 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/etcdraft-made-simple/5-confchange/assets/joint-consensus.png" />
+    </a><figcaption class="image-caption">联合共识算法</figcaption>
+    </figure></p>
+<p>etcd/raft的<code>ConfChangeV2</code>既支持简单的“one at a time”的成员变更算法，也支持完整的联合共识算法。需要注意的是，etcd/raft中的配置的应用时间与论文中的不同。在论文<sup>引文1</sup>中，节点会在追加配置变更日志时应用相应的配置，而在etcd/raft的实现中<sup>引文2</sup>，当节点应用（apply）配置变更日志条目时才会应用相应的配置。etcd/raft在“apply-time”应用新配置的方式，可以保证配置在应用前已被提交，因此不需要论文中提到的回滚旧配置的操作。但是这种方式需要引入新机制来解决影响集群liveness的边际情况下的问题。</p>
+<div class="details admonition danger open">
+        <div class="details-summary admonition-title">
+            <i class="icon fas fa-skull-crossbones fa-fw"></i>注意<i class="details-icon fas fa-angle-right fa-fw"></i>
+        </div>
+        <div class="details-content">
+            <div class="admonition-content"><p>这种&quot;apply-time&quot;的方式仍存在一些“liveness”的问题，在编写本文时，etcd社区正在修复这一问题（详见<a href="https://github.com/etcd-io/etcd/issues/12359" target="_blank" rel="noopener noreffer">issue#12359 raft: liveness problems during apply-time configuration change</a>）。</p>
+<p>本文中的源码基于master分支的<a href="https://github.com/etcd-io/etcd/tree/a3174d0f8ec6ec58827d7d86448bb4df08ae69e4" target="_blank" rel="noopener noreffer">commit#a3174d0</a>版本，目前还没有修复这一issue。本文会在issue修复后，基于新版算法进行修改。</p>
+</div>
+        </div>
+    </div>
+<p>另外，需要注意的是，同一时间只能有一个正在进行的配置变更操作，在提议配置变更请求时，如果已经在进行配置变更，那么该提议会被丢弃（被改写成一条无任何意义的日志条目）。</p>
+<div class="details admonition quota open">
+        <div class="details-summary admonition-title">
+            <i class="icon fas fa-pencil-alt fa-fw"></i>引文1<i class="details-icon fas fa-angle-right fa-fw"></i>
+        </div>
+        <div class="details-content">
+            <div class="admonition-content"><p>The new configuration takes effect on each server as soon as it is added to that server’s log: the $C_{new}$ entry is replicated to the $C_{new}$ servers, and a majority of the new configuration is used to determine the $C_{new}$ entry’s commitment. This means that servers do not wait for configuration entries to be committed, and each server always uses the latest configuration found in its log.</p>
+<p>&hellip; &hellip;</p>
+<p>As with the single-server configuration change algorithm, each server starts using a new configuration as soon as it stores the configuration in its log.</p>
+</div>
+        </div>
+    </div>
+<div class="details admonition quota open">
+        <div class="details-summary admonition-title">
+            <i class="icon fas fa-pencil-alt fa-fw"></i>引文2<i class="details-icon fas fa-angle-right fa-fw"></i>
+        </div>
+        <div class="details-content">
+            <div class="admonition-content">Note that contrary to Joint Consensus as outlined in the Raft paper, configuration changes become active when they are <em>applied</em> to the state machine (not when they are appended to the log).</div>
+        </div>
+    </div>
+<h2 id="2-etcdraft配置的实现">2. etcd/raft配置的实现</h2>
+<p>etcd/raft实现的配置是按照<em>joint configuration</em>组织的，本节笔者将以自底向上的方法介绍etcd/raft中配置的实现。</p>
+<h3 id="21-majorityconfig">2.1 MajorityConfig</h3>
+<p>在<em>joint consensus</em>中，中间状态$C_{old},C_{new}$的quorum同时需要$C_{old}$和$C_{new}$各自的majority。$C_{old}$或$C_{new}$配置中voter的集合（voter即有投票权的角色，包括candidate、follower、leader，而不包括learner），是通过<code>MajorityConfig</code>表示的，<code>MajorityConfig</code>还包括了一些统计majority信息的方法。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// MajorityConfig is a set of IDs that uses majority quorums to make decisions.
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">MajorityConfig</span> <span class="kd">map</span><span class="p">[</span><span class="kt">uint64</span><span class="p">]</span><span class="kd">struct</span><span class="p">{}</span>
+
+</code></pre></div><p><code>MajorityConfig</code>的实现非常简单，其只是voter节点id的集合，但<code>MajorityConfig</code>提供了一些很实用的与majority有关方法，如下表所示（仅给出主要方法）：</p>
+<table>
+<thead>
+<tr>
+<th align="center">方法<div style="width: 12em"></div></th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center"><code>CommittedIndex(l AckedIndexer) Index</code></td>
+<td align="left">根据给定的<code>AckedIndexer</code>计算被大多数节点接受了的<em>commit index</em> 。</td>
+</tr>
+<tr>
+<td align="center"><code>VoteResult(votes map[uint64]bool) VoteResult</code></td>
+<td align="left">根据给定的投票统计计算投票结果。</td>
+</tr>
+</tbody>
+</table>
+<p><code>CommittedIndex</code>是根据该<code>MajorityConfig</code>计算被大多数接受的<em>commit index</em>，其参数<code>AckedIndexer</code>是一个接口：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// quorum.go
+</span><span class="c1"></span>
+<span class="c1">// AckedIndexer allows looking up a commit index for a given ID of a voter
+</span><span class="c1">// from a corresponding MajorityConfig.
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">AckedIndexer</span> <span class="kd">interface</span> <span class="p">{</span>
+	<span class="nf">AckedIndex</span><span class="p">(</span><span class="nx">voterID</span> <span class="kt">uint64</span><span class="p">)</span> <span class="p">(</span><span class="nx">idx</span> <span class="nx">Index</span><span class="p">,</span> <span class="nx">found</span> <span class="kt">bool</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// tracker.go
+</span><span class="c1"></span>
+<span class="kd">type</span> <span class="nx">matchAckIndexer</span> <span class="kd">map</span><span class="p">[</span><span class="kt">uint64</span><span class="p">]</span><span class="o">*</span><span class="nx">Progress</span>
+
+<span class="c1">// AckedIndex implements IndexLookuper.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">l</span> <span class="nx">matchAckIndexer</span><span class="p">)</span> <span class="nf">AckedIndex</span><span class="p">(</span><span class="nx">id</span> <span class="kt">uint64</span><span class="p">)</span> <span class="p">(</span><span class="nx">quorum</span><span class="p">.</span><span class="nx">Index</span><span class="p">,</span> <span class="kt">bool</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">pr</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">l</span><span class="p">[</span><span class="nx">id</span><span class="p">]</span>
+	<span class="k">if</span> <span class="p">!</span><span class="nx">ok</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="mi">0</span><span class="p">,</span> <span class="kc">false</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="nx">quorum</span><span class="p">.</span><span class="nf">Index</span><span class="p">(</span><span class="nx">pr</span><span class="p">.</span><span class="nx">Match</span><span class="p">),</span> <span class="kc">true</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>AckedIndexer</code>接口中只定义了一个方法<code>AckedIndex</code>，该方法用来返回给定id的voter的一种索引的值。通过实现该接口与方法，在调用<code>CommittedIndex</code>时，可以根据不同的index来计算被大多数接受的<em>commit index</em>。上面的源码中给出了<em>tracker.go</em>中的一种<code>AckedIndexer</code>实现——<code>matchAckIndexer</code>，其实现的<code>AckedIndex</code>方法返回了voter的<em>match index</em>。etcd/raft在计算<em>commit index</em>时，就是根据节点的<em>match index</em>来计算的。</p>
+<p><code>CommittedIndex</code>的实现也很简单，其通过排序来计算第$n/2+1$小的索引，即为被大多数节点接受的最小索引。该方法中还有针对小切片的分配优化，感兴趣的读者可以自行阅读源码，这里不再赘述。</p>
+<p><code>VoteResult</code>方法的实现也很简单，其根据参数中的投票情况与该<code>MajorityConfig</code>中的voter，计算投票结果。投票结果有三种：<code>VoteWon</code>表示赢得投票、<code>VoteLost</code>表示输掉投票、<code>VotePending</code>表示投票还未完成（既没被大多数接受，也没被大多数拒绝），需要继续等待投票。</p>
+<h3 id="22-jointconfig">2.2 JointConfig</h3>
+<p><code>JointConfig</code>表示<em>joint consensus</em>下的配置，即$C_{old}$与$C_{new}$的组合：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// JointConfig is a configuration of two groups of (possibly overlapping)
+</span><span class="c1">// majority configurations. Decisions require the support of both majorities.
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">JointConfig</span> <span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="nx">MajorityConfig</span>
+
+</code></pre></div><p>为了实现方便，<code>JointConfig</code>的元素0表示$C_{new}$或非*joint consensus*状态下的当前配置，元素0表示$C_{old}$，在非*joint consensus*状态下的元素1应是一个空配置。</p>
+<p><code>JointConfig</code>提供的方法与<code>MajorityConfig</code>几乎一样，其也提供了<code>CommittedIndex</code>方法与<code>VoteResult</code>方法。</p>
+<p><code>JointConfig</code>的<code>CommittedIndex</code>方法会获取两个<code>MajorityConfig</code>的<code>CommittedIndex</code>的返回值（若<code>MajorityConfig</code>为空配置，其返回类型最大值），并返回较小的结果，即被$C_{old}$和$C_{new}$都接受的*commit index*。</p>
+<p><code>JointConfig</code>的<code>VoteResult</code>方法也会获取两个<code>MajorityConfig</code>的<code>VoteResult</code>，如果二者结果相同可以直接返回，否则如果其中之一为<code>VoteLost</code>则直接返回<code>VoteLost</code>，否则还无法给出结果，返回<code>VotePending</code>。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// VoteResult takes a mapping of voters to yes/no (true/false) votes and returns
+</span><span class="c1">// a result indicating whether the vote is pending, lost, or won. A joint quorum
+</span><span class="c1">// requires both majority quorums to vote in favor.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="nx">JointConfig</span><span class="p">)</span> <span class="nf">VoteResult</span><span class="p">(</span><span class="nx">votes</span> <span class="kd">map</span><span class="p">[</span><span class="kt">uint64</span><span class="p">]</span><span class="kt">bool</span><span class="p">)</span> <span class="nx">VoteResult</span> <span class="p">{</span>
+	<span class="nx">r1</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">VoteResult</span><span class="p">(</span><span class="nx">votes</span><span class="p">)</span>
+	<span class="nx">r2</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">VoteResult</span><span class="p">(</span><span class="nx">votes</span><span class="p">)</span>
+
+	<span class="k">if</span> <span class="nx">r1</span> <span class="o">==</span> <span class="nx">r2</span> <span class="p">{</span>
+		<span class="c1">// If they agree, return the agreed state.
+</span><span class="c1"></span>		<span class="k">return</span> <span class="nx">r1</span>
+	<span class="p">}</span>
+	<span class="k">if</span> <span class="nx">r1</span> <span class="o">==</span> <span class="nx">VoteLost</span> <span class="o">||</span> <span class="nx">r2</span> <span class="o">==</span> <span class="nx">VoteLost</span> <span class="p">{</span>
+		<span class="c1">// If either config has lost, loss is the only possible outcome.
+</span><span class="c1"></span>		<span class="k">return</span> <span class="nx">VoteLost</span>
+	<span class="p">}</span>
+	<span class="c1">// One side won, the other one is pending, so the whole outcome is.
+</span><span class="c1"></span>	<span class="k">return</span> <span class="nx">VotePending</span>
+<span class="p">}</span>
+
+</code></pre></div><h3 id="23-config">2.3 Config</h3>
+<p><code>Config</code>记录了全部的成员配置，既包括voter也包括learner。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// Config reflects the configuration tracked in a ProgressTracker.
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">Config</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">Voters</span> <span class="nx">quorum</span><span class="p">.</span><span class="nx">JointConfig</span>
+	<span class="c1">// AutoLeave is true if the configuration is joint and a transition to the
+</span><span class="c1"></span>	<span class="c1">// incoming configuration should be carried out automatically by Raft when
+</span><span class="c1"></span>	<span class="c1">// this is possible. If false, the configuration will be joint until the
+</span><span class="c1"></span>	<span class="c1">// application initiates the transition manually.
+</span><span class="c1"></span>	<span class="nx">AutoLeave</span> <span class="kt">bool</span>
+	<span class="c1">// Learners is a set of IDs corresponding to the learners active in the
+</span><span class="c1"></span>	<span class="c1">// current configuration.
+</span><span class="c1"></span>	<span class="c1">//
+</span><span class="c1"></span>	<span class="c1">// Invariant: Learners and Voters does not intersect, i.e. if a peer is in
+</span><span class="c1"></span>	<span class="c1">// either half of the joint config, it can&#39;t be a learner; if it is a
+</span><span class="c1"></span>	<span class="c1">// learner it can&#39;t be in either half of the joint config. This invariant
+</span><span class="c1"></span>	<span class="c1">// simplifies the implementation since it allows peers to have clarity about
+</span><span class="c1"></span>	<span class="c1">// its current role without taking into account joint consensus.
+</span><span class="c1"></span>	<span class="nx">Learners</span> <span class="kd">map</span><span class="p">[</span><span class="kt">uint64</span><span class="p">]</span><span class="kd">struct</span><span class="p">{}</span>
+	<span class="c1">// When we turn a voter into a learner during a joint consensus transition,
+</span><span class="c1"></span>	<span class="c1">// we cannot add the learner directly when entering the joint state. This is
+</span><span class="c1"></span>	<span class="c1">// because this would violate the invariant that the intersection of
+</span><span class="c1"></span>	<span class="c1">// voters and learners is empty. For example, assume a Voter is removed and
+</span><span class="c1"></span>	<span class="c1">// immediately re-added as a learner (or in other words, it is demoted):
+</span><span class="c1"></span>	<span class="c1">//
+</span><span class="c1"></span>	<span class="c1">// Initially, the configuration will be
+</span><span class="c1"></span>	<span class="c1">//
+</span><span class="c1"></span>	<span class="c1">//   voters:   {1 2 3}
+</span><span class="c1"></span>	<span class="c1">//   learners: {}
+</span><span class="c1"></span>	<span class="c1">//
+</span><span class="c1"></span>	<span class="c1">// and we want to demote 3. Entering the joint configuration, we naively get
+</span><span class="c1"></span>	<span class="c1">//
+</span><span class="c1"></span>	<span class="c1">//   voters:   {1 2} &amp; {1 2 3}
+</span><span class="c1"></span>	<span class="c1">//   learners: {3}
+</span><span class="c1"></span>	<span class="c1">//
+</span><span class="c1"></span>	<span class="c1">// but this violates the invariant (3 is both voter and learner). Instead,
+</span><span class="c1"></span>	<span class="c1">// we get
+</span><span class="c1"></span>	<span class="c1">//
+</span><span class="c1"></span>	<span class="c1">//   voters:   {1 2} &amp; {1 2 3}
+</span><span class="c1"></span>	<span class="c1">//   learners: {}
+</span><span class="c1"></span>	<span class="c1">//   next_learners: {3}
+</span><span class="c1"></span>	<span class="c1">//
+</span><span class="c1"></span>	<span class="c1">// Where 3 is now still purely a voter, but we are remembering the intention
+</span><span class="c1"></span>	<span class="c1">// to make it a learner upon transitioning into the final configuration:
+</span><span class="c1"></span>	<span class="c1">//
+</span><span class="c1"></span>	<span class="c1">//   voters:   {1 2}
+</span><span class="c1"></span>	<span class="c1">//   learners: {3}
+</span><span class="c1"></span>	<span class="c1">//   next_learners: {}
+</span><span class="c1"></span>	<span class="c1">//
+</span><span class="c1"></span>	<span class="c1">// Note that next_learners is not used while adding a learner that is not
+</span><span class="c1"></span>	<span class="c1">// also a voter in the joint config. In this case, the learner is added
+</span><span class="c1"></span>	<span class="c1">// right away when entering the joint configuration, so that it is caught up
+</span><span class="c1"></span>	<span class="c1">// as soon as possible.
+</span><span class="c1"></span>	<span class="nx">LearnersNext</span> <span class="kd">map</span><span class="p">[</span><span class="kt">uint64</span><span class="p">]</span><span class="kd">struct</span><span class="p">{}</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>Config</code>的<code>Voter</code>字段类型即为上文介绍的<code>JointConfig</code>，<code>AutoLeaver</code>字段是标识<em>joint consensus</em>情况下离开<em>joint configuration</em>的方式，后文介绍配置变更的实现时会对其进行介绍。<code>Config</code>中与learner相关的字段有两个，分别是<code>Learners</code>和<code>LearnsNext</code>。<code>Learners</code>是当前的learner集合，<code>LearnersNext</code>是在<em>joint consensus</em>情况下，在离开<em>joint configuration</em>时需要新加入learner集合的节点。</p>
+<p>etcd/raft为了简化配置变更的实现，其配置需要满足一条约束：配置的voter集合与learner集合不能有交集。在<em>joint consensus</em>方法下，可能出现如下情况：</p>
+<p>$C_{old}$：<code>voters: {1 2 3}, learners: {}</code>，$C_{new}$：<code>voters: {1 2}, learners: {3}</code>。此时，$C_{new,old}$：<code>voters: {1 2} &amp; {1 2 3}, learners: {3}</code>，这违背了上文中的约束。</p>
+<p>为此，<code>Config</code>中引入了<code>LearnsNext</code>字段，在<em>joint configuration</em>中，如果新的learn集合与voter集合有冲突，那么先将该learn加入到<code>LearnerNext</code>中，在退出<em>joint consensus</em>再将该<code>LearnersNext</code>中的节点加入到<code>Learners</code>中。例如：</p>
+<ol>
+<li>$C_{old}$：<code>voters: {1 2 3}, learns: {}, next_learns: {}</code></li>
+<li>$C_{new,old}$：<code>voters: {1 2} &amp; {1 2 3}, learns: {}, next_learners: {3}</code></li>
+<li>$C_{new}$：<code>voters: {1 2}, learns: {3}, next_learns: {}</code></li>
+</ol>
+<h3 id="24-progresstracker">2.4 ProgressTracker</h3>
+<p>本系列前文中在介绍etcd/raft的选举与日志复制的实现时，其实已经简单接触过了<code>ProgressTracker</code>。因为leader用来追踪follower复制进度的字段<code>Progress</code>和记录选票的<code>Vote</code>字段就在<code>ProgressTracker</code>中。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// ProgressTracker tracks the currently active configuration and the information
+</span><span class="c1">// known about the nodes and learners in it. In particular, it tracks the match
+</span><span class="c1">// index for each peer which in turn allows reasoning about the committed index.
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">ProgressTracker</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">Config</span>
+
+	<span class="nx">Progress</span> <span class="nx">ProgressMap</span>
+
+	<span class="nx">Votes</span> <span class="kd">map</span><span class="p">[</span><span class="kt">uint64</span><span class="p">]</span><span class="kt">bool</span>
+
+	<span class="nx">MaxInflight</span> <span class="kt">int</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>ProgressTracker</code>提供了如下方法：</p>
+<table>
+<thead>
+<tr>
+<th align="center">方法<div style="width: 20em"></div></th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center"><code>func MakeProgressTracker(maxInflight int) ProgressTracker</code></td>
+<td align="left">新建空配置。</td>
+</tr>
+<tr>
+<td align="center"><code>ConfState() pb.ConfState</code></td>
+<td align="left">返回当前激活的配置。</td>
+</tr>
+<tr>
+<td align="center"><code>IsSingleton() bool</code></td>
+<td align="left">判断当前配置是否为单节点模式（voter数为0，且不处于<em>joint configuration</em>中）。</td>
+</tr>
+<tr>
+<td align="center"><code>Committed() uint64</code></td>
+<td align="left">返回被quorum接受的<em>commit index</em>。</td>
+</tr>
+<tr>
+<td align="center"><code>Visit(f func(id uint64, pr *Progress))</code></td>
+<td align="left">有序遍历追踪的所有进度，并对其执行传入的函数闭包。</td>
+</tr>
+<tr>
+<td align="center"><code>QuorumActive() bool</code></td>
+<td align="left">判断是否有达到quorum数量的节点处于活跃状态（用于<strong>Check Quorum</strong>）。</td>
+</tr>
+<tr>
+<td align="center"><code>VoterNodes() []uint64</code></td>
+<td align="left">返回有序的voter节点id集合。</td>
+</tr>
+<tr>
+<td align="center"><code>LearnerNodes() []uint64</code></td>
+<td align="left">返回有序的learner节点id集合。</td>
+</tr>
+<tr>
+<td align="center"><code>ResetVotes()</code></td>
+<td align="left">重置记录的选票。</td>
+</tr>
+<tr>
+<td align="center"><code>RecordVote(id uint64, v bool)</code></td>
+<td align="left">记录来自节点<code>id</code>的选票。</td>
+</tr>
+<tr>
+<td align="center"><code>TallyVotes() (granted int, rejected int, _ quorum.VoteResult)</code></td>
+<td align="left">返回选票中赞同数、反对数、与当前投票结果。</td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-etcdraft配置变更的实现">3. etcd/raft配置变更的实现</h2>
+<p>etcd/raft中新配置是在<em>apply-time</em>生效的，也就是说，如果etcd/raft模块的使用者在处理<code>Ready</code>结构体的<code>CommittedEntries</code>字段时遇到了实现了<code>ConfChangeI</code>接口的消息时（包括<code>ConfChangeV2</code>和兼容的旧版本<code>ConfChange</code>），需要主动调用<code>Node</code>的<code>ApplyConfChange</code>方法通知Raft状态机使用新配置。该方法最终会调用<code>raft</code>结构体的<code>applyConfChange</code>方法，切换到相应的配置。</p>
+<p>本节笔者将分析这一流程的实现。</p>
+<h3 id="31-confchange类型">3.1 ConfChange类型</h3>
+<p>在介绍配置变更的实现之前，本节先介绍一下etcd/raft支持的配置变更类型。由于旧版本的配置变更消息<code>ConfChange</code>仅支持“one node a time”的简单算法，这里不再赘述，仅介绍<code>ConfChangeV2</code>中支持的配置变更类型。</p>
+<p><code>ConfChangeV2</code>的<code>Transition</code>字段表示切换配置的行为，其支持的行为有3种：</p>
+<ol>
+<li><code>ConfChangeTransitionAuto</code>（默认）：自动选择行为，当配置变更可以通过简单算法完成时，直接使用简单算法；否则使用<code>ConfChangeTransitionJointImplicit</code>行为。</li>
+<li><code>ConfChangeTransitionJointImplicit</code>：强制使用<em>joint consensus</em>，并在适当时间通过<code>Changes</code>为空的<code>ConfChangeV2</code>消息自动退出<em>joint consensus</em>。该方法适用于希望减少<em>joint consensus</em>时间且不需要在状态机中保存<em>joint configuraiont</em>的程序。</li>
+<li><code>ConfChangeTransitionJointExplicit</code>：强制使用<em>joint consensus</em>，但不会自动退出<em>joint consensus</em>，而是需要etcd/raft模块的使用者通过提交<code>Changes</code>为空的<code>ConfChangeV2</code>消息退出<em>joint consensus</em>。该方法适用于希望显式控制配置变更的程序，如自定义了<code>Context</code>字段内容的程序。</li>
+</ol>
+<p><code>ConfChangeV2</code>的<code>Changes</code>字段表示一系列的节点操作，其支持的操作有：</p>
+<ol>
+<li><code>ConfChangeAddNode</code>：添加新节点。</li>
+<li><code>ConfChangeRemoveNode</code>：移除节点。</li>
+<li><code>ConfChangeUpdateNode</code>：用于状态机更新节点url等操作，etcd/raft模块本身不会对节点进行任何操作。</li>
+<li><code>ConfChangeAddLearnerNode</code>：添加learner节点。</li>
+</ol>
+<h3 id="32-提议confchange">3.2 提议ConfChange</h3>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+		<span class="c1">// stepLeader
+</span><span class="c1"></span>		<span class="c1">// case pb.MsgProp:
+</span><span class="c1"></span>		<span class="c1">// ... ...
+</span><span class="c1"></span>
+		<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Entries</span> <span class="p">{</span>
+			<span class="nx">e</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">m</span><span class="p">.</span><span class="nx">Entries</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span>
+			<span class="kd">var</span> <span class="nx">cc</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">ConfChangeI</span>
+			<span class="k">if</span> <span class="nx">e</span><span class="p">.</span><span class="nx">Type</span> <span class="o">==</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">EntryConfChange</span> <span class="p">{</span>
+				<span class="kd">var</span> <span class="nx">ccc</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">ConfChange</span>
+				<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">ccc</span><span class="p">.</span><span class="nf">Unmarshal</span><span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">Data</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+					<span class="nb">panic</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+				<span class="p">}</span>
+				<span class="nx">cc</span> <span class="p">=</span> <span class="nx">ccc</span>
+			<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nx">e</span><span class="p">.</span><span class="nx">Type</span> <span class="o">==</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">EntryConfChangeV2</span> <span class="p">{</span>
+				<span class="kd">var</span> <span class="nx">ccc</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">ConfChangeV2</span>
+				<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">ccc</span><span class="p">.</span><span class="nf">Unmarshal</span><span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">Data</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+					<span class="nb">panic</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+				<span class="p">}</span>
+				<span class="nx">cc</span> <span class="p">=</span> <span class="nx">ccc</span>
+			<span class="p">}</span>
+			<span class="k">if</span> <span class="nx">cc</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+				<span class="nx">alreadyPending</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">pendingConfIndex</span> <span class="p">&gt;</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nx">applied</span>
+				<span class="nx">alreadyJoint</span> <span class="o">:=</span> <span class="nb">len</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">prs</span><span class="p">.</span><span class="nx">Config</span><span class="p">.</span><span class="nx">Voters</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="p">&gt;</span> <span class="mi">0</span>
+				<span class="nx">wantsLeaveJoint</span> <span class="o">:=</span> <span class="nb">len</span><span class="p">(</span><span class="nx">cc</span><span class="p">.</span><span class="nf">AsV2</span><span class="p">().</span><span class="nx">Changes</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+
+				<span class="kd">var</span> <span class="nx">refused</span> <span class="kt">string</span>
+				<span class="k">if</span> <span class="nx">alreadyPending</span> <span class="p">{</span>
+					<span class="nx">refused</span> <span class="p">=</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;possible unapplied conf change at index %d (applied to %d)&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">pendingConfIndex</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nx">applied</span><span class="p">)</span>
+				<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nx">alreadyJoint</span> <span class="o">&amp;&amp;</span> <span class="p">!</span><span class="nx">wantsLeaveJoint</span> <span class="p">{</span>
+					<span class="nx">refused</span> <span class="p">=</span> <span class="s">&#34;must transition out of joint config first&#34;</span>
+				<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">!</span><span class="nx">alreadyJoint</span> <span class="o">&amp;&amp;</span> <span class="nx">wantsLeaveJoint</span> <span class="p">{</span>
+					<span class="nx">refused</span> <span class="p">=</span> <span class="s">&#34;not in joint state; refusing empty conf change&#34;</span>
+				<span class="p">}</span>
+
+				<span class="k">if</span> <span class="nx">refused</span> <span class="o">!=</span> <span class="s">&#34;&#34;</span> <span class="p">{</span>
+					<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;%x ignoring conf change %v at config %s: %s&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">cc</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">prs</span><span class="p">.</span><span class="nx">Config</span><span class="p">,</span> <span class="nx">refused</span><span class="p">)</span>
+					<span class="nx">m</span><span class="p">.</span><span class="nx">Entries</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="p">=</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">Entry</span><span class="p">{</span><span class="nx">Type</span><span class="p">:</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">EntryNormal</span><span class="p">}</span>
+				<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+					<span class="nx">r</span><span class="p">.</span><span class="nx">pendingConfIndex</span> <span class="p">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nf">lastIndex</span><span class="p">()</span> <span class="o">+</span> <span class="nb">uint64</span><span class="p">(</span><span class="nx">i</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+				<span class="p">}</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+
+		<span class="c1">// ... ...
+</span><span class="c1"></span>
+</code></pre></div><p>在<code>stepLeader</code>方法处理<code>MsgProp</code>时，如果发现<code>ConfChange</code>消息或<code>ConfChangeV2</code>消息，会反序列化消息数据并对其进行一些预处理。</p>
+<ol>
+<li><code>alreadyPending</code>：上一次合法的<code>ConfChange</code>还没被应用时为真。</li>
+<li><code>alreadyJoint</code>：当前配置正处于<em>joint configuration</em>时为真。</li>
+<li><code>wantsLeaveJoint</code>：如果消息（旧格式的消息会转为<code>V2</code>处理）的<code>Changes</code>字段为空时，说明该消息为用于退出<em>joint configuration</em>而转到$C_{new}$的消息。</li>
+</ol>
+<p>根据以上3个条件，拒绝该<code>ConfChange</code>的情况有3种：</p>
+<ol>
+<li><code>alreadyPending</code>：Raft同一时间只能有一个未被提交的<code>ConfChange</code>，因此拒绝新提议。</li>
+<li><code>alreadyJoint</code>为真但<code>wantsLeaveJoint</code>为假：处于<em>joint configuration</em>的集群必须先退出<em>joint configuration</em>并转为$C_{new}，才能开始新的<code>ConfChange</code>，因此拒绝提议。</li>
+<li><code>alreadyJoint</code>为假单<code>wantsLeaveJoint</code>为真，未处于<em>joint configuration</em>，忽略不做任何变化空<code>ConfChange</code>消息。</li>
+</ol>
+<p>对需要拒绝的提议的处理非常简单，只需要将该日志条目替换为没有任何意义的普通空日志条目<code>pb.Entry{Type: pb.EntryNormal}</code>即可。</p>
+<p>而对于合法的<code>ConfChange</code>，除了将其追加到日志中外，还需要修改<code>raft</code>结构体的<code>pendingConfIndex</code>字段，将其置为$[上一条ConfChange.Index, 当前ConfChange.Index)$的值<sup>引文3</sup>（这里置为了处理该<code>MsgProp</code>之前的最后一条日志的index），以供之后遇到<code>ConfChange</code>消息时判断当前<code>ConfChange</code>是否已经被应用。</p>
+<div class="details admonition quota open">
+        <div class="details-summary admonition-title">
+            <i class="icon fas fa-pencil-alt fa-fw"></i>引文3<i class="details-icon fas fa-angle-right fa-fw"></i>
+        </div>
+        <div class="details-content">
+            <div class="admonition-content"><p><em>pendingConfIndex</em>字段注释：</p>
+<p>Only one conf change may be pending (in the log, but not yet applied) at a time. This is enforced via pendingConfIndex, which is set to a value &gt;= the log index of the latest pending configuration change (if any). Config changes are only allowed to be proposed if the leader&rsquo;s applied index is greater than this value.</p>
+</div>
+        </div>
+    </div>
+<h3 id="33-应用confchange">3.3 应用ConfChange</h3>
+<p>上文中已经提到，etcd/raft需要使用者自行调用<code>Node</code>的<code>ApplyConfChange</code>方法来应用新配置，该方法最终会调用<code>raft</code>结构体的<code>applyConfChange</code>方法，其源码如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">)</span> <span class="nf">applyConfChange</span><span class="p">(</span><span class="nx">cc</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">ConfChangeV2</span><span class="p">)</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">ConfState</span> <span class="p">{</span>
+	<span class="nx">cfg</span><span class="p">,</span> <span class="nx">prs</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="kd">func</span><span class="p">()</span> <span class="p">(</span><span class="nx">tracker</span><span class="p">.</span><span class="nx">Config</span><span class="p">,</span> <span class="nx">tracker</span><span class="p">.</span><span class="nx">ProgressMap</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+		<span class="nx">changer</span> <span class="o">:=</span> <span class="nx">confchange</span><span class="p">.</span><span class="nx">Changer</span><span class="p">{</span>
+			<span class="nx">Tracker</span><span class="p">:</span>   <span class="nx">r</span><span class="p">.</span><span class="nx">prs</span><span class="p">,</span>
+			<span class="nx">LastIndex</span><span class="p">:</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nf">lastIndex</span><span class="p">(),</span>
+		<span class="p">}</span>
+		<span class="k">if</span> <span class="nx">cc</span><span class="p">.</span><span class="nf">LeaveJoint</span><span class="p">()</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="nx">changer</span><span class="p">.</span><span class="nf">LeaveJoint</span><span class="p">()</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nx">autoLeave</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">cc</span><span class="p">.</span><span class="nf">EnterJoint</span><span class="p">();</span> <span class="nx">ok</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="nx">changer</span><span class="p">.</span><span class="nf">EnterJoint</span><span class="p">(</span><span class="nx">autoLeave</span><span class="p">,</span> <span class="nx">cc</span><span class="p">.</span><span class="nx">Changes</span><span class="o">...</span><span class="p">)</span>
+		<span class="p">}</span>
+		<span class="k">return</span> <span class="nx">changer</span><span class="p">.</span><span class="nf">Simple</span><span class="p">(</span><span class="nx">cc</span><span class="p">.</span><span class="nx">Changes</span><span class="o">...</span><span class="p">)</span>
+	<span class="p">}()</span>
+
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="c1">// TODO(tbg): return the error to the caller.
+</span><span class="c1"></span>		<span class="nb">panic</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="nx">r</span><span class="p">.</span><span class="nf">switchToConfig</span><span class="p">(</span><span class="nx">cfg</span><span class="p">,</span> <span class="nx">prs</span><span class="p">)</span>
+<span class="p">}</span>
+
+</code></pre></div><p>该方法首先通过检查<code>ConfChangeV2</code>的行为与变更内容，并通过<code>confChange.Changer</code>创建新的配置与用于进度跟踪的字典，最后调用<code>switchToConfig</code>方法切换到新配置并更新进度跟踪映射。其中<code>confChange.Changer</code>主要用于校验<code>ConfChangeV2</code>是否合法并生成新配置等，感兴趣的读者可以自行阅读其源码实现，本文不再赘述。下面来分析<code>switchToConfig</code>的实现：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// switchToConfig reconfigures this node to use the provided configuration. It
+</span><span class="c1">// updates the in-memory state and, when necessary, carries out additional
+</span><span class="c1">// actions such as reacting to the removal of nodes or changed quorum
+</span><span class="c1">// requirements.
+</span><span class="c1">//
+</span><span class="c1">// The inputs usually result from restoring a ConfState or applying a ConfChange.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">)</span> <span class="nf">switchToConfig</span><span class="p">(</span><span class="nx">cfg</span> <span class="nx">tracker</span><span class="p">.</span><span class="nx">Config</span><span class="p">,</span> <span class="nx">prs</span> <span class="nx">tracker</span><span class="p">.</span><span class="nx">ProgressMap</span><span class="p">)</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">ConfState</span> <span class="p">{</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nx">prs</span><span class="p">.</span><span class="nx">Config</span> <span class="p">=</span> <span class="nx">cfg</span>
+	<span class="nx">r</span><span class="p">.</span><span class="nx">prs</span><span class="p">.</span><span class="nx">Progress</span> <span class="p">=</span> <span class="nx">prs</span>
+
+	<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;%x switched to configuration %s&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">prs</span><span class="p">.</span><span class="nx">Config</span><span class="p">)</span>
+	<span class="nx">cs</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">prs</span><span class="p">.</span><span class="nf">ConfState</span><span class="p">()</span>
+	<span class="nx">pr</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">prs</span><span class="p">.</span><span class="nx">Progress</span><span class="p">[</span><span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">]</span>
+
+	<span class="c1">// Update whether the node itself is a learner, resetting to false when the
+</span><span class="c1"></span>	<span class="c1">// node is removed.
+</span><span class="c1"></span>	<span class="nx">r</span><span class="p">.</span><span class="nx">isLearner</span> <span class="p">=</span> <span class="nx">ok</span> <span class="o">&amp;&amp;</span> <span class="nx">pr</span><span class="p">.</span><span class="nx">IsLearner</span>
+
+	<span class="k">if</span> <span class="p">(!</span><span class="nx">ok</span> <span class="o">||</span> <span class="nx">r</span><span class="p">.</span><span class="nx">isLearner</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="nx">r</span><span class="p">.</span><span class="nx">state</span> <span class="o">==</span> <span class="nx">StateLeader</span> <span class="p">{</span>
+		<span class="c1">// This node is leader and was removed or demoted. We prevent demotions
+</span><span class="c1"></span>		<span class="c1">// at the time writing but hypothetically we handle them the same way as
+</span><span class="c1"></span>		<span class="c1">// removing the leader: stepping down into the next Term.
+</span><span class="c1"></span>		<span class="c1">//
+</span><span class="c1"></span>		<span class="c1">// TODO(tbg): step down (for sanity) and ask follower with largest Match
+</span><span class="c1"></span>		<span class="c1">// to TimeoutNow (to avoid interruption). This might still drop some
+</span><span class="c1"></span>		<span class="c1">// proposals but it&#39;s better than nothing.
+</span><span class="c1"></span>		<span class="c1">//
+</span><span class="c1"></span>		<span class="c1">// TODO(tbg): test this branch. It is untested at the time of writing.
+</span><span class="c1"></span>		<span class="k">return</span> <span class="nx">cs</span>
+	<span class="p">}</span>
+
+	<span class="c1">// The remaining steps only make sense if this node is the leader and there
+</span><span class="c1"></span>	<span class="c1">// are other nodes.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">state</span> <span class="o">!=</span> <span class="nx">StateLeader</span> <span class="o">||</span> <span class="nb">len</span><span class="p">(</span><span class="nx">cs</span><span class="p">.</span><span class="nx">Voters</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">cs</span>
+	<span class="p">}</span>
+
+	<span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nf">maybeCommit</span><span class="p">()</span> <span class="p">{</span>
+		<span class="c1">// If the configuration change means that more entries are committed now,
+</span><span class="c1"></span>		<span class="c1">// broadcast/append to everyone in the updated config.
+</span><span class="c1"></span>		<span class="nx">r</span><span class="p">.</span><span class="nf">bcastAppend</span><span class="p">()</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+		<span class="c1">// Otherwise, still probe the newly added replicas; there&#39;s no reason to
+</span><span class="c1"></span>		<span class="c1">// let them wait out a heartbeat interval (or the next incoming
+</span><span class="c1"></span>		<span class="c1">// proposal).
+</span><span class="c1"></span>		<span class="nx">r</span><span class="p">.</span><span class="nx">prs</span><span class="p">.</span><span class="nf">Visit</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">id</span> <span class="kt">uint64</span><span class="p">,</span> <span class="nx">pr</span> <span class="o">*</span><span class="nx">tracker</span><span class="p">.</span><span class="nx">Progress</span><span class="p">)</span> <span class="p">{</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nf">maybeSendAppend</span><span class="p">(</span><span class="nx">id</span><span class="p">,</span> <span class="kc">false</span> <span class="cm">/* sendIfEmpty */</span><span class="p">)</span>
+		<span class="p">})</span>
+	<span class="p">}</span>
+	<span class="c1">// If the the leadTransferee was removed or demoted, abort the leadership transfer.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">tOK</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">prs</span><span class="p">.</span><span class="nx">Config</span><span class="p">.</span><span class="nx">Voters</span><span class="p">.</span><span class="nf">IDs</span><span class="p">()[</span><span class="nx">r</span><span class="p">.</span><span class="nx">leadTransferee</span><span class="p">];</span> <span class="p">!</span><span class="nx">tOK</span> <span class="o">&amp;&amp;</span> <span class="nx">r</span><span class="p">.</span><span class="nx">leadTransferee</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">r</span><span class="p">.</span><span class="nf">abortLeaderTransfer</span><span class="p">()</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="nx">cs</span>
+<span class="p">}</span>
+
+</code></pre></div><p>该方法会将新的<code>Config</code>与<code>ProgressMap</code>应用到<code>ProgressTracker</code>。应用后，获取激活的新状态，并检查该节点是否在新的<code>ProgressMap</code>。如果节点不造<code>ProgressMap</code>中，说明节点已被移除集群。根据不同的新状态，执行如下操作：</p>
+<ol>
+<li>如果该节点原来为leader，但在新配置中成为了learner或被移除了集群，那么直接返回，该节点会在下个term退位且无法再发起投票请求。此时状态机可以停止<code>Node</code>。</li>
+<li>如果节点原来不是leader节点，或新配置中不包含任何voter，那么该节点同样不需要进行任何操作，直接返回。</li>
+<li>否则，该节点原来为leader且继续运行。需要执行一些操作。</li>
+</ol>
+<p>如果该节点原来为leader且继续运行，那么按需广播日志复制请求与<em>commit index</em>。最后，该leader检查此时是否在进行<strong>leader transfer</strong>，如果正在进行<strong>leader transfer</strong>但目标节点已被从配置中移除，那么终止<strong>leader transfer</strong>。</p>
+<h3 id="34-autoleave">3.4 AutoLeave</h3>
+<p>当<code>ConfChange</code>的类型为<code>ConfChangeTransitionAuto</code>或<code>ConfChangeTransitionJointImplicit</code>时，退出<em>joint configuration</em>由etcd/raft自动实现。由于配置是在用户处理<code>Ready</code>结构体时主动调用<code>ConfChange</code>方法时生效的，因此实现“auto leave”的代码在<code>Advance</code>方法的实现<code>advance</code>方法中，即<code>ConfChange</code>已被用户应用后。在<code>advance</code>方法中，有如下代码：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+		<span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">prs</span><span class="p">.</span><span class="nx">Config</span><span class="p">.</span><span class="nx">AutoLeave</span> <span class="o">&amp;&amp;</span> <span class="nx">oldApplied</span> <span class="o">&lt;=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">pendingConfIndex</span> <span class="o">&amp;&amp;</span> <span class="nx">newApplied</span> <span class="o">&gt;=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">pendingConfIndex</span> <span class="o">&amp;&amp;</span> <span class="nx">r</span><span class="p">.</span><span class="nx">state</span> <span class="o">==</span> <span class="nx">StateLeader</span> <span class="p">{</span>
+			<span class="c1">// If the current (and most recent, at least for this leader&#39;s term)
+</span><span class="c1"></span>			<span class="c1">// configuration should be auto-left, initiate that now. We use a
+</span><span class="c1"></span>			<span class="c1">// nil Data which unmarshals into an empty ConfChangeV2 and has the
+</span><span class="c1"></span>			<span class="c1">// benefit that appendEntry can never refuse it based on its size
+</span><span class="c1"></span>			<span class="c1">// (which registers as zero).
+</span><span class="c1"></span>			<span class="nx">ent</span> <span class="o">:=</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">Entry</span><span class="p">{</span>
+				<span class="nx">Type</span><span class="p">:</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">EntryConfChangeV2</span><span class="p">,</span>
+				<span class="nx">Data</span><span class="p">:</span> <span class="kc">nil</span><span class="p">,</span>
+			<span class="p">}</span>
+			<span class="c1">// There&#39;s no way in which this proposal should be able to be rejected.
+</span><span class="c1"></span>			<span class="k">if</span> <span class="p">!</span><span class="nx">r</span><span class="p">.</span><span class="nf">appendEntry</span><span class="p">(</span><span class="nx">ent</span><span class="p">)</span> <span class="p">{</span>
+				<span class="nb">panic</span><span class="p">(</span><span class="s">&#34;refused un-refusable auto-leaving ConfChangeV2&#34;</span><span class="p">)</span>
+			<span class="p">}</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nx">pendingConfIndex</span> <span class="p">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nf">lastIndex</span><span class="p">()</span>
+			<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;initiating automatic transition out of joint configuration %s&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">prs</span><span class="p">.</span><span class="nx">Config</span><span class="p">)</span>
+		<span class="p">}</span>
+
+</code></pre></div><p>该方法判断调用<code>Advance</code>方法前处理的最后一个<code>Ready</code>中是否包含合法的<code>ConfChange</code>，如果有合法的<code>ConfChange</code>且当前配置开启了<code>AutoLeave</code>，同时该节点是leader的话，那么向其日志中追加一条空的<code>ConfChangeV2</code>消息，以用来触发退出<em>joint configuration</em>的操作。</p>
+<h3 id="35-补充说明">3.5 补充说明</h3>
+<p>在本系列之前的文章中，为了避免提前引入过多概念，在分析源码时省略了一些与配置相关的部分。在阅读完本文后，相信读者已经可以理解之前省略的代码中与成员变更相关的部分了，因此这里不再对之前省略的代码进行分析，读者可以找到自己之前不理解的地方自行阅读分析。</p>
+<h3 id="4-总结">4. 总结</h3>
+<p>本文介绍了etcd/raft中才用的Raft成员变更算法的实现，这部分etcd/raft的改动不是很多，因此更重要的是熟悉论文中的方法。同样，成员变更操作很多零碎的代码也分散在etcd/raft的实现中的各个位置，这里建议读者按照自己的节奏阅读源码，将本文作为参考。</p>
+<h2 id="参考文献">参考文献</h2>
+<div class="reference">
+<p>[1] Ongaro D, Ousterhout J. In search of an understandable consensus algorithm[C]//2014 {USENIX} Annual Technical Conference ({USENIX}{ATC} 14). 2014: 305-319.</p>
+<p>[2] Ongaro D, Ousterhout J. In search of an understandable consensus algorithm (extended version)[J]. Retrieved July, 2016, 20: 2018.</p>
+<p>[3] Ongaro D. Consensus: Bridging theory and practice[D]. Stanford University, 2014.</p>
+</div></div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2020-12-29</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"></div>
+            <div class="post-info-share">
+                <span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/etcd/">etcd</a>,&nbsp;<a href="/tags/raft/">Raft</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/posts/code-reading/etcdraft-made-simple/4-log/" class="prev" rel="prev" title="深入浅出etcd/raft —— 0x04 Raft日志"><i class="fas fa-angle-left fa-fw"></i>深入浅出etcd/raft —— 0x04 Raft日志</a>
+            <a href="/posts/code-reading/etcdraft-made-simple/6-readonly/" class="next" rel="next" title="深入浅出etcd/raft —— 0x06 只读请求优化">深入浅出etcd/raft —— 0x06 只读请求优化<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+</article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"><link rel="stylesheet" href="/lib/katex/katex.min.css"><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"><script type="text/javascript" src="/lib/smooth-scroll/smooth-scroll.min.js"></script><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"id-1":"叉鸽 | MrCroxx","id-2":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"id-1":["id-1"],"id-2":["id-2"]},"duration":null,"speed":null}};</script><script type="text/javascript" src="/js/theme.min.js"></script></body>
+</html>

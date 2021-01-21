@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>《Paxos Made Simple》论文翻译 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《Paxos Made Simple》论文翻译" />
+<meta property="og:description" content="本篇文章是对论文Paxos Made Simple的原创翻译，转载请严格遵守CC BY-NC-SA协议。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/paxos-made-simple/" />
+<meta property="og:image" content="https://mrcroxx.github.io/posts/paper-reading/paxos-made-simple/paper-reading.jpg"/>
+<meta property="article:published_time" content="2020-09-21T13:34:37+08:00" />
+<meta property="article:modified_time" content="2020-09-24T10:23:56+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://mrcroxx.github.io/posts/paper-reading/paxos-made-simple/paper-reading.jpg"/>
+<meta name="twitter:title" content="《Paxos Made Simple》论文翻译"/>
+<meta name="twitter:description" content="本篇文章是对论文Paxos Made Simple的原创翻译，转载请严格遵守CC BY-NC-SA协议。"/>
+<meta name="application-name" content="叉鸽 MrCroxx 的博客">
+<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/paper-reading/paxos-made-simple/" /><link rel="prev" href="https://mrcroxx.github.io/posts/paper-reading/weil-osde06/" /><link rel="next" href="https://mrcroxx.github.io/posts/paper-reading/paxos-made-live/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "《Paxos Made Simple》论文翻译",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/paxos-made-simple\/"
+        },"image": [{
+                            "@type": "ImageObject",
+                            "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/paxos-made-simple\/paper-reading.jpg",
+                            "width":  1200 ,
+                            "height":  360 
+                        }],"genre": "posts","keywords": "Paxos, Translation","wordcount":  9749 ,
+        "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/paxos-made-simple\/","datePublished": "2020-09-21T13:34:37+08:00","dateModified": "2020-09-24T10:23:56+08:00","publisher": {
+            "@type": "Organization",
+            "name": "叉鸽"},"author": {
+                "@type": "Person",
+                "name": "叉鸽"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : '' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-1" class="typeit"></span></a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-2" class="typeit"></span></a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">《Paxos Made Simple》论文翻译</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-21">2020-09-21</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 9749 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 20 分钟&nbsp;</div>
+        </div><div class="featured-image"><img
+        class="lazyload"
+        src="/svg/loading.min.svg"
+        data-src="/posts/paper-reading/paxos-made-simple/paper-reading.jpg"
+        data-srcset="/posts/paper-reading/paxos-made-simple/paper-reading.jpg, /posts/paper-reading/paxos-made-simple/paper-reading.jpg 1.5x, /posts/paper-reading/paxos-made-simple/paper-reading.jpg 2x"
+        data-sizes="auto"
+        alt="/posts/paper-reading/paxos-made-simple/paper-reading.jpg"
+        title="/posts/paper-reading/paxos-made-simple/paper-reading.jpg" /></div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#作者">作者</a></li>
+    <li><a href="#摘要">摘要</a></li>
+    <li><a href="#1-引言">1. 引言</a></li>
+    <li><a href="#2-共识算法">2. 共识算法</a>
+      <ul>
+        <li><a href="#21-问题描述">2.1 问题描述</a></li>
+        <li><a href="#22-值的选取">2.2 值的选取</a></li>
+        <li><a href="#23-值的获悉">2.3 值的获悉</a></li>
+        <li><a href="#24-保证进行">2.4 保证进行</a></li>
+        <li><a href="#25-实现">2.5 实现</a></li>
+      </ul>
+    </li>
+    <li><a href="#3-实现一个状态机">3. 实现一个状态机</a></li>
+    <li><a href="#参考文献">参考文献</a></li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p><em>本篇文章是对论文<a href="http://www.cs.utexas.edu/users/lorenzo/corsi/cs380d/past/03F/notes/paxos-simple.pdf" target="_blank" rel="noopener noreffer">Paxos Made Simple</a>的原创翻译，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
+<h2 id="作者">作者</h2>
+<p>Leslie Lamport</p>
+<h2 id="摘要">摘要</h2>
+<p>Paxos算法，用直白的话描述的时候，真的很简单。</p>
+<h2 id="1-引言">1. 引言</h2>
+<p>Paxos算法是用来实现容错的分布式系统的算法，一直以来都被认为难以理解，这可能是因为最初的论文中的描述方式对很多读者来说太迷惑了<sup>[5]</sup><sup>注1</sup>。事实上，Paxos可能是分布式算法中最简单且最显而易见的。其核心是共识算法——<sup>[5]</sup>中的“教会”算法。下一章中说明了该共识算法遵循了几乎所有我们希望满足的不可避免的属性。最后一章解释了完整的Paxos算法，该章通过简单直接的共识程序实现了构建分布式系统用的状态机——通过状态机实现分布式系统的方式非常有名，因为这可能是有关分布式系统理论中最常被引用的文章的主题。<sup>[4]</sup></p>
+<blockquote>
+<p>注1：原文为“ the original presentation was Greek to many readers”。这个paper通篇都能感受到Leslie Lamport对我等凡人的嘲讽hhh。</p>
+</blockquote>
+<h2 id="2-共识算法">2. 共识算法</h2>
+<h3 id="21-问题描述">2.1 问题描述</h3>
+<p>假设有一系列能够提议（propose）值的进程。共识算法保证在这些被提议的值中有单个值被选中。如果没有提议的值，那么应该不会有值被选中。如果一个值已经被选中，那么进程应该能够获悉被选中的值。共识的安全性需求有：</p>
+<ul>
+<li>
+<p>只有被提议的值才可能被选中；</p>
+</li>
+<li>
+<p>仅一个值被选中；</p>
+</li>
+<li>
+<p>除非值被选中，否则进程永远不会获悉该值。</p>
+</li>
+</ul>
+<p>我们不会试图明确这些需求。然而，这些需求的目标是确保某个被提议的值最终会被选中，且如果一个值被选中，那么进程最终会获悉该值。</p>
+<p>我们让共识算法中的三种角色由三类agent执行：<em>proposer</em>、<em>acceptor</em>、和<em>learner</em>。在一个共识算法的实现中，单个进程可能作为不止一个agent，但是这里我们不需要关心agent到进程的映射。</p>
+<p>假设agent可以通过发送消息的方式与另一个agent通信。我们使用了自定义的异步、非拜占庭（non-Byzantine）模型：</p>
+<ul>
+<li>
+<p>agent以任意速度执行，可能宕机停止，也可能宕机重启。因为所有的agent可能在值被选取（choose）后故障并随后重启，所以除非一些信息可以在agent故障和重启后仍能被agent记得，否则不可能有解决方案。</p>
+</li>
+<li>
+<p>消息分发可以消耗任意长的时间，可以重复也可以丢失，但是消息不会损坏。</p>
+</li>
+</ul>
+<h3 id="22-值的选取">2.2 值的选取</h3>
+<p>选取（choose）值的最简单的方式是只有一个acceptor agent。一个proposer向该acceptor发送一个提议（proposal），acceptor选取其收到的第一个提议值。尽管这种方式很简单，但是其不符合需求，因为acceptor的故障会让之后的过程无法继续。</p>
+<p>因此，我们尝试另一种选取值的方式。与其使用单个acceptor，让我们采用多个acceptor agent。一个proposer将提议值发送给一系列acceptor。acceptor可能<em>接受（accept）</em> 该提议值。当值被足够大的acceptor的集合接受时，值会被选取。那么多大才是“足够大”呢？为了保证仅有一个值被选取，我们让足够大的集合中包括任意的大部分的agent。因为任意两个“大多数的agent”的交集中会有一个共有的agent，所以如果一个acceptor最多只能接受一个值，那么这种方法就是可行的。（这是很多论文中得出的对“大多数”的推论，这一推论最早可能来自<sup>[3]</sup>。）</p>
+<p>在没有故障和信息丢失的情况下，我们希望选取一个值，尽管只有一个proposer且仅提议了一个值，这需要：</p>
+<p><strong>P1：</strong> acceptor必须接受其收到的第一个提议。</p>
+<p>但是这会引起一个问题。在大概相同的时间可能存在来自多个不同的porposer提议的多个值，这会导致虽然每个acceptor都接受了一个值，但是没有同一个提议值被大多数的acceptor接受。甚至在仅有两个提议值的情况下，如果每个值被大概半数的acceptor接受，单个acceptor的故障可能会导致无法得知被选取的是哪个值。</p>
+<p>在<strong>P1</strong>之前提到的需求中，一个值只有被大多数的acceptor接受时，该值才会被选取，这意味着acceptor必须能够接受超过一个提议。我们通过为每个提议分配一个（自然数）编号的方式来追踪一个acceptor可能接受的不同的提议，这样，一个提议由一个提议号和一个值组成。为了避免冲突，我们需要让不同的提议有不同的提议号。其实现方法依赖具体的实现，目前我们只需要假设这一点即可。一个值在包含该值的提议被大多数的acceptor接受时被选取。在这种情况下，我们称该提议（和提议的值）被选取。</p>
+<p>我们可以允许有多个提议被选取，但是我们必须保证所有被选取的提议都有相同的值。为了保证这一点，我们对提议号做如下归纳：</p>
+<p><strong>P2：</strong> 如果有值$v$的提议被选取，那么被选取的每个有更大的提议号的提议的值都为$v$。</p>
+<p>因为提议号全都是有序的，条件<strong>P2</strong>保证了“只有一个值被选取”的关键属性。</p>
+<p>为了能被选中，提议必须要被至少一个acceptor接受。所以，我们可以通过满足如下的条件来满足<strong>P2</strong>：</p>
+<p><strong>P2<sup>a</sup>：</strong> 如果一个有值$v$的提议被选取，那么被任意acceptor选取的每个有更大的提议号的提议的值都为$v$。</p>
+<p>我们仍保持<strong>P1</strong>以确保某个提议被选取。因为通信是异步的，提议可以被某个从未收到任何提议的acceptor $c$选取。假设一个新proposer被“唤醒”，并提出了一个有不同值的提议号更高的提议。<strong>P1</strong>要求$c$接受该提议，这违背了<strong>P2<sup>a</sup></strong>。为了同时维护<strong>P1</strong>和<strong>P2<sup>a</sup></strong>，需要将<strong>P2<sup>a</sup></strong>增强为：</p>
+<p><strong>P2<sup>b</sup>：</strong> 如果一个有值$v$的提议被选取，那么被任意proposer提出的每个有更大的提议号的提议的值都为$v$。</p>
+<p>因为提议在被acceptor提出前，必须先被proposer提出，因此<strong>P2<sup>b</sup></strong>包含<strong>P2<sup>a</sup></strong>，而<strong>P2<sup>a</sup></strong>也包含<strong>P2</strong>。</p>
+<p>为了探究如何满足P2<sup>b</sup>，让我们来考虑一下如何证明它成立。我们先假设某个提议号为$m$、值为$v$的提议被选取了，这意味着任何被提出的提议号为$n（n&gt;m）$的提议同样有值$v$。我们通过对$n$进行归纳来使证明更加简单，因此我们可以通过如下方式证明。假设每个被提出的提议号为$m..(n-1)$的提议值为$v$，$i..j$表示从$i$到$j$的一组数，那么提议号为$n$的提议的值为$v$。对于将会被选取的提议号为$m$的提议，必须有某个acceptor的集合$C$，$C$由大多数的acceptor组成，且每个$C$中的acceptor的都接受了该提议。将其与归纳假设结合，可得知，$m$被选取的假设包含了：</p>
+<p>$C$中的每个acceptor都接受了一个提议号在$m..(n-1)$间的提议，且每个提议号在$m..(n-1)$且被任意acceptor接受的提议的值都为$v$。</p>
+<p>因为任意由大多数acceptor组成的集合$S$中会包含$C$中的至少一个acceptor，我们可以得出，在确保如下的不变式成立时，提议号为$n$的提议值为$v$成立：</p>
+<p><strong>P2<sup>c</sup>：</strong> 对于任意$v$和$n$，如果有提议号为$n$且值为$v$的提议被提出，那么有由大多数acceptor组成的集合$S$，（a）$S$中没有acceptor接受了提议号小于$n$的提议，或（b）$v$是被$S$中的acceptor接受的提议号小于$n$的所有提议中，提议号最高的提议的值。</p>
+<p>因此，我们可以通过维护不变式<strong>P2<sup>c</sup></strong>来满足<strong>P2<sup>b</sup></strong>。</p>
+<p>为了维护不变式<strong>P2<sup>c</sup></strong>，想要提出一个提议号为$n$的proposer必须获悉（如果存在的话）已经被或将要被任意大多数acceptor接受的提议号小于$n$的提议中提议号最大的提议。获悉已经被接受的提议很简单，但是预测未来要被接受的提议就很困难。与其试图预测未来，proposer通过兑现“未来不存在这种接受情况”这一承诺来控制这一点。换句话说，porposer要求acceptor不再接受提议号小于$n$的提议。这导致采用如下算法来提出协议：</p>
+<ol>
+<li>
+<p>proposer选取一个新的提议号为$n$的提议，并将一个请求发送给某个acceptor的集合的每个成员，要求对方做出如下响应：</p>
+<p>(a) 承诺永远不会再接受提议号小于$n$的提议；</p>
+<p>(b) 承诺永远不会再接受其已经接受过的提议号小于$n$的提议中提议号最大的提议（如果存在的话）。</p>
+<p>我们称这样的请求为编号为$n$的<em>prepare</em>请求。</p>
+</li>
+<li>
+<p>如果proposer收到了来自大多数acceptor的对其请求的响应，那么它可以提出一个提议号为$n$、值为$v$的提议，其中$v$是所有响应中提议号最高的响应的值，或者当响应者没有报告提议时，$v$可以是由proposer选取的任何值。</p>
+<p>proposer通过向某个acceptor的集合发送接受该提议的请求来提出提议。（不需要与响应其最初请求的acceptor集合是相同的集合。）我们称这个请求为<em>accept</em>请求。</p>
+</li>
+</ol>
+<p>这描述了proposer的算法。那么acceptor的算法是怎样的呢？其可能接受两种来自proposer的请求：prepare请求和accept请求。acceptor可以在不影响安全性的情况下接受或忽略任何请求。所以，我们只需要说明其什么时候可以相应请求。acceptor总是可以响应prepare请求。当且仅当acceptor没有承诺不接受时，acceptor可以响应accept请求并接受其提议。换句话说：</p>
+<p><strong>P1<sup>a</sup>：</strong> 当且仅当acceptor没有响应一个提议号大于$n$的prepare请求时，其可以接受一个提议号为$n$的提议。</p>
+<p>显然，<strong>P1<sup>a</sup></strong>包含了<strong>P1</strong>。</p>
+<p>现在，我们在假设提议号唯一的条件下，得到了满足安全性的完整的选取值的算法。最终算法只需要一个小优化就能得到。</p>
+<p>假设acceptor收到了一个提议号为$n$的prepare请求，但是它已经响应了提议号大于$n$的prepare请求（因此它承诺了不再接受提议号为$n$的新提议）。这样acceptor没有响应这个新prepare请求的理由，因为它不会接受该proposer想要提出的提议号为$n$的提议。所以，我们让acceptor忽略这样的prepare请求。我们还让acceptor忽略其已经接受的提议的prepare请求。</p>
+<p>通过这个优化，acceptor只需要记住其曾经接受过的提议号最高的提议和其响应过的prepare请求中最高的提议号。因为无论是否发生故障，<strong>P2<sup>c</sup></strong>都需要被保证，所以即使acceptor故障且随后重启，其也必须能够记住这个信息。需要注意的是，proposer总是可以丢弃一个提议并忘记关于该提议的一切，只要该proposer不再试图提出另一个有相同提议号的提议。</p>
+<p>将proposer和acceptor的行为放在一起，我们可以发现算法操作包括如下两个阶段。</p>
+<p><strong>阶段1：</strong></p>
+<p>（a）prposer选取一个提议号$n$，并向大多数acceptor发送有提议号$n$的prepare请求。</p>
+<p>（b）如果acceptor收到了一个prepare请求，且其提议号大于任何它已经响应过的prepare请求的提议号，那么该acceptor承诺其不再接受任何提议号小于$n$的提议和（如果存在的话）其接受过的提议中提议号最高的提议。</p>
+<p><strong>阶段2：</strong></p>
+<p>（a）如果proposer收到了来自大多数acceptor的对其（提议号为$n$的）prepare请求的响应，那么该propsoer会向这些acceptor中的每一个发送一个对于提议号为$n$、值为$v$的accept请求，其中$v$是这些响应中提议号最高的值，或者如果响应中没有报告任何提议，那么可以是任意值。</p>
+<p>（b）如果acceptor收到了对提议号为$n$的accept请求，该acceptor会接受这个提议，除非它已经响应过提议号大于$n$的prepare请求。</p>
+<p>proposer可以提出多个提议，只要它对每一个提议都按照算法执行即可。proposer可以在协议中的任意时间丢弃提议。（即使提议的请求和（或）响应在该提议被丢弃很久以后才到达目的地，仍能维持正确性。）当某个proposer开始试图提出一个提议号更高的提议时，丢弃当前的提议可能是个好主意。因此，如果一个acceptor因为已经收到了一个提议高更高的prepare请求而忽略了当前的prepare或accept请求，那么该acceptor可能应该通知对应的proposer，随后该proposer会丢弃该提议。这是一个不影响正确性的性能优化。</p>
+<h3 id="23-值的获悉">2.3 值的获悉</h3>
+<p>为了获悉被选取的值，learner必须发现被大多数acceptor接受的提议。一个很显然的算法是，每当acceptor接受一个提议时，acceptor会响应所有的learner，向它们发送该提议。这样可以让learner尽快发现被选取的值，但是这要求每个acceptor响应每个learner——响应的数量等于acceptor的数量与learner数量的乘积。</p>
+<p>对于“非拜占庭失效（non-Byzantine failures）”的假设可以让一个learner能够很容易地从另一个learner知悉一个值被接受的事件。我们可以让acceptor将接受值的事件响应给一个“高级的（dinsinguished）”，该learner反过来会在有值被选取时通知其他learner。这种方法需要所有的learner通过额外一轮操作来获取被选取的值。且这种方法的可靠性更低，因为这个“高级的”learner可能故障。但是这种方法所需的响应数量仅等于accetpor和learner的数量的和。</p>
+<p>更通用的方法是，acceptor可以将其接受值的事件响应给某给高级的learner的集合，集合中的每个learner随后当值被选取时通知所有的learner。使用更大的learner集合能够提供更好的可靠性，但代价是通信更加复杂。</p>
+<p>因为有消息丢失的情况，值可能在没有learner发现的情况下被选取。虽然learner可以询问acceptor它们接受了哪些提议，但是如果acceptor故障可能导致其无法得知一个特定的提议是否被大多数接受。在这种情况下，learner会仅在新的提议被选取时才会发现被选取的值是什么。如果learner需要知道值是否被选取，它可以让proposer通过之前描述的算法提出一个提议。</p>
+<h3 id="24-保证进行">2.4 保证进行</h3>
+<p>我们可以很容易地构造出一个情境，场景中两个proposer，每个proposer都持续地提出有不断增大的提议号的提议序列，但是没有任何一个提议被选取。proposer $p$完成以提议号$n_1$阶段1。随后，另一个proposer $q$以提议号$n_2（n_2&gt;n_1）$完成阶段1。因为所有的acceptor已经承诺不再接受任何提议号小于$n_2$的新提议，proposer $p$的阶段2的提议号为$n_1$的accept请求会被忽略。因此，proposer $p$随后会以新的提议号$n_3（n_3&gt;n_2）$来开始并完成阶段1，这会导致prposer $q$阶段2的accept请求会被忽略。以此类推。</p>
+<p>为了保证进行，必须选取一个“高级的”porposer，它会作为唯一一个提出提议的propsoer。如果这个高级的proposer可以成功与大多数acceptor通信，且如果该它使用了有比之前使用过的更大提议号的提议，那么它提出的提议会被成功接受。如果高级的propsoer发现某个请求有更高的提议号，那么它可以通过丢弃当前的提议并重试的方式，最终它可以选择一个足够高的提议号。</p>
+<p>如果系统中足够的部分（proposer、acceptor、和通信网络）正常运行，可以通过选取单个高级的proposer来保证系统活性。Fischer、Lynch和Patterson<sup>[1]</sup>的著名的研究结果表明，用来选举proposer的可靠的算法必须使用随机会实时的算法（例如使用超时时间）。然而，无论选举的成功与否，都能确保安全性。</p>
+<h3 id="25-实现">2.5 实现</h3>
+<p>Paxos算法<sup>[5]</sup>设想有一个进程网络。在Paxos共识算法中，每个进程会扮演proposer、acceptor、和learner中的一个角色。算法会选取一个leader，其会扮演高级的proposer和高级的learner的角色。Paxos共识算法正是上面描述的算法，其中请求和响应作为普通的消息发送。（响应消息会通过相应的提议号标识，以防混淆。）能在故障期间保存信息的稳定存储被用来维护acceptor必须记住的信息。acceptor会在真正发送响应之前将其要发送的响应记录在稳定存储中。</p>
+<p>剩下的工作就是描述一种保证被提出的提议中没有两个提议的提议号相同的机制。不同的propsoer会从不相交的编号的集合中选取其提议号，所以两个不同的proposer永远不会提出有相同提议号的提议。每个proposer会在稳定存储中记住其已经试图提出过的有最大提议号的提议，并使用比任何使用的提议高更高的提议号来开始阶段1。</p>
+<h2 id="3-实现一个状态机">3. 实现一个状态机</h2>
+<p>实现一个分布式系统的一个简单方式是将其作为向中央服务器提出指令的客户端的集合。该服务器可以被描述为一个动态的状态机，其按照某个顺序执行客户端的指令。该状态机有一个当前状态，其通过将指令作为输入并产生一个输出和新状态的方式执行一步。例如，分布式银行系统的客户端可能是出纳员，状态机的状态可能由所有用户的账户余额组成。取钱通过执行一个状态机指令实现，该指令会在当且仅当用户余额大于总取钱的量的时候减少账户余额，将旧余额和新余额作为生产的输出。</p>
+<p>在使用单个中央服务器的实现中，如果服务器故障，那么该实现就会故障。因此，我们使用了一个服务器的集合，每个服务器独立实现了一个状态机。因为状态机是动态的，如果所有的服务器都按照相同的指令序列执行，那么他们产生的状态序列就是相同的。这样，客户端提出的指令可以使用任何一个服务器生成的输出。</p>
+<p>为了保证所有服务器执行相同的状态机指令序列，我们实现了一系列的独立的Paxos共识算法的实例，被第$i$个实例选取的值将作为序列中的第$i$个状态机指令。每个服务器在每个算法的实例中扮演所有角色（roposer、acceptor、和learner）。目前，我假设服务器的集合是固定的，所以共识算法的所有实例都使用同一个agent集合。</p>
+<p>在正常的操作中，一个服务器会被选举为leader，其会在共识算法的所有实例中作为高级的proposer（唯一能够试图提出提议的）。客户端将指令发送给leader，leader会决定每个指令在序列中的出现位置。如果leader决定一个特定的客户端指令为第135个指令，其会试图选取该指令为共识算法的第135个实例。通常这会成功。这也可能因为故障或因为另一个服务器也认为自己是leader并对第135个指令有其他想法而导致失败。但是共识算法会确保最多只有一个指令被选取为第135个指令。</p>
+<p>让这种方法变得高效的关键是，在Paxos共识算法中，被提出的值直到第2阶段才会被选取。回忆一下，在proposer的算法的阶段1执行完成后，将要被提议的值已经被决定，或者proposer可以自由地提议任意值。</p>
+<p>现在我将描述Paxos状态机的实现如何在正常操作中工作。之后，我将讨论什么可能发生错误。我考虑了在之前的leader刚刚故障后且新的leader被选举出来时会发生什么。（系统启动是一种特殊情况，其之前没有任何指令被提议。）</p>
+<p>新的leader（也在共识算法的所有实例中作为learner）应该知道大部分已经被选取的指令。假设其知道指令1~134、138、和139——即共识算法中实例1~134、138、和139选取的值。（之后我们将看到指令序列的这种间隔是怎么产生的。）该leader随后将执行135~137和所有大于139的实例的阶段1。（我将在下文描述这是如何做到的。）假设执行结果决定了将在实例135、140中被提议的值，但是所有其他实例中被提议的值不受约束。leader随后会对实例135和140执行阶段2，从而选取指令135和140。</p>
+<p>leader和任何其他知道所有leader知道的指令服务器，现在可以执行指令1~135。然而，它还不能还不能执行指令138~140，虽然它也知道这些指令，因为指令136和137还没被选取。虽然leader可以将接下来两个由客户端请求的指令作为指令136和137，但是我们让它通过提议的方式立即填补这个空隙。一个不会改变状态的特殊的“nop”指令会作为指令136和137。（leader通过执行共识算法的实例136和137的阶段2来实现。）一旦这些没有操作的指令被选取，指令138~140就可以被执行。</p>
+<p>现在指令1~140都被选取了。leader还完成了对共识算法中所有大于140的实例的阶段1，且leader可以自由地在这些实例的阶段2中提交任意值。其将指令号141分配给了下一个被客户端请求的指令，将其作为共识算法中实例141在阶段2中的值提议。其将下一个收到的客户端指令作为指令142提议，以此类推。</p>
+<p>leader可以在得知其提议的指令141被选取前提议指令142。其发送的关于提议指令141的消息全部丢失是有可能发生的，且在任何其他服务器知道leader提议的指令141前就选取了指令142也是可能发生的。当leader没有收到其期待的对实例141的阶段2的响应，leader会重新发送这些消息。如果一切正常，其提议的值会被选取。然而，它也可能先失败，在被选取的指令序列中留下一个间隙。总之，假设leader能先得到$\alpha$个指令——也就是说，leader可以在指令1~$i$被选取后，提议指令$i+1$~$i+\alpha$。那么，就有可能产生最大$\alpha -1$的指令空隙。</p>
+<p>一个新被选取的leader对共识算法中无限多的实例执行阶段1——在上述场景中，是实例135~137和所有大于139的实例。leader可以通过发送一个适当的短消息给其他服务器来让所有实例都有相同的提议号。在阶段1中，acceptor仅当其已经从某个proposer收到了阶段2的消息时才会回复超过一个简单的OK。（在该场景中，这仅在实例135和140中会发生。）因此，作为acceptor的服务器可以通过单个合理的短消息响应所有的实例。因此，执行这些无限多的阶段1的实例是没有问题的。</p>
+<p>因为leader的故障和新leader的选举应该是很少见的事件，执行状态机指令的有效开销（即让指令或值达到共识的开销）仅为执行共识算法阶段2的开销。可以看出，Paxos算法阶段2的开销在所有考虑了故障的为了达成共识的算法中是最小的<sup>[2]</sup>。因此，Paxos算法本质上是最优的。</p>
+<p>对系统正常操作的讨论假设，除了在当前leader故障和新leader的选取间的短暂时间外，系统中总是有单个leader。在不正常的情况下，leader的选举可能失败。如果没有服务器作为leader，那么不会有新的指令被提议。如果多个服务器认为他们都是leader，那么他们都可以在共识算法中的相同的实例中提议值，这可能会让任何值都不会被选取。然而，安全性还是被保证的——两个不同的服务器永远不会将不同的值选取为第$i$个状态机指令。选举处单个leader只用来确保继续运行。</p>
+<p>如果服务器的集合会发生变化，那么必须有某种方式来决定哪些服务器实现了共识算法的哪些实例。最简单的方式是让状态机本身实现。当前服务器的集合可作为状态的一部分，且可被通过普通的状态机指令改变。我们可以让leader提前获取$\alpha$是$i$个状态机指令后的到的状态指定的共识算法中实例$i+\alpha$实现的。这样可以通过简单的方式实现任意的复杂的重配置算法。</p>
+<h2 id="参考文献">参考文献</h2>
+<div class="conference">
+<p>[1] Michael J. Fischer, Nancy Lynch, and Michael S. Paterson. Impossibility of distributed consensus with one faulty process. Journal of the ACM, 32(2):374–382, April 1985.</p>
+<p>[2] Idit Keidar and Sergio Rajsbaum. On the cost of fault-tolerant consensus when there are no faults—a tutorial. TechnicalReport MIT-LCS-TR-821, Laboratory for Computer Science,  assachusetts Institute Technology, Cambridge, MA, 02139, May 2001. also published in SIGACT News 32(2) (June 2001).</p>
+<p>[3] Leslie Lamport. The implementation of reliable distributed multiprocess systems. Computer Networks, 2:95–114, 1978.</p>
+<p>[4] Leslie Lamport. Time, clocks, and the ordering of events in a distributed system. Communications of the ACM, 21(7):558–565, July 1978.</p>
+<p>[5] Leslie Lamport. The part-time parliament. ACM Transactions on Computer Systems, 16(2):133–169, May 1998.</p>
+</div></div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2020-09-24</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"></div>
+            <div class="post-info-share">
+                <span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/paxos/">Paxos</a>,&nbsp;<a href="/tags/translation/">Translation</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/posts/paper-reading/weil-osde06/" class="prev" rel="prev" title="《Ceph: A Scalable, High-Performance Distributed File System》论文翻译"><i class="fas fa-angle-left fa-fw"></i>《Ceph: A Scalable, High-Performance Distributed File System》论文翻译</a>
+            <a href="/posts/paper-reading/paxos-made-live/" class="next" rel="next" title="《Paxos Made Live - An Engineering Perspective》论文翻译">《Paxos Made Live - An Engineering Perspective》论文翻译<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+</article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"><link rel="stylesheet" href="/lib/katex/katex.min.css"><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"><script type="text/javascript" src="/lib/smooth-scroll/smooth-scroll.min.js"></script><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"id-1":"叉鸽 | MrCroxx","id-2":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"id-1":["id-1"],"id-2":["id-2"]},"duration":null,"speed":null}};</script><script type="text/javascript" src="/js/theme.min.js"></script></body>
+</html>
