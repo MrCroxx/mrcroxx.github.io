@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/2-b\x2btree\/bbolt.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  7274 ,
+                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  7330 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/2-b\x2btree\/","datePublished": "2021-01-19T21:25:36+08:00","dateModified": "2021-01-19T21:25:39+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,7 +110,7 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出boltdb —— 0x02 B&#43;Tree</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAbolt/"><i class="far fa-folder fa-fw"></i>深入浅出bolt</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-19">2021-01-19</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 7274 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-19">2021-01-19</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 7330 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 15 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
@@ -184,7 +184,7 @@
 <h2 id="1-boltdb中btree的实现">1. boltdb中B+Tree的实现</h2>
 <p>boltdb的B+Tree节点实现可分为存储中的实现（mmap memory）与内存中的实现（heap memory）两部分。</p>
 <p>B+Tree节点存储部分的实现即branchNodePage与leafNodePage。branchNodePage中每个<code>branchPageElement</code>的<code>pos</code>与<code>ksize</code>字段标识了branch node中的每个key的位置、<code>pgid</code>字段标识了该key所对应的孩子节点的页id；leafNodePage中<code>pos</code>、<code>ksize</code>、<code>vsize</code>字段标识的leaf node中每个实际存储的key/value的位置、<code>flags</code>字段标识了该元素的类型（是普通的key/value还是bucket）。</p>
-<p>虽然boltdb通过mmap的方式将数据库文件映射到了内存中，但是page是copy-on-write的，相当于mmap的page是只读的。因此，boltdb还需要一种通过heap memory表示的B+Tree节点。</p>
+<p>虽然boltdb通过mmap的方式将数据库文件映射到了内存中，但boltdb不会直接修改mmap的内存空间，而是只读mmap内存空间。当需要更新B+Tree的节点时，boltdb会读取mmap内存中相应的page，并在heap memory中构建相应的数据结构来修改，最后再通过pwrite+fdatasync的方式写入底层文件。</p>
 <p>B+Tree节点内存部分主要由node结构体实现。本节将详细介绍node结构体及其相关方法的实现。</p>
 <p>boltdb中node是按需实例化的，对于不需要修改的node，boltdb直接从page中读取数据；而当boltdb需要修改B+Tree的某个节点时，则会将该节点从page实例化为node。在修改node时，boltdb会为其分配page buffer（dirty page），等到事务提交时，才会将这些page buffer中的数据统一落盘。</p>
 <p>本文主要关注boltdb中B+Tree在内存中的实现（heap memory），B+Tree在存储中的实现（mmap memory - page）笔者已经在本系列的<a href="/posts/code-reading/boltdb-made-simple/1-storage-cache/" rel="">存储与缓存</a>中介绍过，这里不再赘述。而node实例化的具体时机与boltdb中cursor的实现有关，因此笔者将其留到了本系列的后续文章中介绍。</p>
