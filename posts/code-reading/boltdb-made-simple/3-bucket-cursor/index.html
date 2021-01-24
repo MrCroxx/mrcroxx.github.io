@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/3-bucket-cursor\/bbolt.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  333 ,
+                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  6625 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/3-bucket-cursor\/","datePublished": "2021-01-20T23:55:22+08:00","dateModified": "2021-01-20T23:55:26+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,8 +110,8 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出boltdb —— 0x03 Bucket &amp; Cursor</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAbolt/"><i class="far fa-folder fa-fw"></i>深入浅出bolt</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-20">2021-01-20</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 333 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 1 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-20">2021-01-20</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 6625 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 14 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
@@ -130,8 +130,25 @@
   </ul>
 
   <ul>
-    <li><a href="#1-bucket">1. bucket</a></li>
-    <li><a href="#2-cursor">2. cursor</a></li>
+    <li><a href="#1-bucket">1. bucket</a>
+      <ul>
+        <li><a href="#11-bucket的存储结构">1.1 bucket的存储结构</a>
+          <ul>
+            <li><a href="#111-bucket与btree">1.1.1 bucket与B+Tree</a></li>
+            <li><a href="#112-inline-bucket">1.1.2 inline bucket</a></li>
+            <li><a href="#113-bucket元数据的序列化与反序列化">1.1.3 bucket元数据的序列化与反序列化</a></li>
+          </ul>
+        </li>
+        <li><a href="#12-bucket的内存结构">1.2 bucket的内存结构</a>
+          <ul>
+            <li><a href="#121-bucket结构体">1.2.1 Bucket结构体</a></li>
+            <li><a href="#123-bucket的操作与实现">1.2.3 Bucket的操作与实现</a></li>
+            <li><a href="#1232-btree节点的打开">1.2.3.2 B+Tree节点的打开</a></li>
+            <li><a href="#1233-bucket的创建打开与删除">1.2.3.3 Bucket的创建、打开与删除</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
   </ul>
 </nav></div>
             </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
@@ -152,7 +169,451 @@
 <p>本文，笔者将分析介绍boltdb中桶与游标的实现。</p>
 <h1 id="施工中-">施工中。。。 。。。</h1>
 <h2 id="1-bucket">1. bucket</h2>
-<h2 id="2-cursor">2. cursor</h2></div><div class="post-footer" id="post-footer">
+<p>与B+Tree的节点类似，bucket也是按需打开的。因此，分析boltdb中bucket也可以从存储与内存两方面入手。</p>
+<p>本节笔者将先介绍boltdb中bucket的存储结构，然后再介绍当bucket被事务打开时，其内存结构与相关方法。</p>
+<h3 id="11-bucket的存储结构">1.1 bucket的存储结构</h3>
+<h4 id="111-bucket与btree">1.1.1 bucket与B+Tree</h4>
+<p>在boltdb中，每个bucket中的数据都是一棵独立的B+Tree。boltdb中B+Tree的节点是通过page存储的，分支节点branchNodePage保存了每个孩子的key和pgid，叶子节点leafNodePage保存了其中每个元素的key/value与元素类型（表示普通kv还是表示bucket）。因此，boltdb的一棵B+Tree的存储结构可表示为下图中的样子。</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/assets/b&#43;tree.svg" title="boltdb中B&#43;Tree存储结构示意图" data-thumbnail="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/assets/b&#43;tree.svg" data-sub-html="<h2>boltdb中B&#43;Tree存储结构示意图</h2><p>boltdb中B&#43;Tree存储结构示意图</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/b&#43;tree.svg"
+            data-srcset="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/assets/b&#43;tree.svg, assets/b&#43;tree.svg 1.5x, /posts/code-reading/boltdb-made-simple/3-bucket-cursor/assets/b&#43;tree.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/assets/b&#43;tree.svg" />
+    </a><figcaption class="image-caption">boltdb中B+Tree存储结构示意图</figcaption>
+    </figure></p>
+<p>boltdb除了需要根据bucket的名称（<code>name</code>）找到其相应的B+Tree的根节点的pgid（<code>root</code>）外，还需要为每个bucket保存一个64为整型值，以便实现生成单调递增的序列号的功能（便于并行程序存储中间结果或实现锁）。这样，bucket的元数据也可以表示为一个key/value对，即$name -&gt; (root,sequence)$，而boltdb也确实是这样实现的。</p>
+<p>在boltdb中，bucekt是支持嵌套的，boltdb的数据库元数据meta中只保存了根bucket（即<code>meta</code>结构体中的<code>root</code>字段），所有签到的bucket组成了一个多叉树型结构，如下图所示。</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/assets/bucket.svg" title="bucket多叉树型结构示意图" data-thumbnail="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/assets/bucket.svg" data-sub-html="<h2>bucket多叉树型结构示意图</h2><p>bucket多叉树型结构示意图</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/bucket.svg"
+            data-srcset="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/assets/bucket.svg, assets/bucket.svg 1.5x, /posts/code-reading/boltdb-made-simple/3-bucket-cursor/assets/bucket.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/assets/bucket.svg" />
+    </a><figcaption class="image-caption">bucket多叉树型结构示意图</figcaption>
+    </figure></p>
+<p>既然bucket的元数据可以表示为key/value对，而bucket中存储的数据也是key/value对，且bucket是支持嵌套的，所以在boltdb中，bucket的元数据也以key/value的形式保存在其父bucket的B+Tree中叶子节点的元素中，只是该元素的<code>flag</code>字段有1位标识了该key/value表示的是bucket。只有根bucket不同，根bucket不需要通过<code>name</code>来索引，因此其只需要保存相当于其他bucket的元数据中value的数据，并直接通过boltdb的<code>meta</code>结构体的<code>root</code>字段索引。</p>
+<p>例如，有3个bucket<em>b0</em>、<em>b1</em>、<em>b2</em>，其相应的B+Tree的根节点所在page分别为<em>r0</em>、<em>r1</em>、<em>r2</em>，<em>b0</em>是<em>b1</em>与<em>b2</em>的父bucket。其存储结构如下图所示：</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/assets/bucket-and-b&#43;tree.svg" title="bucket与B&#43;Tree示意图" data-thumbnail="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/assets/bucket-and-b&#43;tree.svg" data-sub-html="<h2>bucket与B&#43;Tree示意图</h2><p>bucket与B&#43;Tree示意图</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/bucket-and-b&#43;tree.svg"
+            data-srcset="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/assets/bucket-and-b&#43;tree.svg, assets/bucket-and-b&#43;tree.svg 1.5x, /posts/code-reading/boltdb-made-simple/3-bucket-cursor/assets/bucket-and-b&#43;tree.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/assets/bucket-and-b&#43;tree.svg" />
+    </a><figcaption class="image-caption">bucket与B+Tree示意图</figcaption>
+    </figure></p>
+<p>从上图中可以看出，<em>b1</em>和<em>b2</em>的元数据，分别保存在了<em>b0</em>的第0个（<em>page l0</em>的<em>elem 0</em>）和第11个（<em>page l2</em>的<em>elem 3</em>）键值对中。其中，键值对的key即为bucket的<code>name</code>，value为<code>bucket</code>结构体，该结构体由bucket的B+Tree树根节点的pgid <code>root</code>和64位整型序列号<code>sequence</code>组成：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// bucket represents the on-file representation of a bucket.
+</span><span class="c1">// This is stored as the &#34;value&#34; of a bucket key. If the bucket is small enough,
+</span><span class="c1">// then its root page can be stored inline in the &#34;value&#34;, after the bucket
+</span><span class="c1">// header. In the case of inline buckets, the &#34;root&#34; will be 0.
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">bucket</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">root</span>     <span class="nx">pgid</span>   <span class="c1">// page id of the bucket&#39;s root-level page
+</span><span class="c1"></span>	<span class="nx">sequence</span> <span class="kt">uint64</span> <span class="c1">// monotonically incrementing, used by NextSequence()
+</span><span class="c1"></span><span class="p">}</span>
+
+</code></pre></div><h4 id="112-inline-bucket">1.1.2 inline bucket</h4>
+<p>由于每个bucket都是一棵B+Tree，而B+Tree至少需要有一个根节点，且boltdb中每个节点都是一个page，那么如果boltdb中有很多数据量达不到一页的bucket，则会浪费很多空间。为了避免这一问题，对于数据量较小的bucket，boltdb会将其数据放在其元数据后，直接保存在key/value结构的value中，此时该bucket的元数据的<code>root</code>值为0，其被称为<em>inline bucket</em>。为了简化实现，boltdb在保存inline bucket时采用了类似虚拟内存的做法：其数据仍按照page的方式组织，但是其实际大小并非真正的page大小。普通的bucket与inline bucket的存储结构示意图如下图所示。</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/assets/inline-bucket.svg" title="普通bucket与inline bucket存储结构示意图" data-thumbnail="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/assets/inline-bucket.svg" data-sub-html="<h2>普通bucket与inline bucket存储结构示意图</h2><p>普通bucket与inline bucket存储结构示意图</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/inline-bucket.svg"
+            data-srcset="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/assets/inline-bucket.svg, assets/inline-bucket.svg 1.5x, /posts/code-reading/boltdb-made-simple/3-bucket-cursor/assets/inline-bucket.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/assets/inline-bucket.svg" />
+    </a><figcaption class="image-caption">普通bucket与inline bucket存储结构示意图</figcaption>
+    </figure></p>
+<p>boltdb中判断bucket是否作为inline bucket存储的方法为<code>inlineable</code>。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// inlineable returns true if a bucket is small enough to be written inline
+</span><span class="c1">// and if it contains no subbuckets. Otherwise returns false.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">Bucket</span><span class="p">)</span> <span class="nf">inlineable</span><span class="p">()</span> <span class="kt">bool</span> <span class="p">{</span>
+	<span class="kd">var</span> <span class="nx">n</span> <span class="p">=</span> <span class="nx">b</span><span class="p">.</span><span class="nx">rootNode</span>
+
+	<span class="c1">// Bucket must only contain a single leaf node.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">n</span> <span class="o">==</span> <span class="kc">nil</span> <span class="o">||</span> <span class="p">!</span><span class="nx">n</span><span class="p">.</span><span class="nx">isLeaf</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="kc">false</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Bucket is not inlineable if it contains subbuckets or if it goes beyond
+</span><span class="c1"></span>	<span class="c1">// our threshold for inline bucket size.
+</span><span class="c1"></span>	<span class="kd">var</span> <span class="nx">size</span> <span class="p">=</span> <span class="nx">pageHeaderSize</span>
+	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">inode</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span> <span class="p">{</span>
+		<span class="nx">size</span> <span class="o">+=</span> <span class="nx">leafPageElementSize</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="nx">inode</span><span class="p">.</span><span class="nx">key</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="nx">inode</span><span class="p">.</span><span class="nx">value</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="nx">inode</span><span class="p">.</span><span class="nx">flags</span><span class="o">&amp;</span><span class="nx">bucketLeafFlag</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="kc">false</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nx">size</span> <span class="p">&gt;</span> <span class="nx">b</span><span class="p">.</span><span class="nf">maxInlineBucketSize</span><span class="p">()</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="kc">false</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="kc">true</span>
+<span class="p">}</span>
+
+<span class="c1">// Returns the maximum total size of a bucket to make it a candidate for inlining.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">Bucket</span><span class="p">)</span> <span class="nf">maxInlineBucketSize</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="nx">b</span><span class="p">.</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span> <span class="o">/</span> <span class="mi">4</span>
+<span class="p">}</span>
+
+</code></pre></div><p>该方法判断bucket是否满足以下几点：</p>
+<ol>
+<li>bucket是否只有一个节点（即根节点为叶子节点）。</li>
+<li>bucket中是否不包含子bucket。</li>
+<li>bucket中数据大小是否小于阈值（默认为$\frac{1}{4}$）。</li>
+</ol>
+<p>如果以上3条都满足，那么该方法返回true，该bucket将作为inline bucket存储。</p>
+<h4 id="113-bucket元数据的序列化与反序列化">1.1.3 bucket元数据的序列化与反序列化</h4>
+<p>由于bucket需要存储的元数据较少，且bucket的元数据是作为B+Tree中的key/value保存的，因此bucket的序列化与反序列化方法较为简单。</p>
+<p>在序列化普通bucket时，只需要序列化其元数据，因此直接深拷贝<code>bucket</code>结构体即可。相关代码在<code>spill</code>方法中（该方法序列化的是子bucket的元数据），如下所示：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="nx">value</span> <span class="p">=</span> <span class="nb">make</span><span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">unsafe</span><span class="p">.</span><span class="nf">Sizeof</span><span class="p">(</span><span class="nx">bucket</span><span class="p">{}))</span>
+<span class="kd">var</span> <span class="nx">bucket</span> <span class="p">=</span> <span class="p">(</span><span class="o">*</span><span class="nx">bucket</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">value</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+<span class="o">*</span><span class="nx">bucket</span> <span class="p">=</span> <span class="o">*</span><span class="nx">child</span><span class="p">.</span><span class="nx">bucket</span>
+
+</code></pre></div><p>而<code>write</code>是序列化inline bucket的方法，其实现方式如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// write allocates and writes a bucket to a byte slice.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">Bucket</span><span class="p">)</span> <span class="nf">write</span><span class="p">()</span> <span class="p">[]</span><span class="kt">byte</span> <span class="p">{</span>
+	<span class="c1">// Allocate the appropriate size.
+</span><span class="c1"></span>	<span class="kd">var</span> <span class="nx">n</span> <span class="p">=</span> <span class="nx">b</span><span class="p">.</span><span class="nx">rootNode</span>
+	<span class="kd">var</span> <span class="nx">value</span> <span class="p">=</span> <span class="nb">make</span><span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">bucketHeaderSize</span><span class="o">+</span><span class="nx">n</span><span class="p">.</span><span class="nf">size</span><span class="p">())</span>
+
+	<span class="c1">// Write a bucket header.
+</span><span class="c1"></span>	<span class="kd">var</span> <span class="nx">bucket</span> <span class="p">=</span> <span class="p">(</span><span class="o">*</span><span class="nx">bucket</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">value</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+	<span class="o">*</span><span class="nx">bucket</span> <span class="p">=</span> <span class="o">*</span><span class="nx">b</span><span class="p">.</span><span class="nx">bucket</span>
+
+	<span class="c1">// Convert byte slice to a fake page and write the root node.
+</span><span class="c1"></span>	<span class="kd">var</span> <span class="nx">p</span> <span class="p">=</span> <span class="p">(</span><span class="o">*</span><span class="nx">page</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">value</span><span class="p">[</span><span class="nx">bucketHeaderSize</span><span class="p">]))</span>
+	<span class="nx">n</span><span class="p">.</span><span class="nf">write</span><span class="p">(</span><span class="nx">p</span><span class="p">)</span>
+
+	<span class="k">return</span> <span class="nx">value</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>write</code>方法的实现非常简单。其除了写入了<code>bucket</code>结构体中的数据，还将<code>value</code>的剩余空间作为虚拟页，将该bucket中唯一的B+Tree节点（也是根节点）的数据写入到该虚拟页中。这类似于操作系统中虚拟内存的实现。</p>
+<p><code>openBucket</code>是bucket反序列化方法中读取value部分元数据的方法，其实现方式如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// Helper method that re-interprets a sub-bucket value
+</span><span class="c1">// from a parent into a Bucket
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">Bucket</span><span class="p">)</span> <span class="nf">openBucket</span><span class="p">(</span><span class="nx">value</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="o">*</span><span class="nx">Bucket</span> <span class="p">{</span>
+	<span class="kd">var</span> <span class="nx">child</span> <span class="p">=</span> <span class="nf">newBucket</span><span class="p">(</span><span class="nx">b</span><span class="p">.</span><span class="nx">tx</span><span class="p">)</span>
+
+	<span class="c1">// If unaligned load/stores are broken on this arch and value is
+</span><span class="c1"></span>	<span class="c1">// unaligned simply clone to an aligned byte array.
+</span><span class="c1"></span>	<span class="nx">unaligned</span> <span class="o">:=</span> <span class="nx">brokenUnaligned</span> <span class="o">&amp;&amp;</span> <span class="nb">uintptr</span><span class="p">(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">value</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span><span class="o">&amp;</span><span class="mi">3</span> <span class="o">!=</span> <span class="mi">0</span>
+
+	<span class="k">if</span> <span class="nx">unaligned</span> <span class="p">{</span>
+		<span class="nx">value</span> <span class="p">=</span> <span class="nf">cloneBytes</span><span class="p">(</span><span class="nx">value</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="c1">// If this is a writable transaction then we need to copy the bucket entry.
+</span><span class="c1"></span>	<span class="c1">// Read-only transactions can point directly at the mmap entry.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">b</span><span class="p">.</span><span class="nx">tx</span><span class="p">.</span><span class="nx">writable</span> <span class="o">&amp;&amp;</span> <span class="p">!</span><span class="nx">unaligned</span> <span class="p">{</span>
+		<span class="nx">child</span><span class="p">.</span><span class="nx">bucket</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">bucket</span><span class="p">{}</span>
+		<span class="o">*</span><span class="nx">child</span><span class="p">.</span><span class="nx">bucket</span> <span class="p">=</span> <span class="o">*</span><span class="p">(</span><span class="o">*</span><span class="nx">bucket</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">value</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+		<span class="nx">child</span><span class="p">.</span><span class="nx">bucket</span> <span class="p">=</span> <span class="p">(</span><span class="o">*</span><span class="nx">bucket</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">value</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Save a reference to the inline page if the bucket is inline.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">child</span><span class="p">.</span><span class="nx">root</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">child</span><span class="p">.</span><span class="nx">page</span> <span class="p">=</span> <span class="p">(</span><span class="o">*</span><span class="nx">page</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">value</span><span class="p">[</span><span class="nx">bucketHeaderSize</span><span class="p">]))</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="o">&amp;</span><span class="nx">child</span>
+<span class="p">}</span>
+
+</code></pre></div><p>该方法会根据打开该bucket的事务类型不同，判断元数据拷贝的行为：</p>
+<ol>
+<li>如果以只读事务的方式打开，那么直接将bucket结构体的指针指向value位置（传入的value位置即为mmap memory，这也保证了mmap memory只读）；</li>
+<li>如果以读写事务的方式打开，那么需要将value中的数据拷贝到heap memory中，以用于更新。</li>
+</ol>
+<p>如果反序列化的bucket是inline bucket，该方法还会将其虚拟页（value中元数据后的剩余部分）保存到<code>Bucket</code>示例的<code>page</code>字段中。</p>
+<p>另外，该方法还会检测当前平台架构是否需要4字节对齐，如果需要对齐即使是只读事务，也需要将mmap memory中的数据拷贝到heap memory中以对齐（详见<a href="https://github.com/boltdb/bolt/pull/578" target="_blank" rel="noopener noreffer">pull#578</a>）。</p>
+<h3 id="12-bucket的内存结构">1.2 bucket的内存结构</h3>
+<p>当bucket被事务打开时，boltdb还需要记录bucket打开过的node、打开过的子bucket等信息，以避免同一事务重复打开bucket或node，同时在事务提交时便于找到所有相关数据一并写入到存储。</p>
+<p>本节笔者将介绍bucket打开时的内存结构<code>Bucket</code>的实现。</p>
+<h4 id="121-bucket结构体">1.2.1 Bucket结构体</h4>
+<p>被事务打开的bucket在内存中表示为<code>Bucket</code>结构体，其包含字段如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// Bucket represents a collection of key/value pairs inside the database.
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">Bucket</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="o">*</span><span class="nx">bucket</span>
+	<span class="nx">tx</span>       <span class="o">*</span><span class="nx">Tx</span>                <span class="c1">// the associated transaction
+</span><span class="c1"></span>	<span class="nx">buckets</span>  <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="o">*</span><span class="nx">Bucket</span> <span class="c1">// subbucket cache
+</span><span class="c1"></span>	<span class="nx">page</span>     <span class="o">*</span><span class="nx">page</span>              <span class="c1">// inline page reference
+</span><span class="c1"></span>	<span class="nx">rootNode</span> <span class="o">*</span><span class="nx">node</span>              <span class="c1">// materialized node for the root page.
+</span><span class="c1"></span>	<span class="nx">nodes</span>    <span class="kd">map</span><span class="p">[</span><span class="nx">pgid</span><span class="p">]</span><span class="o">*</span><span class="nx">node</span>     <span class="c1">// node cache
+</span><span class="c1"></span>
+	<span class="c1">// Sets the threshold for filling nodes when they split. By default,
+</span><span class="c1"></span>	<span class="c1">// the bucket will fill to 50% but it can be useful to increase this
+</span><span class="c1"></span>	<span class="c1">// amount if you know that your write workloads are mostly append-only.
+</span><span class="c1"></span>	<span class="c1">//
+</span><span class="c1"></span>	<span class="c1">// This is non-persisted across transactions so it must be set in every Tx.
+</span><span class="c1"></span>	<span class="nx">FillPercent</span> <span class="kt">float64</span>
+<span class="p">}</span>
+
+</code></pre></div><table>
+<thead>
+<tr>
+<th align="center">字段<div style="width: 14em"></th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center"><code>*bucket</code></td>
+<td align="left">bucket需要存储的元数据的value部分（详见上节），被只读事务打开的<code>Bucket</code>中该指针指向mmap memory，被读写事务打开的<code>Bucket</code>中该指针指向heap memory。</td>
+</tr>
+<tr>
+<td align="center"><code>tx *Tx</code></td>
+<td align="left">保存打开该bucket的事务示例。</td>
+</tr>
+<tr>
+<td align="center"><code>buckets map[string]*Bucket</code></td>
+<td align="left">记录打开的子bucket。</td>
+</tr>
+<tr>
+<td align="center"><code>page *page</code></td>
+<td align="left">如果该bucket为inline bucket，那么该字段指向了其虚拟页的位置。</td>
+</tr>
+<tr>
+<td align="center"><code>rootNode *node</code></td>
+<td align="left">用来记录该bucket的B+Tree根节点实例化后的node（根节点同样是按需实例化的，因此该字段可能为nil）。</td>
+</tr>
+<tr>
+<td align="center"><code>nodes map[pgid]*node</code></td>
+<td align="left">用来记录该bucket的B+Tree中已实例化的node。</td>
+</tr>
+<tr>
+<td align="center"><code>FillPercent float64</code></td>
+<td align="left">bucket中B+Tree的填充率阈值。</td>
+</tr>
+</tbody>
+</table>
+<p><code>Bucket</code>结构体中的字段基本都是对外不可见的，boltdb的用户需要通过<code>Bucket</code>提供的一些可见的方法来访问这些字段：</p>
+<table>
+<thead>
+<tr>
+<th align="center">方法<div style="width: 14em"></th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center"><code>Tx() *Tx</code></td>
+<td align="left">返回打开该bucket的事务。</td>
+</tr>
+<tr>
+<td align="center"><code>Root() pgid</code></td>
+<td align="left">返回该bucket的B+Tree的根节点的pgid。</td>
+</tr>
+<tr>
+<td align="center"><code> Writable() bool</code></td>
+<td align="left">返回该bucket是否可写（打开该bucket的事务是否可写）。</td>
+</tr>
+</tbody>
+</table>
+<h4 id="123-bucket的操作与实现">1.2.3 Bucket的操作与实现</h4>
+<p>boltdb为用户提供了创建、打开、删除bucket，与对bucket中数据进行增删改查的方法。</p>
+<p>本节笔者将介绍这些方法与其实现。</p>
+<h5 id="1231-coursor">1.2.3.1 Coursor</h5>
+<p>Bucket中许多操作需要依赖游标<code>Cursor</code>，游标是<code>Bucket</code>用来遍历B+Tree寻找key/value的工具。<code>Cursor</code>的实现笔者放在本文后面的部分介绍，这里读者这需要知道<code>Cursor</code>的作用即可。游标的获取方法为<code>Cursor</code>：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// Cursor creates a cursor associated with the bucket.
+</span><span class="c1">// The cursor is only valid as long as the transaction is open.
+</span><span class="c1">// Do not use a cursor after the transaction is closed.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">Bucket</span><span class="p">)</span> <span class="nf">Cursor</span><span class="p">()</span> <span class="o">*</span><span class="nx">Cursor</span> <span class="p">{</span>
+	<span class="c1">// Update transaction statistics.
+</span><span class="c1"></span>	<span class="nx">b</span><span class="p">.</span><span class="nx">tx</span><span class="p">.</span><span class="nx">stats</span><span class="p">.</span><span class="nx">CursorCount</span><span class="o">++</span>
+
+	<span class="c1">// Allocate and return a cursor.
+</span><span class="c1"></span>	<span class="k">return</span> <span class="o">&amp;</span><span class="nx">Cursor</span><span class="p">{</span>
+		<span class="nx">bucket</span><span class="p">:</span> <span class="nx">b</span><span class="p">,</span>
+		<span class="nx">stack</span><span class="p">:</span>  <span class="nb">make</span><span class="p">([]</span><span class="nx">elemRef</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>Cursor</code>的生命周期与打开该<code>Bucket</code>的事务的声明周期相同，在使用boltdb时需要注意。</p>
+<h4 id="1232-btree节点的打开">1.2.3.2 B+Tree节点的打开</h4>
+<p>由于Bucket操作涉及到B+Tree的更新，因此这里先介绍<code>Bucket</code>与<code>Cursor</code>访问或打开B+Tree节点的操作。这一部分与<code>Cursor</code>的实现关系更大，但由于<code>bucket.go</code>中包含了相关代码，因此笔者在这里先介绍B+Tree节点打开的方式。</p>
+<p>当Cursor只需要读取B+Tree的内容时，其只需要根据节点的pgid，在mmap memory中找到相应位置读取即可；而在Cursor需要更新B+Tree时，由于boltdb只读取mmap memory中的内容，因此需要先读取page并实例化相应的node（但此时node的key/value还是直接指向mmap memory）。<code>Bucket</code>实例化node的方法是<code>node</code>：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// node creates a node from a page and associates it with a given parent.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">Bucket</span><span class="p">)</span> <span class="nf">node</span><span class="p">(</span><span class="nx">pgid</span> <span class="nx">pgid</span><span class="p">,</span> <span class="nx">parent</span> <span class="o">*</span><span class="nx">node</span><span class="p">)</span> <span class="o">*</span><span class="nx">node</span> <span class="p">{</span>
+	<span class="nf">_assert</span><span class="p">(</span><span class="nx">b</span><span class="p">.</span><span class="nx">nodes</span> <span class="o">!=</span> <span class="kc">nil</span><span class="p">,</span> <span class="s">&#34;nodes map expected&#34;</span><span class="p">)</span>
+
+	<span class="c1">// Retrieve node if it&#39;s already been created.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">n</span> <span class="o">:=</span> <span class="nx">b</span><span class="p">.</span><span class="nx">nodes</span><span class="p">[</span><span class="nx">pgid</span><span class="p">];</span> <span class="nx">n</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">n</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Otherwise create a node and cache it.
+</span><span class="c1"></span>	<span class="nx">n</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">node</span><span class="p">{</span><span class="nx">bucket</span><span class="p">:</span> <span class="nx">b</span><span class="p">,</span> <span class="nx">parent</span><span class="p">:</span> <span class="nx">parent</span><span class="p">}</span>
+	<span class="k">if</span> <span class="nx">parent</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">b</span><span class="p">.</span><span class="nx">rootNode</span> <span class="p">=</span> <span class="nx">n</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+		<span class="nx">parent</span><span class="p">.</span><span class="nx">children</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">parent</span><span class="p">.</span><span class="nx">children</span><span class="p">,</span> <span class="nx">n</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Use the inline page if this is an inline bucket.
+</span><span class="c1"></span>	<span class="kd">var</span> <span class="nx">p</span> <span class="p">=</span> <span class="nx">b</span><span class="p">.</span><span class="nx">page</span>
+	<span class="k">if</span> <span class="nx">p</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">p</span> <span class="p">=</span> <span class="nx">b</span><span class="p">.</span><span class="nx">tx</span><span class="p">.</span><span class="nf">page</span><span class="p">(</span><span class="nx">pgid</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Read the page into the node and cache it.
+</span><span class="c1"></span>	<span class="nx">n</span><span class="p">.</span><span class="nf">read</span><span class="p">(</span><span class="nx">p</span><span class="p">)</span>
+	<span class="nx">b</span><span class="p">.</span><span class="nx">nodes</span><span class="p">[</span><span class="nx">pgid</span><span class="p">]</span> <span class="p">=</span> <span class="nx">n</span>
+
+	<span class="c1">// Update statistics.
+</span><span class="c1"></span>	<span class="nx">b</span><span class="p">.</span><span class="nx">tx</span><span class="p">.</span><span class="nx">stats</span><span class="p">.</span><span class="nx">NodeCount</span><span class="o">++</span>
+
+	<span class="k">return</span> <span class="nx">n</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>node</code>方法执行了如下操作：</p>
+<ol>
+<li>检查当前<code>Bucket</code>的<code>nodes</code>字段是否记录了该pgid，如果记录存在，说明当前事务已经实例化了该node，因此直接返回记录中缓存的node即可。</li>
+<li>如果还没打开过，则实例化新node并缓存，同时设置node的部分字段。</li>
+<li>选择需要读取的page，如果当前bucket不是inline bucket，则通过事务示例获取传入的pgid相应的page的指针（事务需要记录需要更新的page，以便事务提交后释放）；否则，直接使用bucket的虚拟页。</li>
+<li>调用该node的<code>read</code>方法，读取page数据并构建node，同时将该node记录到当前bucket的<code>nodes</code>字段中。</li>
+<li>更新统计变量，返回node实例。</li>
+</ol>
+<p><code>node</code>方法时是明确需要更新节点时才需要调用的。而如果只需要读取节点，<code>Bucket</code>提供了<code>pageNode</code>方法，该方法会返回给定pgid相应的page或node。即如果该节点已被实例化为node，则返回node，否则直接返回page：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// pageNode returns the in-memory node, if it exists.
+</span><span class="c1">// Otherwise returns the underlying page.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">Bucket</span><span class="p">)</span> <span class="nf">pageNode</span><span class="p">(</span><span class="nx">id</span> <span class="nx">pgid</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="nx">page</span><span class="p">,</span> <span class="o">*</span><span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
+	<span class="c1">// Inline buckets have a fake page embedded in their value so treat them
+</span><span class="c1"></span>	<span class="c1">// differently. We&#39;ll return the rootNode (if available) or the fake page.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">b</span><span class="p">.</span><span class="nx">root</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">id</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">{</span>
+			<span class="nb">panic</span><span class="p">(</span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;inline bucket non-zero page access(2): %d != 0&#34;</span><span class="p">,</span> <span class="nx">id</span><span class="p">))</span>
+		<span class="p">}</span>
+		<span class="k">if</span> <span class="nx">b</span><span class="p">.</span><span class="nx">rootNode</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">b</span><span class="p">.</span><span class="nx">rootNode</span>
+		<span class="p">}</span>
+		<span class="k">return</span> <span class="nx">b</span><span class="p">.</span><span class="nx">page</span><span class="p">,</span> <span class="kc">nil</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Check the node cache for non-inline buckets.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">b</span><span class="p">.</span><span class="nx">nodes</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">n</span> <span class="o">:=</span> <span class="nx">b</span><span class="p">.</span><span class="nx">nodes</span><span class="p">[</span><span class="nx">id</span><span class="p">];</span> <span class="nx">n</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">n</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Finally lookup the page from the transaction if no node is materialized.
+</span><span class="c1"></span>	<span class="k">return</span> <span class="nx">b</span><span class="p">.</span><span class="nx">tx</span><span class="p">.</span><span class="nf">page</span><span class="p">(</span><span class="nx">id</span><span class="p">),</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+</code></pre></div><p>该方法首先判断当前bucket是否为inline bucket，如果是那么直接返回其虚拟页；否则，检查<code>nodes</code>中是否缓存了相应的node，如果缓存中有则返回已实例化的node，否则通过事务返回相应的page。</p>
+<h4 id="1233-bucket的创建打开与删除">1.2.3.3 Bucket的创建、打开与删除</h4>
+<p>boltdb的用户可以通过<code>CreateBucket</code>、<code>CreateBucketIfNotExists</code>方法创建并打开bucket，通过<code>Bucket</code>方法打开已创建的bucket，通过<code>DeleteBucket</code>方法删除bucket。由于boltdb将bucket的元数据作为B+Tree的key/value存储，因此需要访问bucket的元数据时也需要访问B+Tree。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// Bucket retrieves a nested bucket by name.
+</span><span class="c1">// Returns nil if the bucket does not exist.
+</span><span class="c1">// The bucket instance is only valid for the lifetime of the transaction.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">Bucket</span><span class="p">)</span> <span class="nf">Bucket</span><span class="p">(</span><span class="nx">name</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="o">*</span><span class="nx">Bucket</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="nx">b</span><span class="p">.</span><span class="nx">buckets</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">child</span> <span class="o">:=</span> <span class="nx">b</span><span class="p">.</span><span class="nx">buckets</span><span class="p">[</span><span class="nb">string</span><span class="p">(</span><span class="nx">name</span><span class="p">)];</span> <span class="nx">child</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="nx">child</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Move cursor to key.
+</span><span class="c1"></span>	<span class="nx">c</span> <span class="o">:=</span> <span class="nx">b</span><span class="p">.</span><span class="nf">Cursor</span><span class="p">()</span>
+	<span class="nx">k</span><span class="p">,</span> <span class="nx">v</span><span class="p">,</span> <span class="nx">flags</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">seek</span><span class="p">(</span><span class="nx">name</span><span class="p">)</span>
+
+	<span class="c1">// Return nil if the key doesn&#39;t exist or it is not a bucket.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="p">!</span><span class="nx">bytes</span><span class="p">.</span><span class="nf">Equal</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span> <span class="nx">k</span><span class="p">)</span> <span class="o">||</span> <span class="p">(</span><span class="nx">flags</span><span class="o">&amp;</span><span class="nx">bucketLeafFlag</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="kc">nil</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Otherwise create a bucket and cache it.
+</span><span class="c1"></span>	<span class="kd">var</span> <span class="nx">child</span> <span class="p">=</span> <span class="nx">b</span><span class="p">.</span><span class="nf">openBucket</span><span class="p">(</span><span class="nx">v</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">b</span><span class="p">.</span><span class="nx">buckets</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">b</span><span class="p">.</span><span class="nx">buckets</span><span class="p">[</span><span class="nb">string</span><span class="p">(</span><span class="nx">name</span><span class="p">)]</span> <span class="p">=</span> <span class="nx">child</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="nx">child</span>
+<span class="p">}</span>
+
+</code></pre></div><p>当通过<code>Bucket</code>方法打开已创建的bucket时，首先会检查当前<code>Bucket</code>的<code>buckets</code>字段中是否保存了需要打开的bucket，该字段记录了当前事务已打开的当前bucket的子bucket。如果需要打开的bucket已被打开，则直接返回已实例化的<code>Bucket</code>。如果还没有打开，则先通过Cursor，根据bucket名找到其在B+Tree中的key/value。如果key不存在，或当前key的位置记录的不是bucekt，则返回空结果。如果找到了当前bucket相应的key/value，则在该value处调用<code>openBucket</code>方法反序列化bucket元数据并实例化<code>Bucket</code>示例，然后将其记录在当前<code>Bucket</code>结构体的<code>buckets</code>字段中，然后返回子<code>Bucket</code>示例。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// CreateBucket creates a new bucket at the given key and returns the new bucket.
+</span><span class="c1">// Returns an error if the key already exists, if the bucket name is blank, or if the bucket name is too long.
+</span><span class="c1">// The bucket instance is only valid for the lifetime of the transaction.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">Bucket</span><span class="p">)</span> <span class="nf">CreateBucket</span><span class="p">(</span><span class="nx">key</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="nx">Bucket</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="nx">b</span><span class="p">.</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">ErrTxClosed</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">!</span><span class="nx">b</span><span class="p">.</span><span class="nx">tx</span><span class="p">.</span><span class="nx">writable</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">ErrTxNotWritable</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">key</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">ErrBucketNameRequired</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Move cursor to correct position.
+</span><span class="c1"></span>	<span class="nx">c</span> <span class="o">:=</span> <span class="nx">b</span><span class="p">.</span><span class="nf">Cursor</span><span class="p">()</span>
+	<span class="nx">k</span><span class="p">,</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">flags</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">seek</span><span class="p">(</span><span class="nx">key</span><span class="p">)</span>
+
+	<span class="c1">// Return an error if there is an existing key.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">bytes</span><span class="p">.</span><span class="nf">Equal</span><span class="p">(</span><span class="nx">key</span><span class="p">,</span> <span class="nx">k</span><span class="p">)</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="p">(</span><span class="nx">flags</span> <span class="o">&amp;</span> <span class="nx">bucketLeafFlag</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">ErrBucketExists</span>
+		<span class="p">}</span>
+		<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">ErrIncompatibleValue</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Create empty, inline bucket.
+</span><span class="c1"></span>	<span class="kd">var</span> <span class="nx">bucket</span> <span class="p">=</span> <span class="nx">Bucket</span><span class="p">{</span>
+		<span class="nx">bucket</span><span class="p">:</span>      <span class="o">&amp;</span><span class="nx">bucket</span><span class="p">{},</span>
+		<span class="nx">rootNode</span><span class="p">:</span>    <span class="o">&amp;</span><span class="nx">node</span><span class="p">{</span><span class="nx">isLeaf</span><span class="p">:</span> <span class="kc">true</span><span class="p">},</span>
+		<span class="nx">FillPercent</span><span class="p">:</span> <span class="nx">DefaultFillPercent</span><span class="p">,</span>
+	<span class="p">}</span>
+	<span class="kd">var</span> <span class="nx">value</span> <span class="p">=</span> <span class="nx">bucket</span><span class="p">.</span><span class="nf">write</span><span class="p">()</span>
+
+	<span class="c1">// Insert into node.
+</span><span class="c1"></span>	<span class="nx">key</span> <span class="p">=</span> <span class="nf">cloneBytes</span><span class="p">(</span><span class="nx">key</span><span class="p">)</span>
+	<span class="nx">c</span><span class="p">.</span><span class="nf">node</span><span class="p">().</span><span class="nf">put</span><span class="p">(</span><span class="nx">key</span><span class="p">,</span> <span class="nx">key</span><span class="p">,</span> <span class="nx">value</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">bucketLeafFlag</span><span class="p">)</span>
+
+	<span class="c1">// Since subbuckets are not allowed on inline buckets, we need to
+</span><span class="c1"></span>	<span class="c1">// dereference the inline page, if it exists. This will cause the bucket
+</span><span class="c1"></span>	<span class="c1">// to be treated as a regular, non-inline bucket for the rest of the tx.
+</span><span class="c1"></span>	<span class="nx">b</span><span class="p">.</span><span class="nx">page</span> <span class="p">=</span> <span class="kc">nil</span>
+
+	<span class="k">return</span> <span class="nx">b</span><span class="p">.</span><span class="nf">Bucket</span><span class="p">(</span><span class="nx">key</span><span class="p">),</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+<span class="c1">// CreateBucketIfNotExists creates a new bucket if it doesn&#39;t already exist and returns a reference to it.
+</span><span class="c1">// Returns an error if the bucket name is blank, or if the bucket name is too long.
+</span><span class="c1">// The bucket instance is only valid for the lifetime of the transaction.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">Bucket</span><span class="p">)</span> <span class="nf">CreateBucketIfNotExists</span><span class="p">(</span><span class="nx">key</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="nx">Bucket</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">child</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">b</span><span class="p">.</span><span class="nf">CreateBucket</span><span class="p">(</span><span class="nx">key</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">==</span> <span class="nx">ErrBucketExists</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">b</span><span class="p">.</span><span class="nf">Bucket</span><span class="p">(</span><span class="nx">key</span><span class="p">),</span> <span class="kc">nil</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">err</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="nx">child</span><span class="p">,</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>CreateBucket</code>方法是用来创建bucket的方法，该方法执行了如下操作：</p>
+<ol>
+<li>检查事务是否已被关闭，或事务不可写，或者给定key为空，此时条件不合法，返回相应错误。</li>
+<li>获取Cursor，并通过<code>seek</code>方法将Cursor移动到B+Tree中给定key的位置。</li>
+<li>如果Cursor处已有key存在，说明key重复无法创建，返回相应错误。</li>
+<li>如果可以创建，则实例化新<code>Bucket</code>结构体，序列化其元数据，并将其插入到相应的node中。</li>
+</ol></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
