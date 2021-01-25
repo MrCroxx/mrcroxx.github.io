@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/3-bucket-cursor\/bbolt.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  10226 ,
+                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  14338 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/3-bucket-cursor\/","datePublished": "2021-01-20T23:55:22+08:00","dateModified": "2021-01-20T23:55:26+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,8 +110,8 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出boltdb —— 0x03 bucket &amp; cursor</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAbolt/"><i class="far fa-folder fa-fw"></i>深入浅出bolt</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-20">2021-01-20</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 10226 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 21 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-20">2021-01-20</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 14338 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 29 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
@@ -150,10 +150,18 @@
         </li>
       </ul>
     </li>
-  </ul>
-
-  <ul>
-    <li><a href="#2-cursor">2. cursor</a></li>
+    <li><a href="#2-cursor">2. cursor</a>
+      <ul>
+        <li><a href="#21-cursor结构体">2.1 Cursor结构体</a></li>
+        <li><a href="#22-cursor的方法与实现">2.2 Cursor的方法与实现</a>
+          <ul>
+            <li><a href="#221-firstlastfirstlast">2.2.1 First、Last、first、last</a></li>
+            <li><a href="#222-nextprevnext">2.2.2 Next、Prev、next</a></li>
+            <li><a href="#223-seekseeksearch">2.2.3 Seek、seek、search</a></li>
+          </ul>
+        </li>
+      </ul>
+    </li>
     <li><a href="#3-总结">3. 总结</a></li>
   </ul>
 </nav></div>
@@ -190,7 +198,7 @@
     </a><figcaption class="image-caption">boltdb中B+Tree存储结构示意图</figcaption>
     </figure></p>
 <p>boltdb除了需要根据bucket的名称（<code>name</code>）找到其相应的B+Tree的根节点的pgid（<code>root</code>）外，还需要为每个bucket保存一个64为整型值，以便实现生成单调递增的序列号的功能（便于并行程序存储中间结果或实现锁）。这样，bucket的元数据也可以表示为一个key/value对，即$name -&gt; (root,sequence)$，而boltdb也确实是这样实现的。</p>
-<p>在boltdb中，bucekt是支持嵌套的，boltdb的数据库元数据meta中只保存了根bucket（即<code>meta</code>结构体中的<code>root</code>字段），所有签到的bucket组成了一个多叉树型结构，如下图所示。</p>
+<p>在boltdb中，bucekt是支持嵌套的，boltdb的数据库元数据meta中只保存了根bucket（即<code>meta</code>结构体中的<code>root</code>字段），所有嵌套的bucket组成了一个多叉树型结构，如下图所示。</p>
 <p><figure><a class="lightgallery" href="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/assets/bucket.svg" title="bucket多叉树型结构示意图" data-thumbnail="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/assets/bucket.svg" data-sub-html="<h2>bucket多叉树型结构示意图</h2><p>bucket多叉树型结构示意图</p>">
         <img
             class="lazyload"
@@ -201,6 +209,14 @@
             alt="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/assets/bucket.svg" />
     </a><figcaption class="image-caption">bucket多叉树型结构示意图</figcaption>
     </figure></p>
+<div class="details admonition info open">
+        <div class="details-summary admonition-title">
+            <i class="icon fas fa-info-circle fa-fw"></i>提示<i class="details-icon fas fa-angle-right fa-fw"></i>
+        </div>
+        <div class="details-content">
+            <div class="admonition-content">boltdb的root bucket只保存子bucket，而不保存键值对。</div>
+        </div>
+    </div>
 <p>既然bucket的元数据可以表示为key/value对，而bucket中存储的数据也是key/value对，且bucket是支持嵌套的，所以在boltdb中，bucket的元数据也以key/value的形式保存在其父bucket的B+Tree中叶子节点的元素中，只是该元素的<code>flag</code>字段有1位标识了该key/value表示的是bucket。只有根bucket不同，根bucket不需要通过<code>name</code>来索引，因此其只需要保存相当于其他bucket的元数据中value的数据，并直接通过boltdb的<code>meta</code>结构体的<code>root</code>字段索引。</p>
 <p>例如，有3个bucket<em>b0</em>、<em>b1</em>、<em>b2</em>，其相应的B+Tree的根节点所在page分别为<em>r0</em>、<em>r1</em>、<em>r2</em>，<em>b0</em>是<em>b1</em>与<em>b2</em>的父bucket。其存储结构如下图所示：</p>
 <p><figure><a class="lightgallery" href="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/assets/bucket-and-b&#43;tree.svg" title="bucket与B&#43;Tree示意图" data-thumbnail="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/assets/bucket-and-b&#43;tree.svg" data-sub-html="<h2>bucket与B&#43;Tree示意图</h2><p>bucket与B&#43;Tree示意图</p>">
@@ -534,7 +550,7 @@
 	<span class="p">}</span>
 <span class="p">}</span>
 
-</code></pre></div><p>该方法实现非常简单，首先其遍历了当前<code>Bucket</code>对象的<code>nodes</code>中缓存的node，调用<code>rebalance</code>方法，然后递归遍历<code>buckets</code>中缓存的子bucket的<code>Bucket</code>示例，调用<code>rebalance</code>方法。</p>
+</code></pre></div><p>该方法实现非常简单，首先其遍历了当前<code>Bucket</code>对象的<code>nodes</code>中缓存的node，调用<code>rebalance</code>方法，然后递归遍历<code>buckets</code>中缓存的子bucket的<code>Bucket</code>实例，调用<code>rebalance</code>方法。</p>
 <p>相比<code>rebalance</code>方法，<code>Bucket</code>的<code>spill</code>方法实现稍微复杂一些：</p>
 <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// spill writes all the nodes for this bucket to dirty pages.
@@ -966,10 +982,410 @@
 	<span class="k">return</span> <span class="kc">nil</span>
 <span class="p">}</span>
 
-</code></pre></div><p>该方法首先获取了Cursor，并将其移动到B+Tree的第一个key/value处，然后在前进的同时对每个key/value执行传入的闭包，直到Cursor超出了范围后停止。</p>
-<h1 id="施工中-">施工中。。。 。。。</h1>
+</code></pre></div><p>该方法首先获取了Cursor，并将其移动到B+Tree的第一个key/value处，然后在前进的同时对每个key/value执行传入的闭包，没有不再有后继key/value后停止。</p>
 <h2 id="2-cursor">2. cursor</h2>
-<h2 id="3-总结">3. 总结</h2></div><div class="post-footer" id="post-footer">
+<p>游标cursor是boltdb中用来遍历B+Tree访问其中key/value的工具。由于boltdb的B+Tree叶子节点没有实现链指针，因此其cursor实现中通过栈记录了根节点到当前节点的路径，以便于访问前驱或后继key/value。</p>
+<p>boltdb的cursor实现主要在<code>cursor.go</code>中，由<code>Cursor</code>结构体实现，本节将介绍其实现方式。</p>
+<h3 id="21-cursor结构体">2.1 Cursor结构体</h3>
+<p><code>Cursor</code>结构体中只有两个字段，其分别记录了<code>Cursor</code>所属的<code>Bucket</code>实例，与从根节点到当前key/value的路径。用于可以通过其<code>Bucket</code>方法获取其所属<code>Bucket</code>实例。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// Cursor represents an iterator that can traverse over all key/value pairs in a bucket in sorted order.
+</span><span class="c1">// Cursors see nested buckets with value == nil.
+</span><span class="c1">// Cursors can be obtained from a transaction and are valid as long as the transaction is open.
+</span><span class="c1">//
+</span><span class="c1">// Keys and values returned from the cursor are only valid for the life of the transaction.
+</span><span class="c1">//
+</span><span class="c1">// Changing data while traversing with a cursor may cause it to be invalidated
+</span><span class="c1">// and return unexpected keys and/or values. You must reposition your cursor
+</span><span class="c1">// after mutating data.
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">Cursor</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">bucket</span> <span class="o">*</span><span class="nx">Bucket</span>
+	<span class="nx">stack</span>  <span class="p">[]</span><span class="nx">elemRef</span>
+<span class="p">}</span>
+
+<span class="c1">// Bucket returns the bucket that this cursor was created from.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">Cursor</span><span class="p">)</span> <span class="nf">Bucket</span><span class="p">()</span> <span class="o">*</span><span class="nx">Bucket</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="nx">c</span><span class="p">.</span><span class="nx">bucket</span>
+<span class="p">}</span>
+
+</code></pre></div><p>由于在不需要更新时，Cursor直接通过B+Tree节点的pgid访问mmap memory中的页，只有在需要更新时才会将其实例化为node。因此，在Cursor遍历节点的过程中，不同路径可能既有通过page表示的节点，也可能有通过node表示的节点。因此，<code>stack</code>字段记录的节点结构<code>elemRef</code>中有page指针<code>page</code>、node指针<code>node</code>、还有表示位于节点的第几个元素（element或inode）的索引<code>index</code>，在访问时，如果<code>node</code>为空，则通过<code>page</code>访问。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// elemRef represents a reference to an element on a given page/node.
+</span><span class="c1"></span><span class="kd">type</span> <span class="nx">elemRef</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">page</span>  <span class="o">*</span><span class="nx">page</span>
+	<span class="nx">node</span>  <span class="o">*</span><span class="nx">node</span>
+	<span class="nx">index</span> <span class="kt">int</span>
+<span class="p">}</span>
+
+<span class="c1">// isLeaf returns whether the ref is pointing at a leaf page/node.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">elemRef</span><span class="p">)</span> <span class="nf">isLeaf</span><span class="p">()</span> <span class="kt">bool</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">node</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">r</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nx">isLeaf</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">flags</span> <span class="o">&amp;</span> <span class="nx">leafPageFlag</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span>
+<span class="p">}</span>
+
+<span class="c1">// count returns the number of inodes or page elements.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">elemRef</span><span class="p">)</span> <span class="nf">count</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">node</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nx">inodes</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">count</span><span class="p">)</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>Cursor</code>的栈顶元素即为当前Cursor所在位置，<code>keyValue</code>方法是<code>Cursor</code>用来获取当前键值对的方法，其会根据当前节点是page还是node，通过不同方式获取键值对：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// keyValue returns the key and value of the current leaf element.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">Cursor</span><span class="p">)</span> <span class="nf">keyValue</span><span class="p">()</span> <span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">,</span> <span class="kt">uint32</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">ref</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+	<span class="k">if</span> <span class="nx">ref</span><span class="p">.</span><span class="nf">count</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">||</span> <span class="nx">ref</span><span class="p">.</span><span class="nx">index</span> <span class="o">&gt;=</span> <span class="nx">ref</span><span class="p">.</span><span class="nf">count</span><span class="p">()</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="kc">nil</span><span class="p">,</span> <span class="mi">0</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Retrieve value from node.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">ref</span><span class="p">.</span><span class="nx">node</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">inode</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">ref</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nx">inodes</span><span class="p">[</span><span class="nx">ref</span><span class="p">.</span><span class="nx">index</span><span class="p">]</span>
+		<span class="k">return</span> <span class="nx">inode</span><span class="p">.</span><span class="nx">key</span><span class="p">,</span> <span class="nx">inode</span><span class="p">.</span><span class="nx">value</span><span class="p">,</span> <span class="nx">inode</span><span class="p">.</span><span class="nx">flags</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Or retrieve value from page.
+</span><span class="c1"></span>	<span class="nx">elem</span> <span class="o">:=</span> <span class="nx">ref</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nf">leafPageElement</span><span class="p">(</span><span class="nb">uint16</span><span class="p">(</span><span class="nx">ref</span><span class="p">.</span><span class="nx">index</span><span class="p">))</span>
+	<span class="k">return</span> <span class="nx">elem</span><span class="p">.</span><span class="nf">key</span><span class="p">(),</span> <span class="nx">elem</span><span class="p">.</span><span class="nf">value</span><span class="p">(),</span> <span class="nx">elem</span><span class="p">.</span><span class="nx">flags</span>
+<span class="p">}</span>
+
+</code></pre></div><h3 id="22-cursor的方法与实现">2.2 Cursor的方法与实现</h3>
+<p><code>Cursor</code>结构体提供了移动到第一个或最后一个键值对、移动到前一个或后一个键值对、通过二分查找的方式移动到给定键位置、及删除当前位置的键值对的方法（用户不能指定插入位置，避免破坏B+Tree结构），本节，笔者将依次介绍这些方法的实现。</p>
+<div class="details admonition warning open">
+        <div class="details-summary admonition-title">
+            <i class="icon fas fa-exclamation-triangle fa-fw"></i>注意<i class="details-icon fas fa-angle-right fa-fw"></i>
+        </div>
+        <div class="details-content">
+            <div class="admonition-content">当事务删除了key但还未提交时，B+Tree中部分叶子节点可能没有内部元素。此时，应该跳过空节点。这一问题在<a href="https://github.com/boltdb/bolt/commit/852d3024fa8d89dcc9a715bab6f4dcd7d59577dd" target="_blank" rel="noopener noreffer">pull#452</a>中修复，其修复方式为在部分方法的实现最外成加入for循环，如果访问到空节点则进入下一次循环继续寻找，相关位置一般还有相应的注释“// If we land on an empty page then move to the next value. <a href="https://github.com/boltdb/bolt/issues/450">https://github.com/boltdb/bolt/issues/450</a>”。后文分析源码中不再赘述。</div>
+        </div>
+    </div>
+<h4 id="221-firstlastfirstlast">2.2.1 First、Last、first、last</h4>
+<p><code>First</code>方法与<code>Last</code>方法是将Cursor移动到第一个或最后一个键值对处的方法，二者实现方式相似，这里一同介绍。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// First moves the cursor to the first item in the bucket and returns its key and value.
+</span><span class="c1">// If the bucket is empty then a nil key and value are returned.
+</span><span class="c1">// The returned key and value are only valid for the life of the transaction.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">Cursor</span><span class="p">)</span> <span class="nf">First</span><span class="p">()</span> <span class="p">(</span><span class="nx">key</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">value</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nf">_assert</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span> <span class="o">!=</span> <span class="kc">nil</span><span class="p">,</span> <span class="s">&#34;tx closed&#34;</span><span class="p">)</span>
+	<span class="nx">c</span><span class="p">.</span><span class="nx">stack</span> <span class="p">=</span> <span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">[:</span><span class="mi">0</span><span class="p">]</span>
+	<span class="nx">p</span><span class="p">,</span> <span class="nx">n</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nf">pageNode</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">root</span><span class="p">)</span>
+	<span class="nx">c</span><span class="p">.</span><span class="nx">stack</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">,</span> <span class="nx">elemRef</span><span class="p">{</span><span class="nx">page</span><span class="p">:</span> <span class="nx">p</span><span class="p">,</span> <span class="nx">node</span><span class="p">:</span> <span class="nx">n</span><span class="p">,</span> <span class="nx">index</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
+	<span class="nx">c</span><span class="p">.</span><span class="nf">first</span><span class="p">()</span>
+
+	<span class="c1">// If we land on an empty page then move to the next value.
+</span><span class="c1"></span>	<span class="c1">// https://github.com/boltdb/bolt/issues/450
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">].</span><span class="nf">count</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">c</span><span class="p">.</span><span class="nf">next</span><span class="p">()</span>
+	<span class="p">}</span>
+
+	<span class="nx">k</span><span class="p">,</span> <span class="nx">v</span><span class="p">,</span> <span class="nx">flags</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">keyValue</span><span class="p">()</span>
+	<span class="k">if</span> <span class="p">(</span><span class="nx">flags</span> <span class="o">&amp;</span> <span class="nb">uint32</span><span class="p">(</span><span class="nx">bucketLeafFlag</span><span class="p">))</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">k</span><span class="p">,</span> <span class="kc">nil</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="nx">k</span><span class="p">,</span> <span class="nx">v</span>
+
+<span class="p">}</span>
+
+<span class="c1">// Last moves the cursor to the last item in the bucket and returns its key and value.
+</span><span class="c1">// If the bucket is empty then a nil key and value are returned.
+</span><span class="c1">// The returned key and value are only valid for the life of the transaction.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">Cursor</span><span class="p">)</span> <span class="nf">Last</span><span class="p">()</span> <span class="p">(</span><span class="nx">key</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">value</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nf">_assert</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span> <span class="o">!=</span> <span class="kc">nil</span><span class="p">,</span> <span class="s">&#34;tx closed&#34;</span><span class="p">)</span>
+	<span class="nx">c</span><span class="p">.</span><span class="nx">stack</span> <span class="p">=</span> <span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">[:</span><span class="mi">0</span><span class="p">]</span>
+	<span class="nx">p</span><span class="p">,</span> <span class="nx">n</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nf">pageNode</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">root</span><span class="p">)</span>
+	<span class="nx">ref</span> <span class="o">:=</span> <span class="nx">elemRef</span><span class="p">{</span><span class="nx">page</span><span class="p">:</span> <span class="nx">p</span><span class="p">,</span> <span class="nx">node</span><span class="p">:</span> <span class="nx">n</span><span class="p">}</span>
+	<span class="nx">ref</span><span class="p">.</span><span class="nx">index</span> <span class="p">=</span> <span class="nx">ref</span><span class="p">.</span><span class="nf">count</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span>
+	<span class="nx">c</span><span class="p">.</span><span class="nx">stack</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">,</span> <span class="nx">ref</span><span class="p">)</span>
+	<span class="nx">c</span><span class="p">.</span><span class="nf">last</span><span class="p">()</span>
+	<span class="nx">k</span><span class="p">,</span> <span class="nx">v</span><span class="p">,</span> <span class="nx">flags</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">keyValue</span><span class="p">()</span>
+	<span class="k">if</span> <span class="p">(</span><span class="nx">flags</span> <span class="o">&amp;</span> <span class="nb">uint32</span><span class="p">(</span><span class="nx">bucketLeafFlag</span><span class="p">))</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">k</span><span class="p">,</span> <span class="kc">nil</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="nx">k</span><span class="p">,</span> <span class="nx">v</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>First</code>与<code>Last</code>方法本身并没有移动Cursor的实现，其只获取了bucket中B+Tree的根节点（page或node），并将其加入到<code>stack</code>中。真正实现移动Cursor的是<code>first</code>与<code>last</code>方法（分开实现以便其它方法复用），<code>first</code>与<code>last</code>方法会以<code>stack</code>中栈顶节点作为根节点，将Cursor移动到其下第一个键值对位置。<code>First</code>方法与<code>Last</code>方法除了设置查找起点外，还会检查<code>first</code>方法与<code>last</code>方法返回的键值对是否表示bucket，如果是bucket，则将value置为nil返回。<code>first</code>与<code>last</code>的实现如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// first moves the cursor to the first leaf element under the last page in the stack.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">Cursor</span><span class="p">)</span> <span class="nf">first</span><span class="p">()</span> <span class="p">{</span>
+	<span class="k">for</span> <span class="p">{</span>
+		<span class="c1">// Exit when we hit a leaf page.
+</span><span class="c1"></span>		<span class="kd">var</span> <span class="nx">ref</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+		<span class="k">if</span> <span class="nx">ref</span><span class="p">.</span><span class="nf">isLeaf</span><span class="p">()</span> <span class="p">{</span>
+			<span class="k">break</span>
+		<span class="p">}</span>
+
+		<span class="c1">// Keep adding pages pointing to the first element to the stack.
+</span><span class="c1"></span>		<span class="kd">var</span> <span class="nx">pgid</span> <span class="nx">pgid</span>
+		<span class="k">if</span> <span class="nx">ref</span><span class="p">.</span><span class="nx">node</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="nx">pgid</span> <span class="p">=</span> <span class="nx">ref</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nx">inodes</span><span class="p">[</span><span class="nx">ref</span><span class="p">.</span><span class="nx">index</span><span class="p">].</span><span class="nx">pgid</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+			<span class="nx">pgid</span> <span class="p">=</span> <span class="nx">ref</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nf">branchPageElement</span><span class="p">(</span><span class="nb">uint16</span><span class="p">(</span><span class="nx">ref</span><span class="p">.</span><span class="nx">index</span><span class="p">)).</span><span class="nx">pgid</span>
+		<span class="p">}</span>
+		<span class="nx">p</span><span class="p">,</span> <span class="nx">n</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nf">pageNode</span><span class="p">(</span><span class="nx">pgid</span><span class="p">)</span>
+		<span class="nx">c</span><span class="p">.</span><span class="nx">stack</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">,</span> <span class="nx">elemRef</span><span class="p">{</span><span class="nx">page</span><span class="p">:</span> <span class="nx">p</span><span class="p">,</span> <span class="nx">node</span><span class="p">:</span> <span class="nx">n</span><span class="p">,</span> <span class="nx">index</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// last moves the cursor to the last leaf element under the last page in the stack.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">Cursor</span><span class="p">)</span> <span class="nf">last</span><span class="p">()</span> <span class="p">{</span>
+	<span class="k">for</span> <span class="p">{</span>
+		<span class="c1">// Exit when we hit a leaf page.
+</span><span class="c1"></span>		<span class="nx">ref</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+		<span class="k">if</span> <span class="nx">ref</span><span class="p">.</span><span class="nf">isLeaf</span><span class="p">()</span> <span class="p">{</span>
+			<span class="k">break</span>
+		<span class="p">}</span>
+
+		<span class="c1">// Keep adding pages pointing to the last element in the stack.
+</span><span class="c1"></span>		<span class="kd">var</span> <span class="nx">pgid</span> <span class="nx">pgid</span>
+		<span class="k">if</span> <span class="nx">ref</span><span class="p">.</span><span class="nx">node</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="nx">pgid</span> <span class="p">=</span> <span class="nx">ref</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nx">inodes</span><span class="p">[</span><span class="nx">ref</span><span class="p">.</span><span class="nx">index</span><span class="p">].</span><span class="nx">pgid</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+			<span class="nx">pgid</span> <span class="p">=</span> <span class="nx">ref</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nf">branchPageElement</span><span class="p">(</span><span class="nb">uint16</span><span class="p">(</span><span class="nx">ref</span><span class="p">.</span><span class="nx">index</span><span class="p">)).</span><span class="nx">pgid</span>
+		<span class="p">}</span>
+		<span class="nx">p</span><span class="p">,</span> <span class="nx">n</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nf">pageNode</span><span class="p">(</span><span class="nx">pgid</span><span class="p">)</span>
+
+		<span class="kd">var</span> <span class="nx">nextRef</span> <span class="p">=</span> <span class="nx">elemRef</span><span class="p">{</span><span class="nx">page</span><span class="p">:</span> <span class="nx">p</span><span class="p">,</span> <span class="nx">node</span><span class="p">:</span> <span class="nx">n</span><span class="p">}</span>
+		<span class="nx">nextRef</span><span class="p">.</span><span class="nx">index</span> <span class="p">=</span> <span class="nx">nextRef</span><span class="p">.</span><span class="nf">count</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span>
+		<span class="nx">c</span><span class="p">.</span><span class="nx">stack</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">,</span> <span class="nx">nextRef</span><span class="p">)</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>first</code>与<code>last</code>循环查找栈顶节点的第一个或最后一个孩子并将其压入栈中，直到栈顶节点为叶子节点。其实现方式也较为简单这里不再赘述。</p>
+<h4 id="222-nextprevnext">2.2.2 Next、Prev、next</h4>
+<p><code>Next</code>方法与<code>Prev</code>方法是将Cursor移动到当前键值对的前驱或后继键值对的方法。由于遍历<code>Bucket</code>的<code>ForEach</code>方法依赖<code>Next</code>，而原<code>Next</code>方法可能存在<a href="https://github.com/boltdb/bolt/issues/450" target="_blank" rel="noopener noreffer">issue#450</a>中的问题，因此其又封装了<code>next</code>函数，并通过循环跳过空叶子节点。而<code>Prev</code>则不存在这一问题，因此没有封装<code>prev</code>方法。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// Next moves the cursor to the next item in the bucket and returns its key and value.
+</span><span class="c1">// If the cursor is at the end of the bucket then a nil key and value are returned.
+</span><span class="c1">// The returned key and value are only valid for the life of the transaction.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">Cursor</span><span class="p">)</span> <span class="nf">Next</span><span class="p">()</span> <span class="p">(</span><span class="nx">key</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">value</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nf">_assert</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span> <span class="o">!=</span> <span class="kc">nil</span><span class="p">,</span> <span class="s">&#34;tx closed&#34;</span><span class="p">)</span>
+	<span class="nx">k</span><span class="p">,</span> <span class="nx">v</span><span class="p">,</span> <span class="nx">flags</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">next</span><span class="p">()</span>
+	<span class="k">if</span> <span class="p">(</span><span class="nx">flags</span> <span class="o">&amp;</span> <span class="nb">uint32</span><span class="p">(</span><span class="nx">bucketLeafFlag</span><span class="p">))</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">k</span><span class="p">,</span> <span class="kc">nil</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="nx">k</span><span class="p">,</span> <span class="nx">v</span>
+<span class="p">}</span>
+
+<span class="c1">// next moves to the next leaf element and returns the key and value.
+</span><span class="c1">// If the cursor is at the last leaf element then it stays there and returns nil.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">Cursor</span><span class="p">)</span> <span class="nf">next</span><span class="p">()</span> <span class="p">(</span><span class="nx">key</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">value</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">flags</span> <span class="kt">uint32</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">for</span> <span class="p">{</span>
+		<span class="c1">// Attempt to move over one element until we&#39;re successful.
+</span><span class="c1"></span>		<span class="c1">// Move up the stack as we hit the end of each page in our stack.
+</span><span class="c1"></span>		<span class="kd">var</span> <span class="nx">i</span> <span class="kt">int</span>
+		<span class="k">for</span> <span class="nx">i</span> <span class="p">=</span> <span class="nb">len</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span><span class="o">--</span> <span class="p">{</span>
+			<span class="nx">elem</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span>
+			<span class="k">if</span> <span class="nx">elem</span><span class="p">.</span><span class="nx">index</span> <span class="p">&lt;</span> <span class="nx">elem</span><span class="p">.</span><span class="nf">count</span><span class="p">()</span><span class="o">-</span><span class="mi">1</span> <span class="p">{</span>
+				<span class="nx">elem</span><span class="p">.</span><span class="nx">index</span><span class="o">++</span>
+				<span class="k">break</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+
+		<span class="c1">// If we&#39;ve hit the root page then stop and return. This will leave the
+</span><span class="c1"></span>		<span class="c1">// cursor on the last element of the last page.
+</span><span class="c1"></span>		<span class="k">if</span> <span class="nx">i</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="kc">nil</span><span class="p">,</span> <span class="mi">0</span>
+		<span class="p">}</span>
+
+		<span class="c1">// Otherwise start from where we left off in the stack and find the
+</span><span class="c1"></span>		<span class="c1">// first element of the first leaf page.
+</span><span class="c1"></span>		<span class="nx">c</span><span class="p">.</span><span class="nx">stack</span> <span class="p">=</span> <span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">[:</span><span class="nx">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+		<span class="nx">c</span><span class="p">.</span><span class="nf">first</span><span class="p">()</span>
+
+		<span class="c1">// If this is an empty page then restart and move back up the stack.
+</span><span class="c1"></span>		<span class="c1">// https://github.com/boltdb/bolt/issues/450
+</span><span class="c1"></span>		<span class="k">if</span> <span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">].</span><span class="nf">count</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+			<span class="k">continue</span>
+		<span class="p">}</span>
+
+		<span class="k">return</span> <span class="nx">c</span><span class="p">.</span><span class="nf">keyValue</span><span class="p">()</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// Prev moves the cursor to the previous item in the bucket and returns its key and value.
+</span><span class="c1">// If the cursor is at the beginning of the bucket then a nil key and value are returned.
+</span><span class="c1">// The returned key and value are only valid for the life of the transaction.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">Cursor</span><span class="p">)</span> <span class="nf">Prev</span><span class="p">()</span> <span class="p">(</span><span class="nx">key</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">value</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nf">_assert</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span> <span class="o">!=</span> <span class="kc">nil</span><span class="p">,</span> <span class="s">&#34;tx closed&#34;</span><span class="p">)</span>
+
+	<span class="c1">// Attempt to move back one element until we&#39;re successful.
+</span><span class="c1"></span>	<span class="c1">// Move up the stack as we hit the beginning of each page in our stack.
+</span><span class="c1"></span>	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="nb">len</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span><span class="o">--</span> <span class="p">{</span>
+		<span class="nx">elem</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span>
+		<span class="k">if</span> <span class="nx">elem</span><span class="p">.</span><span class="nx">index</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+			<span class="nx">elem</span><span class="p">.</span><span class="nx">index</span><span class="o">--</span>
+			<span class="k">break</span>
+		<span class="p">}</span>
+		<span class="nx">c</span><span class="p">.</span><span class="nx">stack</span> <span class="p">=</span> <span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">[:</span><span class="nx">i</span><span class="p">]</span>
+	<span class="p">}</span>
+
+	<span class="c1">// If we&#39;ve hit the end then return nil.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="kc">nil</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Move down the stack to find the last element of the last leaf under this branch.
+</span><span class="c1"></span>	<span class="nx">c</span><span class="p">.</span><span class="nf">last</span><span class="p">()</span>
+	<span class="nx">k</span><span class="p">,</span> <span class="nx">v</span><span class="p">,</span> <span class="nx">flags</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">keyValue</span><span class="p">()</span>
+	<span class="k">if</span> <span class="p">(</span><span class="nx">flags</span> <span class="o">&amp;</span> <span class="nb">uint32</span><span class="p">(</span><span class="nx">bucketLeafFlag</span><span class="p">))</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">k</span><span class="p">,</span> <span class="kc">nil</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="nx">k</span><span class="p">,</span> <span class="nx">v</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>Next</code>与<code>Prev</code>的实现思路类似，这里以<code>Prev</code>举例：</p>
+<ol>
+<li>循环遍历栈顶节点，如果在该节点中当前位置之前还有内部元素，则将栈顶元素修改为上一个元素；否则将栈顶元素出栈并继续判断，直到栈为空或找到上一个元素。</li>
+<li>如果栈为空，说明在B+Tree中不存在前驱键值对，直接返回空。</li>
+<li>如果栈非空，说明找到了前驱键值对所在位置，或前驱键值对所在的父级元素的位置。此时，直接调用<code>last</code>方法将Cursor移动到以当前栈顶为根的最后一个键值对，该键值对即为前驱键值对。</li>
+<li>检查该键值对是否表示bucket，如果表示bucket则将value置空。返回结果。</li>
+</ol>
+<h4 id="223-seekseeksearch">2.2.3 Seek、seek、search</h4>
+<p><code>Seek</code>方法是通过二分查找将Cursor移动到给定key的位置的方法，其实现如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// Seek moves the cursor to a given key and returns it.
+</span><span class="c1">// If the key does not exist then the next key is used. If no keys
+</span><span class="c1">// follow, a nil key is returned.
+</span><span class="c1">// The returned key and value are only valid for the life of the transaction.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">Cursor</span><span class="p">)</span> <span class="nf">Seek</span><span class="p">(</span><span class="nx">seek</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="p">(</span><span class="nx">key</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">value</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">k</span><span class="p">,</span> <span class="nx">v</span><span class="p">,</span> <span class="nx">flags</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">seek</span><span class="p">(</span><span class="nx">seek</span><span class="p">)</span>
+
+	<span class="c1">// If we ended up after the last element of a page then move to the next one.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">ref</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">];</span> <span class="nx">ref</span><span class="p">.</span><span class="nx">index</span> <span class="o">&gt;=</span> <span class="nx">ref</span><span class="p">.</span><span class="nf">count</span><span class="p">()</span> <span class="p">{</span>
+		<span class="nx">k</span><span class="p">,</span> <span class="nx">v</span><span class="p">,</span> <span class="nx">flags</span> <span class="p">=</span> <span class="nx">c</span><span class="p">.</span><span class="nf">next</span><span class="p">()</span>
+	<span class="p">}</span>
+
+	<span class="k">if</span> <span class="nx">k</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="kc">nil</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">flags</span> <span class="o">&amp;</span> <span class="nb">uint32</span><span class="p">(</span><span class="nx">bucketLeafFlag</span><span class="p">))</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">k</span><span class="p">,</span> <span class="kc">nil</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="nx">k</span><span class="p">,</span> <span class="nx">v</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>Seek</code>方法内部通过<code>seek</code>移动Cursor，<code>seek</code>方法会把Cursor移动到大于等于给定key的位置，即key不存在时会移动到下一个key的位置。如果<code>seek</code>将Cursor移动到了某节点的所有内部元素之后，<code>Seek</code>方法会使其正确移动到后继键值对处。同样<code>Seek</code>也会将表示bucket的value置空返回。接下分析<code>seek</code>方法的实现。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// seek moves the cursor to a given key and returns it.
+</span><span class="c1">// If the key does not exist then the next key is used.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">Cursor</span><span class="p">)</span> <span class="nf">seek</span><span class="p">(</span><span class="nx">seek</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="p">(</span><span class="nx">key</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">value</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">flags</span> <span class="kt">uint32</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nf">_assert</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span> <span class="o">!=</span> <span class="kc">nil</span><span class="p">,</span> <span class="s">&#34;tx closed&#34;</span><span class="p">)</span>
+
+	<span class="c1">// Start from root page/node and traverse to correct page.
+</span><span class="c1"></span>	<span class="nx">c</span><span class="p">.</span><span class="nx">stack</span> <span class="p">=</span> <span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">[:</span><span class="mi">0</span><span class="p">]</span>
+	<span class="nx">c</span><span class="p">.</span><span class="nf">search</span><span class="p">(</span><span class="nx">seek</span><span class="p">,</span> <span class="nx">c</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">root</span><span class="p">)</span>
+	<span class="nx">ref</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+	<span class="c1">// If the cursor is pointing to the end of page/node then return nil.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">ref</span><span class="p">.</span><span class="nx">index</span> <span class="o">&gt;=</span> <span class="nx">ref</span><span class="p">.</span><span class="nf">count</span><span class="p">()</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="kc">nil</span><span class="p">,</span> <span class="mi">0</span>
+	<span class="p">}</span>
+
+	<span class="c1">// If this is a bucket then return a nil value.
+</span><span class="c1"></span>	<span class="k">return</span> <span class="nx">c</span><span class="p">.</span><span class="nf">keyValue</span><span class="p">()</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>seek</code>方法首先将<code>stack</code>置空，然后从调用<code>search</code>方法，从根节点开始二分查找并移动Cursor，最后判断是否找到并返回结果。<code>search</code>方法是递归查找key并移动Cursor的方法，其实现如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// search recursively performs a binary search against a given page/node until it finds a given key.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">Cursor</span><span class="p">)</span> <span class="nf">search</span><span class="p">(</span><span class="nx">key</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">pgid</span> <span class="nx">pgid</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">p</span><span class="p">,</span> <span class="nx">n</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nf">pageNode</span><span class="p">(</span><span class="nx">pgid</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">p</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">flags</span><span class="o">&amp;</span><span class="p">(</span><span class="nx">branchPageFlag</span><span class="p">|</span><span class="nx">leafPageFlag</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nb">panic</span><span class="p">(</span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;invalid page type: %d: %x&#34;</span><span class="p">,</span> <span class="nx">p</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">p</span><span class="p">.</span><span class="nx">flags</span><span class="p">))</span>
+	<span class="p">}</span>
+	<span class="nx">e</span> <span class="o">:=</span> <span class="nx">elemRef</span><span class="p">{</span><span class="nx">page</span><span class="p">:</span> <span class="nx">p</span><span class="p">,</span> <span class="nx">node</span><span class="p">:</span> <span class="nx">n</span><span class="p">}</span>
+	<span class="nx">c</span><span class="p">.</span><span class="nx">stack</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">,</span> <span class="nx">e</span><span class="p">)</span>
+
+	<span class="c1">// If we&#39;re on a leaf page/node then find the specific node.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">e</span><span class="p">.</span><span class="nf">isLeaf</span><span class="p">()</span> <span class="p">{</span>
+		<span class="nx">c</span><span class="p">.</span><span class="nf">nsearch</span><span class="p">(</span><span class="nx">key</span><span class="p">)</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+
+	<span class="k">if</span> <span class="nx">n</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">c</span><span class="p">.</span><span class="nf">searchNode</span><span class="p">(</span><span class="nx">key</span><span class="p">,</span> <span class="nx">n</span><span class="p">)</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+	<span class="nx">c</span><span class="p">.</span><span class="nf">searchPage</span><span class="p">(</span><span class="nx">key</span><span class="p">,</span> <span class="nx">p</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">Cursor</span><span class="p">)</span> <span class="nf">searchNode</span><span class="p">(</span><span class="nx">key</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">n</span> <span class="o">*</span><span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
+	<span class="kd">var</span> <span class="nx">exact</span> <span class="kt">bool</span>
+	<span class="nx">index</span> <span class="o">:=</span> <span class="nx">sort</span><span class="p">.</span><span class="nf">Search</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">),</span> <span class="kd">func</span><span class="p">(</span><span class="nx">i</span> <span class="kt">int</span><span class="p">)</span> <span class="kt">bool</span> <span class="p">{</span>
+		<span class="c1">// TODO(benbjohnson): Optimize this range search. It&#39;s a bit hacky right now.
+</span><span class="c1"></span>		<span class="c1">// sort.Search() finds the lowest index where f() != -1 but we need the highest index.
+</span><span class="c1"></span>		<span class="nx">ret</span> <span class="o">:=</span> <span class="nx">bytes</span><span class="p">.</span><span class="nf">Compare</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">key</span><span class="p">,</span> <span class="nx">key</span><span class="p">)</span>
+		<span class="k">if</span> <span class="nx">ret</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+			<span class="nx">exact</span> <span class="p">=</span> <span class="kc">true</span>
+		<span class="p">}</span>
+		<span class="k">return</span> <span class="nx">ret</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span>
+	<span class="p">})</span>
+	<span class="k">if</span> <span class="p">!</span><span class="nx">exact</span> <span class="o">&amp;&amp;</span> <span class="nx">index</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">index</span><span class="o">--</span>
+	<span class="p">}</span>
+	<span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">].</span><span class="nx">index</span> <span class="p">=</span> <span class="nx">index</span>
+
+	<span class="c1">// Recursively search to the next page.
+</span><span class="c1"></span>	<span class="nx">c</span><span class="p">.</span><span class="nf">search</span><span class="p">(</span><span class="nx">key</span><span class="p">,</span> <span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">[</span><span class="nx">index</span><span class="p">].</span><span class="nx">pgid</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">Cursor</span><span class="p">)</span> <span class="nf">searchPage</span><span class="p">(</span><span class="nx">key</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">p</span> <span class="o">*</span><span class="nx">page</span><span class="p">)</span> <span class="p">{</span>
+	<span class="c1">// Binary search for the correct range.
+</span><span class="c1"></span>	<span class="nx">inodes</span> <span class="o">:=</span> <span class="nx">p</span><span class="p">.</span><span class="nf">branchPageElements</span><span class="p">()</span>
+
+	<span class="kd">var</span> <span class="nx">exact</span> <span class="kt">bool</span>
+	<span class="nx">index</span> <span class="o">:=</span> <span class="nx">sort</span><span class="p">.</span><span class="nf">Search</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">count</span><span class="p">),</span> <span class="kd">func</span><span class="p">(</span><span class="nx">i</span> <span class="kt">int</span><span class="p">)</span> <span class="kt">bool</span> <span class="p">{</span>
+		<span class="c1">// TODO(benbjohnson): Optimize this range search. It&#39;s a bit hacky right now.
+</span><span class="c1"></span>		<span class="c1">// sort.Search() finds the lowest index where f() != -1 but we need the highest index.
+</span><span class="c1"></span>		<span class="nx">ret</span> <span class="o">:=</span> <span class="nx">bytes</span><span class="p">.</span><span class="nf">Compare</span><span class="p">(</span><span class="nx">inodes</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nf">key</span><span class="p">(),</span> <span class="nx">key</span><span class="p">)</span>
+		<span class="k">if</span> <span class="nx">ret</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+			<span class="nx">exact</span> <span class="p">=</span> <span class="kc">true</span>
+		<span class="p">}</span>
+		<span class="k">return</span> <span class="nx">ret</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span>
+	<span class="p">})</span>
+	<span class="k">if</span> <span class="p">!</span><span class="nx">exact</span> <span class="o">&amp;&amp;</span> <span class="nx">index</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">index</span><span class="o">--</span>
+	<span class="p">}</span>
+	<span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">].</span><span class="nx">index</span> <span class="p">=</span> <span class="nx">index</span>
+
+	<span class="c1">// Recursively search to the next page.
+</span><span class="c1"></span>	<span class="nx">c</span><span class="p">.</span><span class="nf">search</span><span class="p">(</span><span class="nx">key</span><span class="p">,</span> <span class="nx">inodes</span><span class="p">[</span><span class="nx">index</span><span class="p">].</span><span class="nx">pgid</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// nsearch searches the leaf node on the top of the stack for a key.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">Cursor</span><span class="p">)</span> <span class="nf">nsearch</span><span class="p">(</span><span class="nx">key</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">e</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+	<span class="nx">p</span><span class="p">,</span> <span class="nx">n</span> <span class="o">:=</span> <span class="nx">e</span><span class="p">.</span><span class="nx">page</span><span class="p">,</span> <span class="nx">e</span><span class="p">.</span><span class="nx">node</span>
+
+	<span class="c1">// If we have a node then search its inodes.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">n</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">index</span> <span class="o">:=</span> <span class="nx">sort</span><span class="p">.</span><span class="nf">Search</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">),</span> <span class="kd">func</span><span class="p">(</span><span class="nx">i</span> <span class="kt">int</span><span class="p">)</span> <span class="kt">bool</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="nx">bytes</span><span class="p">.</span><span class="nf">Compare</span><span class="p">(</span><span class="nx">n</span><span class="p">.</span><span class="nx">inodes</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">key</span><span class="p">,</span> <span class="nx">key</span><span class="p">)</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span>
+		<span class="p">})</span>
+		<span class="nx">e</span><span class="p">.</span><span class="nx">index</span> <span class="p">=</span> <span class="nx">index</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+
+	<span class="c1">// If we have a page then search its leaf elements.
+</span><span class="c1"></span>	<span class="nx">inodes</span> <span class="o">:=</span> <span class="nx">p</span><span class="p">.</span><span class="nf">leafPageElements</span><span class="p">()</span>
+	<span class="nx">index</span> <span class="o">:=</span> <span class="nx">sort</span><span class="p">.</span><span class="nf">Search</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">count</span><span class="p">),</span> <span class="kd">func</span><span class="p">(</span><span class="nx">i</span> <span class="kt">int</span><span class="p">)</span> <span class="kt">bool</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">bytes</span><span class="p">.</span><span class="nf">Compare</span><span class="p">(</span><span class="nx">inodes</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nf">key</span><span class="p">(),</span> <span class="nx">key</span><span class="p">)</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span>
+	<span class="p">})</span>
+	<span class="nx">e</span><span class="p">.</span><span class="nx">index</span> <span class="p">=</span> <span class="nx">index</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>search</code>方法首先将当前page或node记录在<code>stack</code>中，此时<code>index</code>取值还未确定，需要进一步搜索：</p>
+<ol>
+<li>如果当前节点是叶子节点，则调用<code>nsearch</code>方法，二分查找其内部元素，确定index值并返回。</li>
+<li>如果当前节点不是叶子节点，则递归调用<code>searchNode</code>或<code>searchPage</code>方法（取决于当前节点是否已被实例化为node），二分查找内部key，确定index值（下一个要查找的孩子）。</li>
+</ol>
+<h2 id="3-总结">3. 总结</h2>
+<p>本文介绍了boltdb中bucket与cursor的概念与实现。</p>
+<p>bucket与cursor是基于B+Tree的封装，且部分面向用户，虽然其实现并不复杂，但对于刚接触的读者可能较难理解。</p></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
