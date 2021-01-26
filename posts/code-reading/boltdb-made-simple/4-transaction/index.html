@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/4-transaction\/bbolt.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  3528 ,
+                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  4998 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/4-transaction\/","datePublished": "2021-01-26T13:30:24+08:00","dateModified": "2021-01-26T13:30:27+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,8 +110,8 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出boltdb —— 0x04 事务</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAbolt/"><i class="far fa-folder fa-fw"></i>深入浅出bolt</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-26">2021-01-26</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 3528 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 8 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-26">2021-01-26</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 4998 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 10 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
@@ -133,9 +133,19 @@
         <li><a href="#12-boltdb中acid的实现">1.2 boltdb中ACID的实现</a></li>
       </ul>
     </li>
+  </ul>
+
+  <ul>
     <li><a href="#2-tx">2. Tx</a>
       <ul>
         <li><a href="#21-tx结构体">2.1 Tx结构体</a></li>
+        <li><a href="#22-tx的声明周期">2.2 Tx的声明周期</a>
+          <ul>
+            <li><a href="#221-事务的创建">2.2.1 事务的创建</a></li>
+            <li><a href="#222-事务的提交">2.2.2 事务的提交</a></li>
+            <li><a href="#223-事务的回滚">2.2.3 事务的回滚</a></li>
+          </ul>
+        </li>
       </ul>
     </li>
   </ul>
@@ -251,7 +261,7 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 <p>有一种对ACID的解释为：Consistency是最终要实现的目标，而Atomicity、Isolation、Durability是实现Consistency的保证。笔者也比较认同这一观点，这也体现了ACID各个性质的实现不是孤立的，而是整个系统的结果。</p>
 <p><strong>Isolation（隔离性）：</strong></p>
 <p>上一节介绍了Isolation隔离性对应的4种隔离级别，boltdb实现的是最高的隔离界别：serializable序列化读。在serializable的基础上，boltdb支持“读读并发”与“读写并发”，boltdb中同时可以执行若干个只读事务，但同时只能执行一个读写事务，但只读事务与读写事务之间不影响。</p>
-<p>Shadow Paging同样为实现事务隔离提供了支持。为了保证serializable的同时实现读写并发，当读写事务提交时，boltdb不会立即回收其不再使用的页（shadow page），这些页仍在freelist中该事务的<code>pending</code>列表中，因为此时这些页可能还在被未完成的只读事务读取。取而代之的是，boltdb会在事务开始时为其分配一个单调递增的事务id<code>txid</code>，并记录正在执行的事务的事务id；当事务提交时，boltdb会找到进行中的最小的<code>txid</code>，显然，<code>txid</code>在此之前的读写事务的shadow page一定不再需要被读取，因为其之前的只读事务都已经执行完毕，此时，可以安全地释放这些读写事务的shadow page，即可以freelist中该事务的<code>pending</code>列表中的页合并到freelist的<code>ids</code>中。</p>
+<p>Shadow Paging同样为实现事务隔离提供了支持。为了保证serializable的同时实现读写并发，当读写事务提交时，boltdb不会立即回收其不再使用的页（shadow page），这些页仍在freelist中该事务的<code>pending</code>列表中，因为此时这些页可能还在被未完成的只读事务读取。取而代之的是，boltdb会在事务开始时为其分配事务id<code>txid</code>，只读事务的<code>txid</code>为当前数据库的<code>txid</code>，读写事务的<code>txid</code>为当前数据库的<code>txid + 1</code>。boltdb会记录正在执行的事务的事务id；当事务提交时，boltdb会找到进行中的最小的<code>txid</code>，显然，该<code>txid</code>之前的只读事务或读写事务都已经完成，因此其中读写事务的shadow page不再需要被读取，此时可以安全地释放这些读写事务的shadow page，即可以freelist中该事务的<code>pending</code>列表中的页合并到freelist的<code>ids</code>中。</p>
 <p>Shadow Paging保证了读读并发、读写并发的事务隔离性，boltdb还需要保证最多只有1个读写事务在进行。boltdb的读写事务开始前会申请互斥锁，以避免读写事务并行执行。这里需要注意两点：第一，因为boltdb支持读写并发，所以只读事务不需要申请S锁，否则只有读读事务才能并行执行；第二，在数据库领域，这种锁机制应叫做“latch”而非“lock”，只是其粒度较大。CMU 15-721中较为详细地介绍了Lock与Latch的区别，这里笔者搬运一下其总结表格。</p>
 <table>
 <thead>
@@ -301,6 +311,7 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 </table>
 <p><strong>Durability（持久性）：</strong></p>
 <p>boltdb的读写事务提交时，会通过pwrite系统调用写底层文件，并通过fdatasync系统调用确保数据被安全写入到磁盘中。因为boltdb的mmap模式为<code>MAP_SHARED</code>，因此绕过mmap直接写入底层文件不会影响mmap中数据对底层文件修改的可见性。</p>
+<h1 id="施工中--">施工中 。。。 。。。</h1>
 <h2 id="2-tx">2. Tx</h2>
 <p><code>tx.go</code>中的<code>Tx</code>结构体，是boltdb事务的封装。本节将分析其实现。</p>
 <h3 id="21-tx结构体">2.1 Tx结构体</h3>
@@ -365,11 +376,223 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 <td align="left">当前事务所见的root bucket的<code>Bucket</code>实例。</td>
 </tr>
 <tr>
-<td></td>
-<td></td>
+<td align="center"><code>page map[pgid]*page</code></td>
+<td align="left">索引当前事务所使用的dirty page（page buffer）。</td>
+</tr>
+<tr>
+<td align="center"><code>stats TxStats</code></td>
+<td align="left">统计变量。</td>
+</tr>
+<tr>
+<td align="center"><code>commitHandlers []func()</code></td>
+<td align="left">事务成功提交后需调用的回调函数列表。</td>
+</tr>
+<tr>
+<td align="center"><code>WriteFlag int</code></td>
+<td align="left"><code>WriteTo</code>方法reader打开文件时可配置的额外的flag。</td>
 </tr>
 </tbody>
-</table></div><div class="post-footer" id="post-footer">
+</table>
+<p><code>Tx</code>为boltdb的用户提供了一些方法来访问其中部分字段：</p>
+<table>
+<thead>
+<tr>
+<th align="center">方法<div style="width:12em"></div></th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center"><code>ID() int</code></td>
+<td align="left">返回当前事务id（<code>tx.meta.txid</code>）。</td>
+</tr>
+<tr>
+<td align="center"><code>DB *DB</code></td>
+<td align="left">返回创建当前事务的数据库实例。</td>
+</tr>
+<tr>
+<td align="center"><code>Size() int64</code></td>
+<td align="left">返回当前事务所见的数据库大小（非数据大小）。</td>
+</tr>
+<tr>
+<td align="center"><code>Writable() bool</code></td>
+<td align="left">返回当前事务事务可写。</td>
+</tr>
+<tr>
+<td align="center"><code>Stats() TxStats</code></td>
+<td align="left">返回当前事务的统计量。</td>
+</tr>
+</tbody>
+</table>
+<p>此外，<code>Tx</code>还为boltdb的用户提供了一些访问root bucket的方法：</p>
+<table>
+<thead>
+<tr>
+<th align="center">方法<div style="width:12em"></div></th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center"><code>Cursor() *Cursor</code></td>
+<td align="left"><code>tx.root.Cursor()</code>。从当前事务获取root bucket的<code>Cursor</code>。由于root bucket中只保存子bucket，因此其返回的所有value都是nil。</td>
+</tr>
+<tr>
+<td align="center"><code>Bucket(name []byte) *Bucket</code></td>
+<td align="left"><code>tx.root.Bucket(name)</code>。获取root bucket的子bucket。</td>
+</tr>
+<tr>
+<td align="center"><code>CreateBucket(name []byte) (*Bucket, error)</code></td>
+<td align="left"><code>tx.root.CreateBucket(name)</code></td>
+</tr>
+<tr>
+<td align="center"><code>CreateBucketIfNotExists(name []byte) (*Bucket, error)</code></td>
+<td align="left"><code>tx.root.CreateBucketIfNotExists(name)</code>。如果root bucket的子bucket未创建，则创建子bucket并返回实例；否则直接返回其实例。</td>
+</tr>
+<tr>
+<td align="center"><code>DeleteBucket(name []byte) error</code></td>
+<td align="left"><code>tx.root.DeleteBucket(name)</code>。删除root bucket的子bucket。</td>
+</tr>
+<tr>
+<td align="center"><code>ForEach(fn func(name []byte, b *Bucket) error) error</code></td>
+<td align="left">遍历root bucket的所有子bucket并执行给定闭包。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="22-tx的声明周期">2.2 Tx的声明周期</h3>
+<p>本节将以<code>Tx</code>结构体的声明周期的顺序介绍其中方法的实现。</p>
+<h4 id="221-事务的创建">2.2.1 事务的创建</h4>
+<p>boltdb在创建事务时，会先创建<code>Tx</code>实例，设置其<code>writable</code>字段，并调用其<code>init</code>方法。<code>init</code>方法的实现如下所示。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// init initializes the transaction.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">tx</span> <span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="nf">init</span><span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="p">{</span>
+	<span class="nx">tx</span><span class="p">.</span><span class="nx">db</span> <span class="p">=</span> <span class="nx">db</span>
+	<span class="nx">tx</span><span class="p">.</span><span class="nx">pages</span> <span class="p">=</span> <span class="kc">nil</span>
+
+	<span class="c1">// Copy the meta page since it can be changed by the writer.
+</span><span class="c1"></span>	<span class="nx">tx</span><span class="p">.</span><span class="nx">meta</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">meta</span><span class="p">{}</span>
+	<span class="nx">db</span><span class="p">.</span><span class="nf">meta</span><span class="p">().</span><span class="nb">copy</span><span class="p">(</span><span class="nx">tx</span><span class="p">.</span><span class="nx">meta</span><span class="p">)</span>
+
+	<span class="c1">// Copy over the root bucket.
+</span><span class="c1"></span>	<span class="nx">tx</span><span class="p">.</span><span class="nx">root</span> <span class="p">=</span> <span class="nf">newBucket</span><span class="p">(</span><span class="nx">tx</span><span class="p">)</span>
+	<span class="nx">tx</span><span class="p">.</span><span class="nx">root</span><span class="p">.</span><span class="nx">bucket</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">bucket</span><span class="p">{}</span>
+	<span class="o">*</span><span class="nx">tx</span><span class="p">.</span><span class="nx">root</span><span class="p">.</span><span class="nx">bucket</span> <span class="p">=</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">root</span>
+
+	<span class="c1">// Increment the transaction id and add a page cache for writable transactions.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">writable</span> <span class="p">{</span>
+		<span class="nx">tx</span><span class="p">.</span><span class="nx">pages</span> <span class="p">=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="nx">pgid</span><span class="p">]</span><span class="o">*</span><span class="nx">page</span><span class="p">)</span>
+		<span class="nx">tx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">txid</span> <span class="o">+=</span> <span class="nf">txid</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>init</code>方法初始化了<code>Tx</code>的一些字段。因为boltdb支持事务读写并发，所以其深拷贝了事务创建时的<code>meta</code>数据与root bucket的元数据，以避免只读事务读取到后续读写事务更新过的元数据。</p>
+<p><code>init</code>方法还为读写事务初始化了<code>pages</code>字段，该字段是用来记录事务写入的dirty page（page buffer）的cache。此外，<code>init</code>在初始化读写事务时还会将其<code>meta</code>中的<code>txid + 1</code>。</p>
+<h4 id="222-事务的提交">2.2.2 事务的提交</h4>
+<p>boltdb的用户可以通过<code>Tx</code>的<code>Commit</code>方法提交非隐式事务。在提交前，用户还可以通过<code>OnCommit</code>方法注册事务的回调方法。<code>OnCommit</code>与<code>Commit</code>方法的实现如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// OnCommit adds a handler function to be executed after the transaction successfully commits.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">tx</span> <span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="nf">OnCommit</span><span class="p">(</span><span class="nx">fn</span> <span class="kd">func</span><span class="p">())</span> <span class="p">{</span>
+	<span class="nx">tx</span><span class="p">.</span><span class="nx">commitHandlers</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">tx</span><span class="p">.</span><span class="nx">commitHandlers</span><span class="p">,</span> <span class="nx">fn</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// Commit writes all changes to disk and updates the meta page.
+</span><span class="c1">// Returns an error if a disk write error occurs, or if Commit is
+</span><span class="c1">// called on a read-only transaction.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">tx</span> <span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="nf">Commit</span><span class="p">()</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="nf">_assert</span><span class="p">(!</span><span class="nx">tx</span><span class="p">.</span><span class="nx">managed</span><span class="p">,</span> <span class="s">&#34;managed tx commit not allowed&#34;</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">db</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">ErrTxClosed</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">!</span><span class="nx">tx</span><span class="p">.</span><span class="nx">writable</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">ErrTxNotWritable</span>
+	<span class="p">}</span>
+
+	<span class="c1">// TODO(benbjohnson): Use vectorized I/O to write out dirty pages.
+</span><span class="c1"></span>
+	<span class="c1">// Rebalance nodes which have had deletions.
+</span><span class="c1"></span>	<span class="kd">var</span> <span class="nx">startTime</span> <span class="p">=</span> <span class="nx">time</span><span class="p">.</span><span class="nf">Now</span><span class="p">()</span>
+	<span class="nx">tx</span><span class="p">.</span><span class="nx">root</span><span class="p">.</span><span class="nf">rebalance</span><span class="p">()</span>
+	<span class="k">if</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">stats</span><span class="p">.</span><span class="nx">Rebalance</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">tx</span><span class="p">.</span><span class="nx">stats</span><span class="p">.</span><span class="nx">RebalanceTime</span> <span class="o">+=</span> <span class="nx">time</span><span class="p">.</span><span class="nf">Since</span><span class="p">(</span><span class="nx">startTime</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="c1">// spill data onto dirty pages.
+</span><span class="c1"></span>	<span class="nx">startTime</span> <span class="p">=</span> <span class="nx">time</span><span class="p">.</span><span class="nf">Now</span><span class="p">()</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">root</span><span class="p">.</span><span class="nf">spill</span><span class="p">();</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">tx</span><span class="p">.</span><span class="nf">rollback</span><span class="p">()</span>
+		<span class="k">return</span> <span class="nx">err</span>
+	<span class="p">}</span>
+	<span class="nx">tx</span><span class="p">.</span><span class="nx">stats</span><span class="p">.</span><span class="nx">SpillTime</span> <span class="o">+=</span> <span class="nx">time</span><span class="p">.</span><span class="nf">Since</span><span class="p">(</span><span class="nx">startTime</span><span class="p">)</span>
+
+	<span class="c1">// Free the old root bucket.
+</span><span class="c1"></span>	<span class="nx">tx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">root</span><span class="p">.</span><span class="nx">root</span> <span class="p">=</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">root</span><span class="p">.</span><span class="nx">root</span>
+
+	<span class="nx">opgid</span> <span class="o">:=</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">pgid</span>
+
+	<span class="c1">// Free the freelist and allocate new pages for it. This will overestimate
+</span><span class="c1"></span>	<span class="c1">// the size of the freelist but not underestimate the size (which would be bad).
+</span><span class="c1"></span>	<span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">freelist</span><span class="p">.</span><span class="nf">free</span><span class="p">(</span><span class="nx">tx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">txid</span><span class="p">,</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nf">page</span><span class="p">(</span><span class="nx">tx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">freelist</span><span class="p">))</span>
+	<span class="nx">p</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">tx</span><span class="p">.</span><span class="nf">allocate</span><span class="p">((</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">freelist</span><span class="p">.</span><span class="nf">size</span><span class="p">()</span> <span class="o">/</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">tx</span><span class="p">.</span><span class="nf">rollback</span><span class="p">()</span>
+		<span class="k">return</span> <span class="nx">err</span>
+	<span class="p">}</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">freelist</span><span class="p">.</span><span class="nf">write</span><span class="p">(</span><span class="nx">p</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">tx</span><span class="p">.</span><span class="nf">rollback</span><span class="p">()</span>
+		<span class="k">return</span> <span class="nx">err</span>
+	<span class="p">}</span>
+	<span class="nx">tx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">freelist</span> <span class="p">=</span> <span class="nx">p</span><span class="p">.</span><span class="nx">id</span>
+
+	<span class="c1">// If the high water mark has moved up then attempt to grow the database.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">pgid</span> <span class="p">&gt;</span> <span class="nx">opgid</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nf">grow</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nx">tx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">pgid</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="nx">tx</span><span class="p">.</span><span class="nf">rollback</span><span class="p">()</span>
+			<span class="k">return</span> <span class="nx">err</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Write dirty pages to disk.
+</span><span class="c1"></span>	<span class="nx">startTime</span> <span class="p">=</span> <span class="nx">time</span><span class="p">.</span><span class="nf">Now</span><span class="p">()</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">tx</span><span class="p">.</span><span class="nf">write</span><span class="p">();</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">tx</span><span class="p">.</span><span class="nf">rollback</span><span class="p">()</span>
+		<span class="k">return</span> <span class="nx">err</span>
+	<span class="p">}</span>
+
+	<span class="c1">// If strict mode is enabled then perform a consistency check.
+</span><span class="c1"></span>	<span class="c1">// Only the first consistency error is reported in the panic.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">StrictMode</span> <span class="p">{</span>
+		<span class="nx">ch</span> <span class="o">:=</span> <span class="nx">tx</span><span class="p">.</span><span class="nf">Check</span><span class="p">()</span>
+		<span class="kd">var</span> <span class="nx">errs</span> <span class="p">[]</span><span class="kt">string</span>
+		<span class="k">for</span> <span class="p">{</span>
+			<span class="nx">err</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">ch</span>
+			<span class="k">if</span> <span class="p">!</span><span class="nx">ok</span> <span class="p">{</span>
+				<span class="k">break</span>
+			<span class="p">}</span>
+			<span class="nx">errs</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">errs</span><span class="p">,</span> <span class="nx">err</span><span class="p">.</span><span class="nf">Error</span><span class="p">())</span>
+		<span class="p">}</span>
+		<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">errs</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+			<span class="nb">panic</span><span class="p">(</span><span class="s">&#34;check fail: &#34;</span> <span class="o">+</span> <span class="nx">strings</span><span class="p">.</span><span class="nf">Join</span><span class="p">(</span><span class="nx">errs</span><span class="p">,</span> <span class="s">&#34;\n&#34;</span><span class="p">))</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Write meta to disk.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">tx</span><span class="p">.</span><span class="nf">writeMeta</span><span class="p">();</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">tx</span><span class="p">.</span><span class="nf">rollback</span><span class="p">()</span>
+		<span class="k">return</span> <span class="nx">err</span>
+	<span class="p">}</span>
+	<span class="nx">tx</span><span class="p">.</span><span class="nx">stats</span><span class="p">.</span><span class="nx">WriteTime</span> <span class="o">+=</span> <span class="nx">time</span><span class="p">.</span><span class="nf">Since</span><span class="p">(</span><span class="nx">startTime</span><span class="p">)</span>
+
+	<span class="c1">// Finalize the transaction.
+</span><span class="c1"></span>	<span class="nx">tx</span><span class="p">.</span><span class="nb">close</span><span class="p">()</span>
+
+	<span class="c1">// Execute commit handlers now that the locks have been removed.
+</span><span class="c1"></span>	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">fn</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">commitHandlers</span> <span class="p">{</span>
+		<span class="nf">fn</span><span class="p">()</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+</code></pre></div><h4 id="223-事务的回滚">2.2.3 事务的回滚</h4></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
