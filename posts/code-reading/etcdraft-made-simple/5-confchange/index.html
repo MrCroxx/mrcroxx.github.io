@@ -207,9 +207,9 @@
         </div>
     </div>
 <p>另外，需要注意的是，同一时间只能有一个正在进行的配置变更操作，在提议配置变更请求时，如果已经在进行配置变更，那么该提议会被丢弃（被改写成一条无任何意义的日志条目）。</p>
-<div class="details admonition quota open">
+<div class="details admonition quote open">
         <div class="details-summary admonition-title">
-            <i class="icon fas fa-pencil-alt fa-fw"></i>引文1<i class="details-icon fas fa-angle-right fa-fw"></i>
+            <i class="icon fas fa-quote-right fa-fw"></i>引文1<i class="details-icon fas fa-angle-right fa-fw"></i>
         </div>
         <div class="details-content">
             <div class="admonition-content"><p>The new configuration takes effect on each server as soon as it is added to that server’s log: the $C_{new}$ entry is replicated to the $C_{new}$ servers, and a majority of the new configuration is used to determine the $C_{new}$ entry’s commitment. This means that servers do not wait for configuration entries to be committed, and each server always uses the latest configuration found in its log.</p>
@@ -218,9 +218,9 @@
 </div>
         </div>
     </div>
-<div class="details admonition quota open">
+<div class="details admonition quote open">
         <div class="details-summary admonition-title">
-            <i class="icon fas fa-pencil-alt fa-fw"></i>引文2<i class="details-icon fas fa-angle-right fa-fw"></i>
+            <i class="icon fas fa-quote-right fa-fw"></i>引文2<i class="details-icon fas fa-angle-right fa-fw"></i>
         </div>
         <div class="details-content">
             <div class="admonition-content">Note that contrary to Joint Consensus as outlined in the Raft paper, configuration changes become active when they are <em>applied</em> to the state machine (not when they are appended to the log).</div>
@@ -526,9 +526,9 @@
 </ol>
 <p>对需要拒绝的提议的处理非常简单，只需要将该日志条目替换为没有任何意义的普通空日志条目<code>pb.Entry{Type: pb.EntryNormal}</code>即可。</p>
 <p>而对于合法的<code>ConfChange</code>，除了将其追加到日志中外，还需要修改<code>raft</code>结构体的<code>pendingConfIndex</code>字段，将其置为$[上一条ConfChange.Index, 当前ConfChange.Index)$的值<sup>引文3</sup>（这里置为了处理该<code>MsgProp</code>之前的最后一条日志的index），以供之后遇到<code>ConfChange</code>消息时判断当前<code>ConfChange</code>是否已经被应用。</p>
-<div class="details admonition quota open">
+<div class="details admonition quote open">
         <div class="details-summary admonition-title">
-            <i class="icon fas fa-pencil-alt fa-fw"></i>引文3<i class="details-icon fas fa-angle-right fa-fw"></i>
+            <i class="icon fas fa-quote-right fa-fw"></i>引文3<i class="details-icon fas fa-angle-right fa-fw"></i>
         </div>
         <div class="details-content">
             <div class="admonition-content"><p><em>pendingConfIndex</em>字段注释：</p>

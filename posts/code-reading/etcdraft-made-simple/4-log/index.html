@@ -1081,8 +1081,8 @@
 </span><span class="c1"></span>		<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Panic</span><span class="p">(</span><span class="s">&#34;empty entry was dropped&#34;</span><span class="p">)</span>
 	<span class="p">}</span>
 	<span class="c1">// As a special case, don&#39;t count the initial empty entry towards the
-</span><span class="c1"></span>	<span class="c1">// uncommitted log quota. This is because we want to preserve the
-</span><span class="c1"></span>	<span class="c1">// behavior of allowing one entry larger than quota if the current
+</span><span class="c1"></span>	<span class="c1">// uncommitted log quote. This is because we want to preserve the
+</span><span class="c1"></span>	<span class="c1">// behavior of allowing one entry larger than quote if the current
 </span><span class="c1"></span>	<span class="c1">// usage is zero.
 </span><span class="c1"></span>	<span class="nx">r</span><span class="p">.</span><span class="nf">reduceUncommittedSize</span><span class="p">([]</span><span class="nx">pb</span><span class="p">.</span><span class="nx">Entry</span><span class="p">{</span><span class="nx">emptyEnt</span><span class="p">})</span>
 	<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;%x became leader at term %d&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">)</span>
@@ -1662,9 +1662,9 @@
 </ol>
 <p>因此，在etcd/raft模块的使用者将含有<code>unstable</code>的<em>last index</em>的<code>MsgAppResp</code>消息发出之前，<code>unstable</code>中的所有日志已经被保存到了稳定存储中。所以，当leader收到该<code>MsgAppResp</code>并根据其<code>Index</code>字段更新该follower的<em>match index</em>时，<em>match index</em>之前的消息确实被保存到了该follower的稳定存储中。</p>
 <p>关于稳定存储与安全性，《Consensus: Bridging theory and practice》给出了更详细的描述与形式化的证明，这里<sup>引用2</sup>再摘录部分与本问题相关的段落，便于读者参考。</p>
-<div class="details admonition quota open">
+<div class="details admonition quote open">
         <div class="details-summary admonition-title">
-            <i class="icon fas fa-pencil-alt fa-fw"></i>引用1<i class="details-icon fas fa-angle-right fa-fw"></i>
+            <i class="icon fas fa-quote-right fa-fw"></i>引用1<i class="details-icon fas fa-angle-right fa-fw"></i>
         </div>
         <div class="details-content">
             <div class="admonition-content"><p><em>11.7.3 Avoiding persistent storage writes</em></p>
@@ -1672,9 +1672,9 @@
 </div>
         </div>
     </div>
-<div class="details admonition quota open">
+<div class="details admonition quote open">
         <div class="details-summary admonition-title">
-            <i class="icon fas fa-pencil-alt fa-fw"></i>引用2<i class="details-icon fas fa-angle-right fa-fw"></i>
+            <i class="icon fas fa-quote-right fa-fw"></i>引用2<i class="details-icon fas fa-angle-right fa-fw"></i>
         </div>
         <div class="details-content">
             <div class="admonition-content"><p><em>3.8 Persisted state and server restarts</em></p>
