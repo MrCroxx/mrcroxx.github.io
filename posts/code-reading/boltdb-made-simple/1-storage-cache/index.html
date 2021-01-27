@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/1-storage-cache\/bbolt.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  9052 ,
+                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  9212 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/1-storage-cache\/","datePublished": "2021-01-05T18:26:19+08:00","dateModified": "2021-01-05T18:26:22+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,7 +110,7 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出boltdb —— 0x01 存储与缓存</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAbolt/"><i class="far fa-folder fa-fw"></i>深入浅出bolt</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-05">2021-01-05</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 9052 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-05">2021-01-05</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 9212 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 19 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
@@ -738,6 +738,14 @@
 
 </code></pre></div><p>boltdb中mmap会调用Linux的系统调用，其<code>prot</code>参数为<code>PROT_READ</code>，<code>flags</code>为<code>MAP_SHARED</code>与数据库配置中<code>MmapFlags</code>按位或的结果。</p>
 <p>boltdb的mmap大小增长策略如下：最小的mmap大小为32KB，在1GB之前mmap大小每次倍增，在1GB之后每次增长1GB。</p>
+<div class="details admonition warning open">
+        <div class="details-summary admonition-title">
+            <i class="icon fas fa-exclamation-triangle fa-fw"></i>注意<i class="details-icon fas fa-angle-right fa-fw"></i>
+        </div>
+        <div class="details-content">
+            <div class="admonition-content">boltdb在进行映射时，mmap大小可能超过数据库文件大小。在访问超出文件大小的mmap部分时会引起<code>SIGBUS</code>异常。为了避免访问到超出文件的部分，同时尽可能减少对底层文件大小的的不必要的增长，boltdb选择的是在事务提交时按需增长底层文件大小的策略。其具体实现详见本系列后续文章<a href="/posts/code-reading/boltdb-made-simple/4-transaction/" rel="">深入浅出boltdb —— 0x04 事务</a>。</div>
+        </div>
+    </div>
 <h3 id="32-写操作与缓存策略">3.2 写操作与缓存策略</h3>
 <p>为了保证事务的ACID性质，数据库系统需要确保事务提交时文件的修改要安全地写入到磁盘或其它I/O设备。由于随机的设备I/O非常耗时，boltdb不会在数据更新时立刻修改底层文件。而是先将修改后的page写入到一块page buffer内存中作为缓存，等事务提交时，再将事务修改的所有page buffer顺序地写入I/O设备。同时，为了保证数据被安全地写入到了I/O设备，boltdb的刷盘采用pwrite+fdatasyc实现。</p>
 <p>boltdb的写操作与缓存策略可通过下图表示：</p>

@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/4-transaction\/bbolt.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  5617 ,
+                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  7508 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/4-transaction\/","datePublished": "2021-01-26T13:30:24+08:00","dateModified": "2021-01-26T13:30:27+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,8 +110,8 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出boltdb —— 0x04 事务</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAbolt/"><i class="far fa-folder fa-fw"></i>深入浅出bolt</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-26">2021-01-26</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 5617 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 12 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-26">2021-01-26</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 7508 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 15 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
@@ -141,9 +141,9 @@
         <li><a href="#21-tx结构体">2.1 Tx结构体</a></li>
         <li><a href="#22-tx的声明周期">2.2 Tx的声明周期</a>
           <ul>
-            <li><a href="#221-事务的创建">2.2.1 事务的创建</a></li>
-            <li><a href="#222-事务的提交">2.2.2 事务的提交</a></li>
-            <li><a href="#223-事务的回滚">2.2.3 事务的回滚</a></li>
+            <li><a href="#221-tx的初始化">2.2.1 Tx的初始化</a></li>
+            <li><a href="#222-tx的提交">2.2.2 Tx的提交</a></li>
+            <li><a href="#223-tx的回滚">2.2.3 Tx的回滚</a></li>
           </ul>
         </li>
       </ul>
@@ -461,7 +461,7 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 </table>
 <h3 id="22-tx的声明周期">2.2 Tx的声明周期</h3>
 <p>本节将以<code>Tx</code>结构体的声明周期的顺序介绍其中方法的实现。</p>
-<h4 id="221-事务的创建">2.2.1 事务的创建</h4>
+<h4 id="221-tx的初始化">2.2.1 Tx的初始化</h4>
 <p>boltdb在创建事务时，会先创建<code>Tx</code>实例，设置其<code>writable</code>字段，并调用其<code>init</code>方法。<code>init</code>方法的实现如下所示。</p>
 <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// init initializes the transaction.
@@ -487,7 +487,8 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 
 </code></pre></div><p><code>init</code>方法初始化了<code>Tx</code>的一些字段。因为boltdb支持事务读写并发，所以其深拷贝了事务创建时的<code>meta</code>数据与root bucket的元数据，以避免只读事务读取到后续读写事务更新过的元数据。</p>
 <p><code>init</code>方法还为读写事务初始化了<code>pages</code>字段，该字段是用来记录事务写入的dirty page（page buffer）的cache。此外，<code>init</code>在初始化读写事务时还会将其<code>meta</code>中的<code>txid + 1</code>。</p>
-<h4 id="222-事务的提交">2.2.2 事务的提交</h4>
+<h4 id="222-tx的提交">2.2.2 Tx的提交</h4>
+<h5 id="2221-commit方法">2.2.2.1 Commit方法</h5>
 <p>boltdb的用户可以通过<code>Tx</code>的<code>Commit</code>方法提交非隐式事务。在提交前，用户还可以通过<code>OnCommit</code>方法注册事务的回调方法。<code>OnCommit</code>与<code>Commit</code>方法的实现如下：</p>
 <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// OnCommit adds a handler function to be executed after the transaction successfully commits.
@@ -598,7 +599,7 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 <li>从root bucket开始执行<code>rebalance</code>操作与<code>spill</code>操作以调整B+Tree结构，并统计各自所用时间。</li>
 <li>将当前事务<code>meta</code>中root bucket的pgid指向copy-on-write后新的root bucket。</li>
 <li>释放旧freelist所在page，并为其分配新page，将其写入相应的page buffer中。</li>
-<li>检查当前已使用的mmap大小<code>int(tx.meta.pgid+1) * tx.db.pageSize</code>是否超过了底层数据库文件大小，如果超过了该大小需要更新底层文件的元数据，将其大小更新为已使用的大小（详见下文说明）。</li>
+<li>检查当前已使用的空间大小是否超过了底层数据库文件大小，如果超过了该大小需要通过<code>grow</code>方法增大数据库文件大小（详见下文说明）。</li>
 <li>调用<code>Tx</code>的<code>write</code>方法，通过pwrite+fdatasync系统调用将dirty page写入的层文件，同时统计其耗时。</li>
 <li>如果数据库处于严格模式<code>StructMode</code>，调用<code>Tx</code>的<code>Check</code>方法对数据库进行完整性检查。</li>
 <li>调用<code>Tx</code>的<code>writeMeta</code>方法，通过pwrite+fdatasync系统调用将meta page写入的层文件。写入时根据事务<code>txid</code>交替写入meta page 0 或 1,。</li>
@@ -606,10 +607,173 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 <li>一次调用之前通过<code>OnCommit</code>方法注册的回调函数。</li>
 <li>如果步骤4~8出错，则通过<code>rollback</code>方法回滚事务。</li>
 </ol>
-<p>在<code>Commit</code>方法中，有如下几点需要关注：</p>
-<p>在第5步中，</p>
-<p><a href="https://github.com/boltdb/bolt/pull/453" target="_blank" rel="noopener noreffer">pull#453</a></p>
-<h4 id="223-事务的回滚">2.2.3 事务的回滚</h4></div><div class="post-footer" id="post-footer">
+<p>在<code>Commit</code>方法中，有一些地方需要注意，接下来笔者将依次对其进行介绍与分析。</p>
+<h5 id="2222-grow方法">2.2.2.2 grow方法</h5>
+<p>第5步中的<code>grow</code>方法，是用来增长底层数据库文件大小的方法。在本系列的前文<a href="/posts/code-reading/boltdb-made-simple/1-storage-cache/" rel="">深入浅出boltdb —— 0x01 存储与缓存</a>中，笔者描述boltdb的mmap增长逻辑时埋下了一个伏笔：boltdb的mmap的增长策略是从32KB开始，每次倍增，在达到1GB后每次增长1GB；但是boltdb并不会在mmap的同时修改底层数据库文件大小。这样的问题是：当访问超出了文件大小的mmap空间时，会引起<code>SIGBUS</code>异常。为了避免访问越界，同时减少不必要的底层数据库文件增长，boltdb采用了在事务提交时按需增长的策略。</p>
+<p>boltdb的实现方式是：在为事务分配完所需的页之后、在写入脏页前，先计算其使用了的空间大小（包括freelist中的页），即<code>int(tx.meta.pgid+1) * tx.db.pageSize</code>。之后调用<code>db</code>的<code>grow</code>方法来按需增大底层数据库文件大小。其实现如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// grow grows the size of the database to the given sz.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="nf">grow</span><span class="p">(</span><span class="nx">sz</span> <span class="kt">int</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="c1">// Ignore if the new size is less than available file size.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">sz</span> <span class="o">&lt;=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">filesz</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="kc">nil</span>
+	<span class="p">}</span>
+
+	<span class="c1">// If the data is smaller than the alloc size then only allocate what&#39;s needed.
+</span><span class="c1"></span>	<span class="c1">// Once it goes over the allocation size then allocate in chunks.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">db</span><span class="p">.</span><span class="nx">datasz</span> <span class="p">&lt;</span> <span class="nx">db</span><span class="p">.</span><span class="nx">AllocSize</span> <span class="p">{</span>
+		<span class="nx">sz</span> <span class="p">=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">datasz</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+		<span class="nx">sz</span> <span class="o">+=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">AllocSize</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Truncate and fsync to ensure file size metadata is flushed.
+</span><span class="c1"></span>	<span class="c1">// https://github.com/boltdb/bolt/issues/284
+</span><span class="c1"></span>	<span class="k">if</span> <span class="p">!</span><span class="nx">db</span><span class="p">.</span><span class="nx">NoGrowSync</span> <span class="o">&amp;&amp;</span> <span class="p">!</span><span class="nx">db</span><span class="p">.</span><span class="nx">readOnly</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">runtime</span><span class="p">.</span><span class="nx">GOOS</span> <span class="o">!=</span> <span class="s">&#34;windows&#34;</span> <span class="p">{</span>
+			<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">file</span><span class="p">.</span><span class="nf">Truncate</span><span class="p">(</span><span class="nb">int64</span><span class="p">(</span><span class="nx">sz</span><span class="p">));</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+				<span class="k">return</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;file resize error: %s&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">file</span><span class="p">.</span><span class="nf">Sync</span><span class="p">();</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;file sync error: %s&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+
+	<span class="nx">db</span><span class="p">.</span><span class="nx">filesz</span> <span class="p">=</span> <span class="nx">sz</span>
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>grow</code>方法会判断传入的所需文件大小，如果不需要增长底层文件大小则直接返回。同时，<code>grow</code>方法会检查当前mmap大小是否超过了门限<code>AllocSize</code>，在mmap大小达到该门限之前<code>grow</code>方法会按需增长数据库文件大小，在达到该门限后每次让数据库文件增大<code>AllocSize</code>。随后，<code>grow</code>方法会根据配置与系统来增长底层文件大小。其中需要注意两点：Windows支持mmap时自动扩展文件大小，而Linux不支持；ext3/ext4文件系统需要通过<code>fsync</code>方法强制同步元数据。这里笔者给出与<code>grow</code>相关的几个主要记录，以便读者参考：<a href="https://github.com/boltdb/bolt/issues/284" target="_blank" rel="noopener noreffer">issue#284</a>、<a href="https://github.com/boltdb/bolt/pull/286" target="_blank" rel="noopener noreffer">pull#286</a>、<a href="https://github.com/boltdb/bolt/pull/453" target="_blank" rel="noopener noreffer">pull#453</a>。</p>
+<h5 id="2223-writewritemeta">2.2.2.3 write、writeMeta</h5>
+<p><code>Tx</code>的<code>write</code>方法是将脏页写入到底层数据库文件的方法，其通过pwrite与fdatasync系统调用保证数据安全地写入磁盘。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// write writes any dirty pages to disk.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">tx</span> <span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="nf">write</span><span class="p">()</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="c1">// Sort pages by id.
+</span><span class="c1"></span>	<span class="nx">pages</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="nx">pages</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nx">tx</span><span class="p">.</span><span class="nx">pages</span><span class="p">))</span>
+	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">p</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">pages</span> <span class="p">{</span>
+		<span class="nx">pages</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">pages</span><span class="p">,</span> <span class="nx">p</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="c1">// Clear out page cache early.
+</span><span class="c1"></span>	<span class="nx">tx</span><span class="p">.</span><span class="nx">pages</span> <span class="p">=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="nx">pgid</span><span class="p">]</span><span class="o">*</span><span class="nx">page</span><span class="p">)</span>
+	<span class="nx">sort</span><span class="p">.</span><span class="nf">Sort</span><span class="p">(</span><span class="nx">pages</span><span class="p">)</span>
+
+	<span class="c1">// Write pages to disk in order.
+</span><span class="c1"></span>	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">p</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">pages</span> <span class="p">{</span>
+		<span class="nx">size</span> <span class="o">:=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">overflow</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span>
+		<span class="nx">offset</span> <span class="o">:=</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">id</span><span class="p">)</span> <span class="o">*</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span><span class="p">)</span>
+
+		<span class="c1">// Write out page in &#34;max allocation&#34; sized chunks.
+</span><span class="c1"></span>		<span class="nx">ptr</span> <span class="o">:=</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="nx">p</span><span class="p">))</span>
+		<span class="k">for</span> <span class="p">{</span>
+			<span class="c1">// Limit our write to our max allocation size.
+</span><span class="c1"></span>			<span class="nx">sz</span> <span class="o">:=</span> <span class="nx">size</span>
+			<span class="k">if</span> <span class="nx">sz</span> <span class="p">&gt;</span> <span class="nx">maxAllocSize</span><span class="o">-</span><span class="mi">1</span> <span class="p">{</span>
+				<span class="nx">sz</span> <span class="p">=</span> <span class="nx">maxAllocSize</span> <span class="o">-</span> <span class="mi">1</span>
+			<span class="p">}</span>
+
+			<span class="c1">// Write chunk to disk.
+</span><span class="c1"></span>			<span class="nx">buf</span> <span class="o">:=</span> <span class="nx">ptr</span><span class="p">[:</span><span class="nx">sz</span><span class="p">]</span>
+			<span class="k">if</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">ops</span><span class="p">.</span><span class="nf">writeAt</span><span class="p">(</span><span class="nx">buf</span><span class="p">,</span> <span class="nx">offset</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+				<span class="k">return</span> <span class="nx">err</span>
+			<span class="p">}</span>
+
+			<span class="c1">// Update statistics.
+</span><span class="c1"></span>			<span class="nx">tx</span><span class="p">.</span><span class="nx">stats</span><span class="p">.</span><span class="nx">Write</span><span class="o">++</span>
+
+			<span class="c1">// Exit inner for loop if we&#39;ve written all the chunks.
+</span><span class="c1"></span>			<span class="nx">size</span> <span class="o">-=</span> <span class="nx">sz</span>
+			<span class="k">if</span> <span class="nx">size</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+				<span class="k">break</span>
+			<span class="p">}</span>
+
+			<span class="c1">// Otherwise move offset forward and move pointer to next chunk.
+</span><span class="c1"></span>			<span class="nx">offset</span> <span class="o">+=</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">sz</span><span class="p">)</span>
+			<span class="nx">ptr</span> <span class="p">=</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">ptr</span><span class="p">[</span><span class="nx">sz</span><span class="p">]))</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Ignore file sync if flag is set on DB.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="p">!</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">NoSync</span> <span class="o">||</span> <span class="nx">IgnoreNoSync</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nf">fdatasync</span><span class="p">(</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="nx">err</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Put small pages back to page pool.
+</span><span class="c1"></span>	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">p</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">pages</span> <span class="p">{</span>
+		<span class="c1">// Ignore page sizes over 1 page.
+</span><span class="c1"></span>		<span class="c1">// These are allocated using make() instead of the page pool.
+</span><span class="c1"></span>		<span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">overflow</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">{</span>
+			<span class="k">continue</span>
+		<span class="p">}</span>
+
+		<span class="nx">buf</span> <span class="o">:=</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="nx">p</span><span class="p">))[:</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span><span class="p">]</span>
+
+		<span class="c1">// See https://go.googlesource.com/go/+/f03c9202c43e0abb130669852082117ca50aa9b1
+</span><span class="c1"></span>		<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">buf</span> <span class="p">{</span>
+			<span class="nx">buf</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="p">=</span> <span class="mi">0</span>
+		<span class="p">}</span>
+		<span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">pagePool</span><span class="p">.</span><span class="nf">Put</span><span class="p">(</span><span class="nx">buf</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+</code></pre></div><p>从源码可知，<code>write</code>方法会将<code>tx.pages</code>中记录的脏页，有序地写入到底层文件。其默认的写入方法为go的<code>os.File.WriteAt</code>方法，其内部通过pwrite系统调用实现，同时，每次写入大小不超过<code>maxAllocSize</code>。在写入后，如果数据库没有启用<code>NoSync</code>参数或<code>IgnoreNoSync</code>为真（该参数在OpenBSD系统上为真，原因详见该参数注释）时，会通过fdatasync系统调用确保数据安全地写入到磁盘。最后，该方法会把分配的单页大小的page buffer放回pagePool中（详见<a href="/posts/code-reading/boltdb-made-simple/1-storage-cache/#321-page-buffermemory-memory" rel="">《深入浅出boltdb —— 0x01 存储与缓存》3.2.1 page buffer（memory-&gt;memory）</a>）。</p>
+<p>而对于用来更新元数据的<code>writeMeta</code>方法也是如此：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// writeMeta writes the meta to the disk.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">tx</span> <span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="nf">writeMeta</span><span class="p">()</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="c1">// Create a temporary buffer for the meta page.
+</span><span class="c1"></span>	<span class="nx">buf</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span><span class="p">)</span>
+	<span class="nx">p</span> <span class="o">:=</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nf">pageInBuffer</span><span class="p">(</span><span class="nx">buf</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+	<span class="nx">tx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nf">write</span><span class="p">(</span><span class="nx">p</span><span class="p">)</span>
+
+	<span class="c1">// Write the meta page to file.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">ops</span><span class="p">.</span><span class="nf">writeAt</span><span class="p">(</span><span class="nx">buf</span><span class="p">,</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">id</span><span class="p">)</span><span class="o">*</span><span class="nb">int64</span><span class="p">(</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span><span class="p">));</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">err</span>
+	<span class="p">}</span>
+	<span class="k">if</span> <span class="p">!</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">NoSync</span> <span class="o">||</span> <span class="nx">IgnoreNoSync</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nf">fdatasync</span><span class="p">(</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="k">return</span> <span class="nx">err</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Update statistics.
+</span><span class="c1"></span>	<span class="nx">tx</span><span class="p">.</span><span class="nx">stats</span><span class="p">.</span><span class="nx">Write</span><span class="o">++</span>
+
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+<span class="c1">// write writes the meta onto a page.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <span class="o">*</span><span class="nx">meta</span><span class="p">)</span> <span class="nf">write</span><span class="p">(</span><span class="nx">p</span> <span class="o">*</span><span class="nx">page</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="nx">m</span><span class="p">.</span><span class="nx">root</span><span class="p">.</span><span class="nx">root</span> <span class="o">&gt;=</span> <span class="nx">m</span><span class="p">.</span><span class="nx">pgid</span> <span class="p">{</span>
+		<span class="nb">panic</span><span class="p">(</span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;root bucket pgid (%d) above high water mark (%d)&#34;</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">root</span><span class="p">.</span><span class="nx">root</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">pgid</span><span class="p">))</span>
+	<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nx">m</span><span class="p">.</span><span class="nx">freelist</span> <span class="o">&gt;=</span> <span class="nx">m</span><span class="p">.</span><span class="nx">pgid</span> <span class="p">{</span>
+		<span class="nb">panic</span><span class="p">(</span><span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;freelist pgid (%d) above high water mark (%d)&#34;</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">freelist</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">pgid</span><span class="p">))</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Page id is either going to be 0 or 1 which we can determine by the transaction ID.
+</span><span class="c1"></span>	<span class="nx">p</span><span class="p">.</span><span class="nx">id</span> <span class="p">=</span> <span class="nf">pgid</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">txid</span> <span class="o">%</span> <span class="mi">2</span><span class="p">)</span>
+	<span class="nx">p</span><span class="p">.</span><span class="nx">flags</span> <span class="o">|=</span> <span class="nx">metaPageFlag</span>
+
+	<span class="c1">// Calculate the checksum.
+</span><span class="c1"></span>	<span class="nx">m</span><span class="p">.</span><span class="nx">checksum</span> <span class="p">=</span> <span class="nx">m</span><span class="p">.</span><span class="nf">sum64</span><span class="p">()</span>
+
+	<span class="nx">m</span><span class="p">.</span><span class="nb">copy</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nf">meta</span><span class="p">())</span>
+<span class="p">}</span>
+
+<span class="c1">// copy copies one meta object to another.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">m</span> <span class="o">*</span><span class="nx">meta</span><span class="p">)</span> <span class="nb">copy</span><span class="p">(</span><span class="nx">dest</span> <span class="o">*</span><span class="nx">meta</span><span class="p">)</span> <span class="p">{</span>
+	<span class="o">*</span><span class="nx">dest</span> <span class="p">=</span> <span class="o">*</span><span class="nx">m</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>writeMeta</code>方法同样通过pwrite+fdatasync的方式确保元数据被安全地写入到磁盘。同时，该方法会根据当前事务的<code>txid</code>来交替写入meta page 0 或 1。这样，即使在数据库写入meta页时挂掉，其重启时可以根据meta页的校验和切换到另一个数据完整的meta页。这样做也不会引起提交的事务数据丢失，因为如果还没写完meta页，那么该事务不会被认为是已提交的；另外，由于boltdb写入page时是copy-on-write的，旧meta页中指向的相应的页也都是有效的。</p>
+<h5 id="2224-check">2.2.2.4 Check</h5>
+<h5 id="2225-close">2.2.2.5 close</h5>
+<h4 id="223-tx的回滚">2.2.3 Tx的回滚</h4></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
