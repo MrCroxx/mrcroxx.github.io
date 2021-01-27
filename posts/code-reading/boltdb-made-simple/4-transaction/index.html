@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/4-transaction\/bbolt.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  4998 ,
+                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  5617 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/4-transaction\/","datePublished": "2021-01-26T13:30:24+08:00","dateModified": "2021-01-26T13:30:27+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,8 +110,8 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出boltdb —— 0x04 事务</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAbolt/"><i class="far fa-folder fa-fw"></i>深入浅出bolt</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-26">2021-01-26</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 4998 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 10 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-26">2021-01-26</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 5617 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 12 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
@@ -592,7 +592,24 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 	<span class="k">return</span> <span class="kc">nil</span>
 <span class="p">}</span>
 
-</code></pre></div><h4 id="223-事务的回滚">2.2.3 事务的回滚</h4></div><div class="post-footer" id="post-footer">
+</code></pre></div><p><code>Commit</code>方法可分为如下几个步骤：</p>
+<ol>
+<li>检查当前事务是否为隐式事务、是否已关闭、是为非读写事务，如果不是，则返回错误（隐式事务提交会引起panic）。</li>
+<li>从root bucket开始执行<code>rebalance</code>操作与<code>spill</code>操作以调整B+Tree结构，并统计各自所用时间。</li>
+<li>将当前事务<code>meta</code>中root bucket的pgid指向copy-on-write后新的root bucket。</li>
+<li>释放旧freelist所在page，并为其分配新page，将其写入相应的page buffer中。</li>
+<li>检查当前已使用的mmap大小<code>int(tx.meta.pgid+1) * tx.db.pageSize</code>是否超过了底层数据库文件大小，如果超过了该大小需要更新底层文件的元数据，将其大小更新为已使用的大小（详见下文说明）。</li>
+<li>调用<code>Tx</code>的<code>write</code>方法，通过pwrite+fdatasync系统调用将dirty page写入的层文件，同时统计其耗时。</li>
+<li>如果数据库处于严格模式<code>StructMode</code>，调用<code>Tx</code>的<code>Check</code>方法对数据库进行完整性检查。</li>
+<li>调用<code>Tx</code>的<code>writeMeta</code>方法，通过pwrite+fdatasync系统调用将meta page写入的层文件。写入时根据事务<code>txid</code>交替写入meta page 0 或 1,。</li>
+<li>调用<code>close</code>方法关闭事务。</li>
+<li>一次调用之前通过<code>OnCommit</code>方法注册的回调函数。</li>
+<li>如果步骤4~8出错，则通过<code>rollback</code>方法回滚事务。</li>
+</ol>
+<p>在<code>Commit</code>方法中，有如下几点需要关注：</p>
+<p>在第5步中，</p>
+<p><a href="https://github.com/boltdb/bolt/pull/453" target="_blank" rel="noopener noreffer">pull#453</a></p>
+<h4 id="223-事务的回滚">2.2.3 事务的回滚</h4></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
