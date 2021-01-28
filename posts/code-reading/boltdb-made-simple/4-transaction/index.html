@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/4-transaction\/bbolt.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  7508 ,
+                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  10804 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/4-transaction\/","datePublished": "2021-01-26T13:30:24+08:00","dateModified": "2021-01-26T13:30:27+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,8 +110,8 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出boltdb —— 0x04 事务</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAbolt/"><i class="far fa-folder fa-fw"></i>深入浅出bolt</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-26">2021-01-26</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 7508 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 15 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-26">2021-01-26</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 10804 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 22 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
@@ -136,14 +136,15 @@
   </ul>
 
   <ul>
-    <li><a href="#2-tx">2. Tx</a>
+    <li><a href="#2-boltdb中事务的封装与实现">2. boltdb中事务的封装与实现</a>
       <ul>
         <li><a href="#21-tx结构体">2.1 Tx结构体</a></li>
-        <li><a href="#22-tx的声明周期">2.2 Tx的声明周期</a>
+        <li><a href="#22-事务的生命周期">2.2 事务的生命周期</a>
           <ul>
-            <li><a href="#221-tx的初始化">2.2.1 Tx的初始化</a></li>
-            <li><a href="#222-tx的提交">2.2.2 Tx的提交</a></li>
-            <li><a href="#223-tx的回滚">2.2.3 Tx的回滚</a></li>
+            <li><a href="#221-事务开始">2.2.1 事务开始</a></li>
+            <li><a href="#222-事务提交">2.2.2 事务提交</a></li>
+            <li><a href="#223-事务回滚">2.2.3 事务回滚</a></li>
+            <li><a href="#224-事务关闭">2.2.4 事务关闭</a></li>
           </ul>
         </li>
       </ul>
@@ -261,7 +262,7 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 <p>有一种对ACID的解释为：Consistency是最终要实现的目标，而Atomicity、Isolation、Durability是实现Consistency的保证。笔者也比较认同这一观点，这也体现了ACID各个性质的实现不是孤立的，而是整个系统的结果。</p>
 <p><strong>Isolation（隔离性）：</strong></p>
 <p>上一节介绍了Isolation隔离性对应的4种隔离级别，boltdb实现的是最高的隔离界别：serializable序列化读。在serializable的基础上，boltdb支持“读读并发”与“读写并发”，boltdb中同时可以执行若干个只读事务，但同时只能执行一个读写事务，但只读事务与读写事务之间不影响。</p>
-<p>Shadow Paging同样为实现事务隔离提供了支持。为了保证serializable的同时实现读写并发，当读写事务提交时，boltdb不会立即回收其不再使用的页（shadow page），这些页仍在freelist中该事务的<code>pending</code>列表中，因为此时这些页可能还在被未完成的只读事务读取。取而代之的是，boltdb会在事务开始时为其分配事务id<code>txid</code>，只读事务的<code>txid</code>为当前数据库的<code>txid</code>，读写事务的<code>txid</code>为当前数据库的<code>txid + 1</code>。boltdb会记录正在执行的事务的事务id；当事务提交时，boltdb会找到进行中的最小的<code>txid</code>，显然，该<code>txid</code>之前的只读事务或读写事务都已经完成，因此其中读写事务的shadow page不再需要被读取，此时可以安全地释放这些读写事务的shadow page，即可以freelist中该事务的<code>pending</code>列表中的页合并到freelist的<code>ids</code>中。</p>
+<p>Shadow Paging同样为实现事务隔离提供了支持。为了保证serializable的同时实现读写并发，当读写事务提交时，boltdb不会立即回收其不再使用的页（shadow page），这些页仍在freelist中该事务的<code>pending</code>列表中，因为此时这些页可能还在被未完成的只读事务读取。取而代之的是，boltdb会在事务开始时为其分配事务id<code>txid</code>，只读事务的<code>txid</code>为当前数据库的<code>txid</code>，读写事务的<code>txid</code>为当前数据库的<code>txid + 1</code>。boltdb会记录正在执行的事务的事务id；当创建读写事务时，boltdb会从只读事务中找到进行中的最小的<code>txid</code>，显然，该<code>txid</code>之前的读写事务的shadow page不再需要被读取，此时可以安全地释放这些读写事务的shadow page，即可以freelist中该事务的<code>pending</code>列表中的页合并到freelist的<code>ids</code>中。</p>
 <p>Shadow Paging保证了读读并发、读写并发的事务隔离性，boltdb还需要保证最多只有1个读写事务在进行。boltdb的读写事务开始前会申请互斥锁，以避免读写事务并行执行。这里需要注意两点：第一，因为boltdb支持读写并发，所以只读事务不需要申请S锁，否则只有读读事务才能并行执行；第二，在数据库领域，这种锁机制应叫做“latch”而非“lock”，只是其粒度较大。CMU 15-721中较为详细地介绍了Lock与Latch的区别，这里笔者搬运一下其总结表格。</p>
 <table>
 <thead>
@@ -312,8 +313,8 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 <p><strong>Durability（持久性）：</strong></p>
 <p>boltdb的读写事务提交时，会通过pwrite系统调用写底层文件，并通过fdatasync系统调用确保数据被安全写入到磁盘中。因为boltdb的mmap模式为<code>MAP_SHARED</code>，因此绕过mmap直接写入底层文件不会影响mmap中数据对底层文件修改的可见性。</p>
 <h1 id="施工中--">施工中 。。。 。。。</h1>
-<h2 id="2-tx">2. Tx</h2>
-<p><code>tx.go</code>中的<code>Tx</code>结构体，是boltdb事务的封装。本节将分析其实现。</p>
+<h2 id="2-boltdb中事务的封装与实现">2. boltdb中事务的封装与实现</h2>
+<p>boltdb将事务封装成了<code>tx.go</code>中的<code>Tx</code>结构体。但只从<code>Tx</code>结构体分析boltdb中事务的封装与实现是不够的。因此，本节将先介绍<code>Tx</code>结构体的基本实现，然后按照事务的生命周期的顺序，介绍boltdb中<code>tx.go</code>与<code>db.go</code>中对事务的封装与实现。</p>
 <h3 id="21-tx结构体">2.1 Tx结构体</h3>
 <p><code>Tx</code>结构体的源码如下：</p>
 <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
@@ -459,10 +460,164 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 </tr>
 </tbody>
 </table>
-<h3 id="22-tx的声明周期">2.2 Tx的声明周期</h3>
-<p>本节将以<code>Tx</code>结构体的声明周期的顺序介绍其中方法的实现。</p>
-<h4 id="221-tx的初始化">2.2.1 Tx的初始化</h4>
-<p>boltdb在创建事务时，会先创建<code>Tx</code>实例，设置其<code>writable</code>字段，并调用其<code>init</code>方法。<code>init</code>方法的实现如下所示。</p>
+<h3 id="22-事务的生命周期">2.2 事务的生命周期</h3>
+<p>本节将按照事务的生命周期，介绍并分析boltdb中事务的封装与实现。</p>
+<p>在介绍事务的生命周期前，先简单介绍一下boltdb的<code>DB</code>中三把重要的锁：</p>
+<table>
+<thead>
+<tr>
+<th align="center">字段<div style="width:10em"></div></th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center"><code>rwlock sync.Mutex</code></td>
+<td align="left">用来隔离可写事务的互斥锁（注意，不是读写锁）。</td>
+</tr>
+<tr>
+<td align="center"><code>metalock sync.Mutex</code></td>
+<td align="left">用来保护元数据访问的互斥锁。</td>
+</tr>
+<tr>
+<td align="center"><code>mmaplock sync.RWMutex</code></td>
+<td align="left">用来保护mmap操作的读写锁。</td>
+</tr>
+</tbody>
+</table>
+<p>boltdb支持“读读并发”与“读写并发”，用来隔离事务的锁<code>rwlock</code>是互斥锁，只有可写事务需要获取该锁，只读事务不受影响。由于事务开始时，需要复制当时的元数据，因此这里使用了互斥锁<code>metalock</code>来保护事务开始时的元数据访问，当事务初始化完成后就会释放<code>metalock</code>；另外，只读事务关闭时也需要获取<code>metalock</code>，但其目的是保护对<code>DB</code>对象的访问，而不时保护<code>meta</code>。而<code>mmaplock</code>是用来保护mmap操作的读写锁，只读事务会获取<code>mmaplock</code>的S锁，而mmap操作会获取<code>mmaplock</code>的X锁。这样，当可写事务需要更大的mmap空间时，其需要等待之前的只读事务都执行完毕，以避免只读事务引用的mmap地址失效；对于可写事务本身，其在mmap前会从根<code>Bucket</code>实例开始<code>dereference</code>操作，以避免可写事务本身引用了旧的mmap地址空间。</p>
+<p>这三种锁的获取顺序是：（<code>rwlock</code>） $\rightarrow$ <code>metalock</code> $\rightarrow$ （<code>mmaplock</code>）。</p>
+<p>此外，boltdb中还有另一个读写锁<code>statlock sync.RWMutex</code>，其作用是保护统计量的访问，这里不作重点介绍。</p>
+<h4 id="221-事务开始">2.2.1 事务开始</h4>
+<p>boltdb的用户可以通过<code>DB</code>的<code>Begin</code>方法启动一个事务，通过<code>Begin</code>方法启动的事务需要用户自己控制其提交或回滚（用户还可以通过<code>Update</code>或<code>View</code>方法启动隐式事务，但二者都是对<code>Begin</code>的封装，因此放在最后介绍）。</p>
+<p><code>Begin</code>方法的实现如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// Begin starts a new transaction.
+</span><span class="c1">// Multiple read-only transactions can be used concurrently but only one
+</span><span class="c1">// write transaction can be used at a time. Starting multiple write transactions
+</span><span class="c1">// will cause the calls to block and be serialized until the current write
+</span><span class="c1">// transaction finishes.
+</span><span class="c1">//
+</span><span class="c1">// Transactions should not be dependent on one another. Opening a read
+</span><span class="c1">// transaction and a write transaction in the same goroutine can cause the
+</span><span class="c1">// writer to deadlock because the database periodically needs to re-mmap itself
+</span><span class="c1">// as it grows and it cannot do that while a read transaction is open.
+</span><span class="c1">//
+</span><span class="c1">// If a long running read transaction (for example, a snapshot transaction) is
+</span><span class="c1">// needed, you might want to set DB.InitialMmapSize to a large enough value
+</span><span class="c1">// to avoid potential blocking of write transaction.
+</span><span class="c1">//
+</span><span class="c1">// IMPORTANT: You must close read-only transactions after you are finished or
+</span><span class="c1">// else the database will not reclaim old pages.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="nf">Begin</span><span class="p">(</span><span class="nx">writable</span> <span class="kt">bool</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="nx">Tx</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="nx">writable</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">db</span><span class="p">.</span><span class="nf">beginRWTx</span><span class="p">()</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="nx">db</span><span class="p">.</span><span class="nf">beginTx</span><span class="p">()</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>Begin</code>方法会根据事务是否可写，调用<code>beginRWTx</code>方法或<code>beginTx</code>方法。</p>
+<p>接下来首先分析启动只读事务<code>beginTx</code>方法的实现：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="kd">func</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="nf">beginTx</span><span class="p">()</span> <span class="p">(</span><span class="o">*</span><span class="nx">Tx</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="c1">// Lock the meta pages while we initialize the transaction. We obtain
+</span><span class="c1"></span>	<span class="c1">// the meta lock before the mmap lock because that&#39;s the order that the
+</span><span class="c1"></span>	<span class="c1">// write transaction will obtain them.
+</span><span class="c1"></span>	<span class="nx">db</span><span class="p">.</span><span class="nx">metalock</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+
+	<span class="c1">// Obtain a read-only lock on the mmap. When the mmap is remapped it will
+</span><span class="c1"></span>	<span class="c1">// obtain a write lock so all transactions must finish before it can be
+</span><span class="c1"></span>	<span class="c1">// remapped.
+</span><span class="c1"></span>	<span class="nx">db</span><span class="p">.</span><span class="nx">mmaplock</span><span class="p">.</span><span class="nf">RLock</span><span class="p">()</span>
+
+	<span class="c1">// Exit if the database is not open yet.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="p">!</span><span class="nx">db</span><span class="p">.</span><span class="nx">opened</span> <span class="p">{</span>
+		<span class="nx">db</span><span class="p">.</span><span class="nx">mmaplock</span><span class="p">.</span><span class="nf">RUnlock</span><span class="p">()</span>
+		<span class="nx">db</span><span class="p">.</span><span class="nx">metalock</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+		<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">ErrDatabaseNotOpen</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Create a transaction associated with the database.
+</span><span class="c1"></span>	<span class="nx">t</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">Tx</span><span class="p">{}</span>
+	<span class="nx">t</span><span class="p">.</span><span class="nf">init</span><span class="p">(</span><span class="nx">db</span><span class="p">)</span>
+
+	<span class="c1">// Keep track of transaction until it closes.
+</span><span class="c1"></span>	<span class="nx">db</span><span class="p">.</span><span class="nx">txs</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">db</span><span class="p">.</span><span class="nx">txs</span><span class="p">,</span> <span class="nx">t</span><span class="p">)</span>
+	<span class="nx">n</span> <span class="o">:=</span> <span class="nb">len</span><span class="p">(</span><span class="nx">db</span><span class="p">.</span><span class="nx">txs</span><span class="p">)</span>
+
+	<span class="c1">// Unlock the meta pages.
+</span><span class="c1"></span>	<span class="nx">db</span><span class="p">.</span><span class="nx">metalock</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+
+	<span class="c1">// Update the transaction stats.
+</span><span class="c1"></span>	<span class="nx">db</span><span class="p">.</span><span class="nx">statlock</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+	<span class="nx">db</span><span class="p">.</span><span class="nx">stats</span><span class="p">.</span><span class="nx">TxN</span><span class="o">++</span>
+	<span class="nx">db</span><span class="p">.</span><span class="nx">stats</span><span class="p">.</span><span class="nx">OpenTxN</span> <span class="p">=</span> <span class="nx">n</span>
+	<span class="nx">db</span><span class="p">.</span><span class="nx">statlock</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+
+	<span class="k">return</span> <span class="nx">t</span><span class="p">,</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>beginTx</code>方法执行了如下操作：</p>
+<ol>
+<li>获取<code>metalock</code>锁与<code>mmaplock</code>的S锁。</li>
+<li>检测数据库是否打开，如果没打开则释放锁并返回错误。</li>
+<li>创建<code>writable</code>为false的<code>Tx</code>对象，调用<code>init</code>方法初始化<code>Tx</code>对象（<code>Tx</code>对象初始化时会复制当前的<code>meta</code>）。</li>
+<li>将事务保存到<code>DB</code>的<code>txs</code>字段中。</li>
+<li>释放<code>metalock</code>。</li>
+<li>更新统计量，返回事务对象<code>Tx</code>。</li>
+</ol>
+<p><code>beginRWTx</code>方法实现与之相似：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="kd">func</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="nf">beginRWTx</span><span class="p">()</span> <span class="p">(</span><span class="o">*</span><span class="nx">Tx</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="c1">// If the database was opened with Options.ReadOnly, return an error.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">db</span><span class="p">.</span><span class="nx">readOnly</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">ErrDatabaseReadOnly</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Obtain writer lock. This is released by the transaction when it closes.
+</span><span class="c1"></span>	<span class="c1">// This enforces only one writer transaction at a time.
+</span><span class="c1"></span>	<span class="nx">db</span><span class="p">.</span><span class="nx">rwlock</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+
+	<span class="c1">// Once we have the writer lock then we can lock the meta pages so that
+</span><span class="c1"></span>	<span class="c1">// we can set up the transaction.
+</span><span class="c1"></span>	<span class="nx">db</span><span class="p">.</span><span class="nx">metalock</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+	<span class="k">defer</span> <span class="nx">db</span><span class="p">.</span><span class="nx">metalock</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+
+	<span class="c1">// Exit if the database is not open yet.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="p">!</span><span class="nx">db</span><span class="p">.</span><span class="nx">opened</span> <span class="p">{</span>
+		<span class="nx">db</span><span class="p">.</span><span class="nx">rwlock</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+		<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">ErrDatabaseNotOpen</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Create a transaction associated with the database.
+</span><span class="c1"></span>	<span class="nx">t</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">Tx</span><span class="p">{</span><span class="nx">writable</span><span class="p">:</span> <span class="kc">true</span><span class="p">}</span>
+	<span class="nx">t</span><span class="p">.</span><span class="nf">init</span><span class="p">(</span><span class="nx">db</span><span class="p">)</span>
+	<span class="nx">db</span><span class="p">.</span><span class="nx">rwtx</span> <span class="p">=</span> <span class="nx">t</span>
+
+	<span class="c1">// Free any pages associated with closed read-only transactions.
+</span><span class="c1"></span>	<span class="kd">var</span> <span class="nx">minid</span> <span class="nx">txid</span> <span class="p">=</span> <span class="mh">0xFFFFFFFFFFFFFFFF</span>
+	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">t</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">db</span><span class="p">.</span><span class="nx">txs</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">t</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">txid</span> <span class="p">&lt;</span> <span class="nx">minid</span> <span class="p">{</span>
+			<span class="nx">minid</span> <span class="p">=</span> <span class="nx">t</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">txid</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+	<span class="k">if</span> <span class="nx">minid</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="nx">db</span><span class="p">.</span><span class="nx">freelist</span><span class="p">.</span><span class="nf">release</span><span class="p">(</span><span class="nx">minid</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="nx">t</span><span class="p">,</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>beginRWTx</code>方法执行了如下操作：</p>
+<ol>
+<li>若事务为只读事务，返回错误。</li>
+<li>获取<code>rwlock</code>锁与<code>metalock</code>锁，并通过<code>defer</code>关键字确保<code>metalock</code>会在函数返回前被安全释放。</li>
+<li>检测数据库是否打开，如果没打开则释放锁并返回错误。</li>
+<li>创建<code>writable</code>为true的<code>Tx</code>对象，调用<code>init</code>方法初始化<code>Tx</code>对象（<code>Tx</code>对象初始化时会复制当前的<code>meta</code>），并更新<code>DB</code>的<code>rwtx</code>字段为当前<code>Tx</code>对象。</li>
+<li>释放不再使用的shadow page。</li>
+</ol>
+<p>boltdb释放不再使用的shadow page的方法是：找到当前还在执行的读写事务中最小的<code>txid</code>，记为<code>minid</code>。显然，在该<code>minid</code>之前的读写事务产生的shadow page不再会被读取，此时，通过<code>freelist</code>的<code>release</code>方法释放<code>txid</code>不超过<code>minid-1</code>的事务产生的shadow page。</p>
+<p>接下来分析初始化<code>Tx</code>对象时调用的<code>init</code>方法：</p>
 <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// init initializes the transaction.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">tx</span> <span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="nf">init</span><span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="p">{</span>
@@ -487,9 +642,11 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 
 </code></pre></div><p><code>init</code>方法初始化了<code>Tx</code>的一些字段。因为boltdb支持事务读写并发，所以其深拷贝了事务创建时的<code>meta</code>数据与root bucket的元数据，以避免只读事务读取到后续读写事务更新过的元数据。</p>
 <p><code>init</code>方法还为读写事务初始化了<code>pages</code>字段，该字段是用来记录事务写入的dirty page（page buffer）的cache。此外，<code>init</code>在初始化读写事务时还会将其<code>meta</code>中的<code>txid + 1</code>。</p>
-<h4 id="222-tx的提交">2.2.2 Tx的提交</h4>
+<h4 id="222-事务提交">2.2.2 事务提交</h4>
+<p>boltdb的用户可以通过<code>Tx</code>的<code>Commit</code>方法提交非隐式事务；而隐式事务的提交则由boltdb调用该方法实现（在调用前会将其<code>managed</code>字段置为false以避免返回错误）。在提交前，用户还可以通过<code>OnCommit</code>方法注册事务的回调方法。</p>
+<p>本节将介绍事务提交的实现。</p>
 <h5 id="2221-commit方法">2.2.2.1 Commit方法</h5>
-<p>boltdb的用户可以通过<code>Tx</code>的<code>Commit</code>方法提交非隐式事务。在提交前，用户还可以通过<code>OnCommit</code>方法注册事务的回调方法。<code>OnCommit</code>与<code>Commit</code>方法的实现如下：</p>
+<p>事务提交方法<code>Commit</code>与注册成功提交回调的方法<code>OnCommit</code>的实现如下：</p>
 <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// OnCommit adds a handler function to be executed after the transaction successfully commits.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">tx</span> <span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="nf">OnCommit</span><span class="p">(</span><span class="nx">fn</span> <span class="kd">func</span><span class="p">())</span> <span class="p">{</span>
@@ -607,10 +764,10 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 <li>一次调用之前通过<code>OnCommit</code>方法注册的回调函数。</li>
 <li>如果步骤4~8出错，则通过<code>rollback</code>方法回滚事务。</li>
 </ol>
-<p>在<code>Commit</code>方法中，有一些地方需要注意，接下来笔者将依次对其进行介绍与分析。</p>
+<p>在<code>Commit</code>方法中，有一些地方需要注意，接下来笔者将依次对其进行介绍与分析（事务关闭方法在<a href="#224-%e4%ba%8b%e5%8a%a1%e5%85%b3%e9%97%ad" rel="">2.2.4节</a>中介绍）。</p>
 <h5 id="2222-grow方法">2.2.2.2 grow方法</h5>
 <p>第5步中的<code>grow</code>方法，是用来增长底层数据库文件大小的方法。在本系列的前文<a href="/posts/code-reading/boltdb-made-simple/1-storage-cache/" rel="">深入浅出boltdb —— 0x01 存储与缓存</a>中，笔者描述boltdb的mmap增长逻辑时埋下了一个伏笔：boltdb的mmap的增长策略是从32KB开始，每次倍增，在达到1GB后每次增长1GB；但是boltdb并不会在mmap的同时修改底层数据库文件大小。这样的问题是：当访问超出了文件大小的mmap空间时，会引起<code>SIGBUS</code>异常。为了避免访问越界，同时减少不必要的底层数据库文件增长，boltdb采用了在事务提交时按需增长的策略。</p>
-<p>boltdb的实现方式是：在为事务分配完所需的页之后、在写入脏页前，先计算其使用了的空间大小（包括freelist中的页），即<code>int(tx.meta.pgid+1) * tx.db.pageSize</code>。之后调用<code>db</code>的<code>grow</code>方法来按需增大底层数据库文件大小。其实现如下：</p>
+<p>boltdb的实现方式是：在为事务分配完所需的页之后、在写入脏页前，先计算其使用了的空间大小（包括freelist中的页），即<code>int(tx.meta.pgid+1) * tx.db.pageSize</code>。之后调用<code>DB</code>的<code>grow</code>方法来按需增大底层数据库文件大小。其实现如下：</p>
 <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// grow grows the size of the database to the given sz.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="nf">grow</span><span class="p">(</span><span class="nx">sz</span> <span class="kt">int</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
@@ -772,8 +929,184 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 
 </code></pre></div><p><code>writeMeta</code>方法同样通过pwrite+fdatasync的方式确保元数据被安全地写入到磁盘。同时，该方法会根据当前事务的<code>txid</code>来交替写入meta page 0 或 1。这样，即使在数据库写入meta页时挂掉，其重启时可以根据meta页的校验和切换到另一个数据完整的meta页。这样做也不会引起提交的事务数据丢失，因为如果还没写完meta页，那么该事务不会被认为是已提交的；另外，由于boltdb写入page时是copy-on-write的，旧meta页中指向的相应的页也都是有效的。</p>
 <h5 id="2224-check">2.2.2.4 Check</h5>
-<h5 id="2225-close">2.2.2.5 close</h5>
-<h4 id="223-tx的回滚">2.2.3 Tx的回滚</h4></div><div class="post-footer" id="post-footer">
+<p>如果数据库处于严格模式<code>StrictMode</code>，则在事务提交的第7步中将调用<code>Check</code>方法对数据库进行完整性检查。</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// Check performs several consistency checks on the database for this transaction.
+</span><span class="c1">// An error is returned if any inconsistency is found.
+</span><span class="c1">//
+</span><span class="c1">// It can be safely run concurrently on a writable transaction. However, this
+</span><span class="c1">// incurs a high cost for large databases and databases with a lot of subbuckets
+</span><span class="c1">// because of caching. This overhead can be removed if running on a read-only
+</span><span class="c1">// transaction, however, it is not safe to execute other writer transactions at
+</span><span class="c1">// the same time.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">tx</span> <span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="nf">Check</span><span class="p">()</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="nx">ch</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="kt">error</span><span class="p">)</span>
+	<span class="k">go</span> <span class="nx">tx</span><span class="p">.</span><span class="nf">check</span><span class="p">(</span><span class="nx">ch</span><span class="p">)</span>
+	<span class="k">return</span> <span class="nx">ch</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">tx</span> <span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="nf">check</span><span class="p">(</span><span class="nx">ch</span> <span class="kd">chan</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="c1">// Check if any pages are double freed.
+</span><span class="c1"></span>	<span class="nx">freed</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="nx">pgid</span><span class="p">]</span><span class="kt">bool</span><span class="p">)</span>
+	<span class="nx">all</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">([]</span><span class="nx">pgid</span><span class="p">,</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">freelist</span><span class="p">.</span><span class="nf">count</span><span class="p">())</span>
+	<span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">freelist</span><span class="p">.</span><span class="nf">copyall</span><span class="p">(</span><span class="nx">all</span><span class="p">)</span>
+	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">id</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">all</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">freed</span><span class="p">[</span><span class="nx">id</span><span class="p">]</span> <span class="p">{</span>
+			<span class="nx">ch</span> <span class="o">&lt;-</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;page %d: already freed&#34;</span><span class="p">,</span> <span class="nx">id</span><span class="p">)</span>
+		<span class="p">}</span>
+		<span class="nx">freed</span><span class="p">[</span><span class="nx">id</span><span class="p">]</span> <span class="p">=</span> <span class="kc">true</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Track every reachable page.
+</span><span class="c1"></span>	<span class="nx">reachable</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="nx">pgid</span><span class="p">]</span><span class="o">*</span><span class="nx">page</span><span class="p">)</span>
+	<span class="nx">reachable</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="p">=</span> <span class="nx">tx</span><span class="p">.</span><span class="nf">page</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="c1">// meta0
+</span><span class="c1"></span>	<span class="nx">reachable</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="p">=</span> <span class="nx">tx</span><span class="p">.</span><span class="nf">page</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="c1">// meta1
+</span><span class="c1"></span>	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="nb">uint32</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span> <span class="nx">i</span> <span class="o">&lt;=</span> <span class="nx">tx</span><span class="p">.</span><span class="nf">page</span><span class="p">(</span><span class="nx">tx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">freelist</span><span class="p">).</span><span class="nx">overflow</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+		<span class="nx">reachable</span><span class="p">[</span><span class="nx">tx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">freelist</span><span class="o">+</span><span class="nf">pgid</span><span class="p">(</span><span class="nx">i</span><span class="p">)]</span> <span class="p">=</span> <span class="nx">tx</span><span class="p">.</span><span class="nf">page</span><span class="p">(</span><span class="nx">tx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">freelist</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Recursively check buckets.
+</span><span class="c1"></span>	<span class="nx">tx</span><span class="p">.</span><span class="nf">checkBucket</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">tx</span><span class="p">.</span><span class="nx">root</span><span class="p">,</span> <span class="nx">reachable</span><span class="p">,</span> <span class="nx">freed</span><span class="p">,</span> <span class="nx">ch</span><span class="p">)</span>
+
+	<span class="c1">// Ensure all pages below high water mark are either reachable or freed.
+</span><span class="c1"></span>	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="nf">pgid</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span> <span class="nx">i</span> <span class="p">&lt;</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">pgid</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+		<span class="nx">_</span><span class="p">,</span> <span class="nx">isReachable</span> <span class="o">:=</span> <span class="nx">reachable</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span>
+		<span class="k">if</span> <span class="p">!</span><span class="nx">isReachable</span> <span class="o">&amp;&amp;</span> <span class="p">!</span><span class="nx">freed</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="p">{</span>
+			<span class="nx">ch</span> <span class="o">&lt;-</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;page %d: unreachable unfreed&#34;</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="nx">i</span><span class="p">))</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Close the channel to signal completion.
+</span><span class="c1"></span>	<span class="nb">close</span><span class="p">(</span><span class="nx">ch</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">tx</span> <span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="nf">checkBucket</span><span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">Bucket</span><span class="p">,</span> <span class="nx">reachable</span> <span class="kd">map</span><span class="p">[</span><span class="nx">pgid</span><span class="p">]</span><span class="o">*</span><span class="nx">page</span><span class="p">,</span> <span class="nx">freed</span> <span class="kd">map</span><span class="p">[</span><span class="nx">pgid</span><span class="p">]</span><span class="kt">bool</span><span class="p">,</span> <span class="nx">ch</span> <span class="kd">chan</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="c1">// Ignore inline buckets.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">b</span><span class="p">.</span><span class="nx">root</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Check every page used by this bucket.
+</span><span class="c1"></span>	<span class="nx">b</span><span class="p">.</span><span class="nx">tx</span><span class="p">.</span><span class="nf">forEachPage</span><span class="p">(</span><span class="nx">b</span><span class="p">.</span><span class="nx">root</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="kd">func</span><span class="p">(</span><span class="nx">p</span> <span class="o">*</span><span class="nx">page</span><span class="p">,</span> <span class="nx">_</span> <span class="kt">int</span><span class="p">)</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">p</span><span class="p">.</span><span class="nx">id</span> <span class="p">&gt;</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">pgid</span> <span class="p">{</span>
+			<span class="nx">ch</span> <span class="o">&lt;-</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;page %d: out of bounds: %d&#34;</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">id</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="nx">b</span><span class="p">.</span><span class="nx">tx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">pgid</span><span class="p">))</span>
+		<span class="p">}</span>
+
+		<span class="c1">// Ensure each page is only referenced once.
+</span><span class="c1"></span>		<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="nf">pgid</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span> <span class="nx">i</span> <span class="o">&lt;=</span> <span class="nf">pgid</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">overflow</span><span class="p">);</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+			<span class="kd">var</span> <span class="nx">id</span> <span class="p">=</span> <span class="nx">p</span><span class="p">.</span><span class="nx">id</span> <span class="o">+</span> <span class="nx">i</span>
+			<span class="k">if</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">reachable</span><span class="p">[</span><span class="nx">id</span><span class="p">];</span> <span class="nx">ok</span> <span class="p">{</span>
+				<span class="nx">ch</span> <span class="o">&lt;-</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;page %d: multiple references&#34;</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="nx">id</span><span class="p">))</span>
+			<span class="p">}</span>
+			<span class="nx">reachable</span><span class="p">[</span><span class="nx">id</span><span class="p">]</span> <span class="p">=</span> <span class="nx">p</span>
+		<span class="p">}</span>
+
+		<span class="c1">// We should only encounter un-freed leaf and branch pages.
+</span><span class="c1"></span>		<span class="k">if</span> <span class="nx">freed</span><span class="p">[</span><span class="nx">p</span><span class="p">.</span><span class="nx">id</span><span class="p">]</span> <span class="p">{</span>
+			<span class="nx">ch</span> <span class="o">&lt;-</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;page %d: reachable freed&#34;</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">id</span><span class="p">))</span>
+		<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">flags</span><span class="o">&amp;</span><span class="nx">branchPageFlag</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">flags</span><span class="o">&amp;</span><span class="nx">leafPageFlag</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+			<span class="nx">ch</span> <span class="o">&lt;-</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;page %d: invalid type: %s&#34;</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">id</span><span class="p">),</span> <span class="nx">p</span><span class="p">.</span><span class="nf">typ</span><span class="p">())</span>
+		<span class="p">}</span>
+	<span class="p">})</span>
+
+	<span class="c1">// Check each bucket within this bucket.
+</span><span class="c1"></span>	<span class="nx">_</span> <span class="p">=</span> <span class="nx">b</span><span class="p">.</span><span class="nf">ForEach</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">k</span><span class="p">,</span> <span class="nx">v</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">child</span> <span class="o">:=</span> <span class="nx">b</span><span class="p">.</span><span class="nf">Bucket</span><span class="p">(</span><span class="nx">k</span><span class="p">);</span> <span class="nx">child</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="nx">tx</span><span class="p">.</span><span class="nf">checkBucket</span><span class="p">(</span><span class="nx">child</span><span class="p">,</span> <span class="nx">reachable</span><span class="p">,</span> <span class="nx">freed</span><span class="p">,</span> <span class="nx">ch</span><span class="p">)</span>
+		<span class="p">}</span>
+		<span class="k">return</span> <span class="kc">nil</span>
+	<span class="p">})</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>Check</code>方法的完整性检查是对数据库的页完整性的检查，其检查了两方面问题：</p>
+<ol>
+<li>是否存在页被二次释放的问题。</li>
+<li>是否所有页都能索引到，即是否存在既无法直接访问，又无法通过B+Tree索引到，也不在freelist中。</li>
+</ol>
+<h4 id="223-事务回滚">2.2.3 事务回滚</h4>
+<p>boltdb的用户可以通过<code>Rollback</code>手动回滚事务，该方法会检测事务是否为隐式事务，如果是隐式事务则会返回错误（boltdb在回滚隐式事务前会将其<code>managed</code>字段置为false以避免返回错误）。<code>Rollback</code>方法会调用<code>rollback</code>方法进入回滚逻辑。另外，在事务提交时，发生部分错误时会直接调用<code>rollback</code>方法回滚事务。</p>
+<p><code>Rollback</code>方法与<code>rollback</code>方法的实现如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// Rollback closes the transaction and ignores all previous updates. Read-only
+</span><span class="c1">// transactions must be rolled back and not committed.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">tx</span> <span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="nf">Rollback</span><span class="p">()</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="nf">_assert</span><span class="p">(!</span><span class="nx">tx</span><span class="p">.</span><span class="nx">managed</span><span class="p">,</span> <span class="s">&#34;managed tx rollback not allowed&#34;</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">db</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">ErrTxClosed</span>
+	<span class="p">}</span>
+	<span class="nx">tx</span><span class="p">.</span><span class="nf">rollback</span><span class="p">()</span>
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">tx</span> <span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="nf">rollback</span><span class="p">()</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">db</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+	<span class="k">if</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">writable</span> <span class="p">{</span>
+		<span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">freelist</span><span class="p">.</span><span class="nf">rollback</span><span class="p">(</span><span class="nx">tx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">txid</span><span class="p">)</span>
+		<span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">freelist</span><span class="p">.</span><span class="nf">reload</span><span class="p">(</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nf">page</span><span class="p">(</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nf">meta</span><span class="p">().</span><span class="nx">freelist</span><span class="p">))</span>
+	<span class="p">}</span>
+	<span class="nx">tx</span><span class="p">.</span><span class="nb">close</span><span class="p">()</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>rollback</code>中的逻辑非常简单，对于只读事务只需要调用<code>close</code>方法关闭事务即可；而对于读写事务，首先要通过<code>rollback</code>方法<code>freelist</code>中当前事务的<code>penging</code>列表中的页，因为这些页会被复用而不需要释放。另外，其还需要调用<code>freelist</code>的<code>reload</code>方法，其目的是将当前事务分配的页重新加入到<code>freelist</code>中。</p>
+<h4 id="224-事务关闭">2.2.4 事务关闭</h4>
+<p>无论是事务提交还是事务关闭，最后都需要调用<code>close</code>方法关闭事务。<code>close</code>方法的实现如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="kd">func</span> <span class="p">(</span><span class="nx">tx</span> <span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="nb">close</span><span class="p">()</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">db</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span>
+	<span class="p">}</span>
+	<span class="k">if</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">writable</span> <span class="p">{</span>
+		<span class="c1">// Grab freelist stats.
+</span><span class="c1"></span>		<span class="c1">// ... ...
+</span><span class="c1"></span>
+		<span class="c1">// Remove transaction ref &amp; writer lock.
+</span><span class="c1"></span>		<span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">rwtx</span> <span class="p">=</span> <span class="kc">nil</span>
+		<span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">rwlock</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+
+		<span class="c1">// Merge statistics.
+</span><span class="c1"></span>		<span class="c1">// ... ...
+</span><span class="c1"></span>
+	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+		<span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nf">removeTx</span><span class="p">(</span><span class="nx">tx</span><span class="p">)</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Clear all references.
+</span><span class="c1"></span>	<span class="nx">tx</span><span class="p">.</span><span class="nx">db</span> <span class="p">=</span> <span class="kc">nil</span>
+	<span class="nx">tx</span><span class="p">.</span><span class="nx">meta</span> <span class="p">=</span> <span class="kc">nil</span>
+	<span class="nx">tx</span><span class="p">.</span><span class="nx">root</span> <span class="p">=</span> <span class="nx">Bucket</span><span class="p">{</span><span class="nx">tx</span><span class="p">:</span> <span class="nx">tx</span><span class="p">}</span>
+	<span class="nx">tx</span><span class="p">.</span><span class="nx">pages</span> <span class="p">=</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+<span class="c1">// removeTx removes a transaction from the database.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="nf">removeTx</span><span class="p">(</span><span class="nx">tx</span> <span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="p">{</span>
+	<span class="c1">// Release the read lock on the mmap.
+</span><span class="c1"></span>	<span class="nx">db</span><span class="p">.</span><span class="nx">mmaplock</span><span class="p">.</span><span class="nf">RUnlock</span><span class="p">()</span>
+
+	<span class="c1">// Use the meta lock to restrict access to the DB object.
+</span><span class="c1"></span>	<span class="nx">db</span><span class="p">.</span><span class="nx">metalock</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+
+	<span class="c1">// Remove the transaction.
+</span><span class="c1"></span>	<span class="k">for</span> <span class="nx">i</span><span class="p">,</span> <span class="nx">t</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">db</span><span class="p">.</span><span class="nx">txs</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">t</span> <span class="o">==</span> <span class="nx">tx</span> <span class="p">{</span>
+			<span class="nx">last</span> <span class="o">:=</span> <span class="nb">len</span><span class="p">(</span><span class="nx">db</span><span class="p">.</span><span class="nx">txs</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+			<span class="nx">db</span><span class="p">.</span><span class="nx">txs</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="p">=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">txs</span><span class="p">[</span><span class="nx">last</span><span class="p">]</span>
+			<span class="nx">db</span><span class="p">.</span><span class="nx">txs</span><span class="p">[</span><span class="nx">last</span><span class="p">]</span> <span class="p">=</span> <span class="kc">nil</span>
+			<span class="nx">db</span><span class="p">.</span><span class="nx">txs</span> <span class="p">=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">txs</span><span class="p">[:</span><span class="nx">last</span><span class="p">]</span>
+			<span class="k">break</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+	<span class="nx">n</span> <span class="o">:=</span> <span class="nb">len</span><span class="p">(</span><span class="nx">db</span><span class="p">.</span><span class="nx">txs</span><span class="p">)</span>
+
+	<span class="c1">// Unlock the meta pages.
+</span><span class="c1"></span>	<span class="nx">db</span><span class="p">.</span><span class="nx">metalock</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+
+	<span class="c1">// Merge statistics.
+</span><span class="c1"></span>	<span class="c1">// ... ...
+</span><span class="c1"></span><span class="p">}</span>
+
+</code></pre></div><p><code>close</code>主要做事务的清理工作并更新统计量（这里将其省略）。对于读写事务，其解除的<code>DB</code>对象中<code>rwtx</code>字段对其的引用，同时释放了<code>rwlock</code>；对于只读事务，其调用了<code>removeTx</code>方法。<code>removeTx</code>方法首先释放了<code>mmaplock</code>的S锁，然后获取<code>metalock</code>保护对<code>DB</code>对象的访问（而不是保护<code>meta</code>对象），然后从<code>DB</code>的<code>txs</code>字段中删除对当前事务的引用，之后释放<code>metalock</code>并更新统计量。</p></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
