@@ -11,7 +11,7 @@
 <meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/4-transaction/" />
 <meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/4-transaction/bbolt.jpg"/>
 <meta property="article:published_time" content="2021-01-26T13:30:24+08:00" />
-<meta property="article:modified_time" content="2021-01-26T13:30:27+08:00" />
+<meta property="article:modified_time" content="2021-02-05T21:21:25+08:00" />
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/4-transaction/bbolt.jpg"/>
 <meta name="twitter:title" content="深入浅出boltdb —— 0x04 事务"/>
@@ -33,8 +33,8 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/4-transaction\/bbolt.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  10804 ,
-        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/4-transaction\/","datePublished": "2021-01-26T13:30:24+08:00","dateModified": "2021-01-26T13:30:27+08:00","publisher": {
+                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  13331 ,
+        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/4-transaction\/","datePublished": "2021-01-26T13:30:24+08:00","dateModified": "2021-02-05T21:21:25+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
                 "@type": "Person",
@@ -110,8 +110,8 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出boltdb —— 0x04 事务</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAbolt/"><i class="far fa-folder fa-fw"></i>深入浅出bolt</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-26">2021-01-26</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 10804 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 22 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-26">2021-01-26</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 13331 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 27 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
@@ -133,9 +133,6 @@
         <li><a href="#12-boltdb中acid的实现">1.2 boltdb中ACID的实现</a></li>
       </ul>
     </li>
-  </ul>
-
-  <ul>
     <li><a href="#2-boltdb中事务的封装与实现">2. boltdb中事务的封装与实现</a>
       <ul>
         <li><a href="#21-tx结构体">2.1 Tx结构体</a></li>
@@ -147,8 +144,15 @@
             <li><a href="#224-事务关闭">2.2.4 事务关闭</a></li>
           </ul>
         </li>
+        <li><a href="#23-内置隐式事务">2.3 内置隐式事务</a>
+          <ul>
+            <li><a href="#231-隐式读写事务与隐式只读事务">2.3.1 隐式读写事务与隐式只读事务</a></li>
+            <li><a href="#232-批处理隐式读写事务">2.3.2 批处理隐式读写事务</a></li>
+          </ul>
+        </li>
       </ul>
     </li>
+    <li><a href="#3-总结">3. 总结</a></li>
   </ul>
 </nav></div>
             </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
@@ -312,7 +316,6 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 </table>
 <p><strong>Durability（持久性）：</strong></p>
 <p>boltdb的读写事务提交时，会通过pwrite系统调用写底层文件，并通过fdatasync系统调用确保数据被安全写入到磁盘中。因为boltdb的mmap模式为<code>MAP_SHARED</code>，因此绕过mmap直接写入底层文件不会影响mmap中数据对底层文件修改的可见性。</p>
-<h1 id="施工中--">施工中 。。。 。。。</h1>
 <h2 id="2-boltdb中事务的封装与实现">2. boltdb中事务的封装与实现</h2>
 <p>boltdb将事务封装成了<code>tx.go</code>中的<code>Tx</code>结构体。但只从<code>Tx</code>结构体分析boltdb中事务的封装与实现是不够的。因此，本节将先介绍<code>Tx</code>结构体的基本实现，然后按照事务的生命周期的顺序，介绍boltdb中<code>tx.go</code>与<code>db.go</code>中对事务的封装与实现。</p>
 <h3 id="21-tx结构体">2.1 Tx结构体</h3>
@@ -487,7 +490,7 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 </table>
 <p>boltdb支持“读读并发”与“读写并发”，用来隔离事务的锁<code>rwlock</code>是互斥锁，只有可写事务需要获取该锁，只读事务不受影响。由于事务开始时，需要复制当时的元数据，因此这里使用了互斥锁<code>metalock</code>来保护事务开始时的元数据访问，当事务初始化完成后就会释放<code>metalock</code>；另外，只读事务关闭时也需要获取<code>metalock</code>，但其目的是保护对<code>DB</code>对象的访问，而不时保护<code>meta</code>。而<code>mmaplock</code>是用来保护mmap操作的读写锁，只读事务会获取<code>mmaplock</code>的S锁，而mmap操作会获取<code>mmaplock</code>的X锁。这样，当可写事务需要更大的mmap空间时，其需要等待之前的只读事务都执行完毕，以避免只读事务引用的mmap地址失效；对于可写事务本身，其在mmap前会从根<code>Bucket</code>实例开始<code>dereference</code>操作，以避免可写事务本身引用了旧的mmap地址空间。</p>
 <p>这三种锁的获取顺序是：（<code>rwlock</code>） $\rightarrow$ <code>metalock</code> $\rightarrow$ （<code>mmaplock</code>）。</p>
-<p>此外，boltdb中还有另一个读写锁<code>statlock sync.RWMutex</code>，其作用是保护统计量的访问，这里不作重点介绍。</p>
+<p>此外，boltdb中还有两把锁。其一是读写锁<code>statlock sync.RWMutex</code>，其作用是保护统计量的访问，这里不作重点介绍；其二是互斥锁<code>batchMu</code>，该锁用来保护数据库实例的<code>batch</code>字段，作用较为单一，本文在<a href="#232-%e6%89%b9%e5%a4%84%e7%90%86%e9%9a%90%e5%bc%8f%e8%af%bb%e5%86%99%e4%ba%8b%e5%8a%a1" rel="">2.3.2节</a>介绍。</p>
 <h4 id="221-事务开始">2.2.1 事务开始</h4>
 <p>boltdb的用户可以通过<code>DB</code>的<code>Begin</code>方法启动一个事务，通过<code>Begin</code>方法启动的事务需要用户自己控制其提交或回滚（用户还可以通过<code>Update</code>或<code>View</code>方法启动隐式事务，但二者都是对<code>Begin</code>的封装，因此放在最后介绍）。</p>
 <p><code>Begin</code>方法的实现如下：</p>
@@ -1049,7 +1052,7 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 	<span class="nx">tx</span><span class="p">.</span><span class="nb">close</span><span class="p">()</span>
 <span class="p">}</span>
 
-</code></pre></div><p><code>rollback</code>中的逻辑非常简单，对于只读事务只需要调用<code>close</code>方法关闭事务即可；而对于读写事务，首先要通过<code>rollback</code>方法<code>freelist</code>中当前事务的<code>penging</code>列表中的页，因为这些页会被复用而不需要释放。另外，其还需要调用<code>freelist</code>的<code>reload</code>方法，其目的是将当前事务分配的页重新加入到<code>freelist</code>中。</p>
+</code></pre></div><p><code>rollback</code>中的逻辑非常简单，对于只读事务只需要调用<code>close</code>方法关闭事务即可；而对于读写事务，首先要通过<code>freelist</code>的<code>rollback</code>方法，删除当前事务的<code>penging</code>列表中记录的页，因为这些页会被复用而不需要释放。另外，其还需要调用<code>freelist</code>的<code>reload</code>方法，其目的是将当前事务分配的页重新加入到<code>freelist</code>中；否则，这些页会无法引用，导致完整性检查失败。</p>
 <h4 id="224-事务关闭">2.2.4 事务关闭</h4>
 <p>无论是事务提交还是事务关闭，最后都需要调用<code>close</code>方法关闭事务。<code>close</code>方法的实现如下：</p>
 <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
@@ -1106,11 +1109,228 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 </span><span class="c1"></span>	<span class="c1">// ... ...
 </span><span class="c1"></span><span class="p">}</span>
 
-</code></pre></div><p><code>close</code>主要做事务的清理工作并更新统计量（这里将其省略）。对于读写事务，其解除的<code>DB</code>对象中<code>rwtx</code>字段对其的引用，同时释放了<code>rwlock</code>；对于只读事务，其调用了<code>removeTx</code>方法。<code>removeTx</code>方法首先释放了<code>mmaplock</code>的S锁，然后获取<code>metalock</code>保护对<code>DB</code>对象的访问（而不是保护<code>meta</code>对象），然后从<code>DB</code>的<code>txs</code>字段中删除对当前事务的引用，之后释放<code>metalock</code>并更新统计量。</p></div><div class="post-footer" id="post-footer">
+</code></pre></div><p><code>close</code>主要做事务的清理工作并更新统计量（这里将其省略）。对于读写事务，其解除的<code>DB</code>对象中<code>rwtx</code>字段对其的引用，同时释放了<code>rwlock</code>；对于只读事务，其调用了<code>removeTx</code>方法。<code>removeTx</code>方法首先释放了<code>mmaplock</code>的S锁，然后获取<code>metalock</code>保护对<code>DB</code>对象的访问（而不是保护<code>meta</code>对象），然后从<code>DB</code>的<code>txs</code>字段中删除对当前事务的引用，之后释放<code>metalock</code>并更新统计量。</p>
+<h3 id="23-内置隐式事务">2.3 内置隐式事务</h3>
+<p>boltdb除了为用户提供了<code>Begin</code>方法来显式地启动读写事务或只读事务，其还提供一些内置的封装好的隐式事务方法，如<code>Update</code>、<code>View</code>与<code>Batch</code>。当用户只需要操作数据库而不需要关心何时提交或回滚时，可以使用这些方法。</p>
+<h4 id="231-隐式读写事务与隐式只读事务">2.3.1 隐式读写事务与隐式只读事务</h4>
+<p><code>Update</code>与<code>View</code>分别是通过读写隐式事务与只读隐式事务操作数据库的方法。二者实现如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// Update executes a function within the context of a read-write managed transaction.
+</span><span class="c1">// If no error is returned from the function then the transaction is committed.
+</span><span class="c1">// If an error is returned then the entire transaction is rolled back.
+</span><span class="c1">// Any error that is returned from the function or returned from the commit is
+</span><span class="c1">// returned from the Update() method.
+</span><span class="c1">//
+</span><span class="c1">// Attempting to manually commit or rollback within the function will cause a panic.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="nf">Update</span><span class="p">(</span><span class="nx">fn</span> <span class="kd">func</span><span class="p">(</span><span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="kt">error</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="nx">t</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">db</span><span class="p">.</span><span class="nf">Begin</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">err</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Make sure the transaction rolls back in the event of a panic.
+</span><span class="c1"></span>	<span class="k">defer</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">t</span><span class="p">.</span><span class="nx">db</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="nx">t</span><span class="p">.</span><span class="nf">rollback</span><span class="p">()</span>
+		<span class="p">}</span>
+	<span class="p">}()</span>
+
+	<span class="c1">// Mark as a managed tx so that the inner function cannot manually commit.
+</span><span class="c1"></span>	<span class="nx">t</span><span class="p">.</span><span class="nx">managed</span> <span class="p">=</span> <span class="kc">true</span>
+
+	<span class="c1">// If an error is returned from the function then rollback and return error.
+</span><span class="c1"></span>	<span class="nx">err</span> <span class="p">=</span> <span class="nf">fn</span><span class="p">(</span><span class="nx">t</span><span class="p">)</span>
+	<span class="nx">t</span><span class="p">.</span><span class="nx">managed</span> <span class="p">=</span> <span class="kc">false</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">_</span> <span class="p">=</span> <span class="nx">t</span><span class="p">.</span><span class="nf">Rollback</span><span class="p">()</span>
+		<span class="k">return</span> <span class="nx">err</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="nx">t</span><span class="p">.</span><span class="nf">Commit</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="c1">// View executes a function within the context of a managed read-only transaction.
+</span><span class="c1">// Any error that is returned from the function is returned from the View() method.
+</span><span class="c1">//
+</span><span class="c1">// Attempting to manually rollback within the function will cause a panic.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="nf">View</span><span class="p">(</span><span class="nx">fn</span> <span class="kd">func</span><span class="p">(</span><span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="kt">error</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="nx">t</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">db</span><span class="p">.</span><span class="nf">Begin</span><span class="p">(</span><span class="kc">false</span><span class="p">)</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">err</span>
+	<span class="p">}</span>
+
+	<span class="c1">// Make sure the transaction rolls back in the event of a panic.
+</span><span class="c1"></span>	<span class="k">defer</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">t</span><span class="p">.</span><span class="nx">db</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="nx">t</span><span class="p">.</span><span class="nf">rollback</span><span class="p">()</span>
+		<span class="p">}</span>
+	<span class="p">}()</span>
+
+	<span class="c1">// Mark as a managed tx so that the inner function cannot manually rollback.
+</span><span class="c1"></span>	<span class="nx">t</span><span class="p">.</span><span class="nx">managed</span> <span class="p">=</span> <span class="kc">true</span>
+
+	<span class="c1">// If an error is returned from the function then pass it through.
+</span><span class="c1"></span>	<span class="nx">err</span> <span class="p">=</span> <span class="nf">fn</span><span class="p">(</span><span class="nx">t</span><span class="p">)</span>
+	<span class="nx">t</span><span class="p">.</span><span class="nx">managed</span> <span class="p">=</span> <span class="kc">false</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="nx">_</span> <span class="p">=</span> <span class="nx">t</span><span class="p">.</span><span class="nf">Rollback</span><span class="p">()</span>
+		<span class="k">return</span> <span class="nx">err</span>
+	<span class="p">}</span>
+
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">t</span><span class="p">.</span><span class="nf">Rollback</span><span class="p">();</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+		<span class="k">return</span> <span class="nx">err</span>
+	<span class="p">}</span>
+
+	<span class="k">return</span> <span class="kc">nil</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>Update</code>与<code>View</code>的参数是一个用来操作事务的方法闭包。这两个方法首先创建一个读写事务或只读事务，在执行方法闭包前先将<code>managed</code>字段置为true，以阻止用户在传入的方法闭包中手动提交或回滚事务，在执行后在将<code>managed</code>字段置为false，以便boltdb提交或回滚事务。</p>
+<h4 id="232-批处理隐式读写事务">2.3.2 批处理隐式读写事务</h4>
+<p>每个<code>Update</code>操作都要等待磁盘I/O完成才能执行下一个<code>Update</code>操作，虽然这保证了事务特性，但是性能较差。boltdb还为用户提供了一个能够将并发的多个读写事务合并为一次事务的方法——<code>Batch</code>。虽然通过<code>Batch</code>能够减少并发读写事务等待磁盘I/O的开销，但是其对事务中的操作有一定要求：<code>Batch</code>中的事务可能被重试若干次（即使某个事务正常，也可能被重试，笔者会在后文分析其原因），因此这要求通过<code>Batch</code>执行的操作必须是幂等（idempotent）的，且只有调用者调用的<code>Batch</code>方法成功返回后，其变更才保证被永久写入到存储。boltdb中的<code>Batch</code>分批操作对用户使透明的，用户只需要像调用<code>Update</code>一样调用<code>Batch</code>，boltdb就会自动将其分批。</p>
+<p><code>Batch</code>方法使用到了<code>batch</code>结构体：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="kd">type</span> <span class="nx">batch</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">db</span>    <span class="o">*</span><span class="nx">DB</span>
+	<span class="nx">timer</span> <span class="o">*</span><span class="nx">time</span><span class="p">.</span><span class="nx">Timer</span>
+	<span class="nx">start</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Once</span>
+	<span class="nx">calls</span> <span class="p">[]</span><span class="nx">call</span>
+<span class="p">}</span>
+
+<span class="kd">type</span> <span class="nx">call</span> <span class="kd">struct</span> <span class="p">{</span>
+	<span class="nx">fn</span>  <span class="kd">func</span><span class="p">(</span><span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="kt">error</span>
+	<span class="nx">err</span> <span class="kd">chan</span><span class="o">&lt;-</span> <span class="kt">error</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>batch</code>结构体的<code>calls</code>字段记录了每批读写事务的方法闭包与错误返回信道。记录错误返回信道的作用是为了将每个事务的错误返回给相应地调用者。</p>
+<p>数据库结构体<code>db</code>的实例的<code>batch</code>字段是指向当前正在等待积累的<code>batch</code>指针，当一批<code>batch</code>执行时，其会将该字段置为nil，下一次调用<code>Batch</code>时会创建新实例。</p>
+<p><code>Batch</code>方法的实现如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// Batch calls fn as part of a batch. It behaves similar to Update,
+</span><span class="c1">// except:
+</span><span class="c1">//
+</span><span class="c1">// 1. concurrent Batch calls can be combined into a single Bolt
+</span><span class="c1">// transaction.
+</span><span class="c1">//
+</span><span class="c1">// 2. the function passed to Batch may be called multiple times,
+</span><span class="c1">// regardless of whether it returns error or not.
+</span><span class="c1">//
+</span><span class="c1">// This means that Batch function side effects must be idempotent and
+</span><span class="c1">// take permanent effect only after a successful return is seen in
+</span><span class="c1">// caller.
+</span><span class="c1">//
+</span><span class="c1">// The maximum batch size and delay can be adjusted with DB.MaxBatchSize
+</span><span class="c1">// and DB.MaxBatchDelay, respectively.
+</span><span class="c1">//
+</span><span class="c1">// Batch is only useful when there are multiple goroutines calling it.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="nf">Batch</span><span class="p">(</span><span class="nx">fn</span> <span class="kd">func</span><span class="p">(</span><span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="kt">error</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+	<span class="nx">errCh</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="kt">error</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+	<span class="nx">db</span><span class="p">.</span><span class="nx">batchMu</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+	<span class="k">if</span> <span class="p">(</span><span class="nx">db</span><span class="p">.</span><span class="nx">batch</span> <span class="o">==</span> <span class="kc">nil</span><span class="p">)</span> <span class="o">||</span> <span class="p">(</span><span class="nx">db</span><span class="p">.</span><span class="nx">batch</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="nb">len</span><span class="p">(</span><span class="nx">db</span><span class="p">.</span><span class="nx">batch</span><span class="p">.</span><span class="nx">calls</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">MaxBatchSize</span><span class="p">)</span> <span class="p">{</span>
+		<span class="c1">// There is no existing batch, or the existing batch is full; start a new one.
+</span><span class="c1"></span>		<span class="nx">db</span><span class="p">.</span><span class="nx">batch</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">batch</span><span class="p">{</span>
+			<span class="nx">db</span><span class="p">:</span> <span class="nx">db</span><span class="p">,</span>
+		<span class="p">}</span>
+		<span class="nx">db</span><span class="p">.</span><span class="nx">batch</span><span class="p">.</span><span class="nx">timer</span> <span class="p">=</span> <span class="nx">time</span><span class="p">.</span><span class="nf">AfterFunc</span><span class="p">(</span><span class="nx">db</span><span class="p">.</span><span class="nx">MaxBatchDelay</span><span class="p">,</span> <span class="nx">db</span><span class="p">.</span><span class="nx">batch</span><span class="p">.</span><span class="nx">trigger</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="nx">db</span><span class="p">.</span><span class="nx">batch</span><span class="p">.</span><span class="nx">calls</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">db</span><span class="p">.</span><span class="nx">batch</span><span class="p">.</span><span class="nx">calls</span><span class="p">,</span> <span class="nx">call</span><span class="p">{</span><span class="nx">fn</span><span class="p">:</span> <span class="nx">fn</span><span class="p">,</span> <span class="nx">err</span><span class="p">:</span> <span class="nx">errCh</span><span class="p">})</span>
+	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">db</span><span class="p">.</span><span class="nx">batch</span><span class="p">.</span><span class="nx">calls</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">MaxBatchSize</span> <span class="p">{</span>
+		<span class="c1">// wake up batch, it&#39;s ready to run
+</span><span class="c1"></span>		<span class="k">go</span> <span class="nx">db</span><span class="p">.</span><span class="nx">batch</span><span class="p">.</span><span class="nf">trigger</span><span class="p">()</span>
+	<span class="p">}</span>
+	<span class="nx">db</span><span class="p">.</span><span class="nx">batchMu</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+
+	<span class="nx">err</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">errCh</span>
+	<span class="k">if</span> <span class="nx">err</span> <span class="o">==</span> <span class="nx">trySolo</span> <span class="p">{</span>
+		<span class="nx">err</span> <span class="p">=</span> <span class="nx">db</span><span class="p">.</span><span class="nf">Update</span><span class="p">(</span><span class="nx">fn</span><span class="p">)</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="nx">err</span>
+<span class="p">}</span>
+
+</code></pre></div><p>在<code>Batch</code>方法中，其通过互斥锁<code>batchMu</code>保护了对<code>db</code>实例的<code>batch</code>字段的访问。如果<code>batch</code>为空或者已满时，创建新的<code>batch</code>实例，并为其注册定时器；如果该存在<code>batch</code>，则将当前方法与为其创建的错误信道加入到<code>batch</code>对象的<code>calls</code>字段中；如果此时<code>batch</code>已满，则立即触发其运行。在将当前事务加入到<code>batch</code>的列表中后，<code>Batch</code>方法会等待当前事务的错误信道的信号；如果从该信道收到的是<code>trySolo</code>错误，则通过<code>Update</code>方法重试该事务，返回结果。</p>
+<p>没有满的<code>batch</code>会在定时器超时时触发，其<code>start sync.Once</code>字段确保每个<code>batch</code>只会被触发一次。<code>batch</code>触发时运行的相关代码如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<span class="c1">// trigger runs the batch if it hasn&#39;t already been run.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">batch</span><span class="p">)</span> <span class="nf">trigger</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">b</span><span class="p">.</span><span class="nx">start</span><span class="p">.</span><span class="nf">Do</span><span class="p">(</span><span class="nx">b</span><span class="p">.</span><span class="nx">run</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// run performs the transactions in the batch and communicates results
+</span><span class="c1">// back to DB.Batch.
+</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">batch</span><span class="p">)</span> <span class="nf">run</span><span class="p">()</span> <span class="p">{</span>
+	<span class="nx">b</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">batchMu</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+	<span class="nx">b</span><span class="p">.</span><span class="nx">timer</span><span class="p">.</span><span class="nf">Stop</span><span class="p">()</span>
+	<span class="c1">// Make sure no new work is added to this batch, but don&#39;t break
+</span><span class="c1"></span>	<span class="c1">// other batches.
+</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">b</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">batch</span> <span class="o">==</span> <span class="nx">b</span> <span class="p">{</span>
+		<span class="nx">b</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">batch</span> <span class="p">=</span> <span class="kc">nil</span>
+	<span class="p">}</span>
+	<span class="nx">b</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">batchMu</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+
+<span class="nx">retry</span><span class="p">:</span>
+	<span class="k">for</span> <span class="nb">len</span><span class="p">(</span><span class="nx">b</span><span class="p">.</span><span class="nx">calls</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+		<span class="kd">var</span> <span class="nx">failIdx</span> <span class="p">=</span> <span class="o">-</span><span class="mi">1</span>
+		<span class="nx">err</span> <span class="o">:=</span> <span class="nx">b</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nf">Update</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">tx</span> <span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+			<span class="k">for</span> <span class="nx">i</span><span class="p">,</span> <span class="nx">c</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">b</span><span class="p">.</span><span class="nx">calls</span> <span class="p">{</span>
+				<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nf">safelyCall</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">fn</span><span class="p">,</span> <span class="nx">tx</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+					<span class="nx">failIdx</span> <span class="p">=</span> <span class="nx">i</span>
+					<span class="k">return</span> <span class="nx">err</span>
+				<span class="p">}</span>
+			<span class="p">}</span>
+			<span class="k">return</span> <span class="kc">nil</span>
+		<span class="p">})</span>
+
+		<span class="k">if</span> <span class="nx">failIdx</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="p">{</span>
+			<span class="c1">// take the failing transaction out of the batch. it&#39;s
+</span><span class="c1"></span>			<span class="c1">// safe to shorten b.calls here because db.batch no longer
+</span><span class="c1"></span>			<span class="c1">// points to us, and we hold the mutex anyway.
+</span><span class="c1"></span>			<span class="nx">c</span> <span class="o">:=</span> <span class="nx">b</span><span class="p">.</span><span class="nx">calls</span><span class="p">[</span><span class="nx">failIdx</span><span class="p">]</span>
+			<span class="nx">b</span><span class="p">.</span><span class="nx">calls</span><span class="p">[</span><span class="nx">failIdx</span><span class="p">],</span> <span class="nx">b</span><span class="p">.</span><span class="nx">calls</span> <span class="p">=</span> <span class="nx">b</span><span class="p">.</span><span class="nx">calls</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="nx">b</span><span class="p">.</span><span class="nx">calls</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="nx">b</span><span class="p">.</span><span class="nx">calls</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="nx">b</span><span class="p">.</span><span class="nx">calls</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+			<span class="c1">// tell the submitter re-run it solo, continue with the rest of the batch
+</span><span class="c1"></span>			<span class="nx">c</span><span class="p">.</span><span class="nx">err</span> <span class="o">&lt;-</span> <span class="nx">trySolo</span>
+			<span class="k">continue</span> <span class="nx">retry</span>
+		<span class="p">}</span>
+
+		<span class="c1">// pass success, or bolt internal errors, to all callers
+</span><span class="c1"></span>		<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">c</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">b</span><span class="p">.</span><span class="nx">calls</span> <span class="p">{</span>
+			<span class="nx">c</span><span class="p">.</span><span class="nx">err</span> <span class="o">&lt;-</span> <span class="nx">err</span>
+		<span class="p">}</span>
+		<span class="k">break</span> <span class="nx">retry</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">safelyCall</span><span class="p">(</span><span class="nx">fn</span> <span class="kd">func</span><span class="p">(</span><span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="kt">error</span><span class="p">,</span> <span class="nx">tx</span> <span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="p">(</span><span class="nx">err</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">defer</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+		<span class="k">if</span> <span class="nx">p</span> <span class="o">:=</span> <span class="nb">recover</span><span class="p">();</span> <span class="nx">p</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+			<span class="nx">err</span> <span class="p">=</span> <span class="nx">panicked</span><span class="p">{</span><span class="nx">p</span><span class="p">}</span>
+		<span class="p">}</span>
+	<span class="p">}()</span>
+	<span class="k">return</span> <span class="nf">fn</span><span class="p">(</span><span class="nx">tx</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// trySolo is a special sentinel error value used for signaling that a
+</span><span class="c1">// transaction function should be re-run. It should never be seen by
+</span><span class="c1">// callers.
+</span><span class="c1"></span><span class="kd">var</span> <span class="nx">trySolo</span> <span class="p">=</span> <span class="nx">errors</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="s">&#34;batch function returned an error and should be re-run solo&#34;</span><span class="p">)</span>
+
+</code></pre></div><p><code>run</code>方法的逻辑如下：</p>
+<ol>
+<li>首先将当前<code>db</code>实例的<code>batch</code>字段置为nil，以避免之后调用的<code>Batch</code>将事务加入到当前队列，同时不影响其它<code>batch</code>的操作。</li>
+<li>随后，循环重试。每次循环进行如下操作：
+<ol>
+<li>在一次<code>Update</code>方法中，循环执行<code>calls</code>列表中的每个事务的方法闭包，直到有一个事务返回错误时停止</li>
+<li>如果发生了错误，则将发生错误的事务从<code>batch</code>中剔除，并向其错误信道中发送<code>trySolo</code>错误，告知调用者自行重试一次该事务，然后从头开始重试列表中的事务（这也是<code>Batch</code>要求其操作幂等的原因）。</li>
+<li>循环通过或<code>Update</code>方法执行时boltdb内部产生错误（如果事务返回错误其会被从<code>calls</code>列表中剔除并重试，这里的<code>err</code>如果非空则为boltdb本身的错误），将错误（或nil）返回给<code>calls</code>中所有调用者的错误信道，通知调用者其事务执行完成或错误，退出循环。</li>
+</ol>
+</li>
+</ol>
+<h2 id="3-总结">3. 总结</h2>
+<p>本文介绍了事务的基本概念与boltdb中事务的相关实现。在boltdb的实现中，事务在各方各面都有体现，其ACID的实现也相辅相成。</p>
+<p>关于boltdb的源码分析在这里也告一段落了，<code>db.go</code>中的重要代码已经在本系列各篇文章中分散地介绍过，这里也不再赘述。</p></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
-                <span>更新于 2021-01-26</span>
+                <span>更新于 2021-02-05</span>
             </div>
             <div class="post-info-license"></div>
         </div>
