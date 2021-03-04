@@ -8,12 +8,12 @@
         <title>深入浅出boltdb —— 0x01 存储与缓存 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出boltdb —— 0x01 存储与缓存" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/1-storage-cache/" />
-<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/1-storage-cache/bbolt.jpg"/>
-<meta property="article:published_time" content="2021-01-05T18:26:19+08:00" />
-<meta property="article:modified_time" content="2021-01-05T18:26:22+08:00" />
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/1-storage-cache/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/1-storage-cache/boltdb.jpg"/><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2021-01-05T18:26:19&#43;08:00" />
+<meta property="article:modified_time" content="2021-01-05T18:26:22&#43;08:00" />
+
 <meta name="twitter:card" content="summary_large_image"/>
-<meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/1-storage-cache/bbolt.jpg"/>
+<meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/1-storage-cache/boltdb.jpg"/>
 <meta name="twitter:title" content="深入浅出boltdb —— 0x01 存储与缓存"/>
 <meta name="twitter:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。"/>
 <meta name="application-name" content="叉鸽 MrCroxx 的博客">
@@ -30,10 +30,10 @@
             "@id": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/1-storage-cache\/"
         },"image": [{
                             "@type": "ImageObject",
-                            "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/1-storage-cache\/bbolt.jpg",
+                            "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/1-storage-cache\/boltdb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  9214 ,
+                        }],"genre": "posts","keywords": "boltdb, B\u002bTree","wordcount":  9214 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/1-storage-cache\/","datePublished": "2021-01-05T18:26:19+08:00","dateModified": "2021-01-05T18:26:22+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -109,17 +109,17 @@
             <h2 class="toc-title">目录</h2>
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出boltdb —— 0x01 存储与缓存</h1><div class="post-meta">
-            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAbolt/"><i class="far fa-folder fa-fw"></i>深入浅出bolt</a></span></div>
+            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAboltdb/"><i class="far fa-folder fa-fw"></i>深入浅出boltdb</a></span></div>
             <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-05">2021-01-05</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 9214 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 19 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
-        data-src="/posts/code-reading/boltdb-made-simple/1-storage-cache/bbolt.jpg"
-        data-srcset="/posts/code-reading/boltdb-made-simple/1-storage-cache/bbolt.jpg, /posts/code-reading/boltdb-made-simple/1-storage-cache/bbolt.jpg 1.5x, /posts/code-reading/boltdb-made-simple/1-storage-cache/bbolt.jpg 2x"
+        data-src="/posts/code-reading/boltdb-made-simple/1-storage-cache/boltdb.jpg"
+        data-srcset="/posts/code-reading/boltdb-made-simple/1-storage-cache/boltdb.jpg, /posts/code-reading/boltdb-made-simple/1-storage-cache/boltdb.jpg 1.5x, /posts/code-reading/boltdb-made-simple/1-storage-cache/boltdb.jpg 2x"
         data-sizes="auto"
-        alt="/posts/code-reading/boltdb-made-simple/1-storage-cache/bbolt.jpg"
-        title="/posts/code-reading/boltdb-made-simple/1-storage-cache/bbolt.jpg" /></div><div class="details toc" id="toc-static"  kept="">
+        alt="/posts/code-reading/boltdb-made-simple/1-storage-cache/boltdb.jpg"
+        title="/posts/code-reading/boltdb-made-simple/1-storage-cache/boltdb.jpg" /></div><div class="details toc" id="toc-static"  kept="">
                 <div class="details-summary toc-title">
                     <span>目录</span>
                     <span><i class="details-icon fas fa-angle-right"></i></span>
@@ -184,11 +184,12 @@
             <i class="icon fas fa-info-circle fa-fw"></i>注2<i class="details-icon fas fa-angle-right fa-fw"></i>
         </div>
         <div class="details-content">
-            <div class="admonition-content">boltdb不会将空闲的页归还给系统。其原因有二：</p>
+            <div class="admonition-content"><p>boltdb不会将空闲的页归还给系统。其原因有二：</p>
 <ol>
 <li>在不断增大的数据库中，被释放的页之后还会被重用。</li>
 <li>boltdb为了保证读写并发的隔离性，使用copy-on-write来更新页，因此会在任意位置产生空闲页，而不只是在文件末尾产生空闲页（详见<a href="https://github.com/boltdb/bolt/issues/308#issuecomment-74811638" target="_blank" rel="noopener noreffer">issue#308</a>）。</li>
-</ol></div>
+</ol>
+</div>
         </div>
     </div>
 <h2 id="1-page">1. page</h2>
@@ -219,30 +220,30 @@
 </code></pre></div><table>
 <thead>
 <tr>
-<th align="center">字段</th>
-<th align="left">描述</th>
+<th style="text-align:center">字段</th>
+<th style="text-align:left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center">id</td>
-<td align="left">页id。页id从0开始，随地址空间单调递增。</td>
+<td style="text-align:center">id</td>
+<td style="text-align:left">页id。页id从0开始，随地址空间单调递增。</td>
 </tr>
 <tr>
-<td align="center">flags</td>
-<td align="left">页标识，用来表示页的类型（用途）。</td>
+<td style="text-align:center">flags</td>
+<td style="text-align:left">页标识，用来表示页的类型（用途）。</td>
 </tr>
 <tr>
-<td align="center">count</td>
-<td align="left">页中元素个数。</td>
+<td style="text-align:center">count</td>
+<td style="text-align:left">页中元素个数。</td>
 </tr>
 <tr>
-<td align="center">overflow</td>
-<td align="left">溢出页个数。当单页无法容纳数据时，可以用与该页相邻的页保存溢出的数据（详见后文中介绍）。</td>
+<td style="text-align:center">overflow</td>
+<td style="text-align:left">溢出页个数。当单页无法容纳数据时，可以用与该页相邻的页保存溢出的数据（详见后文中介绍）。</td>
 </tr>
 <tr>
-<td align="center">ptr</td>
-<td align="left">页的数据（<em>Page Body</em>）的起始位置。</td>
+<td style="text-align:center">ptr</td>
+<td style="text-align:left">页的数据（<em>Page Body</em>）的起始位置。</td>
 </tr>
 </tbody>
 </table>
@@ -274,46 +275,46 @@
 </code></pre></div><table>
 <thead>
 <tr>
-<th align="center">字段</th>
-<th align="left">描述</th>
+<th style="text-align:center">字段</th>
+<th style="text-align:left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center">magic</td>
-<td align="left">一个固定值，用来标识该文件为boltdb数据库文件。</td>
+<td style="text-align:center">magic</td>
+<td style="text-align:left">一个固定值，用来标识该文件为boltdb数据库文件。</td>
 </tr>
 <tr>
-<td align="center">version</td>
-<td align="left">用来标识该文件采用的数据库版本号。</td>
+<td style="text-align:center">version</td>
+<td style="text-align:left">用来标识该文件采用的数据库版本号。</td>
 </tr>
 <tr>
-<td align="center">pageSize</td>
-<td align="left">用来标识改文件采用的页大小。</td>
+<td style="text-align:center">pageSize</td>
+<td style="text-align:left">用来标识改文件采用的页大小。</td>
 </tr>
 <tr>
-<td align="center">flags</td>
-<td align="left">保留字段，未使用。</td>
+<td style="text-align:center">flags</td>
+<td style="text-align:left">保留字段，未使用。</td>
 </tr>
 <tr>
-<td align="center">root</td>
-<td align="left">boltdb记录根bucket的结构体，其包含了该bucket的根页id与bucket编号（单调递增）。</td>
+<td style="text-align:center">root</td>
+<td style="text-align:left">boltdb记录根bucket的结构体，其包含了该bucket的根页id与bucket编号（单调递增）。</td>
 </tr>
 <tr>
-<td align="center">freelist</td>
-<td align="left">空闲页列表的首页id。</td>
+<td style="text-align:center">freelist</td>
+<td style="text-align:left">空闲页列表的首页id。</td>
 </tr>
 <tr>
-<td align="center">pgid</td>
-<td align="left">下一个分配的页id，即当前最大页id+1，用于mmap扩容时为新页编号。</td>
+<td style="text-align:center">pgid</td>
+<td style="text-align:left">下一个分配的页id，即当前最大页id+1，用于mmap扩容时为新页编号。</td>
 </tr>
 <tr>
-<td align="center">txid</td>
-<td align="left">下一个事务的id，全局单调递增。</td>
+<td style="text-align:center">txid</td>
+<td style="text-align:left">下一个事务的id，全局单调递增。</td>
 </tr>
 <tr>
-<td align="center">checksum</td>
-<td align="left">meta页的校验和。</td>
+<td style="text-align:center">checksum</td>
+<td style="text-align:left">meta页的校验和。</td>
 </tr>
 </tbody>
 </table>
@@ -403,22 +404,22 @@
 </code></pre></div><table>
 <thead>
 <tr>
-<th align="center">字段<div style="width: 14em"></th>
-<th align="left">描述</th>
+<th style="text-align:center">字段<div style="width: 14em"></th>
+<th style="text-align:left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center"><code>ids []pgid</code></td>
-<td align="left">记录已释放的页id的有序列表。</td>
+<td style="text-align:center"><code>ids []pgid</code></td>
+<td style="text-align:left">记录已释放的页id的有序列表。</td>
 </tr>
 <tr>
-<td align="center"><code>pending map[txid][]pgid</code></td>
-<td align="left">事务id到事务待释放的页id。</td>
+<td style="text-align:center"><code>pending map[txid][]pgid</code></td>
+<td style="text-align:left">事务id到事务待释放的页id。</td>
 </tr>
 <tr>
-<td align="center"><code>cache map[pgid]bool</code></td>
-<td align="left">用来快速查找给定id的页是否被释放的缓存。出现在<code>ids</code>和<code>pending</code>中的页id均为true。</td>
+<td style="text-align:center"><code>cache map[pgid]bool</code></td>
+<td style="text-align:left">用来快速查找给定id的页是否被释放的缓存。出现在<code>ids</code>和<code>pending</code>中的页id均为true。</td>
 </tr>
 </tbody>
 </table>
@@ -507,66 +508,66 @@
 <table>
 <thead>
 <tr>
-<th align="center">方法<div style="width: 14em"></th>
-<th align="left">描述</th>
+<th style="text-align:center">方法<div style="width: 14em"></th>
+<th style="text-align:left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center"><code>size() int</code></td>
-<td align="left">获取freelist序列化为page后的数据大小。</td>
+<td style="text-align:center"><code>size() int</code></td>
+<td style="text-align:left">获取freelist序列化为page后的数据大小。</td>
 </tr>
 <tr>
-<td align="center"><code>count() int</code></td>
-<td align="left">获取freelist中页的个数。</td>
+<td style="text-align:center"><code>count() int</code></td>
+<td style="text-align:left">获取freelist中页的个数。</td>
 </tr>
 <tr>
-<td align="center"><code>free_count() int</code></td>
-<td align="left"><code>ids</code>中的空闲页数。</td>
+<td style="text-align:center"><code>free_count() int</code></td>
+<td style="text-align:left"><code>ids</code>中的空闲页数。</td>
 </tr>
 <tr>
-<td align="center"><code>pending_count() int</code></td>
-<td align="left"><code>pending</code>中待释放的空闲页数。</td>
+<td style="text-align:center"><code>pending_count() int</code></td>
+<td style="text-align:left"><code>pending</code>中待释放的空闲页数。</td>
 </tr>
 <tr>
-<td align="center"><code>copyall(dst []pgid)</code></td>
-<td align="left">将<code>ids</code>与<code>pending</code>中的所有空闲页id合并、排序并写入目标位置。该方法在将freelist写入到page时使用。</td>
+<td style="text-align:center"><code>copyall(dst []pgid)</code></td>
+<td style="text-align:left">将<code>ids</code>与<code>pending</code>中的所有空闲页id合并、排序并写入目标位置。该方法在将freelist写入到page时使用。</td>
 </tr>
 <tr>
-<td align="center"><code>allocate(n int) pgid</code></td>
-<td align="left">尝试从freelist中分配n个连续的页，返回首页的页id。</td>
+<td style="text-align:center"><code>allocate(n int) pgid</code></td>
+<td style="text-align:left">尝试从freelist中分配n个连续的页，返回首页的页id。</td>
 </tr>
 <tr>
-<td align="center"><code>free(txid txid, p *page)</code></td>
-<td align="left">将页加入给定事务的<code>pending</code>列表中。</td>
+<td style="text-align:center"><code>free(txid txid, p *page)</code></td>
+<td style="text-align:left">将页加入给定事务的<code>pending</code>列表中。</td>
 </tr>
 <tr>
-<td align="center"><code>release(txid txid)</code></td>
-<td align="left">释放给定事务及其之前事务的<code>pending</code>列表中的所有待释放页，将其合并到<code>ids</code>中。</td>
+<td style="text-align:center"><code>release(txid txid)</code></td>
+<td style="text-align:left">释放给定事务及其之前事务的<code>pending</code>列表中的所有待释放页，将其合并到<code>ids</code>中。</td>
 </tr>
 <tr>
-<td align="center"><code>rollback(txid txid)</code></td>
-<td align="left">当事务回滚时调用该方法，删除该事务的<code>pending</code>列表记录的页id以复用。</td>
+<td style="text-align:center"><code>rollback(txid txid)</code></td>
+<td style="text-align:left">当事务回滚时调用该方法，删除该事务的<code>pending</code>列表记录的页id以复用。</td>
 </tr>
 <tr>
-<td align="center"><code>freed(pgid pgid) bool</code></td>
-<td align="left">返回给定页是否在freelist中。</td>
+<td style="text-align:center"><code>freed(pgid pgid) bool</code></td>
+<td style="text-align:left">返回给定页是否在freelist中。</td>
 </tr>
 <tr>
-<td align="center"><code>read(p *page)</code></td>
-<td align="left">从page中读取并构建freelist。</td>
+<td style="text-align:center"><code>read(p *page)</code></td>
+<td style="text-align:left">从page中读取并构建freelist。</td>
 </tr>
 <tr>
-<td align="center"><code>write(p *page) error</code></td>
-<td align="left">将freelist写入到page中。</td>
+<td style="text-align:center"><code>write(p *page) error</code></td>
+<td style="text-align:left">将freelist写入到page中。</td>
 </tr>
 <tr>
-<td align="center"><code>reload(p *page)</code></td>
-<td align="left">从page中重新加载freelist，该方法先调用<code>read</code>方法，接下来从<code>ids</code>中过滤掉<code>pengding</code>中的页。</td>
+<td style="text-align:center"><code>reload(p *page)</code></td>
+<td style="text-align:left">从page中重新加载freelist，该方法先调用<code>read</code>方法，接下来从<code>ids</code>中过滤掉<code>pengding</code>中的页。</td>
 </tr>
 <tr>
-<td align="center"><code>reindex()</code></td>
-<td align="left">重建freelist的缓存。</td>
+<td style="text-align:center"><code>reindex()</code></td>
+<td style="text-align:left">重建freelist的缓存。</td>
 </tr>
 </tbody>
 </table>
@@ -617,22 +618,22 @@
 <table>
 <thead>
 <tr>
-<th align="center">方法<div style="width: 14em"></th>
-<th align="left">描述</th>
+<th style="text-align:center">方法<div style="width: 14em"></th>
+<th style="text-align:left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center"><code>mmap(minsz int) error</code></td>
-<td align="left">以内存映射文件的方式打开数据库文件并初始化meta引用。参数<code>minsz</code>是最小的mmap大小，其实际mmap大小是通过<code>mmapSize</code>方法获取的。</td>
+<td style="text-align:center"><code>mmap(minsz int) error</code></td>
+<td style="text-align:left">以内存映射文件的方式打开数据库文件并初始化meta引用。参数<code>minsz</code>是最小的mmap大小，其实际mmap大小是通过<code>mmapSize</code>方法获取的。</td>
 </tr>
 <tr>
-<td align="center"><code>munmap() error</code></td>
-<td align="left">取消文件的内存映射。</td>
+<td style="text-align:center"><code>munmap() error</code></td>
+<td style="text-align:left">取消文件的内存映射。</td>
 </tr>
 <tr>
-<td align="center"><code>mmapSize(size int) (int, error)</code></td>
-<td align="left">计算mmap大小，参数<code>size</code>是最小大小。</td>
+<td style="text-align:center"><code>mmapSize(size int) (int, error)</code></td>
+<td style="text-align:left">计算mmap大小，参数<code>size</code>是最小大小。</td>
 </tr>
 </tbody>
 </table>
@@ -924,7 +925,7 @@
 </div>
 </article></div>
             </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.81.0">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div>
     </footer></div>

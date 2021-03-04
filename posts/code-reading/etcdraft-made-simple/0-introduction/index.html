@@ -8,10 +8,10 @@
         <title>深入浅出etcd/raft —— 0x00 引言 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出etcd/raft —— 0x00 引言" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/0-introduction/" />
-<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/0-introduction/etcd-raft.jpg"/>
-<meta property="article:published_time" content="2020-12-10T22:03:56+08:00" />
-<meta property="article:modified_time" content="2021-01-02T16:28:04+08:00" />
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/0-introduction/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/0-introduction/etcd-raft.jpg"/><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2020-12-10T22:03:56&#43;08:00" />
+<meta property="article:modified_time" content="2021-01-02T16:28:04&#43;08:00" />
+
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/0-introduction/etcd-raft.jpg"/>
 <meta name="twitter:title" content="深入浅出etcd/raft —— 0x00 引言"/>
@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/etcdraft-made-simple\/0-introduction\/etcd-raft.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "etcd, Raft","wordcount":  1120 ,
+                        }],"genre": "posts","keywords": "etcd, Raft","wordcount":  1124 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/etcdraft-made-simple\/0-introduction\/","datePublished": "2020-12-10T22:03:56+08:00","dateModified": "2021-01-02T16:28:04+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,7 +110,7 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出etcd/raft —— 0x00 引言</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAetcd/raft/"><i class="far fa-folder fa-fw"></i>深入浅出etcd/raft</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-12-10">2020-12-10</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1120 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-12-10">2020-12-10</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1124 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 3 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
@@ -141,7 +141,7 @@
 <li>学习go的基本语法，学习go语言并发编程与channel的使用方式。</li>
 <li>准备Diego Ongaro的博士论文作为参考资料，在Etcd的实现中，引用了很多其中的优化方式。</li>
 </ol>
-<p>本系列文章还在龟速更新中。笔者也是第一次试图将对这种工业级产品的分析写出来分享给读者，因此难免把握不好分析的粒度。在更新后面的文章的同时，我也会对之前的文章进行更正与优化，使其更容易理解。</p>
+<p>本系列文章龟速更新。笔者也是第一次试图将对这种工业级产品的分析写出来分享给读者，因此难免把握不好分析的粒度。在更新后面的文章的同时，我也会对之前的文章进行更正与优化，使其更容易理解。</p>
 <p>另外，本系列不会对引用的代码中的注释进行翻译，其原因有二：一来，etcd/raft模块中的注释描述的十分详细，建议读者要详细地阅读一遍etcd/raft模块中所有的注释；二来，笔者的水平有限，翻译的过程中难免会有词不达意的情况，而etcd/raft模块中的注释往往会提及很多细节，为了避免误导读者，就不做翻译了。不过相信能看到这里的读者都有丰富的英文论文阅读经验了，不需要笔者多此一举的翻译。</p>
 <h2 id="2-目录">2. 目录</h2>
 <ul>
@@ -168,7 +168,7 @@
 <li><i class="far fa-check-square fa-fw"></i> 集群变更 —— joint</li>
 <li><i class="far fa-check-square fa-fw"></i> Linearizable Read —— Log Read、ReadIndex、Lease Read</li>
 <li><i class="far fa-square fa-fw"></i> 集群变更 —— joint（apply-time confchange修复<a href="https://github.com/etcd-io/etcd/issues/12359" target="_blank" rel="noopener noreffer">issue#12359</a>）</li>
-<li><i class="far fa-square fa-fw"></i> 附录 —— etcd/raft中所有消息使用的字段描述</li>
+<li><i class="far fa-square fa-fw"></i> 附录 —— etcd/raft中所有消息使用的字段描述（80%鸽了）</li>
 </ul></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
@@ -197,7 +197,7 @@
 </div>
 </article></div>
             </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.81.0">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div>
     </footer></div>

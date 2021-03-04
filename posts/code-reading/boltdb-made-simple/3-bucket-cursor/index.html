@@ -8,12 +8,12 @@
         <title>深入浅出boltdb —— 0x03 bucket &amp; cursor - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出boltdb —— 0x03 bucket &amp; cursor" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/3-bucket-cursor/" />
-<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/3-bucket-cursor/bbolt.jpg"/>
-<meta property="article:published_time" content="2021-01-20T23:55:22+08:00" />
-<meta property="article:modified_time" content="2021-01-20T23:55:26+08:00" />
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/3-bucket-cursor/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/3-bucket-cursor/boltdb.jpg"/><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2021-01-20T23:55:22&#43;08:00" />
+<meta property="article:modified_time" content="2021-01-20T23:55:26&#43;08:00" />
+
 <meta name="twitter:card" content="summary_large_image"/>
-<meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/3-bucket-cursor/bbolt.jpg"/>
+<meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/3-bucket-cursor/boltdb.jpg"/>
 <meta name="twitter:title" content="深入浅出boltdb —— 0x03 bucket &amp; cursor"/>
 <meta name="twitter:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。"/>
 <meta name="application-name" content="叉鸽 MrCroxx 的博客">
@@ -30,10 +30,10 @@
             "@id": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/3-bucket-cursor\/"
         },"image": [{
                             "@type": "ImageObject",
-                            "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/3-bucket-cursor\/bbolt.jpg",
+                            "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/3-bucket-cursor\/boltdb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  14354 ,
+                        }],"genre": "posts","keywords": "boltdb, B\u002bTree","wordcount":  14354 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/3-bucket-cursor\/","datePublished": "2021-01-20T23:55:22+08:00","dateModified": "2021-01-20T23:55:26+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -109,17 +109,17 @@
             <h2 class="toc-title">目录</h2>
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出boltdb —— 0x03 bucket &amp; cursor</h1><div class="post-meta">
-            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAbolt/"><i class="far fa-folder fa-fw"></i>深入浅出bolt</a></span></div>
+            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAboltdb/"><i class="far fa-folder fa-fw"></i>深入浅出boltdb</a></span></div>
             <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-20">2021-01-20</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 14354 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 29 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
-        data-src="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/bbolt.jpg"
-        data-srcset="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/bbolt.jpg, /posts/code-reading/boltdb-made-simple/3-bucket-cursor/bbolt.jpg 1.5x, /posts/code-reading/boltdb-made-simple/3-bucket-cursor/bbolt.jpg 2x"
+        data-src="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/boltdb.jpg"
+        data-srcset="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/boltdb.jpg, /posts/code-reading/boltdb-made-simple/3-bucket-cursor/boltdb.jpg 1.5x, /posts/code-reading/boltdb-made-simple/3-bucket-cursor/boltdb.jpg 2x"
         data-sizes="auto"
-        alt="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/bbolt.jpg"
-        title="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/bbolt.jpg" /></div><div class="details toc" id="toc-static"  kept="">
+        alt="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/boltdb.jpg"
+        title="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/boltdb.jpg" /></div><div class="details toc" id="toc-static"  kept="">
                 <div class="details-summary toc-title">
                     <span>目录</span>
                     <span><i class="details-icon fas fa-angle-right"></i></span>
@@ -383,38 +383,38 @@
 </code></pre></div><table>
 <thead>
 <tr>
-<th align="center">字段<div style="width: 14em"></th>
-<th align="left">描述</th>
+<th style="text-align:center">字段<div style="width: 14em"></th>
+<th style="text-align:left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center"><code>*bucket</code></td>
-<td align="left">bucket需要存储的元数据的value部分（详见上节），被只读事务打开的<code>Bucket</code>中该指针指向mmap memory，被读写事务打开的<code>Bucket</code>中该指针指向heap memory。</td>
+<td style="text-align:center"><code>*bucket</code></td>
+<td style="text-align:left">bucket需要存储的元数据的value部分（详见上节），被只读事务打开的<code>Bucket</code>中该指针指向mmap memory，被读写事务打开的<code>Bucket</code>中该指针指向heap memory。</td>
 </tr>
 <tr>
-<td align="center"><code>tx *Tx</code></td>
-<td align="left">保存打开该bucket的事务实例。</td>
+<td style="text-align:center"><code>tx *Tx</code></td>
+<td style="text-align:left">保存打开该bucket的事务实例。</td>
 </tr>
 <tr>
-<td align="center"><code>buckets map[string]*Bucket</code></td>
-<td align="left">记录打开的子bucket。</td>
+<td style="text-align:center"><code>buckets map[string]*Bucket</code></td>
+<td style="text-align:left">记录打开的子bucket。</td>
 </tr>
 <tr>
-<td align="center"><code>page *page</code></td>
-<td align="left">如果该bucket为inline bucket，那么该字段指向了其虚拟页的位置。</td>
+<td style="text-align:center"><code>page *page</code></td>
+<td style="text-align:left">如果该bucket为inline bucket，那么该字段指向了其虚拟页的位置。</td>
 </tr>
 <tr>
-<td align="center"><code>rootNode *node</code></td>
-<td align="left">用来记录该bucket的B+Tree根节点实例化后的node（根节点同样是按需实例化的，因此该字段可能为nil）。</td>
+<td style="text-align:center"><code>rootNode *node</code></td>
+<td style="text-align:left">用来记录该bucket的B+Tree根节点实例化后的node（根节点同样是按需实例化的，因此该字段可能为nil）。</td>
 </tr>
 <tr>
-<td align="center"><code>nodes map[pgid]*node</code></td>
-<td align="left">用来记录该bucket的B+Tree中已实例化的node。</td>
+<td style="text-align:center"><code>nodes map[pgid]*node</code></td>
+<td style="text-align:left">用来记录该bucket的B+Tree中已实例化的node。</td>
 </tr>
 <tr>
-<td align="center"><code>FillPercent float64</code></td>
-<td align="left">bucket中B+Tree的填充率阈值。</td>
+<td style="text-align:center"><code>FillPercent float64</code></td>
+<td style="text-align:left">bucket中B+Tree的填充率阈值。</td>
 </tr>
 </tbody>
 </table>
@@ -422,22 +422,22 @@
 <table>
 <thead>
 <tr>
-<th align="center">方法<div style="width: 14em"></th>
-<th align="left">描述</th>
+<th style="text-align:center">方法<div style="width: 14em"></th>
+<th style="text-align:left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center"><code>Tx() *Tx</code></td>
-<td align="left">返回打开该bucket的事务。</td>
+<td style="text-align:center"><code>Tx() *Tx</code></td>
+<td style="text-align:left">返回打开该bucket的事务。</td>
 </tr>
 <tr>
-<td align="center"><code>Root() pgid</code></td>
-<td align="left">返回该bucket的B+Tree的根节点的pgid。</td>
+<td style="text-align:center"><code>Root() pgid</code></td>
+<td style="text-align:left">返回该bucket的B+Tree的根节点的pgid。</td>
 </tr>
 <tr>
-<td align="center"><code> Writable() bool</code></td>
-<td align="left">返回该bucket是否可写（打开该bucket的事务是否可写）。</td>
+<td style="text-align:center"><code> Writable() bool</code></td>
+<td style="text-align:left">返回该bucket是否可写（打开该bucket的事务是否可写）。</td>
 </tr>
 </tbody>
 </table>
@@ -1413,7 +1413,7 @@
 </div>
 </article></div>
             </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.81.0">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div>
     </footer></div>
