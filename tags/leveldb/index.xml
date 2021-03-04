@@ -1,18 +1,25 @@
 <rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
     <channel>
-        <title>leveldb - 标签 - 叉鸽 MrCroxx 的博客</title>
+        <title>LevelDB - 标签 - 叉鸽 MrCroxx 的博客</title>
         <link>https://mrcroxx.github.io/tags/leveldb/</link>
-        <description>leveldb - 标签 - 叉鸽 MrCroxx 的博客</description>
+        <description>LevelDB - 标签 - 叉鸽 MrCroxx 的博客</description>
         <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>mrcroxx@outlook.com (叉鸽)</managingEditor>
-            <webMaster>mrcroxx@outlook.com (叉鸽)</webMaster><lastBuildDate>Thu, 04 Mar 2021 19:37:23 &#43;0800</lastBuildDate><atom:link href="https://mrcroxx.github.io/tags/leveldb/" rel="self" type="application/rss+xml" /><item>
-    <title>深入浅出leveldb —— 0x01 总体概览</title>
-    <link>https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/1-/</link>
-    <pubDate>Thu, 04 Mar 2021 19:37:23 &#43;0800</pubDate>
+            <webMaster>mrcroxx@outlook.com (叉鸽)</webMaster><lastBuildDate>Thu, 04 Mar 2021 20:20:15 &#43;0800</lastBuildDate><atom:link href="https://mrcroxx.github.io/tags/leveldb/" rel="self" type="application/rss+xml" /><item>
+    <title>深入浅出LevelDB —— 0x02 基本数据结构与编码方式 [施工中]</title>
+    <link>https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/2-basic-data-structure/</link>
+    <pubDate>Thu, 04 Mar 2021 20:20:15 &#43;0800</pubDate>
     <author>作者</author>
-    <guid>https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/1-/</guid>
+    <guid>https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/2-basic-data-structure/</guid>
     <description><![CDATA[<p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>]]></description>
 </item><item>
-    <title>深入浅出leveldb —— 0x00 引言</title>
+    <title>深入浅出LevelDB —— 0x01 总体概览 [施工中]</title>
+    <link>https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/1-overview/</link>
+    <pubDate>Thu, 04 Mar 2021 19:37:23 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/1-overview/</guid>
+    <description><![CDATA[<p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>]]></description>
+</item><item>
+    <title>深入浅出LevelDB —— 0x00 引言 [施工中]</title>
     <link>https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/0-introduction/</link>
     <pubDate>Thu, 04 Mar 2021 19:37:12 &#43;0800</pubDate>
     <author>作者</author>
