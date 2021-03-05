@@ -9,11 +9,11 @@
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/0-introduction/" />
-<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/0-introduction/bbolt.jpg"/>
+<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/0-introduction/boltdb.jpg"/>
 <meta property="article:published_time" content="2021-01-05T18:20:36+08:00" />
-<meta property="article:modified_time" content="2021-01-05T18:20:40+08:00" />
+<meta property="article:modified_time" content="2021-03-04T20:10:58+08:00" />
 <meta name="twitter:card" content="summary_large_image"/>
-<meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/0-introduction/bbolt.jpg"/>
+<meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/0-introduction/boltdb.jpg"/>
 <meta name="twitter:title" content="深入浅出boltdb —— 0x00 引言"/>
 <meta name="twitter:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。"/>
 <meta name="application-name" content="叉鸽 MrCroxx 的博客">
@@ -30,11 +30,11 @@
             "@id": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/0-introduction\/"
         },"image": [{
                             "@type": "ImageObject",
-                            "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/0-introduction\/bbolt.jpg",
+                            "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/0-introduction\/boltdb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  237 ,
-        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/0-introduction\/","datePublished": "2021-01-05T18:20:36+08:00","dateModified": "2021-01-05T18:20:40+08:00","publisher": {
+                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  628 ,
+        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/0-introduction\/","datePublished": "2021-01-05T18:20:36+08:00","dateModified": "2021-03-04T20:10:58+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
                 "@type": "Person",
@@ -109,17 +109,17 @@
             <h2 class="toc-title">目录</h2>
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出boltdb —— 0x00 引言</h1><div class="post-meta">
-            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAbbolt/"><i class="far fa-folder fa-fw"></i>深入浅出bbolt</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-05">2021-01-05</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 237 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 1 分钟&nbsp;</div>
+            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAboltdb/"><i class="far fa-folder fa-fw"></i>深入浅出boltdb</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-05">2021-01-05</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 628 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 2 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
-        data-src="/posts/code-reading/boltdb-made-simple/0-introduction/bbolt.jpg"
-        data-srcset="/posts/code-reading/boltdb-made-simple/0-introduction/bbolt.jpg, /posts/code-reading/boltdb-made-simple/0-introduction/bbolt.jpg 1.5x, /posts/code-reading/boltdb-made-simple/0-introduction/bbolt.jpg 2x"
+        data-src="/posts/code-reading/boltdb-made-simple/0-introduction/boltdb.jpg"
+        data-srcset="/posts/code-reading/boltdb-made-simple/0-introduction/boltdb.jpg, /posts/code-reading/boltdb-made-simple/0-introduction/boltdb.jpg 1.5x, /posts/code-reading/boltdb-made-simple/0-introduction/boltdb.jpg 2x"
         data-sizes="auto"
-        alt="/posts/code-reading/boltdb-made-simple/0-introduction/bbolt.jpg"
-        title="/posts/code-reading/boltdb-made-simple/0-introduction/bbolt.jpg" /></div><div class="details toc" id="toc-static"  kept="">
+        alt="/posts/code-reading/boltdb-made-simple/0-introduction/boltdb.jpg"
+        title="/posts/code-reading/boltdb-made-simple/0-introduction/boltdb.jpg" /></div><div class="details toc" id="toc-static"  kept="">
                 <div class="details-summary toc-title">
                     <span>目录</span>
                     <span><i class="details-icon fas fa-angle-right"></i></span>
@@ -127,32 +127,44 @@
                 <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
   <ul>
     <li><a href="#1-引言">1. 引言</a></li>
-  </ul>
-
-  <ul>
     <li><a href="#2-目录">2. 目录</a></li>
     <li><a href="#3-施工路线图">3. 施工路线图</a></li>
   </ul>
 </nav></div>
             </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
 <h2 id="1-引言">1. 引言</h2>
-<p>boltDB是一个完全由go语言编写的基于B+树的kv数据库，</p>
-<h1 id="施工中--">施工中 &hellip; &hellip;</h1>
-<p><a href="https://github.com/boltdb/bolt/blob/master/README.md" target="_blank" rel="noopener noreffer">README</a></p>
-<p>Bolt uses a single memory-mapped file, implementing a copy-on-write B+tree, which makes reads very fast. Also, Bolt’s load time is better, especially during recovery from crash, since it doesn’t need to read the log (it doesn’t have it) to find the last succeeded transaction: it just reads IDs for two B+tree roots, and uses the one with the greater ID. Bolt is simpler.</p>
-<ul>
-<li>单文件：Bolt saves data into a single memory-mapped file on disk. It doesn’t have a separate journal, write-ahead log, or a thread for compaction or garbage collection: it deals with just one file, and does it safely.</li>
-<li>ACID事务支持：</li>
-</ul>
+<p>boltDB是一个完全由go语言编写的基于B+树的kv数据库，其完全支持事务的ACID特性，整个数据库只有一个文件，且有较高的读性能与加载时间。etcd的后端存储使用的便是基于boltdb优化的kv存储<a href="https://github.com/etcd-io/bbolt" target="_blank" rel="noopener noreffer">etcd-io/bbolt</a>。</p>
+<p>boltdb的源码非常适合用来学习B+Tree的实现。boltdb支持完整的事务ACID特性且实现方式较为简单，也适合存储与数据库初学者学习事务与简单的MVCC实现。另外，boltdb完全由go语言编写，因此其对于go语言或其它需要通过unsafe方式管理堆外内存的开发者，也是一个很好的示例。</p>
+<p>本系列文章将自底向上地介绍并分析boltdb的实现，较为详细地分析了其源码功能。本文源码基于已归档的<a href="https://github.com/boltdb/bolt" target="_blank" rel="noopener noreffer">boltdb/bolt</a>项目（commit#fd01fc）。</p>
+<p>本系列文章主要着眼于boltdb的设计、源码实现与相关知识，在阅读签，读者需要：</p>
+<ol>
+<li>学习go语言的基本语法，及unsafe的使用方式。</li>
+<li>详细阅读boltdb的<a href="https://github.com/boltdb/bolt/blob/master/README.md" target="_blank" rel="noopener noreffer">README</a>，对boltdb有初步认识。</li>
+</ol>
+<p>与前一个《深入浅出etcd/raft》系列相比，boltdb更多偏向工程实现而非算法，因此本系列不会逐行地分析每一行源码。</p>
 <h2 id="2-目录">2. 目录</h2>
 <ul>
-<li>[] 存储<code>page.go</code>、<code>freelist.go</code></li>
+<li><a href="/posts/code-reading/boltdb-made-simple/0-introduction/" rel="">深入浅出boltdb —— 0x00 引言</a></li>
+<li><a href="/posts/code-reading/boltdb-made-simple/1-storage-cache/" rel="">深入浅出boltdb —— 0x01 存储与缓存</a></li>
+<li><a href="/posts/code-reading/boltdb-made-simple/2-b&#43;tree/" rel="">深入浅出boltdb —— 0x02 B+Tree</a></li>
+<li><a href="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/" rel="">深入浅出boltdb —— 0x03 bucket &amp; cursor</a></li>
+<li><a href="/posts/code-reading/boltdb-made-simple/4-transaction/" rel="">深入浅出boltdb —— 0x04 事务</a></li>
 </ul>
-<h2 id="3-施工路线图">3. 施工路线图</h2></div><div class="post-footer" id="post-footer">
+<h2 id="3-施工路线图">3. 施工路线图</h2>
+<ul>
+<li><i class="far fa-check-square fa-fw"></i> 引言</li>
+<li><i class="far fa-check-square fa-fw"></i> 存储</li>
+<li><i class="far fa-check-square fa-fw"></i> 缓存</li>
+<li><i class="far fa-check-square fa-fw"></i> B+Tree</li>
+<li><i class="far fa-check-square fa-fw"></i> bucket</li>
+<li><i class="far fa-check-square fa-fw"></i> cursor</li>
+<li><i class="far fa-check-square fa-fw"></i> 事务</li>
+<li><i class="far fa-check-square fa-fw"></i> db</li>
+</ul></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
-                <span>更新于 2021-01-05</span>
+                <span>更新于 2021-03-04</span>
             </div>
             <div class="post-info-license"></div>
         </div>

@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>深入浅出LevelDB —— 0x02 通用数据结构与工具 [施工中] - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 0x02 通用数据结构与工具 [施工中]" />
+<meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/2-basic-data-structure/" />
+<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/2-basic-data-structure/leveldb.jpg"/>
+<meta property="article:published_time" content="2021-03-04T20:20:15+08:00" />
+<meta property="article:modified_time" content="2021-03-04T20:20:19+08:00" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/2-basic-data-structure/leveldb.jpg"/>
+<meta name="twitter:title" content="深入浅出LevelDB —— 0x02 通用数据结构与工具 [施工中]"/>
+<meta name="twitter:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。"/>
+<meta name="application-name" content="叉鸽 MrCroxx 的博客">
+<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/2-basic-data-structure/" /><link rel="prev" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/1-overview/" /><link rel="next" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/3-log/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "深入浅出LevelDB —— 0x02 通用数据结构与工具 [施工中]",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/2-basic-data-structure\/"
+        },"image": [{
+                            "@type": "ImageObject",
+                            "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/2-basic-data-structure\/leveldb.jpg",
+                            "width":  1200 ,
+                            "height":  360 
+                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  3062 ,
+        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/2-basic-data-structure\/","datePublished": "2021-03-04T20:20:15+08:00","dateModified": "2021-03-04T20:20:19+08:00","publisher": {
+            "@type": "Organization",
+            "name": "叉鸽"},"author": {
+                "@type": "Person",
+                "name": "叉鸽"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : '' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-1" class="typeit"></span></a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-2" class="typeit"></span></a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x02 通用数据结构与工具 [施工中]</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-04">2021-03-04</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 3062 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 7 分钟&nbsp;</div>
+        </div><div class="featured-image"><img
+        class="lazyload"
+        src="/svg/loading.min.svg"
+        data-src="/posts/code-reading/leveldb-made-simple/2-basic-data-structure/leveldb.jpg"
+        data-srcset="/posts/code-reading/leveldb-made-simple/2-basic-data-structure/leveldb.jpg, /posts/code-reading/leveldb-made-simple/2-basic-data-structure/leveldb.jpg 1.5x, /posts/code-reading/leveldb-made-simple/2-basic-data-structure/leveldb.jpg 2x"
+        data-sizes="auto"
+        alt="/posts/code-reading/leveldb-made-simple/2-basic-data-structure/leveldb.jpg"
+        title="/posts/code-reading/leveldb-made-simple/2-basic-data-structure/leveldb.jpg" /></div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#0-引言">0. 引言</a></li>
+    <li><a href="#1-内存分配器arena">1. 内存分配器Arena</a></li>
+    <li><a href="#2切片slice">2.切片Slice</a></li>
+    <li><a href="#3-整型与slice编码方式">3. 整型与Slice编码方式</a>
+      <ul>
+        <li><a href="#31-整型定长编码">3.1 整型定长编码</a></li>
+        <li><a href="#32-整型变长编码">3.2 整型变长编码</a></li>
+        <li><a href="#33-长度确定的slice编码">3.3 长度确定的Slice编码</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
+<h2 id="0-引言">0. 引言</h2>
+<p>为了便于后续的分析，本节将介绍LevelDB中较为通用的基本数据结构与工具及其实现。</p>
+<h2 id="1-内存分配器arena">1. 内存分配器Arena</h2>
+<p>相关文件：<code>util/arena.h</code>、<code>util/arena.cc</code>。</p>
+<p><code>Arena</code>是LevelDB的内存分配器。LevelDB统一由Arena向操作系统申请内存，需要分配在堆上的数据结构再通过Arena申请一段连续的空间。</p>
+<p>与大多数存储系统一样，Arena在其生命周期中也不会主动将已经获得的内存归还给操作系统。此外，像Arena申请内存的数据结构也不会在Arena的生命周期中归还其占用的内存，这与数据结构的使用场景及使用相关。</p>
+<p>Arena对外提供了以下方法：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="k">class</span> <span class="nc">Arena</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">Arena</span><span class="p">();</span>
+
+  <span class="n">Arena</span><span class="p">(</span><span class="k">const</span> <span class="n">Arena</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+  <span class="n">Arena</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">Arena</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+
+  <span class="o">~</span><span class="n">Arena</span><span class="p">();</span>
+
+  <span class="c1">// Return a pointer to a newly allocated memory block of &#34;bytes&#34; bytes.
+</span><span class="c1"></span>  <span class="kt">char</span><span class="o">*</span> <span class="nf">Allocate</span><span class="p">(</span><span class="n">size_t</span> <span class="n">bytes</span><span class="p">);</span>
+
+  <span class="c1">// Allocate memory with the normal alignment guarantees provided by malloc.
+</span><span class="c1"></span>  <span class="kt">char</span><span class="o">*</span> <span class="nf">AllocateAligned</span><span class="p">(</span><span class="n">size_t</span> <span class="n">bytes</span><span class="p">);</span>
+
+  <span class="c1">// Returns an estimate of the total memory usage of data allocated
+</span><span class="c1"></span>  <span class="c1">// by the arena.
+</span><span class="c1"></span>  <span class="n">size_t</span> <span class="nf">MemoryUsage</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">memory_usage_</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="c1">// ... ...
+</span><span class="c1"></span>
+<span class="p">}</span>
+
+</code></pre></div><p>Arena对外的分配方法有两种，区别在于是否按照机器位数对齐。Arena内部主要通过4个字段实现：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="k">class</span> <span class="nc">Arena</span> <span class="p">{</span>
+
+  <span class="c1">// ... ...
+</span><span class="c1"></span>
+ <span class="k">private</span><span class="o">:</span>
+  <span class="kt">char</span><span class="o">*</span> <span class="n">AllocateFallback</span><span class="p">(</span><span class="n">size_t</span> <span class="n">bytes</span><span class="p">);</span>
+  <span class="kt">char</span><span class="o">*</span> <span class="nf">AllocateNewBlock</span><span class="p">(</span><span class="n">size_t</span> <span class="n">block_bytes</span><span class="p">);</span>
+
+  <span class="c1">// Allocation state
+</span><span class="c1"></span>  <span class="kt">char</span><span class="o">*</span> <span class="n">alloc_ptr_</span><span class="p">;</span>
+  <span class="n">size_t</span> <span class="n">alloc_bytes_remaining_</span><span class="p">;</span>
+
+  <span class="c1">// Array of new[] allocated memory blocks
+</span><span class="c1"></span>  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">*&gt;</span> <span class="n">blocks_</span><span class="p">;</span>
+
+  <span class="c1">// Total memory usage of the arena.
+</span><span class="c1"></span>  <span class="c1">//
+</span><span class="c1"></span>  <span class="c1">// TODO(costan): This member is accessed via atomics, but the others are
+</span><span class="c1"></span>  <span class="c1">//               accessed without any locking. Is this OK?
+</span><span class="c1"></span>  <span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">size_t</span><span class="o">&gt;</span> <span class="n">memory_usage_</span><span class="p">;</span>
+<span class="p">};</span>
+
+</code></pre></div><p><code>std::vector&lt;char*&gt; blocks_</code>字段按block来保存已申请的内存空间，<code>char* alloc_ptr_</code>指向当前块中还未分配的内存地址，<code>size_t alloc_bytes_remaining_</code>记录了当前块中剩余的未分配空间大小，<code>std::atomic&lt;size_t&gt; memory_usage_</code>记录了Arena获取的总内存大小（包括了每个block的header大小）。注意，这里“当前块”并非向操作系统申请获得的最后一个块，因为Arena为了避免浪费，会为较大的请求分配单独的块（详见下文），这里的“当前块”是指除了这些单独分配的块外获得的最后一个块。</p>
+<p>当LevelDB通过<code>Allocate</code>方法向Arena请求内存时，Arena首先会检查当前块的剩余空间，如果当前块剩余空间能够满足分配需求，则直接将剩余空间分配给调用者，并调整<code>alloc_ptr</code>与<code>alloc_bytes_remaining</code>：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="kr">inline</span> <span class="kt">char</span><span class="o">*</span> <span class="n">Arena</span><span class="o">::</span><span class="n">Allocate</span><span class="p">(</span><span class="n">size_t</span> <span class="n">bytes</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// The semantics of what to return are a bit messy if we allow
+</span><span class="c1"></span>  <span class="c1">// 0-byte allocations, so we disallow them here (we don&#39;t need
+</span><span class="c1"></span>  <span class="c1">// them for our internal use).
+</span><span class="c1"></span>  <span class="n">assert</span><span class="p">(</span><span class="n">bytes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">);</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">bytes</span> <span class="o">&lt;=</span> <span class="n">alloc_bytes_remaining_</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kt">char</span><span class="o">*</span> <span class="n">result</span> <span class="o">=</span> <span class="n">alloc_ptr_</span><span class="p">;</span>
+    <span class="n">alloc_ptr_</span> <span class="o">+=</span> <span class="n">bytes</span><span class="p">;</span>
+    <span class="n">alloc_bytes_remaining_</span> <span class="o">-=</span> <span class="n">bytes</span><span class="p">;</span>
+    <span class="k">return</span> <span class="n">result</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nf">AllocateFallback</span><span class="p">(</span><span class="n">bytes</span><span class="p">);</span>
+<span class="p">}</span>
+
+</code></pre></div><p>如果当前块剩余空间不足，Arena会调用内部的<code>AllocateFallback方法</code>：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="kt">char</span><span class="o">*</span> <span class="n">Arena</span><span class="o">::</span><span class="n">AllocateFallback</span><span class="p">(</span><span class="n">size_t</span> <span class="n">bytes</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">bytes</span> <span class="o">&gt;</span> <span class="n">kBlockSize</span> <span class="o">/</span> <span class="mi">4</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// Object is more than a quarter of our block size.  Allocate it separately
+</span><span class="c1"></span>    <span class="c1">// to avoid wasting too much space in leftover bytes.
+</span><span class="c1"></span>    <span class="kt">char</span><span class="o">*</span> <span class="n">result</span> <span class="o">=</span> <span class="n">AllocateNewBlock</span><span class="p">(</span><span class="n">bytes</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">result</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="c1">// We waste the remaining space in the current block.
+</span><span class="c1"></span>  <span class="n">alloc_ptr_</span> <span class="o">=</span> <span class="n">AllocateNewBlock</span><span class="p">(</span><span class="n">kBlockSize</span><span class="p">);</span>
+  <span class="n">alloc_bytes_remaining_</span> <span class="o">=</span> <span class="n">kBlockSize</span><span class="p">;</span>
+
+  <span class="kt">char</span><span class="o">*</span> <span class="n">result</span> <span class="o">=</span> <span class="n">alloc_ptr_</span><span class="p">;</span>
+  <span class="n">alloc_ptr_</span> <span class="o">+=</span> <span class="n">bytes</span><span class="p">;</span>
+  <span class="n">alloc_bytes_remaining_</span> <span class="o">-=</span> <span class="n">bytes</span><span class="p">;</span>
+  <span class="k">return</span> <span class="n">result</span><span class="p">;</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>AllocateFallback</code>会判断需要分配的大小，如果需要分配的大小超过了默认块大小的$\frac{1}{4}$，为了避免浪费当前块的剩余空间，Arena会为其单独分配一个大小等于需求的块，此时不需要调整<code>alloc_ptr</code>与<code>alloc_bytes_remaining</code>字段，这样做的另一个好处是这一逻辑也可以用于分配需求大于默认块大小的空间；如果需要分配的大小没有超过默认块大小的$\frac{1}{4}$，此时不再使用当前块的剩余空间浪费也很小，因此直接申请一个默认大小的块，并从新块分配空间，同时调整<code>alloc_ptr</code>与<code>alloc_bytes_remaining</code>字段。</p>
+<p><code>AllocateNewBlock</code>会通过<code>new</code>关键字向操作系统申请内存空间，并将获得的内存块保存到<code>blocks_</code>中，同时更新<code>memory_usage_</code>字段：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="kt">char</span><span class="o">*</span> <span class="n">Arena</span><span class="o">::</span><span class="n">AllocateNewBlock</span><span class="p">(</span><span class="n">size_t</span> <span class="n">block_bytes</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kt">char</span><span class="o">*</span> <span class="n">result</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">char</span><span class="p">[</span><span class="n">block_bytes</span><span class="p">];</span>
+  <span class="n">blocks_</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">result</span><span class="p">);</span>
+  <span class="n">memory_usage_</span><span class="p">.</span><span class="n">fetch_add</span><span class="p">(</span><span class="n">block_bytes</span> <span class="o">+</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">char</span><span class="o">*</span><span class="p">),</span>
+                          <span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+  <span class="k">return</span> <span class="n">result</span><span class="p">;</span>
+<span class="p">}</span>
+
+</code></pre></div><p>在计算<code>memory_usage_</code>时，使用的空间除了需求的空间大小<code>block_bytes</code>外，还要加上<code>new</code>关键字为数组分配空间时为数组加上的header大小（这样<code>delete[]</code>关键字才能知道需要释放的数组大小）。</p>
+<h2 id="2切片slice">2.切片Slice</h2>
+<p>相关文件：<code>include/leveldb/slice.h</code>。</p>
+<p><code>Slice</code>是LevelDB中广泛使用的切片类。Slice的结构非常简单，其只有两个字段，分别保存切片指针与切片大小：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="k">class</span> <span class="nc">LEVELDB_EXPORT</span> <span class="n">Slice</span> <span class="p">{</span>
+
+  <span class="c1">// ... ...
+</span><span class="c1"></span> <span class="k">private</span><span class="o">:</span>
+  <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">data_</span><span class="p">;</span>
+  <span class="n">size_t</span> <span class="n">size_</span><span class="p">;</span>
+<span class="p">};</span>
+
+</code></pre></div><p>Slice只关心切片的位置与大小，而不关心切片内容。因此。我们可以将Slice看做字节数组切片。</p>
+<p>Slice有4种构造方法，其显式使用了默认的拷贝构造方法与拷贝构造运算符：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="k">class</span> <span class="nc">LEVELDB_EXPORT</span> <span class="n">Slice</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="c1">// Create an empty slice.
+</span><span class="c1"></span>  <span class="n">Slice</span><span class="p">()</span> <span class="o">:</span> <span class="n">data_</span><span class="p">(</span><span class="s">&#34;&#34;</span><span class="p">),</span> <span class="n">size_</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="p">{}</span>
+
+  <span class="c1">// Create a slice that refers to d[0,n-1].
+</span><span class="c1"></span>  <span class="n">Slice</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">d</span><span class="p">,</span> <span class="n">size_t</span> <span class="n">n</span><span class="p">)</span> <span class="o">:</span> <span class="n">data_</span><span class="p">(</span><span class="n">d</span><span class="p">),</span> <span class="n">size_</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="p">{}</span>
+
+  <span class="c1">// Create a slice that refers to the contents of &#34;s&#34;
+</span><span class="c1"></span>  <span class="n">Slice</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">s</span><span class="p">)</span> <span class="o">:</span> <span class="n">data_</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">data</span><span class="p">()),</span> <span class="n">size_</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">size</span><span class="p">())</span> <span class="p">{}</span>
+
+  <span class="c1">// Create a slice that refers to s[0,strlen(s)-1]
+</span><span class="c1"></span>  <span class="n">Slice</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">s</span><span class="p">)</span> <span class="o">:</span> <span class="n">data_</span><span class="p">(</span><span class="n">s</span><span class="p">),</span> <span class="n">size_</span><span class="p">(</span><span class="n">strlen</span><span class="p">(</span><span class="n">s</span><span class="p">))</span> <span class="p">{}</span>
+
+  <span class="c1">// Intentionally copyable.
+</span><span class="c1"></span>  <span class="n">Slice</span><span class="p">(</span><span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
+  <span class="n">Slice</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
+
+  <span class="c1">// ... ...
+</span><span class="c1"></span>
+<span class="p">}</span>
+
+</code></pre></div><p>从Slice的构造方法可以看出，在Slice实例构造时，LevelDB不会为其分配新的内存空间，而是直接将其指向需要表示的切片头位置。<strong>因此，Slice的使用者需要确保在Slice实例还在使用时，其指向的内存不会销毁。</strong></p>
+<p>Slice的默认比较方式比较主要通过<code>memcmp</code>实现：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="kr">inline</span> <span class="kt">int</span> <span class="n">Slice</span><span class="o">::</span><span class="n">compare</span><span class="p">(</span><span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">b</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+  <span class="k">const</span> <span class="n">size_t</span> <span class="n">min_len</span> <span class="o">=</span> <span class="p">(</span><span class="n">size_</span> <span class="o">&lt;</span> <span class="n">b</span><span class="p">.</span><span class="n">size_</span><span class="p">)</span> <span class="o">?</span> <span class="nl">size_</span> <span class="p">:</span> <span class="n">b</span><span class="p">.</span><span class="n">size_</span><span class="p">;</span>
+  <span class="kt">int</span> <span class="n">r</span> <span class="o">=</span> <span class="n">memcmp</span><span class="p">(</span><span class="n">data_</span><span class="p">,</span> <span class="n">b</span><span class="p">.</span><span class="n">data_</span><span class="p">,</span> <span class="n">min_len</span><span class="p">);</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">r</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">size_</span> <span class="o">&lt;</span> <span class="n">b</span><span class="p">.</span><span class="n">size_</span><span class="p">)</span>
+      <span class="n">r</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+    <span class="k">else</span> <span class="nf">if</span> <span class="p">(</span><span class="n">size_</span> <span class="o">&gt;</span> <span class="n">b</span><span class="p">.</span><span class="n">size_</span><span class="p">)</span>
+      <span class="n">r</span> <span class="o">=</span> <span class="o">+</span><span class="mi">1</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="n">r</span><span class="p">;</span>
+<span class="p">}</span>
+
+</code></pre></div><h2 id="3-整型与slice编码方式">3. 整型与Slice编码方式</h2>
+<p>相关文件：<code>coding.h</code>、<code>coding.cc</code>。</p>
+<p>LevelDB中另一种常用的数据类型是整型。在LevelDB的源码中，其直接使用了<code>&lt;cstdint&gt;</code>的<code>uint32_t</code>与<code>uint64_t</code>作为整型类型，因此我们只需要关注其编码为字节数组的方式。</p>
+<p>LevelDB中为整型提供了两类编码方式，一类是定长编码，一类是变长编码。</p>
+<p>另外，LevelDB为了便于从字节数组中划分Slice，其还提供了一种<code>LengthPrefixedSlice</code>的编码方式，在编码中将长度确定的Slice的长度作为Slice的前缀。</p>
+<h3 id="31-整型定长编码">3.1 整型定长编码</h3>
+<p>LevelDB中整型的定长编码（<em>32bits</em>或<em>64bits</em>）方式非常简单，只需要将整型按照小端的顺序编码即可：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="kr">inline</span> <span class="kt">void</span> <span class="nf">EncodeFixed32</span><span class="p">(</span><span class="kt">char</span><span class="o">*</span> <span class="n">dst</span><span class="p">,</span> <span class="kt">uint32_t</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kt">uint8_t</span><span class="o">*</span> <span class="k">const</span> <span class="n">buffer</span> <span class="o">=</span> <span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">dst</span><span class="p">);</span>
+
+  <span class="c1">// Recent clang and gcc optimize this to a single mov / str instruction.
+</span><span class="c1"></span>  <span class="n">buffer</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">value</span><span class="p">);</span>
+  <span class="n">buffer</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">value</span> <span class="o">&gt;&gt;</span> <span class="mi">8</span><span class="p">);</span>
+  <span class="n">buffer</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">value</span> <span class="o">&gt;&gt;</span> <span class="mi">16</span><span class="p">);</span>
+  <span class="n">buffer</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">value</span> <span class="o">&gt;&gt;</span> <span class="mi">24</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kr">inline</span> <span class="kt">void</span> <span class="nf">EncodeFixed64</span><span class="p">(</span><span class="kt">char</span><span class="o">*</span> <span class="n">dst</span><span class="p">,</span> <span class="kt">uint64_t</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kt">uint8_t</span><span class="o">*</span> <span class="k">const</span> <span class="n">buffer</span> <span class="o">=</span> <span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">dst</span><span class="p">);</span>
+
+  <span class="c1">// Recent clang and gcc optimize this to a single mov / str instruction.
+</span><span class="c1"></span>  <span class="n">buffer</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">value</span><span class="p">);</span>
+  <span class="n">buffer</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">value</span> <span class="o">&gt;&gt;</span> <span class="mi">8</span><span class="p">);</span>
+  <span class="n">buffer</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">value</span> <span class="o">&gt;&gt;</span> <span class="mi">16</span><span class="p">);</span>
+  <span class="n">buffer</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">value</span> <span class="o">&gt;&gt;</span> <span class="mi">24</span><span class="p">);</span>
+  <span class="n">buffer</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">value</span> <span class="o">&gt;&gt;</span> <span class="mi">32</span><span class="p">);</span>
+  <span class="n">buffer</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">value</span> <span class="o">&gt;&gt;</span> <span class="mi">40</span><span class="p">);</span>
+  <span class="n">buffer</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">value</span> <span class="o">&gt;&gt;</span> <span class="mi">48</span><span class="p">);</span>
+  <span class="n">buffer</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span> <span class="o">=</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">value</span> <span class="o">&gt;&gt;</span> <span class="mi">56</span><span class="p">);</span>
+<span class="p">}</span>
+
+</code></pre></div><p>定长整型的解码方式同理，这里不再赘述。</p>
+<h3 id="32-整型变长编码">3.2 整型变长编码</h3>
+<p>当整型值较小时，LevelDB支持将其编码为变长整型，以减少其空间占用（对于值与类型最大值接近时，变长整型占用空间反而增加）。</p>
+<p>对于变长整型编码，LevelDB需要知道该整型编码的终点在哪儿。因此，LevelDB将每个字节的最高位作为标识符，当字节最高位为1时表示编码未结束，当字节最高位为0时表示编码结束。因此，LevelDB的整型变长编码每8位用来表示整型值的7位。因此，当整型值接近其类型最大值时，变长编码需要额外一字节来容纳原整型值。</p>
+<p>同样，变长整型编码也采用了小端顺序：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="c1">// 笔者注：Encode
+</span><span class="c1"></span>
+<span class="kt">char</span><span class="o">*</span> <span class="nf">EncodeVarint32</span><span class="p">(</span><span class="kt">char</span><span class="o">*</span> <span class="n">dst</span><span class="p">,</span> <span class="kt">uint32_t</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// Operate on characters as unsigneds
+</span><span class="c1"></span>  <span class="kt">uint8_t</span><span class="o">*</span> <span class="n">ptr</span> <span class="o">=</span> <span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">dst</span><span class="p">);</span>
+  <span class="k">static</span> <span class="k">const</span> <span class="kt">int</span> <span class="n">B</span> <span class="o">=</span> <span class="mi">128</span><span class="p">;</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">v</span> <span class="o">&lt;</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">7</span><span class="p">))</span> <span class="p">{</span>
+    <span class="o">*</span><span class="p">(</span><span class="n">ptr</span><span class="o">++</span><span class="p">)</span> <span class="o">=</span> <span class="n">v</span><span class="p">;</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">v</span> <span class="o">&lt;</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">14</span><span class="p">))</span> <span class="p">{</span>
+    <span class="o">*</span><span class="p">(</span><span class="n">ptr</span><span class="o">++</span><span class="p">)</span> <span class="o">=</span> <span class="n">v</span> <span class="o">|</span> <span class="n">B</span><span class="p">;</span>
+    <span class="o">*</span><span class="p">(</span><span class="n">ptr</span><span class="o">++</span><span class="p">)</span> <span class="o">=</span> <span class="n">v</span> <span class="o">&gt;&gt;</span> <span class="mi">7</span><span class="p">;</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">v</span> <span class="o">&lt;</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">21</span><span class="p">))</span> <span class="p">{</span>
+    <span class="o">*</span><span class="p">(</span><span class="n">ptr</span><span class="o">++</span><span class="p">)</span> <span class="o">=</span> <span class="n">v</span> <span class="o">|</span> <span class="n">B</span><span class="p">;</span>
+    <span class="o">*</span><span class="p">(</span><span class="n">ptr</span><span class="o">++</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">v</span> <span class="o">&gt;&gt;</span> <span class="mi">7</span><span class="p">)</span> <span class="o">|</span> <span class="n">B</span><span class="p">;</span>
+    <span class="o">*</span><span class="p">(</span><span class="n">ptr</span><span class="o">++</span><span class="p">)</span> <span class="o">=</span> <span class="n">v</span> <span class="o">&gt;&gt;</span> <span class="mi">14</span><span class="p">;</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">v</span> <span class="o">&lt;</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">28</span><span class="p">))</span> <span class="p">{</span>
+    <span class="o">*</span><span class="p">(</span><span class="n">ptr</span><span class="o">++</span><span class="p">)</span> <span class="o">=</span> <span class="n">v</span> <span class="o">|</span> <span class="n">B</span><span class="p">;</span>
+    <span class="o">*</span><span class="p">(</span><span class="n">ptr</span><span class="o">++</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">v</span> <span class="o">&gt;&gt;</span> <span class="mi">7</span><span class="p">)</span> <span class="o">|</span> <span class="n">B</span><span class="p">;</span>
+    <span class="o">*</span><span class="p">(</span><span class="n">ptr</span><span class="o">++</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">v</span> <span class="o">&gt;&gt;</span> <span class="mi">14</span><span class="p">)</span> <span class="o">|</span> <span class="n">B</span><span class="p">;</span>
+    <span class="o">*</span><span class="p">(</span><span class="n">ptr</span><span class="o">++</span><span class="p">)</span> <span class="o">=</span> <span class="n">v</span> <span class="o">&gt;&gt;</span> <span class="mi">21</span><span class="p">;</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="o">*</span><span class="p">(</span><span class="n">ptr</span><span class="o">++</span><span class="p">)</span> <span class="o">=</span> <span class="n">v</span> <span class="o">|</span> <span class="n">B</span><span class="p">;</span>
+    <span class="o">*</span><span class="p">(</span><span class="n">ptr</span><span class="o">++</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">v</span> <span class="o">&gt;&gt;</span> <span class="mi">7</span><span class="p">)</span> <span class="o">|</span> <span class="n">B</span><span class="p">;</span>
+    <span class="o">*</span><span class="p">(</span><span class="n">ptr</span><span class="o">++</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">v</span> <span class="o">&gt;&gt;</span> <span class="mi">14</span><span class="p">)</span> <span class="o">|</span> <span class="n">B</span><span class="p">;</span>
+    <span class="o">*</span><span class="p">(</span><span class="n">ptr</span><span class="o">++</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">v</span> <span class="o">&gt;&gt;</span> <span class="mi">21</span><span class="p">)</span> <span class="o">|</span> <span class="n">B</span><span class="p">;</span>
+    <span class="o">*</span><span class="p">(</span><span class="n">ptr</span><span class="o">++</span><span class="p">)</span> <span class="o">=</span> <span class="n">v</span> <span class="o">&gt;&gt;</span> <span class="mi">28</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">ptr</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">char</span><span class="o">*</span> <span class="nf">EncodeVarint64</span><span class="p">(</span><span class="kt">char</span><span class="o">*</span> <span class="n">dst</span><span class="p">,</span> <span class="kt">uint64_t</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">static</span> <span class="k">const</span> <span class="kt">int</span> <span class="n">B</span> <span class="o">=</span> <span class="mi">128</span><span class="p">;</span>
+  <span class="kt">uint8_t</span><span class="o">*</span> <span class="n">ptr</span> <span class="o">=</span> <span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">dst</span><span class="p">);</span>
+  <span class="k">while</span> <span class="p">(</span><span class="n">v</span> <span class="o">&gt;=</span> <span class="n">B</span><span class="p">)</span> <span class="p">{</span>
+    <span class="o">*</span><span class="p">(</span><span class="n">ptr</span><span class="o">++</span><span class="p">)</span> <span class="o">=</span> <span class="n">v</span> <span class="o">|</span> <span class="n">B</span><span class="p">;</span>
+    <span class="n">v</span> <span class="o">&gt;&gt;=</span> <span class="mi">7</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="o">*</span><span class="p">(</span><span class="n">ptr</span><span class="o">++</span><span class="p">)</span> <span class="o">=</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">v</span><span class="p">);</span>
+  <span class="k">return</span> <span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">ptr</span><span class="p">);</span>
+<span class="p">}</span>
+
+</code></pre></div><p>在解码时，LevelDB只需要根据字节的最高位判断变长编码是否结束即可，这里不再赘述。另外，LevelDB提供了解码同时返回一些信息的方法，以方便在不通场景下的使用。</p>
+<h3 id="33-长度确定的slice编码">3.3 长度确定的Slice编码</h3>
+<p>长度确定的Slice的编码方式非常简单，只需要在原Slice之前加上用变长整型表示的Slice长度即可：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="kt">void</span> <span class="nf">PutLengthPrefixedSlice</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">*</span> <span class="n">dst</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">PutVarint32</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">value</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
+  <span class="n">dst</span><span class="o">-&gt;</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span> <span class="n">value</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
+<span class="p">}</span>
+
+</code></pre></div><h1 id="施工中--">施工中 &hellip; &hellip;</h1></div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2021-03-04</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"></div>
+            <div class="post-info-share">
+                <span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/leveldb/">LevelDB</a>,&nbsp;<a href="/tags/lsmtree/">LSMTree</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/posts/code-reading/leveldb-made-simple/1-overview/" class="prev" rel="prev" title="深入浅出LevelDB —— 0x01 总体概览 [施工中]"><i class="fas fa-angle-left fa-fw"></i>深入浅出LevelDB —— 0x01 总体概览 [施工中]</a>
+            <a href="/posts/code-reading/leveldb-made-simple/3-log/" class="next" rel="next" title="深入浅出LevelDB —— 0x03 log [施工中]">深入浅出LevelDB —— 0x03 log [施工中]<i class="fas fa-angle-right fa-fw"></i></a></div>
+</div>
+</article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"><link rel="stylesheet" href="/lib/katex/katex.min.css"><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"><script type="text/javascript" src="/lib/smooth-scroll/smooth-scroll.min.js"></script><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"id-1":"叉鸽 | MrCroxx","id-2":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"id-1":["id-1"],"id-2":["id-2"]},"duration":null,"speed":null}};</script><script type="text/javascript" src="/js/theme.min.js"></script></body>
+</html>

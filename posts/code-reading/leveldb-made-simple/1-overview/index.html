@@ -5,36 +5,36 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="robots" content="noodp" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
-        <title>深入浅出etcd/raft —— 0x00 引言 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出etcd/raft —— 0x00 引言" />
+        <title>深入浅出LevelDB —— 0x01 总体概览 [施工中] - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 0x01 总体概览 [施工中]" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/0-introduction/" />
-<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/0-introduction/etcd-raft.jpg"/>
-<meta property="article:published_time" content="2020-12-10T22:03:56+08:00" />
-<meta property="article:modified_time" content="2021-01-02T16:28:04+08:00" />
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/1-overview/" />
+<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/1-overview/leveldb.jpg"/>
+<meta property="article:published_time" content="2021-03-04T19:37:23+08:00" />
+<meta property="article:modified_time" content="2021-03-04T19:37:27+08:00" />
 <meta name="twitter:card" content="summary_large_image"/>
-<meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/0-introduction/etcd-raft.jpg"/>
-<meta name="twitter:title" content="深入浅出etcd/raft —— 0x00 引言"/>
+<meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/1-overview/leveldb.jpg"/>
+<meta name="twitter:title" content="深入浅出LevelDB —— 0x01 总体概览 [施工中]"/>
 <meta name="twitter:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。"/>
 <meta name="application-name" content="叉鸽 MrCroxx 的博客">
 <meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/0-introduction/" /><link rel="prev" href="https://mrcroxx.github.io/posts/paper-reading/spanner-osdi2012/" /><link rel="next" href="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/1-raftexample/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/1-overview/" /><link rel="prev" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/0-introduction/" /><link rel="next" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/2-basic-data-structure/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
     {
         "@context": "http://schema.org",
         "@type": "BlogPosting",
-        "headline": "深入浅出etcd/raft —— 0x00 引言",
+        "headline": "深入浅出LevelDB —— 0x01 总体概览 [施工中]",
         "inLanguage": "zh-CN",
         "mainEntityOfPage": {
             "@type": "WebPage",
-            "@id": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/etcdraft-made-simple\/0-introduction\/"
+            "@id": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/1-overview\/"
         },"image": [{
                             "@type": "ImageObject",
-                            "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/etcdraft-made-simple\/0-introduction\/etcd-raft.jpg",
+                            "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/1-overview\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "etcd, Raft","wordcount":  1124 ,
-        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/etcdraft-made-simple\/0-introduction\/","datePublished": "2020-12-10T22:03:56+08:00","dateModified": "2021-01-02T16:28:04+08:00","publisher": {
+                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  33 ,
+        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/1-overview\/","datePublished": "2021-03-04T19:37:23+08:00","dateModified": "2021-03-04T19:37:27+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
                 "@type": "Person",
@@ -108,72 +108,29 @@
                 <div class="container"><div class="toc" id="toc-auto">
             <h2 class="toc-title">目录</h2>
             <div class="toc-content" id="toc-content-auto"></div>
-        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出etcd/raft —— 0x00 引言</h1><div class="post-meta">
-            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAetcd/raft/"><i class="far fa-folder fa-fw"></i>深入浅出etcd/raft</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-12-10">2020-12-10</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1124 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 3 分钟&nbsp;</div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x01 总体概览 [施工中]</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-04">2021-03-04</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 33 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 1 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
-        data-src="/posts/code-reading/etcdraft-made-simple/0-introduction/etcd-raft.jpg"
-        data-srcset="/posts/code-reading/etcdraft-made-simple/0-introduction/etcd-raft.jpg, /posts/code-reading/etcdraft-made-simple/0-introduction/etcd-raft.jpg 1.5x, /posts/code-reading/etcdraft-made-simple/0-introduction/etcd-raft.jpg 2x"
+        data-src="/posts/code-reading/leveldb-made-simple/1-overview/leveldb.jpg"
+        data-srcset="/posts/code-reading/leveldb-made-simple/1-overview/leveldb.jpg, /posts/code-reading/leveldb-made-simple/1-overview/leveldb.jpg 1.5x, /posts/code-reading/leveldb-made-simple/1-overview/leveldb.jpg 2x"
         data-sizes="auto"
-        alt="/posts/code-reading/etcdraft-made-simple/0-introduction/etcd-raft.jpg"
-        title="/posts/code-reading/etcdraft-made-simple/0-introduction/etcd-raft.jpg" /></div><div class="details toc" id="toc-static"  kept="">
+        alt="/posts/code-reading/leveldb-made-simple/1-overview/leveldb.jpg"
+        title="/posts/code-reading/leveldb-made-simple/1-overview/leveldb.jpg" /></div><div class="details toc" id="toc-static"  kept="">
                 <div class="details-summary toc-title">
                     <span>目录</span>
                     <span><i class="details-icon fas fa-angle-right"></i></span>
                 </div>
-                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
-  <ul>
-    <li><a href="#1-引言">1. 引言</a></li>
-    <li><a href="#2-目录">2. 目录</a></li>
-    <li><a href="#3-施工路线图">3. 施工路线图</a></li>
-  </ul>
-</nav></div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents"></nav></div>
             </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
-<h2 id="1-引言">1. 引言</h2>
-<p>Raft算法，Diego Ongaro在《In search of an understandable consensus algorithm》中提出的一种新型故障容错共识算法。正如这篇论文的标题所说，Raft算法比经典的Paxos算法族更容易理解。</p>
-<p>然而，即使读过Raft的论文、做过MIT6.824的Lab2，也很难理解成熟的工业级产品中Raft实现的一些细节。本系列文章旨在由浅入深地分析Etcd中Raft算法的实现，从Raft论文中的实现过渡到成熟的工业级产品中的经典Raft实现。</p>
-<p>在阅读本系列文章前，读者需要：</p>
-<ol>
-<li>阅读《In search of an understandable consensus algorithm (extended version)》，理解其中有关Raft的内容，本系列不会赘述Raft的一些基本概念。</li>
-<li>学习go的基本语法，学习go语言并发编程与channel的使用方式。</li>
-<li>准备Diego Ongaro的博士论文作为参考资料，在Etcd的实现中，引用了很多其中的优化方式。</li>
-</ol>
-<p>本系列文章龟速更新。笔者也是第一次试图将对这种工业级产品的分析写出来分享给读者，因此难免把握不好分析的粒度。在更新后面的文章的同时，我也会对之前的文章进行更正与优化，使其更容易理解。</p>
-<p>另外，本系列不会对引用的代码中的注释进行翻译，其原因有二：一来，etcd/raft模块中的注释描述的十分详细，建议读者要详细地阅读一遍etcd/raft模块中所有的注释；二来，笔者的水平有限，翻译的过程中难免会有词不达意的情况，而etcd/raft模块中的注释往往会提及很多细节，为了避免误导读者，就不做翻译了。不过相信能看到这里的读者都有丰富的英文论文阅读经验了，不需要笔者多此一举的翻译。</p>
-<h2 id="2-目录">2. 目录</h2>
-<ul>
-<li><a href="/posts/code-reading/etcdraft-made-simple/0-introduction/" rel="">深入浅出etcd/raft —— 0x00 引言</a></li>
-<li><a href="/posts/code-reading/etcdraft-made-simple/1-raftexample/" rel="">深入浅出etcd/raft —— 0x01 raftexample</a></li>
-<li><a href="/posts/code-reading/etcdraft-made-simple/2-overview/" rel="">深入浅出etcd/raft —— 0x02 etcd/raft总体设计</a></li>
-<li><a href="/posts/code-reading/etcdraft-made-simple/3-election/" rel="">深入浅出etcd/raft —— 0x03 Raft选举</a></li>
-<li><a href="/posts/code-reading/etcdraft-made-simple/4-log/" rel="">深入浅出etcd/raft —— 0x04 Raft日志</a></li>
-<li><a href="/posts/code-reading/etcdraft-made-simple/5-confchange/" rel="">深入浅出etcd/raft —— 0x05 Raft成员变更</a></li>
-<li><a href="/posts/code-reading/etcdraft-made-simple/6-readonly/" rel="">深入浅出etcd/raft —— 0x06 只读请求优化</a></li>
-</ul>
-<h2 id="3-施工路线图">3. 施工路线图</h2>
-<p>本系列仍在施工中，之后可能反复修改其中内容与顺序等。本节中保存了当前的施工路线图。</p>
-<ul>
-<li><i class="far fa-check-square fa-fw"></i> 引言</li>
-<li><i class="far fa-check-square fa-fw"></i> raftexample分析</li>
-<li><i class="far fa-check-square fa-fw"></i> etcd/raft整体架构与状态机简要分析</li>
-<li><i class="far fa-check-square fa-fw"></i> 选举 —— etcd/raft中选举优化</li>
-<li><i class="far fa-check-square fa-fw"></i> 选举 —— etcd/raft实现分析</li>
-<li><i class="far fa-check-square fa-fw"></i> 日志 —— etcd/raft中日志实现</li>
-<li><i class="far fa-check-square fa-fw"></i> 日志 —— etcd/raft中日志复制</li>
-<li><i class="far fa-check-square fa-fw"></i> 日志 —— etcd/raft中快照</li>
-<li><i class="far fa-check-square fa-fw"></i> 集群变更 —— simple</li>
-<li><i class="far fa-check-square fa-fw"></i> 集群变更 —— joint</li>
-<li><i class="far fa-check-square fa-fw"></i> Linearizable Read —— Log Read、ReadIndex、Lease Read</li>
-<li><i class="far fa-square fa-fw"></i> 集群变更 —— joint（apply-time confchange修复<a href="https://github.com/etcd-io/etcd/issues/12359" target="_blank" rel="noopener noreffer">issue#12359</a>）</li>
-<li><i class="far fa-square fa-fw"></i> 附录 —— etcd/raft中所有消息使用的字段描述（80%鸽了）</li>
-</ul></div><div class="post-footer" id="post-footer">
+<h1 id="施工中--">施工中 &hellip; &hellip;</h1></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
-                <span>更新于 2021-01-02</span>
+                <span>更新于 2021-03-04</span>
             </div>
             <div class="post-info-license"></div>
         </div>
@@ -186,14 +143,14 @@
     </div>
 
     <div class="post-info-more">
-        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/etcd/">etcd</a>,&nbsp;<a href="/tags/raft/">Raft</a></section>
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/leveldb/">LevelDB</a>,&nbsp;<a href="/tags/lsmtree/">LSMTree</a></section>
         <section>
             <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
         </section>
     </div>
 
-    <div class="post-nav"><a href="/posts/paper-reading/spanner-osdi2012/" class="prev" rel="prev" title="《Spanner: Google’s Globally-Distributed Database》论文翻译"><i class="fas fa-angle-left fa-fw"></i>《Spanner: Google’s Globally-Distributed Database》论文翻译</a>
-            <a href="/posts/code-reading/etcdraft-made-simple/1-raftexample/" class="next" rel="next" title="深入浅出etcd/raft —— 0x01 raftexample">深入浅出etcd/raft —— 0x01 raftexample<i class="fas fa-angle-right fa-fw"></i></a></div>
+    <div class="post-nav"><a href="/posts/code-reading/leveldb-made-simple/0-introduction/" class="prev" rel="prev" title="深入浅出LevelDB —— 0x00 引言 [施工中]"><i class="fas fa-angle-left fa-fw"></i>深入浅出LevelDB —— 0x00 引言 [施工中]</a>
+            <a href="/posts/code-reading/leveldb-made-simple/2-basic-data-structure/" class="next" rel="next" title="深入浅出LevelDB —— 0x02 通用数据结构与工具 [施工中]">深入浅出LevelDB —— 0x02 通用数据结构与工具 [施工中]<i class="fas fa-angle-right fa-fw"></i></a></div>
 </div>
 </article></div>
             </main><footer class="footer">
