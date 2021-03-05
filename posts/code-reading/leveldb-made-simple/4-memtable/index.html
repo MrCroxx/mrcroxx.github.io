@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>深入浅出LevelDB —— 0x04 memtable [施工中] - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 0x04 memtable [施工中]" />
+<meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/4-memtable/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/4-memtable/leveldb.jpg"/><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2021-03-05T20:03:13&#43;08:00" />
+<meta property="article:modified_time" content="2021-03-05T20:03:17&#43;08:00" />
+
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/4-memtable/leveldb.jpg"/>
+<meta name="twitter:title" content="深入浅出LevelDB —— 0x04 memtable [施工中]"/>
+<meta name="twitter:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。"/>
+<meta name="application-name" content="叉鸽 MrCroxx 的博客">
+<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/4-memtable/" /><link rel="prev" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/3-log/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "深入浅出LevelDB —— 0x04 memtable [施工中]",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/4-memtable\/"
+        },"image": [{
+                            "@type": "ImageObject",
+                            "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/4-memtable\/leveldb.jpg",
+                            "width":  1200 ,
+                            "height":  360 
+                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  2656 ,
+        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/4-memtable\/","datePublished": "2021-03-05T20:03:13+08:00","dateModified": "2021-03-05T20:03:17+08:00","publisher": {
+            "@type": "Organization",
+            "name": "叉鸽"},"author": {
+                "@type": "Person",
+                "name": "叉鸽"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : '' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-1" class="typeit"></span></a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-2" class="typeit"></span></a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x04 memtable [施工中]</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-05">2021-03-05</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 2656 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 6 分钟&nbsp;</div>
+        </div><div class="featured-image"><img
+        class="lazyload"
+        src="/svg/loading.min.svg"
+        data-src="/posts/code-reading/leveldb-made-simple/4-memtable/leveldb.jpg"
+        data-srcset="/posts/code-reading/leveldb-made-simple/4-memtable/leveldb.jpg, /posts/code-reading/leveldb-made-simple/4-memtable/leveldb.jpg 1.5x, /posts/code-reading/leveldb-made-simple/4-memtable/leveldb.jpg 2x"
+        data-sizes="auto"
+        alt="/posts/code-reading/leveldb-made-simple/4-memtable/leveldb.jpg"
+        title="/posts/code-reading/leveldb-made-simple/4-memtable/leveldb.jpg" /></div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#0-引言">0. 引言</a></li>
+    <li><a href="#1-skiplist的实现">1. SkipList的实现</a></li>
+    <li><a href="#2-memtable的实现">2. MemTable的实现</a>
+      <ul>
+        <li><a href="#21-memtable概览">2.1 MemTable概览</a></li>
+      </ul>
+    </li>
+  </ul>
+
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#22">2.2</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
+<h2 id="0-引言">0. 引言</h2>
+<p>LSMTree中的memtable既作为整合随机写入的buffer，又最为加速热数据读取的cache，是LSMTree的重要组件之一。</p>
+<p>由于memtable是保存在内存中的，其I/O开销比保存在稳定存储上的SSTable要小得多，因此LevelDB在实现memtable时，查找结构采用的是跳表SkipList。</p>
+<p>无论是memtable还是immutable memtable，其实现均为<code>leveldb::Memtable</code>，当memtable写满后，LevelDB会将其从<code>DBImpl</code>的<code>mem_</code>字段转移到<code>imm_</code>字段，不再对其进行写入。</p>
+<p>本文主要介绍并分析LevelDB中memtable的设计与实现。</p>
+<p>相关文件：<code>db/skiplist.h</code>、<code>db/memtable.h</code>、<code>db/memtable.cc</code>、<code>db/dbformat.h</code>。</p>
+<h2 id="1-skiplist的实现">1. SkipList的实现</h2>
+<p>SkipList是一种多层链表查找结构，其实现较其它查找结构比简单很多。有关SkipList的概念本文不再赘述，不了解的读者可以自行查找其它资料。</p>
+<p>LevelDB的跳表实现位于<code>db/skiplist.h</code>文件中，其对外提供了插入、判断键是否存在的功能，此外还提供了一个用来更细粒度访问跳表的迭代器，通过迭代器可以顺序地正反遍历跳表，或按照索引随机查找。</p>
+<p>LevelDB中的SkipList只插入，不修改或删除，memtable的修改或删除是通过插入有响应标识或序号的key实现的。</p>
+<p>SkipList通过template可以实现自定义Key类型与Key的比较方式。自定义<code>Comparator</code>只需要实现<code>include/comparator.h</code>中的虚类<code>Comparator</code>即可。</p>
+<p><code>leveldb::SkipList</code>及其迭代器<code>leveldb::SkipList::Iterator</code>的声明如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Key</span><span class="p">,</span> <span class="k">class</span> <span class="nc">Comparator</span><span class="o">&gt;</span>
+<span class="k">class</span> <span class="nc">SkipList</span> <span class="p">{</span>
+ <span class="k">private</span><span class="o">:</span>
+  <span class="k">struct</span> <span class="nc">Node</span><span class="p">;</span>
+
+ <span class="k">public</span><span class="o">:</span>
+  <span class="c1">// Create a new SkipList object that will use &#34;cmp&#34; for comparing keys,
+</span><span class="c1"></span>  <span class="c1">// and will allocate memory using &#34;*arena&#34;.  Objects allocated in the arena
+</span><span class="c1"></span>  <span class="c1">// must remain allocated for the lifetime of the skiplist object.
+</span><span class="c1"></span>  <span class="k">explicit</span> <span class="n">SkipList</span><span class="p">(</span><span class="n">Comparator</span> <span class="n">cmp</span><span class="p">,</span> <span class="n">Arena</span><span class="o">*</span> <span class="n">arena</span><span class="p">);</span>
+
+  <span class="n">SkipList</span><span class="p">(</span><span class="k">const</span> <span class="n">SkipList</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+  <span class="n">SkipList</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">SkipList</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+
+  <span class="c1">// Insert key into the list.
+</span><span class="c1"></span>  <span class="c1">// REQUIRES: nothing that compares equal to key is currently in the list.
+</span><span class="c1"></span>  <span class="kt">void</span> <span class="nf">Insert</span><span class="p">(</span><span class="k">const</span> <span class="n">Key</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">);</span>
+
+  <span class="c1">// Returns true iff an entry that compares equal to key is in the list.
+</span><span class="c1"></span>  <span class="kt">bool</span> <span class="nf">Contains</span><span class="p">(</span><span class="k">const</span> <span class="n">Key</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+
+  <span class="c1">// Iteration over the contents of a skip list
+</span><span class="c1"></span>  <span class="k">class</span> <span class="nc">Iterator</span> <span class="p">{</span>
+   <span class="k">public</span><span class="o">:</span>
+    <span class="c1">// Initialize an iterator over the specified list.
+</span><span class="c1"></span>    <span class="c1">// The returned iterator is not valid.
+</span><span class="c1"></span>    <span class="k">explicit</span> <span class="n">Iterator</span><span class="p">(</span><span class="k">const</span> <span class="n">SkipList</span><span class="o">*</span> <span class="n">list</span><span class="p">);</span>
+
+    <span class="c1">// Returns true iff the iterator is positioned at a valid node.
+</span><span class="c1"></span>    <span class="kt">bool</span> <span class="nf">Valid</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+
+    <span class="c1">// Returns the key at the current position.
+</span><span class="c1"></span>    <span class="c1">// REQUIRES: Valid()
+</span><span class="c1"></span>    <span class="k">const</span> <span class="n">Key</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+
+    <span class="c1">// Advances to the next position.
+</span><span class="c1"></span>    <span class="c1">// REQUIRES: Valid()
+</span><span class="c1"></span>    <span class="kt">void</span> <span class="nf">Next</span><span class="p">();</span>
+
+    <span class="c1">// Advances to the previous position.
+</span><span class="c1"></span>    <span class="c1">// REQUIRES: Valid()
+</span><span class="c1"></span>    <span class="kt">void</span> <span class="nf">Prev</span><span class="p">();</span>
+
+    <span class="c1">// Advance to the first entry with a key &gt;= target
+</span><span class="c1"></span>    <span class="kt">void</span> <span class="nf">Seek</span><span class="p">(</span><span class="k">const</span> <span class="n">Key</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">);</span>
+
+    <span class="c1">// Position at the first entry in list.
+</span><span class="c1"></span>    <span class="c1">// Final state of iterator is Valid() iff list is not empty.
+</span><span class="c1"></span>    <span class="kt">void</span> <span class="nf">SeekToFirst</span><span class="p">();</span>
+
+    <span class="c1">// Position at the last entry in list.
+</span><span class="c1"></span>    <span class="c1">// Final state of iterator is Valid() iff list is not empty.
+</span><span class="c1"></span>    <span class="kt">void</span> <span class="nf">SeekToLast</span><span class="p">();</span>
+
+   <span class="k">private</span><span class="o">:</span>
+    <span class="k">const</span> <span class="n">SkipList</span><span class="o">*</span> <span class="n">list_</span><span class="p">;</span>
+    <span class="n">Node</span><span class="o">*</span> <span class="n">node_</span><span class="p">;</span>
+    <span class="c1">// Intentionally copyable
+</span><span class="c1"></span>  <span class="p">};</span>
+
+ <span class="k">private</span><span class="o">:</span>
+  <span class="k">enum</span> <span class="p">{</span> <span class="n">kMaxHeight</span> <span class="o">=</span> <span class="mi">12</span> <span class="p">};</span>
+
+  <span class="kr">inline</span> <span class="kt">int</span> <span class="nf">GetMaxHeight</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">max_height_</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="n">Node</span><span class="o">*</span> <span class="nf">NewNode</span><span class="p">(</span><span class="k">const</span> <span class="n">Key</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="kt">int</span> <span class="n">height</span><span class="p">);</span>
+  <span class="kt">int</span> <span class="nf">RandomHeight</span><span class="p">();</span>
+  <span class="kt">bool</span> <span class="nf">Equal</span><span class="p">(</span><span class="k">const</span> <span class="n">Key</span><span class="o">&amp;</span> <span class="n">a</span><span class="p">,</span> <span class="k">const</span> <span class="n">Key</span><span class="o">&amp;</span> <span class="n">b</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="p">(</span><span class="n">compare_</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">);</span> <span class="p">}</span>
+
+  <span class="c1">// Return true if key is greater than the data stored in &#34;n&#34;
+</span><span class="c1"></span>  <span class="kt">bool</span> <span class="nf">KeyIsAfterNode</span><span class="p">(</span><span class="k">const</span> <span class="n">Key</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="n">Node</span><span class="o">*</span> <span class="n">n</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+
+  <span class="c1">// Return the earliest node that comes at or after key.
+</span><span class="c1"></span>  <span class="c1">// Return nullptr if there is no such node.
+</span><span class="c1"></span>  <span class="c1">//
+</span><span class="c1"></span>  <span class="c1">// If prev is non-null, fills prev[level] with pointer to previous
+</span><span class="c1"></span>  <span class="c1">// node at &#34;level&#34; for every level in [0..max_height_-1].
+</span><span class="c1"></span>  <span class="n">Node</span><span class="o">*</span> <span class="nf">FindGreaterOrEqual</span><span class="p">(</span><span class="k">const</span> <span class="n">Key</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="n">Node</span><span class="o">**</span> <span class="n">prev</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+
+  <span class="c1">// Return the latest node with a key &lt; key.
+</span><span class="c1"></span>  <span class="c1">// Return head_ if there is no such node.
+</span><span class="c1"></span>  <span class="n">Node</span><span class="o">*</span> <span class="nf">FindLessThan</span><span class="p">(</span><span class="k">const</span> <span class="n">Key</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+
+  <span class="c1">// Return the last node in the list.
+</span><span class="c1"></span>  <span class="c1">// Return head_ if list is empty.
+</span><span class="c1"></span>  <span class="n">Node</span><span class="o">*</span> <span class="nf">FindLast</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+
+  <span class="c1">// Immutable after construction
+</span><span class="c1"></span>  <span class="n">Comparator</span> <span class="k">const</span> <span class="n">compare_</span><span class="p">;</span>
+  <span class="n">Arena</span><span class="o">*</span> <span class="k">const</span> <span class="n">arena_</span><span class="p">;</span>  <span class="c1">// Arena used for allocations of nodes
+</span><span class="c1"></span>
+  <span class="n">Node</span><span class="o">*</span> <span class="k">const</span> <span class="n">head_</span><span class="p">;</span>
+
+  <span class="c1">// Modified only by Insert().  Read racily by readers, but stale
+</span><span class="c1"></span>  <span class="c1">// values are ok.
+</span><span class="c1"></span>  <span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">max_height_</span><span class="p">;</span>  <span class="c1">// Height of the entire list
+</span><span class="c1"></span>
+  <span class="c1">// Read/written only by Insert().
+</span><span class="c1"></span>  <span class="n">Random</span> <span class="n">rnd_</span><span class="p">;</span>
+<span class="p">};</span>
+
+</code></pre></div><p>SkipList的节点由<code>leveldb::SkipList::Node</code>类实现，<code>Node</code>的内存是在堆中分配的，其通过Arena分配器分配。有关Arena分配器的介绍详见本系列<a href="/posts/code-reading/leveldb-made-simple/2-basic-data-structure/#1-%e5%86%85%e5%ad%98%e5%88%86%e9%85%8d%e5%99%a8arena" rel="">深入浅出LevelDB —— 0x02 通用数据结构与工具</a>。</p>
+<p><code>Node</code>的实现如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="c1">// Implementation details follow
+</span><span class="c1"></span><span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Key</span><span class="p">,</span> <span class="k">class</span> <span class="nc">Comparator</span><span class="o">&gt;</span>
+<span class="k">struct</span> <span class="nc">SkipList</span><span class="o">&lt;</span><span class="n">Key</span><span class="p">,</span> <span class="n">Comparator</span><span class="o">&gt;::</span><span class="n">Node</span> <span class="p">{</span>
+  <span class="k">explicit</span> <span class="nf">Node</span><span class="p">(</span><span class="k">const</span> <span class="n">Key</span><span class="o">&amp;</span> <span class="n">k</span><span class="p">)</span> <span class="o">:</span> <span class="n">key</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="p">{}</span>
+
+  <span class="n">Key</span> <span class="k">const</span> <span class="n">key</span><span class="p">;</span>
+
+  <span class="c1">// Accessors/mutators for links.  Wrapped in methods so we can
+</span><span class="c1"></span>  <span class="c1">// add the appropriate barriers as necessary.
+</span><span class="c1"></span>  <span class="n">Node</span><span class="o">*</span> <span class="nf">Next</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">assert</span><span class="p">(</span><span class="n">n</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">);</span>
+    <span class="c1">// Use an &#39;acquire load&#39; so that we observe a fully initialized
+</span><span class="c1"></span>    <span class="c1">// version of the returned Node.
+</span><span class="c1"></span>    <span class="k">return</span> <span class="n">next_</span><span class="p">[</span><span class="n">n</span><span class="p">].</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_acquire</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="kt">void</span> <span class="nf">SetNext</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">,</span> <span class="n">Node</span><span class="o">*</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">assert</span><span class="p">(</span><span class="n">n</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">);</span>
+    <span class="c1">// Use a &#39;release store&#39; so that anybody who reads through this
+</span><span class="c1"></span>    <span class="c1">// pointer observes a fully initialized version of the inserted node.
+</span><span class="c1"></span>    <span class="n">next_</span><span class="p">[</span><span class="n">n</span><span class="p">].</span><span class="n">store</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_release</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="c1">// No-barrier variants that can be safely used in a few locations.
+</span><span class="c1"></span>  <span class="n">Node</span><span class="o">*</span> <span class="nf">NoBarrier_Next</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">assert</span><span class="p">(</span><span class="n">n</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">next_</span><span class="p">[</span><span class="n">n</span><span class="p">].</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="kt">void</span> <span class="nf">NoBarrier_SetNext</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">,</span> <span class="n">Node</span><span class="o">*</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">assert</span><span class="p">(</span><span class="n">n</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">);</span>
+    <span class="n">next_</span><span class="p">[</span><span class="n">n</span><span class="p">].</span><span class="n">store</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
+  <span class="p">}</span>
+
+ <span class="k">private</span><span class="o">:</span>
+  <span class="c1">// Array of length equal to the node height.  next_[0] is lowest level link.
+</span><span class="c1"></span>  <span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">Node</span><span class="o">*&gt;</span> <span class="n">next_</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
+<span class="p">};</span>
+
+</code></pre></div><p>从<code>Node</code>的源码中，可以发现其next指针是通过原子类型<code>std::atomic&lt;Node*&gt;[]</code>实现的。为了优化原子类型的操作性能，<code>Node</code>分别提供了<em>Read Acquire</em>和<em>Write Release</em>、与<em>Relaxed</em>的<strong>Memory Order</strong>，以便在适当场景选择适当一致性，在保证<strong>Memory Coherence</strong>安全性的条件下优化原子类型性能。</p>
+<p>有关<strong>C++11 Memory Order</strong>及有关体系结构的知识，可以参考知乎<a href="https://zhuanlan.zhihu.com/p/48157076" target="_blank" rel="noopener noreffer">高并发编程&ndash;多处理器编程中的一致性问题(上)</a>与<a href="https://zhuanlan.zhihu.com/p/48161056" target="_blank" rel="noopener noreffer">高并发编程&ndash;多处理器编程中的一致性问题(下)</a>（作者：<a href="https://www.zhihu.com/people/graysen" target="_blank" rel="noopener noreffer">三四</a>）</p>
+<p>通过原子类实现的Node，SkipList能够保证“读读并发”、“读写并发”的线程安全。而对于并发写入，则需要使用者通过额外的同步机制实现。</p>
+<div class="details admonition quote open">
+        <div class="details-summary admonition-title">
+            <i class="icon fas fa-quote-right fa-fw"></i>引用<i class="details-icon fas fa-angle-right fa-fw"></i>
+        </div>
+        <div class="details-content">
+            <div class="admonition-content"><p>Thread safety :</p>
+<p>Writes require external synchronization, most likely a mutex. Reads require a guarantee that the SkipList will not be destroyed while the read is in progress.  Apart from that, reads progress without any internal locking or synchronization.</p>
+</div>
+        </div>
+    </div>
+<p>而SkipList的仅插入及对Arena分配器的使用，让SkipList由两个不变的特性：</p>
+<ol>
+<li>
+<p>在SkipList销毁前，其中Node永远不会被删除。SkipList的代码保证了永远不会删除跳表中的节点。</p>
+</li>
+<li>
+<p>Node在被插入到SkipList中后，除了其next/prev指针外，其它数据都不会被修改。</p>
+</li>
+</ol>
+<h2 id="2-memtable的实现">2. MemTable的实现</h2>
+<h3 id="21-memtable概览">2.1 MemTable概览</h3>
+<p>Memtable对SkipList进行了封装，SkipList只能提供key的插入与查找，而Memtable并对外提供了key/value的增删改查操作。MemTable还提供了正向迭代器与反向迭代器，让使用者能够更细粒度地访问MemTable中的数据。</p>
+<p>MemTable的声明如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="k">class</span> <span class="nc">InternalKeyComparator</span><span class="p">;</span>
+<span class="k">class</span> <span class="nc">MemTableIterator</span><span class="p">;</span>
+
+<span class="k">class</span> <span class="nc">MemTable</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="c1">// MemTables are reference counted.  The initial reference count
+</span><span class="c1"></span>  <span class="c1">// is zero and the caller must call Ref() at least once.
+</span><span class="c1"></span>  <span class="k">explicit</span> <span class="n">MemTable</span><span class="p">(</span><span class="k">const</span> <span class="n">InternalKeyComparator</span><span class="o">&amp;</span> <span class="n">comparator</span><span class="p">);</span>
+
+  <span class="n">MemTable</span><span class="p">(</span><span class="k">const</span> <span class="n">MemTable</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+  <span class="n">MemTable</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">MemTable</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+
+  <span class="c1">// Increase reference count.
+</span><span class="c1"></span>  <span class="kt">void</span> <span class="nf">Ref</span><span class="p">()</span> <span class="p">{</span> <span class="o">++</span><span class="n">refs_</span><span class="p">;</span> <span class="p">}</span>
+
+  <span class="c1">// Drop reference count.  Delete if no more references exist.
+</span><span class="c1"></span>  <span class="kt">void</span> <span class="nf">Unref</span><span class="p">()</span> <span class="p">{</span>
+    <span class="o">--</span><span class="n">refs_</span><span class="p">;</span>
+    <span class="n">assert</span><span class="p">(</span><span class="n">refs_</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">refs_</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">delete</span> <span class="k">this</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="c1">// Returns an estimate of the number of bytes of data in use by this
+</span><span class="c1"></span>  <span class="c1">// data structure. It is safe to call when MemTable is being modified.
+</span><span class="c1"></span>  <span class="n">size_t</span> <span class="nf">ApproximateMemoryUsage</span><span class="p">();</span>
+
+  <span class="c1">// Return an iterator that yields the contents of the memtable.
+</span><span class="c1"></span>  <span class="c1">//
+</span><span class="c1"></span>  <span class="c1">// The caller must ensure that the underlying MemTable remains live
+</span><span class="c1"></span>  <span class="c1">// while the returned iterator is live.  The keys returned by this
+</span><span class="c1"></span>  <span class="c1">// iterator are internal keys encoded by AppendInternalKey in the
+</span><span class="c1"></span>  <span class="c1">// db/format.{h,cc} module.
+</span><span class="c1"></span>  <span class="n">Iterator</span><span class="o">*</span> <span class="nf">NewIterator</span><span class="p">();</span>
+
+  <span class="c1">// Add an entry into memtable that maps key to value at the
+</span><span class="c1"></span>  <span class="c1">// specified sequence number and with the specified type.
+</span><span class="c1"></span>  <span class="c1">// Typically value will be empty if type==kTypeDeletion.
+</span><span class="c1"></span>  <span class="kt">void</span> <span class="nf">Add</span><span class="p">(</span><span class="n">SequenceNumber</span> <span class="n">seq</span><span class="p">,</span> <span class="n">ValueType</span> <span class="n">type</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span>
+           <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">);</span>
+
+  <span class="c1">// If memtable contains a value for key, store it in *value and return true.
+</span><span class="c1"></span>  <span class="c1">// If memtable contains a deletion for key, store a NotFound() error
+</span><span class="c1"></span>  <span class="c1">// in *status and return true.
+</span><span class="c1"></span>  <span class="c1">// Else, return false.
+</span><span class="c1"></span>  <span class="kt">bool</span> <span class="nf">Get</span><span class="p">(</span><span class="k">const</span> <span class="n">LookupKey</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">*</span> <span class="n">value</span><span class="p">,</span> <span class="n">Status</span><span class="o">*</span> <span class="n">s</span><span class="p">);</span>
+
+ <span class="k">private</span><span class="o">:</span>
+  <span class="k">friend</span> <span class="k">class</span> <span class="nc">MemTableIterator</span><span class="p">;</span>
+  <span class="k">friend</span> <span class="k">class</span> <span class="nc">MemTableBackwardIterator</span><span class="p">;</span>
+
+  <span class="k">struct</span> <span class="nc">KeyComparator</span> <span class="p">{</span>
+    <span class="k">const</span> <span class="n">InternalKeyComparator</span> <span class="n">comparator</span><span class="p">;</span>
+    <span class="k">explicit</span> <span class="nf">KeyComparator</span><span class="p">(</span><span class="k">const</span> <span class="n">InternalKeyComparator</span><span class="o">&amp;</span> <span class="n">c</span><span class="p">)</span> <span class="o">:</span> <span class="n">comparator</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="p">{}</span>
+    <span class="kt">int</span> <span class="nf">operator</span><span class="p">()(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">a</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">b</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+  <span class="p">};</span>
+
+  <span class="k">typedef</span> <span class="n">SkipList</span><span class="o">&lt;</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span><span class="p">,</span> <span class="n">KeyComparator</span><span class="o">&gt;</span> <span class="n">Table</span><span class="p">;</span>
+
+  <span class="o">~</span><span class="n">MemTable</span><span class="p">();</span>  <span class="c1">// Private since only Unref() should be used to delete it
+</span><span class="c1"></span>
+  <span class="n">KeyComparator</span> <span class="n">comparator_</span><span class="p">;</span>
+  <span class="kt">int</span> <span class="n">refs_</span><span class="p">;</span>
+  <span class="n">Arena</span> <span class="n">arena_</span><span class="p">;</span>
+  <span class="n">Table</span> <span class="n">table_</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="p">}</span>  <span class="c1">// namespace leveldb
+</span><span class="c1"></span>
+</code></pre></div><p>MemTable的实例采用了引用计数，其初始计数为0，因此其构造方法的调用者需要手动调用其<code>Ref</code>函数；当调动<code>Unref</code>方法使其引用计数器减至0时，MemTable会自己销毁。</p>
+<p>本节，我们主要关注MemTable是如何封装SkipList以实现key/value的增删改查的。</p>
+<h1 id="施工中--">施工中 &hellip; &hellip;</h1>
+<h3 id="22">2.2</h3></div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2021-03-05</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"></div>
+            <div class="post-info-share">
+                <span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/leveldb/">LevelDB</a>,&nbsp;<a href="/tags/lsmtree/">LSMTree</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/posts/code-reading/leveldb-made-simple/3-log/" class="prev" rel="prev" title="深入浅出LevelDB —— 0x03 log"><i class="fas fa-angle-left fa-fw"></i>深入浅出LevelDB —— 0x03 log</a></div>
+</div>
+</article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.81.0">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"><link rel="stylesheet" href="/lib/katex/katex.min.css"><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"><script type="text/javascript" src="/lib/smooth-scroll/smooth-scroll.min.js"></script><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"id-1":"叉鸽 | MrCroxx","id-2":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"id-1":["id-1"],"id-2":["id-2"]},"duration":null,"speed":null}};</script><script type="text/javascript" src="/js/theme.min.js"></script></body>
+</html>
