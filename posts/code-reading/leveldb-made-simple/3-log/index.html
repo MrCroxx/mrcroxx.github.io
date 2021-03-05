@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="robots" content="noodp" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+        <title>深入浅出LevelDB —— 0x03 log [施工中] - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 0x03 log [施工中]" />
+<meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/3-log/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/3-log/leveldb.jpg"/><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2021-03-05T12:43:16&#43;08:00" />
+<meta property="article:modified_time" content="2021-03-05T12:43:19&#43;08:00" />
+
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/3-log/leveldb.jpg"/>
+<meta name="twitter:title" content="深入浅出LevelDB —— 0x03 log [施工中]"/>
+<meta name="twitter:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。"/>
+<meta name="application-name" content="叉鸽 MrCroxx 的博客">
+<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/3-log/" /><link rel="prev" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/2-basic-data-structure/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "深入浅出LevelDB —— 0x03 log [施工中]",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/3-log\/"
+        },"image": [{
+                            "@type": "ImageObject",
+                            "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/3-log\/leveldb.jpg",
+                            "width":  1200 ,
+                            "height":  360 
+                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  1642 ,
+        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/3-log\/","datePublished": "2021-03-05T12:43:16+08:00","dateModified": "2021-03-05T12:43:19+08:00","publisher": {
+            "@type": "Organization",
+            "name": "叉鸽"},"author": {
+                "@type": "Person",
+                "name": "叉鸽"
+            },"description": ""
+    }
+    </script></head>
+    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : '' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
+
+        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-1" class="typeit"></span></a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-2" class="typeit"></span></a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        取消
+                    </a>
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+                <div class="container"><div class="toc" id="toc-auto">
+            <h2 class="toc-title">目录</h2>
+            <div class="toc-content" id="toc-content-auto"></div>
+        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x03 log [施工中]</h1><div class="post-meta">
+            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-05">2021-03-05</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1642 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 4 分钟&nbsp;</div>
+        </div><div class="featured-image"><img
+        class="lazyload"
+        src="/svg/loading.min.svg"
+        data-src="/posts/code-reading/leveldb-made-simple/3-log/leveldb.jpg"
+        data-srcset="/posts/code-reading/leveldb-made-simple/3-log/leveldb.jpg, /posts/code-reading/leveldb-made-simple/3-log/leveldb.jpg 1.5x, /posts/code-reading/leveldb-made-simple/3-log/leveldb.jpg 2x"
+        data-sizes="auto"
+        alt="/posts/code-reading/leveldb-made-simple/3-log/leveldb.jpg"
+        title="/posts/code-reading/leveldb-made-simple/3-log/leveldb.jpg" /></div><div class="details toc" id="toc-static"  kept="">
+                <div class="details-summary toc-title">
+                    <span>目录</span>
+                    <span><i class="details-icon fas fa-angle-right"></i></span>
+                </div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#0-引言">0. 引言</a></li>
+    <li><a href="#1-log的格式与设计">1. log的格式与设计</a></li>
+    <li><a href="#2-log的实现">2. log的实现</a>
+      <ul>
+        <li><a href="#21-writablefile与sequentialfile">2.1 WritableFile与SequentialFile</a></li>
+        <li><a href="#22-writer">2.2 Writer</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav></div>
+            </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
+<h2 id="0-引言">0. 引言</h2>
+<p>LevelDB在修改时，首先会将修改写入到保存在文件系统上的log，以避免宕机时保存在内存中的数据丢失。由于log是顺序写入的，其写入速度较快。因为log的写入是在真正执行操作之前的，因此这一技术也叫做<strong>Write-Ahead Log</strong>。</p>
+<p>本文将介绍并分析LevelDB中log的实现。</p>
+<p>相关命名空间：<code>leveldb::log</code>。</p>
+<p>相关文件：<code>include/leveldb/env.h</code>、<code>db/log_format.h</code>、<code>db/log_writer.h</code>、<code>db/log_writer.cc</code>、<code>db/log_reader.h</code>、<code>db/log_reader.cc</code>。</p>
+<h2 id="1-log的格式与设计">1. log的格式与设计</h2>
+<p>LevelDB的log是由Record和一些为了对齐而填充的gap组成的文件。</p>
+<p>LevelDB在读取log文件时，为了减少I/O次数，每次读取都会读入一个32KB大小的块。因此，在写入log文件时，LevelDB也将数据按照32KB对齐。</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/leveldb-made-simple/3-log/assets/file-and-block.svg" title="文件与块" data-thumbnail="/posts/code-reading/leveldb-made-simple/3-log/assets/file-and-block.svg" data-sub-html="<h2>文件与块</h2><p>文件与块</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/file-and-block.svg"
+            data-srcset="/posts/code-reading/leveldb-made-simple/3-log/assets/file-and-block.svg, assets/file-and-block.svg 1.5x, /posts/code-reading/leveldb-made-simple/3-log/assets/file-and-block.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/leveldb-made-simple/3-log/assets/file-and-block.svg" />
+    </a><figcaption class="image-caption">文件与块</figcaption>
+    </figure></p>
+<p>由于，LevelDB中记录的长度是不确定的，如果想要与32KB块对齐，为了尽可能地利用空间，那么较长的记录可能会被拆分为多个段，以能够将其放入块的剩余空间中。LevelDB定义只有1个段的记录为<code>FullType</code>，由多个段组成的记录的首位段分别为<code>FirstType</code>与<code>LastType</code>，中间段为<code>MiddleType</code>。</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/leveldb-made-simple/3-log/assets/record-and-fragment.svg" title="记录与段" data-thumbnail="/posts/code-reading/leveldb-made-simple/3-log/assets/record-and-fragment.svg" data-sub-html="<h2>记录与段</h2><p>记录与段</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/record-and-fragment.svg"
+            data-srcset="/posts/code-reading/leveldb-made-simple/3-log/assets/record-and-fragment.svg, assets/record-and-fragment.svg 1.5x, /posts/code-reading/leveldb-made-simple/3-log/assets/record-and-fragment.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/leveldb-made-simple/3-log/assets/record-and-fragment.svg" />
+    </a><figcaption class="image-caption">记录与段</figcaption>
+    </figure></p>
+<p>当块中剩余空间不足以放入完整记录时，LevelDB会将其按段拆分，直到该记录被完整保存：</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/leveldb-made-simple/3-log/assets/fragment-and-block.svg" title="段与块" data-thumbnail="/posts/code-reading/leveldb-made-simple/3-log/assets/fragment-and-block.svg" data-sub-html="<h2>段与块</h2><p>段与块</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/fragment-and-block.svg"
+            data-srcset="/posts/code-reading/leveldb-made-simple/3-log/assets/fragment-and-block.svg, assets/fragment-and-block.svg 1.5x, /posts/code-reading/leveldb-made-simple/3-log/assets/fragment-and-block.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/leveldb-made-simple/3-log/assets/fragment-and-block.svg" />
+    </a><figcaption class="image-caption">段与块</figcaption>
+    </figure></p>
+<p>记录的每个段由段头和数据组成，段头长度为固定的7字节，其中头4字节表示该段的CRC校验码、随后2字节表示该段长度、最后1字节标识该段的类型：</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/leveldb-made-simple/3-log/assets/fragment.svg" title="段结构" data-thumbnail="/posts/code-reading/leveldb-made-simple/3-log/assets/fragment.svg" data-sub-html="<h2>段结构</h2><p>段结构</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/fragment.svg"
+            data-srcset="/posts/code-reading/leveldb-made-simple/3-log/assets/fragment.svg, assets/fragment.svg 1.5x, /posts/code-reading/leveldb-made-simple/3-log/assets/fragment.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/leveldb-made-simple/3-log/assets/fragment.svg" />
+    </a><figcaption class="image-caption">段结构</figcaption>
+    </figure></p>
+<p>如果在写入时，与32KB对齐的剩余空间不足以放入7字节的header时，LevelDB会将剩余空间填充为<code>0x00</code>，并从下一个与32KB对齐处继续写入：</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/leveldb-made-simple/3-log/assets/gap.svg" title="空白填充" data-thumbnail="/posts/code-reading/leveldb-made-simple/3-log/assets/gap.svg" data-sub-html="<h2>空白填充</h2><p>空白填充</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/gap.svg"
+            data-srcset="/posts/code-reading/leveldb-made-simple/3-log/assets/gap.svg, assets/gap.svg 1.5x, /posts/code-reading/leveldb-made-simple/3-log/assets/gap.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/leveldb-made-simple/3-log/assets/gap.svg" />
+    </a><figcaption class="image-caption">空白填充</figcaption>
+    </figure></p>
+<h2 id="2-log的实现">2. log的实现</h2>
+<h3 id="21-writablefile与sequentialfile">2.1 WritableFile与SequentialFile</h3>
+<p>相关文件：<code>include/leveldb/env.h</code>、<code>util/env_*.*</code>。</p>
+<p>在介绍LevelDB中log的Writer前，首先先看一下Writer的写入目标的抽象——<code>WritableFile</code>。</p>
+<p><code>WritableFile</code>是一个抽象类，其定义在<code>include/leveldb/env/h</code>中。<code>env.h</code>中声明了很多与环境无关的抽象，让使用者不需要关心这些类在不同操作系统环境下的具体实现，而这些抽象的实现在<code>util/env_*.*</code>中，对应不同环境下的实现。</p>
+<p><code>WritableFile</code>定义了一个顺序写入文件抽象：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="c1">// A file abstraction for sequential writing.  The implementation
+</span><span class="c1">// must provide buffering since callers may append small fragments
+</span><span class="c1">// at a time to the file.
+</span><span class="c1"></span><span class="k">class</span> <span class="nc">LEVELDB_EXPORT</span> <span class="n">WritableFile</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">WritableFile</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
+
+  <span class="n">WritableFile</span><span class="p">(</span><span class="k">const</span> <span class="n">WritableFile</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+  <span class="n">WritableFile</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">WritableFile</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+
+  <span class="k">virtual</span> <span class="o">~</span><span class="n">WritableFile</span><span class="p">();</span>
+
+  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Append</span><span class="p">(</span><span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">data</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Close</span><span class="p">()</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Flush</span><span class="p">()</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Sync</span><span class="p">()</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">};</span>
+
+</code></pre></div><div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="c1">// A file abstraction for reading sequentially through a file
+</span><span class="c1"></span><span class="k">class</span> <span class="nc">LEVELDB_EXPORT</span> <span class="n">SequentialFile</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">SequentialFile</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
+
+  <span class="n">SequentialFile</span><span class="p">(</span><span class="k">const</span> <span class="n">SequentialFile</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+  <span class="n">SequentialFile</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">SequentialFile</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+
+  <span class="k">virtual</span> <span class="o">~</span><span class="n">SequentialFile</span><span class="p">();</span>
+
+  <span class="c1">// Read up to &#34;n&#34; bytes from the file.  &#34;scratch[0..n-1]&#34; may be
+</span><span class="c1"></span>  <span class="c1">// written by this routine.  Sets &#34;*result&#34; to the data that was
+</span><span class="c1"></span>  <span class="c1">// read (including if fewer than &#34;n&#34; bytes were successfully read).
+</span><span class="c1"></span>  <span class="c1">// May set &#34;*result&#34; to point at data in &#34;scratch[0..n-1]&#34;, so
+</span><span class="c1"></span>  <span class="c1">// &#34;scratch[0..n-1]&#34; must be live when &#34;*result&#34; is used.
+</span><span class="c1"></span>  <span class="c1">// If an error was encountered, returns a non-OK status.
+</span><span class="c1"></span>  <span class="c1">//
+</span><span class="c1"></span>  <span class="c1">// REQUIRES: External synchronization
+</span><span class="c1"></span>  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Read</span><span class="p">(</span><span class="n">size_t</span> <span class="n">n</span><span class="p">,</span> <span class="n">Slice</span><span class="o">*</span> <span class="n">result</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span> <span class="n">scratch</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+  <span class="c1">// Skip &#34;n&#34; bytes from the file. This is guaranteed to be no
+</span><span class="c1"></span>  <span class="c1">// slower that reading the same data, but may be faster.
+</span><span class="c1"></span>  <span class="c1">//
+</span><span class="c1"></span>  <span class="c1">// If end of file is reached, skipping will stop at the end of the
+</span><span class="c1"></span>  <span class="c1">// file, and Skip will return OK.
+</span><span class="c1"></span>  <span class="c1">//
+</span><span class="c1"></span>  <span class="c1">// REQUIRES: External synchronization
+</span><span class="c1"></span>  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Skip</span><span class="p">(</span><span class="kt">uint64_t</span> <span class="n">n</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">};</span>
+
+</code></pre></div><h3 id="22-writer">2.2 Writer</h3>
+<p>相关文件：<code>db/log_writer.h</code>、<code>db/log_writer.cc</code>。</p>
+<p><code>leveldb::log::Writer</code>是用来写入log文件的类，其除了构造方法外只对外提供了一个追加记录的方法<code>AddRecord</code>，内部也仅有一个用来将Record同步到稳定存储的方法<code>EmitPhysicalRecord</code>：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="k">class</span> <span class="nc">Writer</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="c1">// Create a writer that will append data to &#34;*dest&#34;.
+</span><span class="c1"></span>  <span class="c1">// &#34;*dest&#34; must be initially empty.
+</span><span class="c1"></span>  <span class="c1">// &#34;*dest&#34; must remain live while this Writer is in use.
+</span><span class="c1"></span>  <span class="k">explicit</span> <span class="n">Writer</span><span class="p">(</span><span class="n">WritableFile</span><span class="o">*</span> <span class="n">dest</span><span class="p">);</span>
+
+  <span class="c1">// Create a writer that will append data to &#34;*dest&#34;.
+</span><span class="c1"></span>  <span class="c1">// &#34;*dest&#34; must have initial length &#34;dest_length&#34;.
+</span><span class="c1"></span>  <span class="c1">// &#34;*dest&#34; must remain live while this Writer is in use.
+</span><span class="c1"></span>  <span class="n">Writer</span><span class="p">(</span><span class="n">WritableFile</span><span class="o">*</span> <span class="n">dest</span><span class="p">,</span> <span class="kt">uint64_t</span> <span class="n">dest_length</span><span class="p">);</span>
+
+  <span class="n">Writer</span><span class="p">(</span><span class="k">const</span> <span class="n">Writer</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+  <span class="n">Writer</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">Writer</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+
+  <span class="o">~</span><span class="n">Writer</span><span class="p">();</span>
+
+  <span class="n">Status</span> <span class="nf">AddRecord</span><span class="p">(</span><span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">slice</span><span class="p">);</span>
+
+ <span class="k">private</span><span class="o">:</span>
+  <span class="n">Status</span> <span class="n">EmitPhysicalRecord</span><span class="p">(</span><span class="n">RecordType</span> <span class="n">type</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">ptr</span><span class="p">,</span> <span class="n">size_t</span> <span class="n">length</span><span class="p">);</span>
+
+  <span class="n">WritableFile</span><span class="o">*</span> <span class="n">dest_</span><span class="p">;</span>
+  <span class="kt">int</span> <span class="n">block_offset_</span><span class="p">;</span>  <span class="c1">// Current offset in block
+</span><span class="c1"></span>
+  <span class="c1">// crc32c values for all supported record types.  These are
+</span><span class="c1"></span>  <span class="c1">// pre-computed to reduce the overhead of computing the crc of the
+</span><span class="c1"></span>  <span class="c1">// record type stored in the header.
+</span><span class="c1"></span>  <span class="kt">uint32_t</span> <span class="n">type_crc_</span><span class="p">[</span><span class="n">kMaxRecordType</span> <span class="o">+</span> <span class="mi">1</span><span class="p">];</span>
+<span class="p">};</span>
+
+</code></pre></div><h1 id="施工中--">施工中 &hellip; &hellip;</h1></div><div class="post-footer" id="post-footer">
+    <div class="post-info">
+        <div class="post-info-line">
+            <div class="post-info-mod">
+                <span>更新于 2021-03-05</span>
+            </div>
+            <div class="post-info-license"></div>
+        </div>
+        <div class="post-info-line">
+            <div class="post-info-md"></div>
+            <div class="post-info-share">
+                <span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="post-info-more">
+        <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/leveldb/">LevelDB</a>,&nbsp;<a href="/tags/lsmtree/">LSMTree</a></section>
+        <section>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+        </section>
+    </div>
+
+    <div class="post-nav"><a href="/posts/code-reading/leveldb-made-simple/2-basic-data-structure/" class="prev" rel="prev" title="深入浅出LevelDB —— 0x02 通用数据结构与工具 [施工中]"><i class="fas fa-angle-left fa-fw"></i>深入浅出LevelDB —— 0x02 通用数据结构与工具 [施工中]</a></div>
+</div>
+</article></div>
+            </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.81.0">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        </div>
+    </footer></div>
+
+        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
+                <i class="fas fa-arrow-up fa-fw"></i>
+            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+                <i class="fas fa-comment fa-fw"></i>
+            </a>
+        </div><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"><link rel="stylesheet" href="/lib/katex/katex.min.css"><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"><script type="text/javascript" src="/lib/smooth-scroll/smooth-scroll.min.js"></script><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"id-1":"叉鸽 | MrCroxx","id-2":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"id-1":["id-1"],"id-2":["id-2"]},"duration":null,"speed":null}};</script><script type="text/javascript" src="/js/theme.min.js"></script></body>
+</html>

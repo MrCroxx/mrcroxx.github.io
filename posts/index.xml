@@ -4,8 +4,15 @@
         <link>https://mrcroxx.github.io/posts/</link>
         <description>所有文章 | 叉鸽 MrCroxx 的博客</description>
         <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>mrcroxx@outlook.com (叉鸽)</managingEditor>
-            <webMaster>mrcroxx@outlook.com (叉鸽)</webMaster><lastBuildDate>Thu, 04 Mar 2021 20:20:15 &#43;0800</lastBuildDate><atom:link href="https://mrcroxx.github.io/posts/" rel="self" type="application/rss+xml" /><item>
-    <title>深入浅出LevelDB —— 0x02 基本数据结构与编码方式 [施工中]</title>
+            <webMaster>mrcroxx@outlook.com (叉鸽)</webMaster><lastBuildDate>Fri, 05 Mar 2021 12:43:16 &#43;0800</lastBuildDate><atom:link href="https://mrcroxx.github.io/posts/" rel="self" type="application/rss+xml" /><item>
+    <title>深入浅出LevelDB —— 0x03 log [施工中]</title>
+    <link>https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/3-log/</link>
+    <pubDate>Fri, 05 Mar 2021 12:43:16 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/3-log/</guid>
+    <description><![CDATA[<p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>]]></description>
+</item><item>
+    <title>深入浅出LevelDB —— 0x02 通用数据结构与工具 [施工中]</title>
     <link>https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/2-basic-data-structure/</link>
     <pubDate>Thu, 04 Mar 2021 20:20:15 &#43;0800</pubDate>
     <author>作者</author>
@@ -66,13 +73,6 @@
     <pubDate>Fri, 01 Jan 2021 21:10:17 &#43;0800</pubDate>
     <author>作者</author>
     <guid>https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/6-readonly/</guid>
-    <description><![CDATA[<p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>]]></description>
-</item><item>
-    <title>深入浅出etcd/raft —— 0x05 Raft成员变更</title>
-    <link>https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/5-confchange/</link>
-    <pubDate>Tue, 29 Dec 2020 16:36:16 &#43;0800</pubDate>
-    <author>作者</author>
-    <guid>https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/5-confchange/</guid>
     <description><![CDATA[<p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>]]></description>
 </item></channel>
 </rss>
