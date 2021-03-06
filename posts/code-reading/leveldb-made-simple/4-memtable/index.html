@@ -5,16 +5,16 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="robots" content="noodp" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
-        <title>深入浅出LevelDB —— 0x04 memtable [施工中] - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 0x04 memtable [施工中]" />
+        <title>深入浅出LevelDB —— 0x04 memtable - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 0x04 memtable" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/4-memtable/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/4-memtable/leveldb.jpg"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2021-03-05T20:03:13&#43;08:00" />
-<meta property="article:modified_time" content="2021-03-05T20:03:17&#43;08:00" />
+<meta property="article:modified_time" content="2021-03-06T16:23:30&#43;08:00" />
 
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/4-memtable/leveldb.jpg"/>
-<meta name="twitter:title" content="深入浅出LevelDB —— 0x04 memtable [施工中]"/>
+<meta name="twitter:title" content="深入浅出LevelDB —— 0x04 memtable"/>
 <meta name="twitter:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。"/>
 <meta name="application-name" content="叉鸽 MrCroxx 的博客">
 <meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
@@ -23,7 +23,7 @@
     {
         "@context": "http://schema.org",
         "@type": "BlogPosting",
-        "headline": "深入浅出LevelDB —— 0x04 memtable [施工中]",
+        "headline": "深入浅出LevelDB —— 0x04 memtable",
         "inLanguage": "zh-CN",
         "mainEntityOfPage": {
             "@type": "WebPage",
@@ -33,8 +33,8 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/4-memtable\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  2656 ,
-        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/4-memtable\/","datePublished": "2021-03-05T20:03:13+08:00","dateModified": "2021-03-05T20:03:17+08:00","publisher": {
+                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  5646 ,
+        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/4-memtable\/","datePublished": "2021-03-05T20:03:13+08:00","dateModified": "2021-03-06T16:23:30+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
                 "@type": "Person",
@@ -108,10 +108,10 @@
                 <div class="container"><div class="toc" id="toc-auto">
             <h2 class="toc-title">目录</h2>
             <div class="toc-content" id="toc-content-auto"></div>
-        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x04 memtable [施工中]</h1><div class="post-meta">
+        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x04 memtable</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-05">2021-03-05</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 2656 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 6 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-05">2021-03-05</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 5646 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 12 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
@@ -131,14 +131,13 @@
     <li><a href="#2-memtable的实现">2. MemTable的实现</a>
       <ul>
         <li><a href="#21-memtable概览">2.1 MemTable概览</a></li>
-      </ul>
-    </li>
-  </ul>
-
-  <ul>
-    <li>
-      <ul>
-        <li><a href="#22">2.2</a></li>
+        <li><a href="#22-memtable的实现">2.2 MemTable的实现</a>
+          <ul>
+            <li><a href="#221-key的封装">2.2.1 key的封装</a></li>
+            <li><a href="#222-增删改查的实现">2.2.2 增删改查的实现</a></li>
+            <li><a href="#223-key类型小结">2.2.3 Key类型小结</a></li>
+          </ul>
+        </li>
       </ul>
     </li>
   </ul>
@@ -149,7 +148,7 @@
 <p>由于memtable是保存在内存中的，其I/O开销比保存在稳定存储上的SSTable要小得多，因此LevelDB在实现memtable时，查找结构采用的是跳表SkipList。</p>
 <p>无论是memtable还是immutable memtable，其实现均为<code>leveldb::Memtable</code>，当memtable写满后，LevelDB会将其从<code>DBImpl</code>的<code>mem_</code>字段转移到<code>imm_</code>字段，不再对其进行写入。</p>
 <p>本文主要介绍并分析LevelDB中memtable的设计与实现。</p>
-<p>相关文件：<code>db/skiplist.h</code>、<code>db/memtable.h</code>、<code>db/memtable.cc</code>、<code>db/dbformat.h</code>。</p>
+<p>相关文件：<code>db/skiplist.h</code>、<code>db/memtable.h</code>、<code>db/memtable.cc</code>、<code>db/dbformat.h</code>、<code>db/dbformat.cc</code>。</p>
 <h2 id="1-skiplist的实现">1. SkipList的实现</h2>
 <p>SkipList是一种多层链表查找结构，其实现较其它查找结构比简单很多。有关SkipList的概念本文不再赘述，不了解的读者可以自行查找其它资料。</p>
 <p>LevelDB的跳表实现位于<code>db/skiplist.h</code>文件中，其对外提供了插入、判断键是否存在的功能，此外还提供了一个用来更细粒度访问跳表的迭代器，通过迭代器可以顺序地正反遍历跳表，或按照索引随机查找。</p>
@@ -397,14 +396,124 @@
 
 <span class="p">}</span>  <span class="c1">// namespace leveldb
 </span><span class="c1"></span>
-</code></pre></div><p>MemTable的实例采用了引用计数，其初始计数为0，因此其构造方法的调用者需要手动调用其<code>Ref</code>函数；当调动<code>Unref</code>方法使其引用计数器减至0时，MemTable会自己销毁。</p>
+</code></pre></div><p>MemTable的实例采用了引用计数，其初始计数为0，因此其构造方法的调用者需要手动调用其<code>Ref</code>方法将其初始引用计数置为1；在读取MemTable时或MemTable在Compact时，LevelDB会通过<code>Ref</code>方法增大MemTable的引用计数，避免其在读取过程中被回收而导致的无效内存访问，在操作完成后再通过<code>Unref</code>减小其引用计数；当调用<code>Unref</code>方法使其引用计数器减至0时，MemTable会自己销毁。</p>
 <p>本节，我们主要关注MemTable是如何封装SkipList以实现key/value的增删改查的。</p>
-<h1 id="施工中--">施工中 &hellip; &hellip;</h1>
-<h3 id="22">2.2</h3></div><div class="post-footer" id="post-footer">
+<h3 id="22-memtable的实现">2.2 MemTable的实现</h3>
+<h4 id="221-key的封装">2.2.1 key的封装</h4>
+<p>如前文所述，SkipList数据结构是一个只有key的查找结构，为了能够通过 SkipList同时保存key/value等数据，就要将key/value及其它数据封装成一个key。LevelDB中key的封装规则如下图所示。</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/leveldb-made-simple/4-memtable/assets/key-info.svg" title="key封装规则" data-thumbnail="/posts/code-reading/leveldb-made-simple/4-memtable/assets/key-info.svg" data-sub-html="<h2>key封装规则</h2><p>key封装规则</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/key-info.svg"
+            data-srcset="/posts/code-reading/leveldb-made-simple/4-memtable/assets/key-info.svg, assets/key-info.svg 1.5x, /posts/code-reading/leveldb-made-simple/4-memtable/assets/key-info.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/leveldb-made-simple/4-memtable/assets/key-info.svg" />
+    </a><figcaption class="image-caption">key封装规则</figcaption>
+    </figure></p>
+<p>SkipList的key从大体上可以分为三部分（颜色不同的部分）：InternalKey Size、InternalKey、Value。其中，InternalKey是LevelDB为了在Insert-Only的SkipList上实现增删改查而封装的结构，也是SkipList中Node的默认排序依据；InternalKey Size即InternalKey的大小，通过varint32编码；Value由用户插入的value与其大小组成，其value size同样通过varint32编码实现。接下来，我们重点介绍InternalKey的设计。</p>
+<p>InternalKey内部由3部分组成：</p>
+<ul>
+<li>key：用户插入的key，也叫做UserKey。</li>
+<li>SequenceNumber：全局单调递增序号，当LevelDB更新数据时（增/删/改）递增，保证后发生操作的SequenceNumber值大于先发生的操作，MemTable通过该字段在Insert-Only的SkipList上实现增/改操作。</li>
+<li>ValueType：用来表示操作类型枚举值，其值只有两种：<code>kTypeDeletion</code>与<code>kTypeValue</code>。其中<code>kTypeDeletion</code>表示该Key是删除操作，<code>kTypeValue</code>表示该Key是增/改操作。</li>
+</ul>
+<h4 id="222-增删改查的实现">2.2.2 增删改查的实现</h4>
+<p>在介绍了MemTable对SkipList的Key封装后，我们来分析MemTable如何通过这种封装来在Insert-Only的SkipList上实现key/value的增删改查操作。</p>
+<p>在上一节中，笔者提到过InternalKey是SkipList中Node的默认排序依据。LevelDB中SkipList的默认排序是通过<code>leveldb::InternalKeyComparator</code>实现的，其声明与实现在<code>db/dbformat.h</code>与<code>db/dbformat.cc</code>中。</p>
+<p><code>InternalKeyComparator</code>的<code>Compare</code>方法按照如下优先级，依次对<code>InternalKey</code>进行排序：</p>
+<ol>
+<li>按照UserKey<strong>升序</strong>排序；</li>
+<li>按照SequenceNumber<strong>降序</strong>排序；</li>
+<li>按照ValueType<strong>降序</strong>排序（由于SequenceNumber已经足以对Key排序，因此这条规则永远不会用到）。</li>
+</ol>
+<p>通过<code>InternalKeyComparator</code>，SkipList可以保证对于同一key（UserKey），新的操作永远在旧的操作的前面。因此，只要找到key（UserKey）在SkipList中第一次出现的位置，即可保证得到的是该key最新的版本。</p>
+<p>在分析MemTable如何实现查找key（UserKey）前，我们先来看一下MemTable实现增/删/查操作的实现：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="kt">void</span> <span class="n">MemTable</span><span class="o">::</span><span class="n">Add</span><span class="p">(</span><span class="n">SequenceNumber</span> <span class="n">s</span><span class="p">,</span> <span class="n">ValueType</span> <span class="n">type</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span>
+                   <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// Format of an entry is concatenation of:
+</span><span class="c1"></span>  <span class="c1">//  key_size     : varint32 of internal_key.size()
+</span><span class="c1"></span>  <span class="c1">//  key bytes    : char[internal_key.size()]
+</span><span class="c1"></span>  <span class="c1">//  value_size   : varint32 of value.size()
+</span><span class="c1"></span>  <span class="c1">//  value bytes  : char[value.size()]
+</span><span class="c1"></span>  <span class="n">size_t</span> <span class="n">key_size</span> <span class="o">=</span> <span class="n">key</span><span class="p">.</span><span class="n">size</span><span class="p">();</span>
+  <span class="n">size_t</span> <span class="n">val_size</span> <span class="o">=</span> <span class="n">value</span><span class="p">.</span><span class="n">size</span><span class="p">();</span>
+  <span class="n">size_t</span> <span class="n">internal_key_size</span> <span class="o">=</span> <span class="n">key_size</span> <span class="o">+</span> <span class="mi">8</span><span class="p">;</span>
+  <span class="k">const</span> <span class="n">size_t</span> <span class="n">encoded_len</span> <span class="o">=</span> <span class="n">VarintLength</span><span class="p">(</span><span class="n">internal_key_size</span><span class="p">)</span> <span class="o">+</span>
+                             <span class="n">internal_key_size</span> <span class="o">+</span> <span class="n">VarintLength</span><span class="p">(</span><span class="n">val_size</span><span class="p">)</span> <span class="o">+</span>
+                             <span class="n">val_size</span><span class="p">;</span>
+  <span class="kt">char</span><span class="o">*</span> <span class="n">buf</span> <span class="o">=</span> <span class="n">arena_</span><span class="p">.</span><span class="n">Allocate</span><span class="p">(</span><span class="n">encoded_len</span><span class="p">);</span>
+  <span class="kt">char</span><span class="o">*</span> <span class="n">p</span> <span class="o">=</span> <span class="n">EncodeVarint32</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span> <span class="n">internal_key_size</span><span class="p">);</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">memcpy</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">key</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span> <span class="n">key_size</span><span class="p">);</span>
+  <span class="n">p</span> <span class="o">+=</span> <span class="n">key_size</span><span class="p">;</span>
+  <span class="n">EncodeFixed64</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="p">(</span><span class="n">s</span> <span class="o">&lt;&lt;</span> <span class="mi">8</span><span class="p">)</span> <span class="o">|</span> <span class="n">type</span><span class="p">);</span>
+  <span class="n">p</span> <span class="o">+=</span> <span class="mi">8</span><span class="p">;</span>
+  <span class="n">p</span> <span class="o">=</span> <span class="n">EncodeVarint32</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">val_size</span><span class="p">);</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">memcpy</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">value</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span> <span class="n">val_size</span><span class="p">);</span>
+  <span class="n">assert</span><span class="p">(</span><span class="n">p</span> <span class="o">+</span> <span class="n">val_size</span> <span class="o">==</span> <span class="n">buf</span> <span class="o">+</span> <span class="n">encoded_len</span><span class="p">);</span>
+  <span class="n">table_</span><span class="p">.</span><span class="n">Insert</span><span class="p">(</span><span class="n">buf</span><span class="p">);</span>
+<span class="p">}</span>
+
+</code></pre></div><p>从<code>Add</code>方法中可以看出，MemTable不需要进行额外的操作，只需要将需要插入SkipList的Key按照上节中介绍的格式编码，然后直接插入到SkipList中即可。</p>
+<p>而对于查找操作，由于在查找时MemTable无法得知需要查找的key（UserKey）最新的SequenceNumber或ValueType，因此在查找时，无法构造出恰好与SkipList中的InternalKey相等的查找键。但这并不影响MemTable查找UserKey的最新版本，根据InternalKey的排序顺序，只要构造出的查找键的UserKey与需要查找的UserKey相同，且SequenceNumber大于等于该UserKey已存在的最大SequenceNumber，MemTable即可根据查找键找到待查找的UserKey的最新版本可能出现的位置。然后判断该位置上的UserKey是否与我们要查找的UserKey相同，如果相同则说明我们找到了该UserKey的最新版本，如果不同则说明MemTable没有该UserKey的记录。</p>
+<p>为了便于生成查找键，LevelDB定义了<code>levelDB::LookupKey</code>，其结构相当于InternalKey Size与InternalKey部分连接在一起，其中SequenceNumber部分为构造时的SequenceNumber，ValueType为1。在查找时，只需要传入UserKey及当前的SequenceNumber，即可构造出在SkipList中位于我们要查找的UserKey的最新版本可能出现的位置处的LookupKey。</p>
+<p>MemTable中查找操作的实现如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="kt">bool</span> <span class="n">MemTable</span><span class="o">::</span><span class="n">Get</span><span class="p">(</span><span class="k">const</span> <span class="n">LookupKey</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">*</span> <span class="n">value</span><span class="p">,</span> <span class="n">Status</span><span class="o">*</span> <span class="n">s</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">Slice</span> <span class="n">memkey</span> <span class="o">=</span> <span class="n">key</span><span class="p">.</span><span class="n">memtable_key</span><span class="p">();</span>
+  <span class="n">Table</span><span class="o">::</span><span class="n">Iterator</span> <span class="n">iter</span><span class="p">(</span><span class="o">&amp;</span><span class="n">table_</span><span class="p">);</span>
+  <span class="n">iter</span><span class="p">.</span><span class="n">Seek</span><span class="p">(</span><span class="n">memkey</span><span class="p">.</span><span class="n">data</span><span class="p">());</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">iter</span><span class="p">.</span><span class="n">Valid</span><span class="p">())</span> <span class="p">{</span>
+    <span class="c1">// entry format is:
+</span><span class="c1"></span>    <span class="c1">//    klength  varint32
+</span><span class="c1"></span>    <span class="c1">//    userkey  char[klength]
+</span><span class="c1"></span>    <span class="c1">//    tag      uint64
+</span><span class="c1"></span>    <span class="c1">//    vlength  varint32
+</span><span class="c1"></span>    <span class="c1">//    value    char[vlength]
+</span><span class="c1"></span>    <span class="c1">// Check that it belongs to same user key.  We do not check the
+</span><span class="c1"></span>    <span class="c1">// sequence number since the Seek() call above should have skipped
+</span><span class="c1"></span>    <span class="c1">// all entries with overly large sequence numbers.
+</span><span class="c1"></span>    <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">entry</span> <span class="o">=</span> <span class="n">iter</span><span class="p">.</span><span class="n">key</span><span class="p">();</span>
+    <span class="kt">uint32_t</span> <span class="n">key_length</span><span class="p">;</span>
+    <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">key_ptr</span> <span class="o">=</span> <span class="n">GetVarint32Ptr</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">entry</span> <span class="o">+</span> <span class="mi">5</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">key_length</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">comparator_</span><span class="p">.</span><span class="n">comparator</span><span class="p">.</span><span class="n">user_comparator</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">Compare</span><span class="p">(</span>
+            <span class="n">Slice</span><span class="p">(</span><span class="n">key_ptr</span><span class="p">,</span> <span class="n">key_length</span> <span class="o">-</span> <span class="mi">8</span><span class="p">),</span> <span class="n">key</span><span class="p">.</span><span class="n">user_key</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+      <span class="c1">// Correct user key
+</span><span class="c1"></span>      <span class="k">const</span> <span class="kt">uint64_t</span> <span class="n">tag</span> <span class="o">=</span> <span class="n">DecodeFixed64</span><span class="p">(</span><span class="n">key_ptr</span> <span class="o">+</span> <span class="n">key_length</span> <span class="o">-</span> <span class="mi">8</span><span class="p">);</span>
+      <span class="k">switch</span> <span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="n">ValueType</span><span class="o">&gt;</span><span class="p">(</span><span class="n">tag</span> <span class="o">&amp;</span> <span class="mh">0xff</span><span class="p">))</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="nl">kTypeValue</span><span class="p">:</span> <span class="p">{</span>
+          <span class="n">Slice</span> <span class="n">v</span> <span class="o">=</span> <span class="n">GetLengthPrefixedSlice</span><span class="p">(</span><span class="n">key_ptr</span> <span class="o">+</span> <span class="n">key_length</span><span class="p">);</span>
+          <span class="n">value</span><span class="o">-&gt;</span><span class="n">assign</span><span class="p">(</span><span class="n">v</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span> <span class="n">v</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
+          <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="k">case</span> <span class="nl">kTypeDeletion</span><span class="p">:</span>
+          <span class="o">*</span><span class="n">s</span> <span class="o">=</span> <span class="n">Status</span><span class="o">::</span><span class="n">NotFound</span><span class="p">(</span><span class="n">Slice</span><span class="p">());</span>
+          <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+<span class="p">}</span>
+
+</code></pre></div><p>正如上文中分析的那样，在根据LookupKey找到待查找的UserKey最新版本可能出现的位置后，还需要通过如下操作判断当前UserKey是否存在：</p>
+<ol>
+<li>判断当前位置非空，以避免待查找的UserKey在所有已有的UserKey记录之后导致的找到空指针；</li>
+<li>判断当前位置的UserKey是否是待查找的Userkey，如果不是则说明MemTable中没有待查找的UserKey的记录；</li>
+<li>检查该Key的ValueType，如果是<code>kTypeDeletion</code>说明该UserKey被用户删除；如果是<code>kTypeValue</code>说明待查找的UserKey存在，返回当前最新版本即可。</li>
+</ol>
+<h4 id="223-key类型小结">2.2.3 Key类型小结</h4>
+<p>LevelDB为了在Insert-Only的SkipList上实现key/value的增删改查封装了多种不同的key，这里总结一下出现的key以避免混淆：</p>
+<ul>
+<li>UserKey：用户插入的key。</li>
+<li>InternalKey：封装了用户插入的key、序号（时间戳）及操作类型，该key是在Insert-Only实现增删改查的关键，也是SkipList中key的排序依据。</li>
+<li>LookupKey：根据UserKey与查找操作发生时的SequenceNumber生成的用来查找SkipList的key，其相当于InternalKey size与InternalKey的连接。该key在SkipList中的位置对应待查找的UserKey的最新版本可能出现的位置。</li>
+<li>SkipList的Key：SkipList中的Key，保存了用户插入的key/value及相关元数据的所有信息。</li>
+</ul></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
-                <span>更新于 2021-03-05</span>
+                <span>更新于 2021-03-06</span>
             </div>
             <div class="post-info-license"></div>
         </div>
