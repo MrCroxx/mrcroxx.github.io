@@ -19,7 +19,7 @@
 <meta name="application-name" content="叉鸽 MrCroxx 的博客">
 <meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/4-memtable/" /><link rel="prev" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/3-log/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/4-memtable/" /><link rel="prev" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/3-log/" /><link rel="next" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/5-sstable/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
     {
         "@context": "http://schema.org",
         "@type": "BlogPosting",
@@ -135,7 +135,7 @@
           <ul>
             <li><a href="#221-key的封装">2.2.1 key的封装</a></li>
             <li><a href="#222-增删改查的实现">2.2.2 增删改查的实现</a></li>
-            <li><a href="#223-key类型小结">2.2.3 Key类型小结</a></li>
+            <li><a href="#223-key类型小结">2.2.3 key类型小结</a></li>
           </ul>
         </li>
       </ul>
@@ -502,7 +502,7 @@
 <li>判断当前位置的UserKey是否是待查找的Userkey，如果不是则说明MemTable中没有待查找的UserKey的记录；</li>
 <li>检查该Key的ValueType，如果是<code>kTypeDeletion</code>说明该UserKey被用户删除；如果是<code>kTypeValue</code>说明待查找的UserKey存在，返回当前最新版本即可。</li>
 </ol>
-<h4 id="223-key类型小结">2.2.3 Key类型小结</h4>
+<h4 id="223-key类型小结">2.2.3 key类型小结</h4>
 <p>LevelDB为了在Insert-Only的SkipList上实现key/value的增删改查封装了多种不同的key，这里总结一下出现的key以避免混淆：</p>
 <ul>
 <li>UserKey：用户插入的key。</li>
@@ -532,7 +532,8 @@
         </section>
     </div>
 
-    <div class="post-nav"><a href="/posts/code-reading/leveldb-made-simple/3-log/" class="prev" rel="prev" title="深入浅出LevelDB —— 0x03 log"><i class="fas fa-angle-left fa-fw"></i>深入浅出LevelDB —— 0x03 log</a></div>
+    <div class="post-nav"><a href="/posts/code-reading/leveldb-made-simple/3-log/" class="prev" rel="prev" title="深入浅出LevelDB —— 0x03 log"><i class="fas fa-angle-left fa-fw"></i>深入浅出LevelDB —— 0x03 log</a>
+            <a href="/posts/code-reading/leveldb-made-simple/5-sstable/" class="next" rel="next" title="深入浅出LevelDB —— 0x05 sstable [施工中]">深入浅出LevelDB —— 0x05 sstable [施工中]<i class="fas fa-angle-right fa-fw"></i></a></div>
 </div>
 </article></div>
             </main><footer class="footer">
