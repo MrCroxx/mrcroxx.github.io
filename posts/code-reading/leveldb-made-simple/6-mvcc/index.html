@@ -5,36 +5,36 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="robots" content="noodp" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
-        <title>深入浅出LevelDB —— 0x01 总体概览 [施工中] - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 0x01 总体概览 [施工中]" />
+        <title>深入浅出LevelDB —— 0x06 MVCC [施工中] - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 0x06 MVCC [施工中]" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/1-overview/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/1-overview/leveldb.jpg"/><meta property="article:section" content="posts" />
-<meta property="article:published_time" content="2021-03-04T19:37:23&#43;08:00" />
-<meta property="article:modified_time" content="2021-03-04T19:37:27&#43;08:00" />
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/6-mvcc/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/6-mvcc/leveldb.jpg"/><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2021-03-07T20:45:05&#43;08:00" />
+<meta property="article:modified_time" content="2021-03-07T20:45:09&#43;08:00" />
 
 <meta name="twitter:card" content="summary_large_image"/>
-<meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/1-overview/leveldb.jpg"/>
-<meta name="twitter:title" content="深入浅出LevelDB —— 0x01 总体概览 [施工中]"/>
+<meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/6-mvcc/leveldb.jpg"/>
+<meta name="twitter:title" content="深入浅出LevelDB —— 0x06 MVCC [施工中]"/>
 <meta name="twitter:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。"/>
 <meta name="application-name" content="叉鸽 MrCroxx 的博客">
 <meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/1-overview/" /><link rel="prev" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/0-introduction/" /><link rel="next" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/2-basic-data-structure/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/6-mvcc/" /><link rel="prev" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/5-sstable/" /><link rel="next" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/7-compaction/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
     {
         "@context": "http://schema.org",
         "@type": "BlogPosting",
-        "headline": "深入浅出LevelDB —— 0x01 总体概览 [施工中]",
+        "headline": "深入浅出LevelDB —— 0x06 MVCC [施工中]",
         "inLanguage": "zh-CN",
         "mainEntityOfPage": {
             "@type": "WebPage",
-            "@id": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/1-overview\/"
+            "@id": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/6-mvcc\/"
         },"image": [{
                             "@type": "ImageObject",
-                            "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/1-overview\/leveldb.jpg",
+                            "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/6-mvcc\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  33 ,
-        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/1-overview\/","datePublished": "2021-03-04T19:37:23+08:00","dateModified": "2021-03-04T19:37:27+08:00","publisher": {
+                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  31 ,
+        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/6-mvcc\/","datePublished": "2021-03-07T20:45:05+08:00","dateModified": "2021-03-07T20:45:09+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
                 "@type": "Person",
@@ -108,29 +108,33 @@
                 <div class="container"><div class="toc" id="toc-auto">
             <h2 class="toc-title">目录</h2>
             <div class="toc-content" id="toc-content-auto"></div>
-        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x01 总体概览 [施工中]</h1><div class="post-meta">
+        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x06 MVCC [施工中]</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-04">2021-03-04</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 33 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-07">2021-03-07</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 31 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 1 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
-        data-src="/posts/code-reading/leveldb-made-simple/1-overview/leveldb.jpg"
-        data-srcset="/posts/code-reading/leveldb-made-simple/1-overview/leveldb.jpg, /posts/code-reading/leveldb-made-simple/1-overview/leveldb.jpg 1.5x, /posts/code-reading/leveldb-made-simple/1-overview/leveldb.jpg 2x"
+        data-src="/posts/code-reading/leveldb-made-simple/6-mvcc/leveldb.jpg"
+        data-srcset="/posts/code-reading/leveldb-made-simple/6-mvcc/leveldb.jpg, /posts/code-reading/leveldb-made-simple/6-mvcc/leveldb.jpg 1.5x, /posts/code-reading/leveldb-made-simple/6-mvcc/leveldb.jpg 2x"
         data-sizes="auto"
-        alt="/posts/code-reading/leveldb-made-simple/1-overview/leveldb.jpg"
-        title="/posts/code-reading/leveldb-made-simple/1-overview/leveldb.jpg" /></div><div class="details toc" id="toc-static"  kept="">
+        alt="/posts/code-reading/leveldb-made-simple/6-mvcc/leveldb.jpg"
+        title="/posts/code-reading/leveldb-made-simple/6-mvcc/leveldb.jpg" /></div><div class="details toc" id="toc-static"  kept="">
                 <div class="details-summary toc-title">
                     <span>目录</span>
                     <span><i class="details-icon fas fa-angle-right"></i></span>
                 </div>
-                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents"></nav></div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
+  <ul>
+    <li><a href="#0-引言">0. 引言</a></li>
+  </ul>
+</nav></div>
             </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
-<h1 id="施工中--">施工中 &hellip; &hellip;</h1></div><div class="post-footer" id="post-footer">
+<h2 id="0-引言">0. 引言</h2></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
-                <span>更新于 2021-03-04</span>
+                <span>更新于 2021-03-07</span>
             </div>
             <div class="post-info-license"></div>
         </div>
@@ -149,8 +153,8 @@
         </section>
     </div>
 
-    <div class="post-nav"><a href="/posts/code-reading/leveldb-made-simple/0-introduction/" class="prev" rel="prev" title="深入浅出LevelDB —— 0x00 引言 [施工中]"><i class="fas fa-angle-left fa-fw"></i>深入浅出LevelDB —— 0x00 引言 [施工中]</a>
-            <a href="/posts/code-reading/leveldb-made-simple/2-basic-data-structure/" class="next" rel="next" title="深入浅出LevelDB —— 0x02 Bisic Utils [施工中]">深入浅出LevelDB —— 0x02 Bisic Utils [施工中]<i class="fas fa-angle-right fa-fw"></i></a></div>
+    <div class="post-nav"><a href="/posts/code-reading/leveldb-made-simple/5-sstable/" class="prev" rel="prev" title="深入浅出LevelDB —— 0x05 SSTable"><i class="fas fa-angle-left fa-fw"></i>深入浅出LevelDB —— 0x05 SSTable</a>
+            <a href="/posts/code-reading/leveldb-made-simple/7-compaction/" class="next" rel="next" title="深入浅出LevelDB —— 0x07 Compaction [施工中]">深入浅出LevelDB —— 0x07 Compaction [施工中]<i class="fas fa-angle-right fa-fw"></i></a></div>
 </div>
 </article></div>
             </main><footer class="footer">
