@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/5-sstable\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  1913 ,
+                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  2326 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/5-sstable\/","datePublished": "2021-03-06T16:54:17+08:00","dateModified": "2021-03-06T16:54:20+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,8 +110,8 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x05 SSTable [施工中]</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-06">2021-03-06</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1913 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 4 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-06">2021-03-06</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 2326 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 5 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
@@ -130,12 +130,7 @@
     <li><a href="#1-sstable格式">1. SSTable格式</a>
       <ul>
         <li><a href="#11-sstable文件格式概览">1.1 SSTable文件格式概览</a></li>
-        <li><a href="#12-block格式">1.2 Block格式</a>
-          <ul>
-            <li><a href="#121-block通用格式">1.2.1 Block通用格式</a></li>
-            <li><a href="#122-data-block">1.2.2 Data Block</a></li>
-          </ul>
-        </li>
+        <li><a href="#12-block格式">1.2 Block格式</a></li>
       </ul>
     </li>
   </ul>
@@ -160,7 +155,7 @@
 <p>SSTable中的数据按照功能可以分为如下几块区：</p>
 <ol>
 <li>Data Block区：存放key/value数据。</li>
-<li>Meta Block区：存放与当前SSTable相关的统计数据。</li>
+<li>Meta Block区：存放过滤器或当前SSTable相关的统计数据。</li>
 <li>MetaIndex Block：仅有1个Block，该Block中存放了所有Meta Block的索引。</li>
 <li>Index Block区：所有Data Block的索引。</li>
 <li>Footer：大小固定的一个区域（48B），该区域中有两个Handle，分别标识了MetaIndex Block区和Index Block区的偏移量与大小；文件末尾的MagicNum用来标识该文件是LevelDB的SSTable文件；剩余空间被填充为Padding。</li>
@@ -207,7 +202,6 @@
 </tbody>
 </table>
 <h3 id="12-block格式">1.2 Block格式</h3>
-<h4 id="121-block通用格式">1.2.1 Block通用格式</h4>
 <p>SSTable中所有的Block（content）都以下图格式组织：</p>
 <p><figure><a class="lightgallery" href="/posts/code-reading/leveldb-made-simple/5-sstable/assets/block.svg" title="Block格式" data-thumbnail="/posts/code-reading/leveldb-made-simple/5-sstable/assets/block.svg" data-sub-html="<h2>Block格式</h2><p>Block格式</p>">
         <img
@@ -239,8 +233,71 @@
     </figure></p>
 <p>如图所示，每个Entry可分为5段，分别为：该Entry的Key与其相应的Restart Entry的公共前缀长度（Varint32编码）、该Entry的Key剩余的长度（Varint32编码）、该Entry的Value长度（Varint32）编码、该Entry的Key的非公共前缀数据（bytes）、该Entry的Value数据（bytes）。Restart区的Restart索引（Fixed32编码）分别指向每个Restart Entry的偏移量。当然，这种压缩方式适用于所有的Block，无论数据只有key还是拥有key/value，并非只有Data Block使用了这种方式。</p>
 <p>通过这种方式，可以对频繁出现的公共前缀进行压缩。Restart Entry的间隔<code>leveldb::Options.block_restart_interval</code>默认为16，以平衡缓存局部性。</p>
-<p>接下来关注SSTable中各类Block保存的数据（后续内容屏蔽Restart细节，仅关注Entry中的key/value）。</p>
-<h4 id="122-data-block">1.2.2 Data Block</h4></div><div class="post-footer" id="post-footer">
+<p>接下来关注SSTable中各类Block保存的数据（以下屏蔽Restart细节，仅关注Entry中的key/value）。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">Block Type <div style="width:8em"></div></th>
+<th style="text-align:center">key<div style="width:12em"></div></th>
+<th style="text-align:center">value<div style="width:12em"></div></th>
+<th style="text-align:left">描述<div style="width:40em"></div></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">Data Block</td>
+<td style="text-align:center">InternalKey Size + InternalKey</td>
+<td style="text-align:center">Value Size + Value</td>
+<td style="text-align:left">完整数据与SkipList中Key的格式相同。</td>
+</tr>
+<tr>
+<td style="text-align:center">Meta Block</td>
+<td style="text-align:center">-</td>
+<td style="text-align:center">-</td>
+<td style="text-align:left">Meta Block有多种类型，目前可分 Filter Meta Block与Stats Meta Block，分别保存当前SSTable的过滤器与统计数据。</td>
+</tr>
+<tr>
+<td style="text-align:center">Filter Meta Block</td>
+<td style="text-align:center">filter.{{ Filter Name}}</td>
+<td style="text-align:center">BlockHandle</td>
+<td style="text-align:left">该SSTable使用的过滤器名称及其索引。过滤器的实现详见下文。</td>
+</tr>
+<tr>
+<td style="text-align:center">Stats Meta Block</td>
+<td style="text-align:center">统计量名</td>
+<td style="text-align:center">统计量值</td>
+<td style="text-align:left">保存该SSTable的统计量。</td>
+</tr>
+<tr>
+<td style="text-align:center">MetaIndex Block</td>
+<td style="text-align:center">Meta Block Name</td>
+<td style="text-align:center">BlockHandle</td>
+<td style="text-align:left">用来索引所有的MetaBlock。</td>
+</tr>
+<tr>
+<td style="text-align:center">Index Block</td>
+<td style="text-align:center">相应Data Block的“最大”Key值（详见下文）</td>
+<td style="text-align:center">BlockHandle</td>
+<td style="text-align:left">用来快速索引key在SSTable的哪个Data Block中。</td>
+</tr>
+</tbody>
+</table>
+<h1 id="施工中--">施工中 &hellip; &hellip;</h1>
+<p>如果启用过滤器，其中一个Meta Block作为Filter Block。其它Meta Block以key/value的形式保存统计数据（详见<code>doc/table_format.md</code>）。</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+  <span class="c1">// If *start &lt; limit, changes *start to a short string in [start,limit).
+</span><span class="c1"></span>  <span class="c1">// Simple comparator implementations may return with *start unchanged,
+</span><span class="c1"></span>  <span class="c1">// i.e., an implementation of this method that does nothing is correct.
+</span><span class="c1"></span>  <span class="k">virtual</span> <span class="kt">void</span> <span class="nf">FindShortestSeparator</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">*</span> <span class="n">start</span><span class="p">,</span>
+                                     <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">limit</span><span class="p">)</span> <span class="k">const</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+  <span class="c1">// Changes *key to a short string &gt;= *key.
+</span><span class="c1"></span>  <span class="c1">// Simple comparator implementations may return with *key unchanged,
+</span><span class="c1"></span>  <span class="c1">// i.e., an implementation of this method that does nothing is correct.
+</span><span class="c1"></span>  <span class="k">virtual</span> <span class="kt">void</span> <span class="nf">FindShortSuccessor</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">*</span> <span class="n">key</span><span class="p">)</span> <span class="k">const</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+
+</code></pre></div></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
