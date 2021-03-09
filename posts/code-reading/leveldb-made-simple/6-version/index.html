@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/6-version\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  3640 ,
+                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  4381 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/6-version\/","datePublished": "2021-03-07T20:45:05+08:00","dateModified": "2021-03-07T20:45:09+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,8 +110,8 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x06 Version [施工中]</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-07">2021-03-07</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 3640 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 8 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-07">2021-03-07</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 4381 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 9 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
@@ -136,6 +136,7 @@
     <li><a href="#2-leveldb重启后的恢复与修复">2. LevelDB重启后的恢复与修复</a>
       <ul>
         <li><a href="#21-leveldb的恢复">2.1 LevelDB的恢复</a></li>
+        <li><a href="#22-leveldb的修复">2.2 LevelDB的修复</a></li>
       </ul>
     </li>
   </ul>
@@ -206,6 +207,11 @@
 <p>在正常情况情况下，LevelDB可以通过Current文件找到当前的Manifest文件，并根据该文件恢复期VersionSet的状态；在通过WAL文件恢复其MemTable的状态。但是，如果数据库上一次关闭时异常退出（如掉电宕机等），且当时正在写Manifest文件或SSTable，可能导致Manifest或SSTable文件损坏。此时，需要用户通过<code>db/Repairer.cc</code>中提供的<code>Repairer</code>类的<code>Run()</code>方法来尝试手动修复LevelDB。</p>
 <p>本节主要介绍并分析LevelDB恢复与修复的流程与实现。</p>
 <h3 id="21-leveldb的恢复">2.1 LevelDB的恢复</h3>
+<p>LevelDB被通过<code>DB::Open</code>方法打开时，在非常简单的初始化后，会调用<code>DB::Recover</code>方法来恢复自身状态。该方法会检查Lock文件是否被占用（LevelDB通过名为<code>LOCK</code>的文件避免多个LevelDB进程同时访问一个数据库）、目录是否存在、Current文件是否存在等。然后主要通过<code>VersionSet::Recover</code>与<code>DBImpl::RecoverLogFile</code>两个方法，分别恢复其VersionSet的状态与MemTable的状态。</p>
+<p><code>VersionSet::Recover</code>方法在恢复VersionSet时，会读取Current文件来找到当前的Manifest文件。随后，LevelDB会读取Manifest中的全量数据，并通过这些数据构造单个Version，而不是为每条VersionEdit都创建一个Version。接下来，LevelDB需要写入新的Manifest文件，如果当前的Manifest文件较小，LevelDB会复用旧的Manifest文件，否则创建新的Manifest文件。</p>
+<p><code>DBImpl::RecoverLogFile</code>方法在恢复MemTable的状态时，只需要顺序读取WAL，并根据其中Record构建MemTable中即可。需要注意的是，由于每次打开LevelDB时的Options可能不能，因此在RecoverLogFile期间，也可能出现MemTable超过<code>write_buffer_size</code>的情况。此时，LevelDB不会将MemTable转为Immutable MemTable，而是直接将其写入level-0。</p>
+<p>如果LevelDB恢复不成功，其会报告错误。此时，用户必须通过<code>Repairer</code>来尝试手动修复LevelDB。</p>
+<h3 id="22-leveldb的修复">2.2 LevelDB的修复</h3>
 <h1 id="施工中--">施工中 &hellip; &hellip;</h1></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
