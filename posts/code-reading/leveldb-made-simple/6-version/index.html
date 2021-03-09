@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="robots" content="noodp" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
-        <title>深入浅出LevelDB —— 0x06 Version [施工中] - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 0x06 Version [施工中]" />
+        <title>深入浅出LevelDB —— 0x06 Version - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 0x06 Version" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/6-version/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/6-version/leveldb.jpg"/><meta property="article:section" content="posts" />
@@ -14,7 +14,7 @@
 
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/6-version/leveldb.jpg"/>
-<meta name="twitter:title" content="深入浅出LevelDB —— 0x06 Version [施工中]"/>
+<meta name="twitter:title" content="深入浅出LevelDB —— 0x06 Version"/>
 <meta name="twitter:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。"/>
 <meta name="application-name" content="叉鸽 MrCroxx 的博客">
 <meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
@@ -23,7 +23,7 @@
     {
         "@context": "http://schema.org",
         "@type": "BlogPosting",
-        "headline": "深入浅出LevelDB —— 0x06 Version [施工中]",
+        "headline": "深入浅出LevelDB —— 0x06 Version",
         "inLanguage": "zh-CN",
         "mainEntityOfPage": {
             "@type": "WebPage",
@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/6-version\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  4381 ,
+                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  5103 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/6-version\/","datePublished": "2021-03-07T20:45:05+08:00","dateModified": "2021-03-07T20:45:09+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -108,10 +108,10 @@
                 <div class="container"><div class="toc" id="toc-auto">
             <h2 class="toc-title">目录</h2>
             <div class="toc-content" id="toc-content-auto"></div>
-        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x06 Version [施工中]</h1><div class="post-meta">
+        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x06 Version</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-07">2021-03-07</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 4381 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 9 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-07">2021-03-07</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 5103 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 11 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
@@ -189,7 +189,20 @@
 <p>每次LevelDB启动时，会创建一个新的Manifest文件，并创建一个当前状态的全量快照（首次调用<code>LogAndApply</code>方法时除了写入增量的Record，还会调用<code>WriteSnapshot</code>方法写入其余的全量数据，这两个方法位于<code>version_set.h</code>与<code>version_set.cc</code>中），以裁剪增量记录的长度。在创建新的Manifest文件同时，LevelDB还会修改Current文件，将其指向最新的Manifest文件。Current文件中只有一个内容，即当前Manifest文件名。</p>
 <h3 id="12-versioneditversionversionset">1.2 VersionEdit、Version、VersionSet</h3>
 <p>Manifest与Current文件是LevelDB保存在稳定存储中的文件版本信息，在LevelDB被打开后，其会先通过Current文件找到当前的Manifest文件，读取并反序列化其中数据，并在内存中维护文件版本信息，以便后续操作。</p>
-<p>LevelDB在内存中将每个版本的文件信息封装为<code>Version</code>保存，Version主要保存了该版本每个level中都有哪些文件（Version中还包括下一个Compact Pointer）。LevelDB将Version以双向链表的形式组织，每个Version的<code>next_</code>指针指向下一个Version，<code>prev_</code>指针指向上一个Version。</p>
+<p>LevelDB在内存中将每个版本的文件信息封装为<code>Version</code>保存，Version主要保存了该版本每个level中都有哪些文件（Version中还包括下一个Compact Pointer），Version中文件元数据被按层组织为<code>FileMetaData</code>结构体数组的vector容器。<code>FileMetaData</code>中的字段如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="k">struct</span> <span class="nc">FileMetaData</span> <span class="p">{</span>
+  <span class="n">FileMetaData</span><span class="p">()</span> <span class="o">:</span> <span class="n">refs</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">allowed_seeks</span><span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">30</span><span class="p">),</span> <span class="n">file_size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="p">{}</span>
+
+  <span class="kt">int</span> <span class="n">refs</span><span class="p">;</span>
+  <span class="kt">int</span> <span class="n">allowed_seeks</span><span class="p">;</span>  <span class="c1">// Seeks allowed until compaction
+</span><span class="c1"></span>  <span class="kt">uint64_t</span> <span class="n">number</span><span class="p">;</span>
+  <span class="kt">uint64_t</span> <span class="n">file_size</span><span class="p">;</span>    <span class="c1">// File size in bytes
+</span><span class="c1"></span>  <span class="n">InternalKey</span> <span class="n">smallest</span><span class="p">;</span>  <span class="c1">// Smallest internal key served by table
+</span><span class="c1"></span>  <span class="n">InternalKey</span> <span class="n">largest</span><span class="p">;</span>   <span class="c1">// Largest internal key served by table
+</span><span class="c1"></span><span class="p">};</span>
+
+</code></pre></div><p>LevelDB将Version以双向链表的形式组织，每个Version的<code>next_</code>指针指向下一个Version，<code>prev_</code>指针指向上一个Version。</p>
 <p>LevelDB通过<code>VersionSet</code>结构来保存Version的双向链表，及其它不需要多版本记录的文件信息等（如<code>db_name</code>、<code>last_sequence_</code>、<code>log_number_</code>、<code>table_cache_</code>等）。<code>VersionSet</code>的<code>dummy_versions_</code>是Version双向链表的链头，其是一个无实际意义的Version对象，因此<code>dummy_versions_</code>的下一个Version是内存中保存的最旧的Version、<code>dummy_versions_</code>的上一个Version是最新的Version，<code>VersionSet</code>中还有一个<code>current_</code>指针指向链表中最新的Version。</p>
 <p><figure><a class="lightgallery" href="/posts/code-reading/leveldb-made-simple/6-version/assets/version-set.svg" title="VersionEdit、Version、VersionSet关系图" data-thumbnail="/posts/code-reading/leveldb-made-simple/6-version/assets/version-set.svg" data-sub-html="<h2>VersionEdit、Version、VersionSet关系图</h2><p>VersionEdit、Version、VersionSet关系图</p>">
         <img
@@ -212,7 +225,14 @@
 <p><code>DBImpl::RecoverLogFile</code>方法在恢复MemTable的状态时，只需要顺序读取WAL，并根据其中Record构建MemTable中即可。需要注意的是，由于每次打开LevelDB时的Options可能不能，因此在RecoverLogFile期间，也可能出现MemTable超过<code>write_buffer_size</code>的情况。此时，LevelDB不会将MemTable转为Immutable MemTable，而是直接将其写入level-0。</p>
 <p>如果LevelDB恢复不成功，其会报告错误。此时，用户必须通过<code>Repairer</code>来尝试手动修复LevelDB。</p>
 <h3 id="22-leveldb的修复">2.2 LevelDB的修复</h3>
-<h1 id="施工中--">施工中 &hellip; &hellip;</h1></div><div class="post-footer" id="post-footer">
+<p>在Manifest或SSTable文件损坏时，LevelDB为用户提供了<code>Repairer</code>（位于<code>db/repair.cc</code>）来尝试修复数据库文件。<code>Repaier</code>类中只提供了一个可见方法<code>Run</code>。</p>
+<p><code>Run</code>方法会依次调用如下4个方法对LevelDB的数据进行修复：</p>
+<ol>
+<li><code>FindFiles</code>：该方法会查找数据库目录中所有的Manifest、Log与SSTable文件。</li>
+<li><code>ConvertLogFilesToTables</code>：该方法会依次遍历所有的Log文件，并对每个Log文件通过<code>ConvertLogToTable</code>方法生成SSTable文件。这一过程不会产生新的VersionEdit，VersionEdit由后续流程生成。</li>
+<li><code>ExtractMetaData</code>：该方法会通过<code>ScanTable</code>方法扫描所有的SSTable，并生成其<code>FileMetaData</code>对象，以便恢复当前的Version。该方法遇到完全无法读取的SSTable时，会将其归档到<code>lost/</code>目录下；在遍历SSTable期间，会尽可能跳过无法解析的key；如果遇到无法解析并导致之后的文件都无法读取的key，则会通过<code>RepairTable</code>方法，将该key前能解析的key写入到新的SSTable中，并将原SSTable归档到<code>lost/</code>目录中。</li>
+<li><code>WriteDescriptor</code>：该方法会根据恢复的Version，重新生成编号为1的Manifest文件，并将旧的Manifest文件归档到<code>lost/</code>目录下。</li>
+</ol></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
