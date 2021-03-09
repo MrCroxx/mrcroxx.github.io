@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/6-version\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  2980 ,
+                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  3640 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/6-version\/","datePublished": "2021-03-07T20:45:05+08:00","dateModified": "2021-03-07T20:45:09+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,8 +110,8 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x06 Version [施工中]</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-07">2021-03-07</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 2980 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 6 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-07">2021-03-07</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 3640 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 8 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
@@ -131,6 +131,11 @@
       <ul>
         <li><a href="#11-versioneditmanifestcurrent">1.1 VersionEdit、Manifest、Current</a></li>
         <li><a href="#12-versioneditversionversionset">1.2 VersionEdit、Version、VersionSet</a></li>
+      </ul>
+    </li>
+    <li><a href="#2-leveldb重启后的恢复与修复">2. LevelDB重启后的恢复与修复</a>
+      <ul>
+        <li><a href="#21-leveldb的恢复">2.1 LevelDB的恢复</a></li>
       </ul>
     </li>
   </ul>
@@ -183,20 +188,25 @@
 <p>每次LevelDB启动时，会创建一个新的Manifest文件，并创建一个当前状态的全量快照（首次调用<code>LogAndApply</code>方法时除了写入增量的Record，还会调用<code>WriteSnapshot</code>方法写入其余的全量数据，这两个方法位于<code>version_set.h</code>与<code>version_set.cc</code>中），以裁剪增量记录的长度。在创建新的Manifest文件同时，LevelDB还会修改Current文件，将其指向最新的Manifest文件。Current文件中只有一个内容，即当前Manifest文件名。</p>
 <h3 id="12-versioneditversionversionset">1.2 VersionEdit、Version、VersionSet</h3>
 <p>Manifest与Current文件是LevelDB保存在稳定存储中的文件版本信息，在LevelDB被打开后，其会先通过Current文件找到当前的Manifest文件，读取并反序列化其中数据，并在内存中维护文件版本信息，以便后续操作。</p>
-<p>LevelDB在打开时，会读取当前Manifest文件中的所有数据。这里再次回顾一下上一节中介绍的Manifest中的内容。每个Manifest文件起始的Record（准确的说应该是起始的两个Record）是该Manifest文件创建时全量的VersionEdit，后续的Record是增量的 VersionEdit。在LevelDB读取了当前Manifest</p>
-<p><figure><a class="lightgallery" href="assets/version-set.png" title="VersionEdit、Version、VersionSet关系图" data-thumbnail="assets/version-set.png" data-sub-html="<h2>VersionEdit、Version、VersionSet关系图</h2><p>VersionEdit、Version、VersionSet关系图</p>">
+<p>LevelDB在内存中将每个版本的文件信息封装为<code>Version</code>保存，Version主要保存了该版本每个level中都有哪些文件（Version中还包括下一个Compact Pointer）。LevelDB将Version以双向链表的形式组织，每个Version的<code>next_</code>指针指向下一个Version，<code>prev_</code>指针指向上一个Version。</p>
+<p>LevelDB通过<code>VersionSet</code>结构来保存Version的双向链表，及其它不需要多版本记录的文件信息等（如<code>db_name</code>、<code>last_sequence_</code>、<code>log_number_</code>、<code>table_cache_</code>等）。<code>VersionSet</code>的<code>dummy_versions_</code>是Version双向链表的链头，其是一个无实际意义的Version对象，因此<code>dummy_versions_</code>的下一个Version是内存中保存的最旧的Version、<code>dummy_versions_</code>的上一个Version是最新的Version，<code>VersionSet</code>中还有一个<code>current_</code>指针指向链表中最新的Version。</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/leveldb-made-simple/6-version/assets/version-set.svg" title="VersionEdit、Version、VersionSet关系图" data-thumbnail="/posts/code-reading/leveldb-made-simple/6-version/assets/version-set.svg" data-sub-html="<h2>VersionEdit、Version、VersionSet关系图</h2><p>VersionEdit、Version、VersionSet关系图</p>">
         <img
             class="lazyload"
             src="/svg/loading.min.svg"
-            data-src="assets/version-set.png"
-            data-srcset="assets/version-set.png, assets/version-set.png 1.5x, assets/version-set.png 2x"
+            data-src="assets/version-set.svg"
+            data-srcset="/posts/code-reading/leveldb-made-simple/6-version/assets/version-set.svg, assets/version-set.svg 1.5x, /posts/code-reading/leveldb-made-simple/6-version/assets/version-set.svg 2x"
             data-sizes="auto"
-            alt="assets/version-set.png" />
+            alt="/posts/code-reading/leveldb-made-simple/6-version/assets/version-set.svg" />
     </a><figcaption class="image-caption">VersionEdit、Version、VersionSet关系图</figcaption>
     </figure></p>
-<h1 id="施工中--">施工中 &hellip; &hellip;</h1>
-<p>.log .ldb .sst LOG CURRENT manifest</p>
-<p>Comparator Name、Log Number、Prev Log Number、Next File Number、Last Sequence、Compact Pointers(level A -&gt; level B)、Deleted File Meta(level, file number)、New File Meta(level, number, file size, smallest key, largest key)</p></div><div class="post-footer" id="post-footer">
+<p>在创建新版本时，LevelDB首先构造VersionEdit，然后通过<code>VersionSet::LogAndApply</code>方法，先将VersionEdit应用到Current Version，然后将增量的VersionEdit写入Manifest文件中。</p>
+<h2 id="2-leveldb重启后的恢复与修复">2. LevelDB重启后的恢复与修复</h2>
+<p>LevelDB重启时，无论是正常关闭还是异常退出，都需要恢复其状态。这个状态既包括内存中VersionSet的状态，也包括MemTable的状态。</p>
+<p>在正常情况情况下，LevelDB可以通过Current文件找到当前的Manifest文件，并根据该文件恢复期VersionSet的状态；在通过WAL文件恢复其MemTable的状态。但是，如果数据库上一次关闭时异常退出（如掉电宕机等），且当时正在写Manifest文件或SSTable，可能导致Manifest或SSTable文件损坏。此时，需要用户通过<code>db/Repairer.cc</code>中提供的<code>Repairer</code>类的<code>Run()</code>方法来尝试手动修复LevelDB。</p>
+<p>本节主要介绍并分析LevelDB恢复与修复的流程与实现。</p>
+<h3 id="21-leveldb的恢复">2.1 LevelDB的恢复</h3>
+<h1 id="施工中--">施工中 &hellip; &hellip;</h1></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
