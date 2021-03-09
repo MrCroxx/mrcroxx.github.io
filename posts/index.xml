@@ -13,10 +13,10 @@
     <description><![CDATA[<p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>]]></description>
 </item><item>
     <title>深入浅出LevelDB —— 0x06 Version [施工中]</title>
-    <link>https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/6-mvcc/</link>
+    <link>https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/6-version/</link>
     <pubDate>Sun, 07 Mar 2021 20:45:05 &#43;0800</pubDate>
     <author>作者</author>
-    <guid>https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/6-mvcc/</guid>
+    <guid>https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/6-version/</guid>
     <description><![CDATA[<p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>]]></description>
 </item><item>
     <title>深入浅出LevelDB —— 0x05 SSTable</title>
