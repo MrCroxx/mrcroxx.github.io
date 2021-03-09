@@ -132,7 +132,7 @@
       <ul>
         <li><a href="#21-writablefile与sequentialfile">2.1 WritableFile与SequentialFile</a></li>
         <li><a href="#22-writer与reader">2.2 Writer与Reader</a></li>
-        <li><a href="#23-wal数据同步">2.3 wal数据同步</a></li>
+        <li><a href="#23-wal数据同步">2.3 WAL数据同步</a></li>
       </ul>
     </li>
   </ul>
@@ -358,7 +358,7 @@
 <span class="p">};</span>
 
 </code></pre></div><p><code>leveldb::log::Writer</code>与<code>leveldb::log::Reader</code>中大部分是处理记录分段分块的代码，本文不再赘述。这里需要关注的是写入Log文件时数据的同步语义。</p>
-<h3 id="23-wal数据同步">2.3 wal数据同步</h3>
+<h3 id="23-wal数据同步">2.3 WAL数据同步</h3>
 <p>Log（或Write-Ahead Log，WAL）的意义在于保证机器故障时数据不会因为内存掉电而丢失，只有record被执行前，被完全同步到稳定存储后，才能保证掉电后数据的完整性。然而，如果每条记录都要等待同步写入，其开销很高。</p>
 <p>LevelDB提供了是否开启同步的选项<code>WriteOptions</code>，其定义在<code>include/leveldb/options.h</code>中：</p>
 <div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
@@ -489,7 +489,7 @@
         </section>
     </div>
 
-    <div class="post-nav"><a href="/posts/code-reading/leveldb-made-simple/2-basic-data-structure/" class="prev" rel="prev" title="深入浅出LevelDB —— 0x02 Bisic Utils [施工中]"><i class="fas fa-angle-left fa-fw"></i>深入浅出LevelDB —— 0x02 Bisic Utils [施工中]</a>
+    <div class="post-nav"><a href="/posts/code-reading/leveldb-made-simple/2-basic-data-structure/" class="prev" rel="prev" title="深入浅出LevelDB —— 0x02 Bisic Data Format [施工中]"><i class="fas fa-angle-left fa-fw"></i>深入浅出LevelDB —— 0x02 Bisic Data Format [施工中]</a>
             <a href="/posts/code-reading/leveldb-made-simple/4-memtable/" class="next" rel="next" title="深入浅出LevelDB —— 0x04 MemTable">深入浅出LevelDB —— 0x04 MemTable<i class="fas fa-angle-right fa-fw"></i></a></div>
 </div>
 </article></div>

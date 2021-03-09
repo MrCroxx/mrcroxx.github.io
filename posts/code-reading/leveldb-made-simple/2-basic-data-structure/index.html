@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="robots" content="noodp" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
-        <title>深入浅出LevelDB —— 0x02 Bisic Utils [施工中] - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 0x02 Bisic Utils [施工中]" />
+        <title>深入浅出LevelDB —— 0x02 Bisic Data Format [施工中] - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 0x02 Bisic Data Format [施工中]" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/2-basic-data-structure/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/2-basic-data-structure/leveldb.jpg"/><meta property="article:section" content="posts" />
@@ -14,7 +14,7 @@
 
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/2-basic-data-structure/leveldb.jpg"/>
-<meta name="twitter:title" content="深入浅出LevelDB —— 0x02 Bisic Utils [施工中]"/>
+<meta name="twitter:title" content="深入浅出LevelDB —— 0x02 Bisic Data Format [施工中]"/>
 <meta name="twitter:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。"/>
 <meta name="application-name" content="叉鸽 MrCroxx 的博客">
 <meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
@@ -23,7 +23,7 @@
     {
         "@context": "http://schema.org",
         "@type": "BlogPosting",
-        "headline": "深入浅出LevelDB —— 0x02 Bisic Utils [施工中]",
+        "headline": "深入浅出LevelDB —— 0x02 Bisic Data Format [施工中]",
         "inLanguage": "zh-CN",
         "mainEntityOfPage": {
             "@type": "WebPage",
@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/2-basic-data-structure\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  3062 ,
+                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  1584 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/2-basic-data-structure\/","datePublished": "2021-03-04T20:20:15+08:00","dateModified": "2021-03-04T20:20:19+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -108,10 +108,10 @@
                 <div class="container"><div class="toc" id="toc-auto">
             <h2 class="toc-title">目录</h2>
             <div class="toc-content" id="toc-content-auto"></div>
-        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x02 Bisic Utils [施工中]</h1><div class="post-meta">
+        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x02 Bisic Data Format [施工中]</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-04">2021-03-04</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 3062 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 7 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-04">2021-03-04</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1584 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 4 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
@@ -127,125 +127,20 @@
                 <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
   <ul>
     <li><a href="#0-引言">0. 引言</a></li>
-    <li><a href="#1-内存分配器arena">1. 内存分配器Arena</a></li>
-    <li><a href="#2切片slice">2.切片Slice</a></li>
-    <li><a href="#3-整型与slice编码方式">3. 整型与Slice编码方式</a>
+    <li><a href="#1切片slice">1.切片Slice</a></li>
+    <li><a href="#2-整型与slice编码方式">2. 整型与Slice编码方式</a>
       <ul>
-        <li><a href="#31-整型定长编码">3.1 整型定长编码</a></li>
-        <li><a href="#32-整型变长编码">3.2 整型变长编码</a></li>
-        <li><a href="#33-长度确定的slice编码">3.3 长度确定的Slice编码</a></li>
+        <li><a href="#21-整型定长编码">2.1 整型定长编码</a></li>
+        <li><a href="#22-整型变长编码">2.2 整型变长编码</a></li>
+        <li><a href="#23-长度确定的slice编码">2.3 长度确定的Slice编码</a></li>
       </ul>
     </li>
   </ul>
 </nav></div>
             </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
 <h2 id="0-引言">0. 引言</h2>
-<p>为了便于后续的分析，本节将介绍LevelDB中较为通用的基本数据结构与工具及其实现。</p>
-<h2 id="1-内存分配器arena">1. 内存分配器Arena</h2>
-<p>相关文件：<code>util/arena.h</code>、<code>util/arena.cc</code>。</p>
-<p><code>Arena</code>是LevelDB的内存分配器。LevelDB统一由Arena向操作系统申请内存，需要分配在堆上的数据结构再通过Arena申请一段连续的空间。</p>
-<p>与大多数存储系统一样，Arena在其生命周期中也不会主动将已经获得的内存归还给操作系统。此外，像Arena申请内存的数据结构也不会在Arena的生命周期中归还其占用的内存，这与数据结构的使用场景及使用相关。</p>
-<p>Arena对外提供了以下方法：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
-<span class="k">class</span> <span class="nc">Arena</span> <span class="p">{</span>
- <span class="k">public</span><span class="o">:</span>
-  <span class="n">Arena</span><span class="p">();</span>
-
-  <span class="n">Arena</span><span class="p">(</span><span class="k">const</span> <span class="n">Arena</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
-  <span class="n">Arena</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">Arena</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
-
-  <span class="o">~</span><span class="n">Arena</span><span class="p">();</span>
-
-  <span class="c1">// Return a pointer to a newly allocated memory block of &#34;bytes&#34; bytes.
-</span><span class="c1"></span>  <span class="kt">char</span><span class="o">*</span> <span class="nf">Allocate</span><span class="p">(</span><span class="n">size_t</span> <span class="n">bytes</span><span class="p">);</span>
-
-  <span class="c1">// Allocate memory with the normal alignment guarantees provided by malloc.
-</span><span class="c1"></span>  <span class="kt">char</span><span class="o">*</span> <span class="nf">AllocateAligned</span><span class="p">(</span><span class="n">size_t</span> <span class="n">bytes</span><span class="p">);</span>
-
-  <span class="c1">// Returns an estimate of the total memory usage of data allocated
-</span><span class="c1"></span>  <span class="c1">// by the arena.
-</span><span class="c1"></span>  <span class="n">size_t</span> <span class="nf">MemoryUsage</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">memory_usage_</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
-  <span class="p">}</span>
-
-  <span class="c1">// ... ...
-</span><span class="c1"></span>
-<span class="p">}</span>
-
-</code></pre></div><p>Arena对外的分配方法有两种，区别在于是否按照机器位数对齐。Arena内部主要通过4个字段实现：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
-<span class="k">class</span> <span class="nc">Arena</span> <span class="p">{</span>
-
-  <span class="c1">// ... ...
-</span><span class="c1"></span>
- <span class="k">private</span><span class="o">:</span>
-  <span class="kt">char</span><span class="o">*</span> <span class="n">AllocateFallback</span><span class="p">(</span><span class="n">size_t</span> <span class="n">bytes</span><span class="p">);</span>
-  <span class="kt">char</span><span class="o">*</span> <span class="nf">AllocateNewBlock</span><span class="p">(</span><span class="n">size_t</span> <span class="n">block_bytes</span><span class="p">);</span>
-
-  <span class="c1">// Allocation state
-</span><span class="c1"></span>  <span class="kt">char</span><span class="o">*</span> <span class="n">alloc_ptr_</span><span class="p">;</span>
-  <span class="n">size_t</span> <span class="n">alloc_bytes_remaining_</span><span class="p">;</span>
-
-  <span class="c1">// Array of new[] allocated memory blocks
-</span><span class="c1"></span>  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">*&gt;</span> <span class="n">blocks_</span><span class="p">;</span>
-
-  <span class="c1">// Total memory usage of the arena.
-</span><span class="c1"></span>  <span class="c1">//
-</span><span class="c1"></span>  <span class="c1">// TODO(costan): This member is accessed via atomics, but the others are
-</span><span class="c1"></span>  <span class="c1">//               accessed without any locking. Is this OK?
-</span><span class="c1"></span>  <span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="n">size_t</span><span class="o">&gt;</span> <span class="n">memory_usage_</span><span class="p">;</span>
-<span class="p">};</span>
-
-</code></pre></div><p><code>std::vector&lt;char*&gt; blocks_</code>字段按block来保存已申请的内存空间，<code>char* alloc_ptr_</code>指向当前块中还未分配的内存地址，<code>size_t alloc_bytes_remaining_</code>记录了当前块中剩余的未分配空间大小，<code>std::atomic&lt;size_t&gt; memory_usage_</code>记录了Arena获取的总内存大小（包括了每个block的header大小）。注意，这里“当前块”并非向操作系统申请获得的最后一个块，因为Arena为了避免浪费，会为较大的请求分配单独的块（详见下文），这里的“当前块”是指除了这些单独分配的块外获得的最后一个块。</p>
-<p>当LevelDB通过<code>Allocate</code>方法向Arena请求内存时，Arena首先会检查当前块的剩余空间，如果当前块剩余空间能够满足分配需求，则直接将剩余空间分配给调用者，并调整<code>alloc_ptr</code>与<code>alloc_bytes_remaining</code>：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
-<span class="kr">inline</span> <span class="kt">char</span><span class="o">*</span> <span class="n">Arena</span><span class="o">::</span><span class="n">Allocate</span><span class="p">(</span><span class="n">size_t</span> <span class="n">bytes</span><span class="p">)</span> <span class="p">{</span>
-  <span class="c1">// The semantics of what to return are a bit messy if we allow
-</span><span class="c1"></span>  <span class="c1">// 0-byte allocations, so we disallow them here (we don&#39;t need
-</span><span class="c1"></span>  <span class="c1">// them for our internal use).
-</span><span class="c1"></span>  <span class="n">assert</span><span class="p">(</span><span class="n">bytes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">);</span>
-  <span class="k">if</span> <span class="p">(</span><span class="n">bytes</span> <span class="o">&lt;=</span> <span class="n">alloc_bytes_remaining_</span><span class="p">)</span> <span class="p">{</span>
-    <span class="kt">char</span><span class="o">*</span> <span class="n">result</span> <span class="o">=</span> <span class="n">alloc_ptr_</span><span class="p">;</span>
-    <span class="n">alloc_ptr_</span> <span class="o">+=</span> <span class="n">bytes</span><span class="p">;</span>
-    <span class="n">alloc_bytes_remaining_</span> <span class="o">-=</span> <span class="n">bytes</span><span class="p">;</span>
-    <span class="k">return</span> <span class="n">result</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="k">return</span> <span class="nf">AllocateFallback</span><span class="p">(</span><span class="n">bytes</span><span class="p">);</span>
-<span class="p">}</span>
-
-</code></pre></div><p>如果当前块剩余空间不足，Arena会调用内部的<code>AllocateFallback方法</code>：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
-<span class="kt">char</span><span class="o">*</span> <span class="n">Arena</span><span class="o">::</span><span class="n">AllocateFallback</span><span class="p">(</span><span class="n">size_t</span> <span class="n">bytes</span><span class="p">)</span> <span class="p">{</span>
-  <span class="k">if</span> <span class="p">(</span><span class="n">bytes</span> <span class="o">&gt;</span> <span class="n">kBlockSize</span> <span class="o">/</span> <span class="mi">4</span><span class="p">)</span> <span class="p">{</span>
-    <span class="c1">// Object is more than a quarter of our block size.  Allocate it separately
-</span><span class="c1"></span>    <span class="c1">// to avoid wasting too much space in leftover bytes.
-</span><span class="c1"></span>    <span class="kt">char</span><span class="o">*</span> <span class="n">result</span> <span class="o">=</span> <span class="n">AllocateNewBlock</span><span class="p">(</span><span class="n">bytes</span><span class="p">);</span>
-    <span class="k">return</span> <span class="n">result</span><span class="p">;</span>
-  <span class="p">}</span>
-
-  <span class="c1">// We waste the remaining space in the current block.
-</span><span class="c1"></span>  <span class="n">alloc_ptr_</span> <span class="o">=</span> <span class="n">AllocateNewBlock</span><span class="p">(</span><span class="n">kBlockSize</span><span class="p">);</span>
-  <span class="n">alloc_bytes_remaining_</span> <span class="o">=</span> <span class="n">kBlockSize</span><span class="p">;</span>
-
-  <span class="kt">char</span><span class="o">*</span> <span class="n">result</span> <span class="o">=</span> <span class="n">alloc_ptr_</span><span class="p">;</span>
-  <span class="n">alloc_ptr_</span> <span class="o">+=</span> <span class="n">bytes</span><span class="p">;</span>
-  <span class="n">alloc_bytes_remaining_</span> <span class="o">-=</span> <span class="n">bytes</span><span class="p">;</span>
-  <span class="k">return</span> <span class="n">result</span><span class="p">;</span>
-<span class="p">}</span>
-
-</code></pre></div><p><code>AllocateFallback</code>会判断需要分配的大小，如果需要分配的大小超过了默认块大小的$\frac{1}{4}$，为了避免浪费当前块的剩余空间，Arena会为其单独分配一个大小等于需求的块，此时不需要调整<code>alloc_ptr</code>与<code>alloc_bytes_remaining</code>字段，这样做的另一个好处是这一逻辑也可以用于分配需求大于默认块大小的空间；如果需要分配的大小没有超过默认块大小的$\frac{1}{4}$，此时不再使用当前块的剩余空间浪费也很小，因此直接申请一个默认大小的块，并从新块分配空间，同时调整<code>alloc_ptr</code>与<code>alloc_bytes_remaining</code>字段。</p>
-<p><code>AllocateNewBlock</code>会通过<code>new</code>关键字向操作系统申请内存空间，并将获得的内存块保存到<code>blocks_</code>中，同时更新<code>memory_usage_</code>字段：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
-<span class="kt">char</span><span class="o">*</span> <span class="n">Arena</span><span class="o">::</span><span class="n">AllocateNewBlock</span><span class="p">(</span><span class="n">size_t</span> <span class="n">block_bytes</span><span class="p">)</span> <span class="p">{</span>
-  <span class="kt">char</span><span class="o">*</span> <span class="n">result</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">char</span><span class="p">[</span><span class="n">block_bytes</span><span class="p">];</span>
-  <span class="n">blocks_</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">result</span><span class="p">);</span>
-  <span class="n">memory_usage_</span><span class="p">.</span><span class="n">fetch_add</span><span class="p">(</span><span class="n">block_bytes</span> <span class="o">+</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">char</span><span class="o">*</span><span class="p">),</span>
-                          <span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">);</span>
-  <span class="k">return</span> <span class="n">result</span><span class="p">;</span>
-<span class="p">}</span>
-
-</code></pre></div><p>在计算<code>memory_usage_</code>时，使用的空间除了需求的空间大小<code>block_bytes</code>外，还要加上<code>new</code>关键字为数组分配空间时为数组加上的header大小（这样<code>delete[]</code>关键字才能知道需要释放的数组大小）。</p>
-<h2 id="2切片slice">2.切片Slice</h2>
+<p>为了便于后续的分析，本节将介绍LevelDB中常用的基本数据格式。</p>
+<h2 id="1切片slice">1.切片Slice</h2>
 <p>相关文件：<code>include/leveldb/slice.h</code>。</p>
 <p><code>Slice</code>是LevelDB中广泛使用的切片类。Slice的结构非常简单，其只有两个字段，分别保存切片指针与切片大小：</p>
 <div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
@@ -297,12 +192,12 @@
   <span class="k">return</span> <span class="n">r</span><span class="p">;</span>
 <span class="p">}</span>
 
-</code></pre></div><h2 id="3-整型与slice编码方式">3. 整型与Slice编码方式</h2>
+</code></pre></div><h2 id="2-整型与slice编码方式">2. 整型与Slice编码方式</h2>
 <p>相关文件：<code>coding.h</code>、<code>coding.cc</code>。</p>
 <p>LevelDB中另一种常用的数据类型是整型。在LevelDB的源码中，其直接使用了<code>&lt;cstdint&gt;</code>的<code>uint32_t</code>与<code>uint64_t</code>作为整型类型，因此我们只需要关注其编码为字节数组的方式。</p>
 <p>LevelDB中为整型提供了两类编码方式，一类是定长编码，一类是变长编码。</p>
 <p>另外，LevelDB为了便于从字节数组中划分Slice，其还提供了一种<code>LengthPrefixedSlice</code>的编码方式，在编码中将长度确定的Slice的长度作为Slice的前缀。</p>
-<h3 id="31-整型定长编码">3.1 整型定长编码</h3>
+<h3 id="21-整型定长编码">2.1 整型定长编码</h3>
 <p>LevelDB中整型的定长编码（<em>32bits</em>或<em>64bits</em>）方式非常简单，只需要将整型按照小端的顺序编码即可：</p>
 <div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="kr">inline</span> <span class="kt">void</span> <span class="nf">EncodeFixed32</span><span class="p">(</span><span class="kt">char</span><span class="o">*</span> <span class="n">dst</span><span class="p">,</span> <span class="kt">uint32_t</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
@@ -330,7 +225,7 @@
 <span class="p">}</span>
 
 </code></pre></div><p>定长整型的解码方式同理，这里不再赘述。</p>
-<h3 id="32-整型变长编码">3.2 整型变长编码</h3>
+<h3 id="22-整型变长编码">2.2 整型变长编码</h3>
 <p>当整型值较小时，LevelDB支持将其编码为变长整型，以减少其空间占用（对于值与类型最大值接近时，变长整型占用空间反而增加）。</p>
 <p>对于变长整型编码，LevelDB需要知道该整型编码的终点在哪儿。因此，LevelDB将每个字节的最高位作为标识符，当字节最高位为1时表示编码未结束，当字节最高位为0时表示编码结束。因此，LevelDB的整型变长编码每8位用来表示整型值的7位。因此，当整型值接近其类型最大值时，变长编码需要额外一字节来容纳原整型值。</p>
 <p>同样，变长整型编码也采用了小端顺序：</p>
@@ -377,7 +272,7 @@
 <span class="p">}</span>
 
 </code></pre></div><p>在解码时，LevelDB只需要根据字节的最高位判断变长编码是否结束即可，这里不再赘述。另外，LevelDB提供了解码同时返回一些信息的方法，以方便在不通场景下的使用。</p>
-<h3 id="33-长度确定的slice编码">3.3 长度确定的Slice编码</h3>
+<h3 id="23-长度确定的slice编码">2.3 长度确定的Slice编码</h3>
 <p>长度确定的Slice的编码方式非常简单，只需要在原Slice之前加上用变长整型表示的Slice长度即可：</p>
 <div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="kt">void</span> <span class="nf">PutLengthPrefixedSlice</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">*</span> <span class="n">dst</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
