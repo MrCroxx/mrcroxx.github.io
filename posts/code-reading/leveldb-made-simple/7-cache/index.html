@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/7-cache\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  84 ,
+                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  2648 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/7-cache\/","datePublished": "2021-03-10T11:17:19+08:00","dateModified": "2021-03-10T11:17:22+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,8 +110,8 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x07 Cache [施工中]</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-10">2021-03-10</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 84 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 1 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-10">2021-03-10</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 2648 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 6 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
@@ -127,11 +127,199 @@
                 <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
   <ul>
     <li><a href="#0-引言">0. 引言</a></li>
+    <li><a href="#1-lru缓存设计与实现">1. LRU缓存设计与实现</a>
+      <ul>
+        <li><a href="#11-cache接口">1.1 Cache接口</a></li>
+        <li><a href="#12-cache实现---lruhandlehandletable">1.2 Cache实现 - LRUHandle、HandleTable</a></li>
+      </ul>
+    </li>
+  </ul>
+
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#x1-lruhandlehandletable">x.1 LRUHandle、HandleTable</a></li>
+      </ul>
+    </li>
   </ul>
 </nav></div>
             </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
 <h2 id="0-引言">0. 引言</h2>
+<p>为了减少热点数据访问时磁盘I/O频繁导致的效率问题，LevelDB在访问SSTable时加入了缓存。LevelDB中使用的缓存从功能上可分为两种：</p>
+<ul>
+<li>BlockCache（Options.boock_cache）：缓存最近使用的SSTable中DataBlock数据。</li>
+<li>TableCache（Options.max_open_files）：缓存最近打开的SSTable中的部分元数据（如索引等）。</li>
+</ul>
+<p>无论是BlockCache还是TableCache，其内部的核心实现都是LRU缓存（Least-Recently-Used）。该LRU缓存实现了<code>include/leveldb/cache.h</code>定义的缓存接口。</p>
+<p>本文主要介绍并分析LevelDB中Cache的设计与实现，并简单介绍BlockCache与TableCache对LRU缓存的封装。</p>
+<h2 id="1-lru缓存设计与实现">1. LRU缓存设计与实现</h2>
+<h3 id="11-cache接口">1.1 Cache接口</h3>
+<p>LevelDB的<code>include/leveldb/cache.h</code>定义了其内部使用的缓存接口，在介绍LevelDB中LRU缓存的实现前，我们首先关注该文件中定义的缓存接口：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="c1">// Copyright (c) 2011 The LevelDB Authors. All rights reserved.
+</span><span class="c1">// Use of this source code is governed by a BSD-style license that can be
+</span><span class="c1">// found in the LICENSE file. See the AUTHORS file for names of contributors.
+</span><span class="c1">//
+</span><span class="c1">// A Cache is an interface that maps keys to values.  It has internal
+</span><span class="c1">// synchronization and may be safely accessed concurrently from
+</span><span class="c1">// multiple threads.  It may automatically evict entries to make room
+</span><span class="c1">// for new entries.  Values have a specified charge against the cache
+</span><span class="c1">// capacity.  For example, a cache where the values are variable
+</span><span class="c1">// length strings, may use the length of the string as the charge for
+</span><span class="c1">// the string.
+</span><span class="c1">//
+</span><span class="c1">// A builtin cache implementation with a least-recently-used eviction
+</span><span class="c1">// policy is provided.  Clients may use their own implementations if
+</span><span class="c1">// they want something more sophisticated (like scan-resistance, a
+</span><span class="c1">// custom eviction policy, variable cache sizing, etc.)
+</span><span class="c1"></span>
+<span class="cp">#ifndef STORAGE_LEVELDB_INCLUDE_CACHE_H_
+</span><span class="cp">#define STORAGE_LEVELDB_INCLUDE_CACHE_H_
+</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;cstdint&gt;</span><span class="cp">
+</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&#34;leveldb/export.h&#34;</span><span class="cp">
+</span><span class="cp">#include</span> <span class="cpf">&#34;leveldb/slice.h&#34;</span><span class="cp">
+</span><span class="cp"></span>
+<span class="k">namespace</span> <span class="n">leveldb</span> <span class="p">{</span>
+
+<span class="k">class</span> <span class="nc">LEVELDB_EXPORT</span> <span class="n">Cache</span><span class="p">;</span>
+
+<span class="c1">// Create a new cache with a fixed size capacity.  This implementation
+</span><span class="c1">// of Cache uses a least-recently-used eviction policy.
+</span><span class="c1"></span><span class="n">LEVELDB_EXPORT</span> <span class="n">Cache</span><span class="o">*</span> <span class="nf">NewLRUCache</span><span class="p">(</span><span class="n">size_t</span> <span class="n">capacity</span><span class="p">);</span>
+
+<span class="k">class</span> <span class="nc">LEVELDB_EXPORT</span> <span class="n">Cache</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">Cache</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
+
+  <span class="n">Cache</span><span class="p">(</span><span class="k">const</span> <span class="n">Cache</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+  <span class="n">Cache</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">Cache</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+
+  <span class="c1">// Destroys all existing entries by calling the &#34;deleter&#34;
+</span><span class="c1"></span>  <span class="c1">// function that was passed to the constructor.
+</span><span class="c1"></span>  <span class="k">virtual</span> <span class="o">~</span><span class="n">Cache</span><span class="p">();</span>
+
+  <span class="c1">// Opaque handle to an entry stored in the cache.
+</span><span class="c1"></span>  <span class="k">struct</span> <span class="nc">Handle</span> <span class="p">{};</span>
+
+  <span class="c1">// Insert a mapping from key-&gt;value into the cache and assign it
+</span><span class="c1"></span>  <span class="c1">// the specified charge against the total cache capacity.
+</span><span class="c1"></span>  <span class="c1">//
+</span><span class="c1"></span>  <span class="c1">// Returns a handle that corresponds to the mapping.  The caller
+</span><span class="c1"></span>  <span class="c1">// must call this-&gt;Release(handle) when the returned mapping is no
+</span><span class="c1"></span>  <span class="c1">// longer needed.
+</span><span class="c1"></span>  <span class="c1">//
+</span><span class="c1"></span>  <span class="c1">// When the inserted entry is no longer needed, the key and
+</span><span class="c1"></span>  <span class="c1">// value will be passed to &#34;deleter&#34;.
+</span><span class="c1"></span>  <span class="k">virtual</span> <span class="n">Handle</span><span class="o">*</span> <span class="nf">Insert</span><span class="p">(</span><span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">value</span><span class="p">,</span> <span class="n">size_t</span> <span class="n">charge</span><span class="p">,</span>
+                         <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">deleter</span><span class="p">)(</span><span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">value</span><span class="p">))</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+  <span class="c1">// If the cache has no mapping for &#34;key&#34;, returns nullptr.
+</span><span class="c1"></span>  <span class="c1">//
+</span><span class="c1"></span>  <span class="c1">// Else return a handle that corresponds to the mapping.  The caller
+</span><span class="c1"></span>  <span class="c1">// must call this-&gt;Release(handle) when the returned mapping is no
+</span><span class="c1"></span>  <span class="c1">// longer needed.
+</span><span class="c1"></span>  <span class="k">virtual</span> <span class="n">Handle</span><span class="o">*</span> <span class="nf">Lookup</span><span class="p">(</span><span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+  <span class="c1">// Release a mapping returned by a previous Lookup().
+</span><span class="c1"></span>  <span class="c1">// REQUIRES: handle must not have been released yet.
+</span><span class="c1"></span>  <span class="c1">// REQUIRES: handle must have been returned by a method on *this.
+</span><span class="c1"></span>  <span class="k">virtual</span> <span class="kt">void</span> <span class="nf">Release</span><span class="p">(</span><span class="n">Handle</span><span class="o">*</span> <span class="n">handle</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+  <span class="c1">// Return the value encapsulated in a handle returned by a
+</span><span class="c1"></span>  <span class="c1">// successful Lookup().
+</span><span class="c1"></span>  <span class="c1">// REQUIRES: handle must not have been released yet.
+</span><span class="c1"></span>  <span class="c1">// REQUIRES: handle must have been returned by a method on *this.
+</span><span class="c1"></span>  <span class="k">virtual</span> <span class="kt">void</span><span class="o">*</span> <span class="nf">Value</span><span class="p">(</span><span class="n">Handle</span><span class="o">*</span> <span class="n">handle</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+  <span class="c1">// If the cache contains entry for key, erase it.  Note that the
+</span><span class="c1"></span>  <span class="c1">// underlying entry will be kept around until all existing handles
+</span><span class="c1"></span>  <span class="c1">// to it have been released.
+</span><span class="c1"></span>  <span class="k">virtual</span> <span class="kt">void</span> <span class="nf">Erase</span><span class="p">(</span><span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+  <span class="c1">// Return a new numeric id.  May be used by multiple clients who are
+</span><span class="c1"></span>  <span class="c1">// sharing the same cache to partition the key space.  Typically the
+</span><span class="c1"></span>  <span class="c1">// client will allocate a new id at startup and prepend the id to
+</span><span class="c1"></span>  <span class="c1">// its cache keys.
+</span><span class="c1"></span>  <span class="k">virtual</span> <span class="kt">uint64_t</span> <span class="nf">NewId</span><span class="p">()</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+  <span class="c1">// Remove all cache entries that are not actively in use.  Memory-constrained
+</span><span class="c1"></span>  <span class="c1">// applications may wish to call this method to reduce memory usage.
+</span><span class="c1"></span>  <span class="c1">// Default implementation of Prune() does nothing.  Subclasses are strongly
+</span><span class="c1"></span>  <span class="c1">// encouraged to override the default implementation.  A future release of
+</span><span class="c1"></span>  <span class="c1">// leveldb may change Prune() to a pure abstract method.
+</span><span class="c1"></span>  <span class="k">virtual</span> <span class="kt">void</span> <span class="nf">Prune</span><span class="p">()</span> <span class="p">{}</span>
+
+  <span class="c1">// Return an estimate of the combined charges of all elements stored in the
+</span><span class="c1"></span>  <span class="c1">// cache.
+</span><span class="c1"></span>  <span class="k">virtual</span> <span class="n">size_t</span> <span class="nf">TotalCharge</span><span class="p">()</span> <span class="k">const</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+ <span class="k">private</span><span class="o">:</span>
+  <span class="kt">void</span> <span class="n">LRU_Remove</span><span class="p">(</span><span class="n">Handle</span><span class="o">*</span> <span class="n">e</span><span class="p">);</span>
+  <span class="kt">void</span> <span class="nf">LRU_Append</span><span class="p">(</span><span class="n">Handle</span><span class="o">*</span> <span class="n">e</span><span class="p">);</span>
+  <span class="kt">void</span> <span class="nf">Unref</span><span class="p">(</span><span class="n">Handle</span><span class="o">*</span> <span class="n">e</span><span class="p">);</span>
+
+  <span class="k">struct</span> <span class="nc">Rep</span><span class="p">;</span>
+  <span class="n">Rep</span><span class="o">*</span> <span class="n">rep_</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="p">}</span>  <span class="c1">// namespace leveldb
+</span><span class="c1"></span>
+<span class="cp">#endif  </span><span class="c1">// STORAGE_LEVELDB_INCLUDE_CACHE_H_
+</span><span class="c1"></span>
+</code></pre></div><p>该文件的注释中，详细地说明了该<code>Cache</code>接口的设计与实现该<code>Cache</code>接口的一些需求。该接口定义了一个key/value的缓存结构，该接口要求在内部实现同步，以让使用者可以线程安全地使用该结构。<code>Cache</code>要求其实现能够自动逐出旧缓存项以为新缓存项腾出空间。使用者可以自定义<code>Cache</code>的容量，并需要在插入缓存项时提供该缓存项占用的容量，以便其计算剩余容量。</p>
+<p>接下来我们来详细分析<code>Cache</code>接口声明。</p>
+<p>首先关注<code>Cache</code>的构造与析构：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+  <span class="n">Cache</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
+
+  <span class="n">Cache</span><span class="p">(</span><span class="k">const</span> <span class="n">Cache</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+  <span class="n">Cache</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">Cache</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+
+  <span class="c1">// Destroys all existing entries by calling the &#34;deleter&#34;
+</span><span class="c1"></span>  <span class="c1">// function that was passed to the constructor.
+</span><span class="c1"></span>  <span class="k">virtual</span> <span class="o">~</span><span class="n">Cache</span><span class="p">();</span>
+
+</code></pre></div><p><code>Cache</code>要求析构时通过<code>deleter</code>来销毁其缓存的内容。该是插入缓存项时指定的，我们先继续分析。</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+  <span class="c1">// Opaque handle to an entry stored in the cache.
+</span><span class="c1"></span>  <span class="k">struct</span> <span class="nc">Handle</span> <span class="p">{};</span>
+
+</code></pre></div><p>Cache中声明一个结构体<code>Handle</code>。从Cache用户的视角来看，该Handle用来指向Cache中的一个缓存项，即Handle是用户访问Cache中缓存项的一个凭证。而在Cache内部，Handle其实与缓存项的生命周期有一定关系，我们先来看与Handle相关的几个方法，再来介绍这一关系：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+  <span class="c1">// Insert a mapping from key-&gt;value into the cache and assign it
+</span><span class="c1"></span>  <span class="c1">// the specified charge against the total cache capacity.
+</span><span class="c1"></span>  <span class="c1">//
+</span><span class="c1"></span>  <span class="c1">// Returns a handle that corresponds to the mapping.  The caller
+</span><span class="c1"></span>  <span class="c1">// must call this-&gt;Release(handle) when the returned mapping is no
+</span><span class="c1"></span>  <span class="c1">// longer needed.
+</span><span class="c1"></span>  <span class="c1">//
+</span><span class="c1"></span>  <span class="c1">// When the inserted entry is no longer needed, the key and
+</span><span class="c1"></span>  <span class="c1">// value will be passed to &#34;deleter&#34;.
+</span><span class="c1"></span>  <span class="k">virtual</span> <span class="n">Handle</span><span class="o">*</span> <span class="nf">Insert</span><span class="p">(</span><span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">value</span><span class="p">,</span> <span class="n">size_t</span> <span class="n">charge</span><span class="p">,</span>
+                         <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">deleter</span><span class="p">)(</span><span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">value</span><span class="p">))</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+  <span class="c1">// If the cache has no mapping for &#34;key&#34;, returns nullptr.
+</span><span class="c1"></span>  <span class="c1">//
+</span><span class="c1"></span>  <span class="c1">// Else return a handle that corresponds to the mapping.  The caller
+</span><span class="c1"></span>  <span class="c1">// must call this-&gt;Release(handle) when the returned mapping is no
+</span><span class="c1"></span>  <span class="c1">// longer needed.
+</span><span class="c1"></span>  <span class="k">virtual</span> <span class="n">Handle</span><span class="o">*</span> <span class="nf">Lookup</span><span class="p">(</span><span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+  <span class="c1">// Release a mapping returned by a previous Lookup().
+</span><span class="c1"></span>  <span class="c1">// REQUIRES: handle must not have been released yet.
+</span><span class="c1"></span>  <span class="c1">// REQUIRES: handle must have been returned by a method on *this.
+</span><span class="c1"></span>  <span class="k">virtual</span> <span class="kt">void</span> <span class="nf">Release</span><span class="p">(</span><span class="n">Handle</span><span class="o">*</span> <span class="n">handle</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+</code></pre></div><p><code>Insert</code>方法是Cache用户将key/value插入为Cache缓存项的方法，其参数<code>key</code>是Slice引用类型，<code>value</code>是任意类型指针，<code>size_t</code>用来告知Cache该缓存项占用容量。显然，Cache不需要知道value具体占用多大空间，也无从得知其类型，这说明Cache的用户需要自己控制value的空间释放。<code>Insert</code>方法的最后一个参数<code>*deleter</code>即用来释放value空间的方法，当Cache逐出缓存项时，会调用该方法，用户通过该方法实现对value空间的回收（LevelDB内部实现的Cache会深拷贝<code>key</code>的数据，不需要用户释放）。</p>
+<p>这里存在一个问题：用户在向容量已满的Cache插入新的缓存项时，Cache的要求自动逐出旧的缓存项，此时Cache会通过该缓存项的<code>deleter</code>释放该缓存项的空间。但如果此时该缓存项让在被使用，这会导致其内存被提前回收，后续对该缓存项的访问可能导致内存无效访问。</p>
+<p>为了解决这一问题，Cache需要“Pin”住仍在使用中的缓存项，以避免逐出正在使用中的缓存。而通过<code>Handle</code>，用户可以告知Cache什么时候什么时候可以“UnPin”缓存项。在<code>Insert</code>和<code>LookUp</code>方法声明的注释中可以看到，用户在不需要继续使用该缓存项时，需要调用<code>Release</code>方法并传入该缓存项的Handle，这一过程即为通知Cache可以“UnPin”缓存项的过程。被“UnPin”的缓存项即可被Cache在必要时逐出。另外，因为同一个缓存项可能被多个线程同时适应，因此“Pin”与“UnPin”还要依赖引用计数，只有当所有的使用者都不再使用该缓存项时，才能“UnPin”该缓存项。</p>
+<p><code>Cache</code>中还提供了如“删除缓存项”、“自然数生成”、“清空缓存”、“估算使用容量”等方法，这里不做关注的重点。</p>
+<p>接下来，我们自底向上地介绍并分析LevelDB中内建的对<code>Cache</code>接口的实现。</p>
+<h3 id="12-cache实现---lruhandlehandletable">1.2 Cache实现 - LRUHandle、HandleTable</h3>
 <h1 id="施工中--">施工中 &hellip; &hellip;</h1>
+<h3 id="x1-lruhandlehandletable">x.1 LRUHandle、HandleTable</h3>
 <p><code>include/leveldb/cache.h</code></p>
 <p><code>Cache</code> 内部保证同步，线程安全，k-&gt;v缓存接口 <strong>详细分析</strong></p>
 <p>内部实现：<code>util/cache.cc</code></p>
