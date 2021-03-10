@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/7-cache\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  4783 ,
+                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  5573 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/7-cache\/","datePublished": "2021-03-10T11:17:19+08:00","dateModified": "2021-03-10T11:17:22+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,8 +110,8 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x07 Cache [施工中]</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-10">2021-03-10</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 4783 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 10 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-10">2021-03-10</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 5573 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 12 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
@@ -134,14 +134,7 @@
         <li><a href="#12-lruhandle">1.2 LRUHandle</a></li>
         <li><a href="#13-handletable">1.3 HandleTable</a></li>
         <li><a href="#14-lrucache">1.4 LRUCache</a></li>
-      </ul>
-    </li>
-  </ul>
-
-  <ul>
-    <li>
-      <ul>
-        <li><a href="#x1-lruhandlehandletable">x.1 LRUHandle、HandleTable</a></li>
+        <li><a href="#15-shardedlrucache">1.5 ShardedLRUCache</a></li>
       </ul>
     </li>
   </ul>
@@ -466,12 +459,94 @@
 
 </code></pre></div><p><code>HandleTable</code>公开的<code>LookUp</code>、<code>Insert</code>、<code>Remove</code>是对<code>FindPointer</code>与<code>Resize</code>的封装，这里不再赘述。</p>
 <h3 id="14-lrucache">1.4 LRUCache</h3>
-<h1 id="施工中--">施工中 &hellip; &hellip;</h1>
-<h3 id="x1-lruhandlehandletable">x.1 LRUHandle、HandleTable</h3>
-<p><code>include/leveldb/cache.h</code></p>
-<p><code>Cache</code> 内部保证同步，线程安全，k-&gt;v缓存接口 <strong>详细分析</strong></p>
-<p>内部实现：<code>util/cache.cc</code></p>
-<p><code>ShardedLRUCache</code></p></div><div class="post-footer" id="post-footer">
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="k">class</span> <span class="nc">LRUCache</span> <span class="p">{</span>
+
+<span class="c1">// ... ...
+</span><span class="c1"></span>
+ <span class="k">private</span><span class="o">:</span>
+
+  <span class="c1">// ... ...
+</span><span class="c1"></span>
+  <span class="c1">// Initialized before use.
+</span><span class="c1"></span>  <span class="n">size_t</span> <span class="n">capacity_</span><span class="p">;</span>
+
+  <span class="c1">// mutex_ protects the following state.
+</span><span class="c1"></span>  <span class="k">mutable</span> <span class="n">port</span><span class="o">::</span><span class="n">Mutex</span> <span class="n">mutex_</span><span class="p">;</span>
+  <span class="n">size_t</span> <span class="n">usage_</span> <span class="nf">GUARDED_BY</span><span class="p">(</span><span class="n">mutex_</span><span class="p">);</span>
+
+  <span class="c1">// Dummy head of LRU list.
+</span><span class="c1"></span>  <span class="c1">// lru.prev is newest entry, lru.next is oldest entry.
+</span><span class="c1"></span>  <span class="c1">// Entries have refs==1 and in_cache==true.
+</span><span class="c1"></span>  <span class="n">LRUHandle</span> <span class="n">lru_</span> <span class="nf">GUARDED_BY</span><span class="p">(</span><span class="n">mutex_</span><span class="p">);</span>
+
+  <span class="c1">// Dummy head of in-use list.
+</span><span class="c1"></span>  <span class="c1">// Entries are in use by clients, and have refs &gt;= 2 and in_cache==true.
+</span><span class="c1"></span>  <span class="n">LRUHandle</span> <span class="n">in_use_</span> <span class="nf">GUARDED_BY</span><span class="p">(</span><span class="n">mutex_</span><span class="p">);</span>
+
+  <span class="n">HandleTable</span> <span class="n">table_</span> <span class="nf">GUARDED_BY</span><span class="p">(</span><span class="n">mutex_</span><span class="p">);</span>
+<span class="p">};</span>
+
+</code></pre></div><p><code>LRUCache</code>中，除了容量<code>capacity_</code>外，其它字段都通过互斥锁<code>mutex_</code>来保护并发操作，这些字段包括：LRUCache的当前用量、<em>LRU</em>链表<code>lru_</code>、<em>in-use</em>链表<code>in_use_</code>、和哈希表<code>table_</code>。</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="kt">void</span> <span class="n">LRUCache</span><span class="o">::</span><span class="n">Ref</span><span class="p">(</span><span class="n">LRUHandle</span><span class="o">*</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">e</span><span class="o">-&gt;</span><span class="n">refs</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="n">e</span><span class="o">-&gt;</span><span class="n">in_cache</span><span class="p">)</span> <span class="p">{</span>  <span class="c1">// If on lru_ list, move to in_use_ list.
+</span><span class="c1"></span>    <span class="n">LRU_Remove</span><span class="p">(</span><span class="n">e</span><span class="p">);</span>
+    <span class="n">LRU_Append</span><span class="p">(</span><span class="o">&amp;</span><span class="n">in_use_</span><span class="p">,</span> <span class="n">e</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="n">e</span><span class="o">-&gt;</span><span class="n">refs</span><span class="o">++</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="n">LRUCache</span><span class="o">::</span><span class="n">Unref</span><span class="p">(</span><span class="n">LRUHandle</span><span class="o">*</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">assert</span><span class="p">(</span><span class="n">e</span><span class="o">-&gt;</span><span class="n">refs</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">);</span>
+  <span class="n">e</span><span class="o">-&gt;</span><span class="n">refs</span><span class="o">--</span><span class="p">;</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">e</span><span class="o">-&gt;</span><span class="n">refs</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>  <span class="c1">// Deallocate.
+</span><span class="c1"></span>    <span class="n">assert</span><span class="p">(</span><span class="o">!</span><span class="n">e</span><span class="o">-&gt;</span><span class="n">in_cache</span><span class="p">);</span>
+    <span class="p">(</span><span class="o">*</span><span class="n">e</span><span class="o">-&gt;</span><span class="n">deleter</span><span class="p">)(</span><span class="n">e</span><span class="o">-&gt;</span><span class="n">key</span><span class="p">(),</span> <span class="n">e</span><span class="o">-&gt;</span><span class="n">value</span><span class="p">);</span>
+    <span class="n">free</span><span class="p">(</span><span class="n">e</span><span class="p">);</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="nf">if</span> <span class="p">(</span><span class="n">e</span><span class="o">-&gt;</span><span class="n">in_cache</span> <span class="o">&amp;&amp;</span> <span class="n">e</span><span class="o">-&gt;</span><span class="n">refs</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// No longer in use; move to lru_ list.
+</span><span class="c1"></span>    <span class="n">LRU_Remove</span><span class="p">(</span><span class="n">e</span><span class="p">);</span>
+    <span class="n">LRU_Append</span><span class="p">(</span><span class="o">&amp;</span><span class="n">lru_</span><span class="p">,</span> <span class="n">e</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="n">LRUCache</span><span class="o">::</span><span class="n">LRU_Remove</span><span class="p">(</span><span class="n">LRUHandle</span><span class="o">*</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">e</span><span class="o">-&gt;</span><span class="n">next</span><span class="o">-&gt;</span><span class="n">prev</span> <span class="o">=</span> <span class="n">e</span><span class="o">-&gt;</span><span class="n">prev</span><span class="p">;</span>
+  <span class="n">e</span><span class="o">-&gt;</span><span class="n">prev</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="n">e</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="n">LRUCache</span><span class="o">::</span><span class="n">LRU_Append</span><span class="p">(</span><span class="n">LRUHandle</span><span class="o">*</span> <span class="n">list</span><span class="p">,</span> <span class="n">LRUHandle</span><span class="o">*</span> <span class="n">e</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// Make &#34;e&#34; newest entry by inserting just before *list
+</span><span class="c1"></span>  <span class="n">e</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="n">list</span><span class="p">;</span>
+  <span class="n">e</span><span class="o">-&gt;</span><span class="n">prev</span> <span class="o">=</span> <span class="n">list</span><span class="o">-&gt;</span><span class="n">prev</span><span class="p">;</span>
+  <span class="n">e</span><span class="o">-&gt;</span><span class="n">prev</span><span class="o">-&gt;</span><span class="n">next</span> <span class="o">=</span> <span class="n">e</span><span class="p">;</span>
+  <span class="n">e</span><span class="o">-&gt;</span><span class="n">next</span><span class="o">-&gt;</span><span class="n">prev</span> <span class="o">=</span> <span class="n">e</span><span class="p">;</span>
+<span class="p">}</span>
+
+</code></pre></div><p>除了<code>LRU_Remove</code>与<code>LRU_Append</code>方法用来操作链表外，<code>LRUCache</code>还提供了<code>Ref</code>与<code>Unref</code>方法，在操作链表的同时处理LRUHandle的引用计数。<code>Ref</code>方法将LRUHandle的引用计数加一，并将其从<code>lru_</code>链表中转移到<code>in_use_</code>链表中；<code>Unref</code>方法将引用计数减一，当LRUHandle的引用计数减为1时，将其从<code>in_use_</code>链表中归还给<code>lru_</code>链表（其最后一个引用为链表指针的引用），当LRUHandle的引用计数减为0时，通过其<code>deleter</code>销毁该对象。</p>
+<p><code>LRUCache</code>中其它的方法实现比较简单，这里不再赘述。</p>
+<h3 id="15-shardedlrucache">1.5 ShardedLRUCache</h3>
+<p><code>SharedLRUCache</code>是最终实现<code>Cache</code>接口的方法。正如前文所介绍的，ShardedLRUCache中保存了若干个<code>LRUCache</code>，并根据插入的key的哈希将其分配到相应的LRUCache中。因为每个LRUCache有独立的锁，这种方式可以减少锁的争用，以优化并行程序的性能。</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="k">class</span> <span class="nc">ShardedLRUCache</span> <span class="o">:</span> <span class="k">public</span> <span class="n">Cache</span> <span class="p">{</span>
+ <span class="k">private</span><span class="o">:</span>
+  <span class="n">LRUCache</span> <span class="n">shard_</span><span class="p">[</span><span class="n">kNumShards</span><span class="p">];</span>
+  <span class="n">port</span><span class="o">::</span><span class="n">Mutex</span> <span class="n">id_mutex_</span><span class="p">;</span>
+  <span class="kt">uint64_t</span> <span class="n">last_id_</span><span class="p">;</span>
+
+  <span class="k">static</span> <span class="kr">inline</span> <span class="kt">uint32_t</span> <span class="nf">HashSlice</span><span class="p">(</span><span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">s</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">Hash</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span> <span class="n">s</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span> <span class="mi">0</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="k">static</span> <span class="kt">uint32_t</span> <span class="nf">Shard</span><span class="p">(</span><span class="kt">uint32_t</span> <span class="n">hash</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="n">hash</span> <span class="o">&gt;&gt;</span> <span class="p">(</span><span class="mi">32</span> <span class="o">-</span> <span class="n">kNumShardBits</span><span class="p">);</span> <span class="p">}</span>
+
+  <span class="c1">// ... ...
+</span><span class="c1"></span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>ShardedLRUCache</code>通过<code>HashSlice</code>方法对key进行一次哈希，并通过<code>Shard</code>方法为其分配shard。<code>ShardedLRUCache</code>中其它方法都是对shard的操作与对<code>LRUCache</code>的封装，这里也不再赘述。</p>
+<h1 id="施工中--">施工中 &hellip; &hellip;</h1></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
