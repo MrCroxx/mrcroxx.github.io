@@ -66,6 +66,6 @@
     <pubDate>Wed, 10 Jul 2019 15:10:30 &#43;0800</pubDate>
     <author>作者</author>
     <guid>https://mrcroxx.github.io/posts/csp/csp-201312-t5/</guid>
-    <description><![CDATA[CCF CSP 201312 T5 I&rsquo;m stuck! 题目 问题描述 给定一个R行C列的地图，地图的每一个方格可能是'#', &lsquo;+&rsquo;, &lsquo;-&rsquo;, &lsquo;|&rsquo;, &lsquo;.&rsquo;, &lsquo;S&rsquo;, &lsquo;T&rsquo;七个字符中的一个，分别]]></description>
+    <description><![CDATA[CCF CSP 201312 T5 I&rsquo;m stuck! 题目 问题描述 给定一个R行C列的地图，地图的每一个方格可能是&rsquo;#', &lsquo;+&rsquo;, &lsquo;-', &lsquo;|&rsquo;, &lsquo;.', &lsquo;S&rsquo;, &lsquo;T'七个字符中的一个，分别]]></description>
 </item></channel>
 </rss>

@@ -8,10 +8,10 @@
         <title>《In Search of an Understandable Consensus Algorithm (Extended Version)》论文翻译 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《In Search of an Understandable Consensus Algorithm (Extended Version)》论文翻译" />
 <meta property="og:description" content="本篇文章是对论文In Search of an Understandable Consensus Algorithm (Extended Version)的原创翻译，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/raft-extended/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/paper-reading/raft-extended/paper-reading.jpg"/><meta property="article:section" content="posts" />
-<meta property="article:published_time" content="2020-09-27T19:26:30&#43;08:00" />
-<meta property="article:modified_time" content="2020-10-01T13:53:47&#43;08:00" />
-
+<meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/raft-extended/" />
+<meta property="og:image" content="https://mrcroxx.github.io/posts/paper-reading/raft-extended/paper-reading.jpg"/>
+<meta property="article:published_time" content="2020-09-27T19:26:30+08:00" />
+<meta property="article:modified_time" content="2020-10-01T13:53:47+08:00" />
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/paper-reading/raft-extended/paper-reading.jpg"/>
 <meta name="twitter:title" content="《In Search of an Understandable Consensus Algorithm (Extended Version)》论文翻译"/>
@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/raft-extended\/paper-reading.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "Raft, Translation","wordcount":  33622 ,
+                        }],"genre": "posts","keywords": "Raft, Translation","wordcount":  33624 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/raft-extended\/","datePublished": "2020-09-27T19:26:30+08:00","dateModified": "2020-10-01T13:53:47+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,7 +110,7 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">《In Search of an Understandable Consensus Algorithm (Extended Version)》论文翻译</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-27">2020-09-27</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 33622 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-27">2020-09-27</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 33624 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 68 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
@@ -193,7 +193,7 @@
 <p>我们认为，无论为了教育目的还是作为实现的基础，Raft都比Paxos和其它共识算法更优秀；Raft的描述足够完整，能够满足使用系统的需求；Raft有很多开源实现并已经被一些公司使用；Raft的安全性性质已经被形式化定义并证明；Raft的效率与其它算法相似。</p>
 <p>本文的剩余部分介绍了多副本状态机问题（<a href="#2-%e5%a4%9a%e5%89%af%e6%9c%ac%e7%8a%b6%e6%80%81%e6%9c%ba" rel="">第二章</a>），讨论了Paxos的优势与劣势（<a href="#3-paxos%e6%9c%89%e4%bb%80%e4%b9%88%e9%97%ae%e9%a2%98" rel="">第三章</a>），描述了我们为了可理解性使用的通用方法（<a href="#4-%e4%b8%ba%e5%8f%af%e7%90%86%e8%a7%a3%e6%80%a7%e5%81%9a%e5%87%ba%e7%9a%84%e8%ae%be%e8%ae%a1" rel="">第四章</a>），给出了Raft共识算法（<a href="#5-raft%e5%85%b1%e8%af%86%e7%ae%97%e6%b3%95" rel="">第5~8章</a>），评估了Raft（<a href="#9-%e5%ae%9e%e7%8e%b0%e5%92%8c%e8%af%84%e4%bc%b0" rel="">第九章</a>），并讨论了相关工作（<a href="#10-%e7%9b%b8%e5%85%b3%e5%b7%a5%e4%bd%9c" rel="">第十章</a>）。</p>
 <h2 id="2-多副本状态机">2. 多副本状态机</h2>
-<p>共识算法通常在<em>多副本状态机问题（replicated state machine problem）</em><sup>[37]</sup>的上下文中出现。通过这种方法，在一系列服务器上的状态机会计算相同状态的相同副本，且即使在一些服务器宕机是也可以继续操作。多副本状态机被用来解决分布式系统中各式各样的容错问题。例如，有单集群leader的大型系统（如GFS<sup>[8]</sup>、HDFS<sup>[38]</sup>、和RAMCloud<sup>[33]</sup>）通常使用独立的多副本状态机来管理领导选举并存储必须能在leader崩溃时幸存的配置信息。多副本状态机的例子还包括Chubby<sup>[2]</sup>和ZooKeeper<sup>[11]</sup>。</p>
+<p>共识算法通常在*多副本状态机问题（replicated state machine problem）*<sup>[37]</sup>的上下文中出现。通过这种方法，在一系列服务器上的状态机会计算相同状态的相同副本，且即使在一些服务器宕机是也可以继续操作。多副本状态机被用来解决分布式系统中各式各样的容错问题。例如，有单集群leader的大型系统（如GFS<sup>[8]</sup>、HDFS<sup>[38]</sup>、和RAMCloud<sup>[33]</sup>）通常使用独立的多副本状态机来管理领导选举并存储必须能在leader崩溃时幸存的配置信息。多副本状态机的例子还包括Chubby<sup>[2]</sup>和ZooKeeper<sup>[11]</sup>。</p>
 <p>多副本状态机通常使用多副本日志实现，如<strong>图1</strong>所示。每个服务器存储一个包含一系列指令的日志，状态机会按照顺序执行日志。每个日志包含相同顺序的相同指令，因此每个状态机会处理相同的指令序列。因为状态机是确定的，每个状态机都会计算出相同的状态并得出相同的输出序列。</p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/raft-extended/figure-1.png" title="图1 多副本状态机架构。共识算法管理由来自不同客户端的状态及指令组成的多副本日志。状态机按照日志处理相同的指令序列，因此它们会产生相同的输出。" data-thumbnail="/posts/paper-reading/raft-extended/figure-1.png" data-sub-html="<h2>图1 多副本状态机架构。共识算法管理由来自不同客户端的状态及指令组成的多副本日志。状态机按照日志处理相同的指令序列，因此它们会产生相同的输出。</h2><p>图1 多副本状态机架构。共识算法管理由来自不同客户端的状态及指令组成的多副本日志。状态机按照日志处理相同的指令序列，因此它们会产生相同的输出。</p>">
         <img
@@ -657,7 +657,7 @@
 </div>
 </article></div>
             </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.81.0">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div>
     </footer></div>
