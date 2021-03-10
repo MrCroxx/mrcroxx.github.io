@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/8-compaction\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  244 ,
+                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  361 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/8-compaction\/","datePublished": "2021-03-10T19:35:40+08:00","dateModified": "2021-03-10T19:35:46+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,7 +110,7 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x08 Compaction [施工中]</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-10">2021-03-10</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 244 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-10">2021-03-10</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 361 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 1 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
@@ -135,31 +135,16 @@
 <p>正如Rebalance与Spill之于B+Tree，Compaction操作是LSMTree的核心。</p>
 <p>本节将介绍并分析LevelDB中LSMTree的Compaction操作的实现。</p>
 <h2 id="1-compcation分类">1. Compcation分类</h2>
-<p>LevelDB中LSMTree的Compaction操作分为两种，分别是Minor Compaction与Major Compaction。二者的对象、功能等如下表所示：</p>
-<table>
-<thead>
-<tr>
-<th align="center">Compaction Type <div style="width:8em"></div></th>
-<th align="center">对象 <div style="width:20em"></div></th>
-<th align="center">描述 <div style="width:40em"></div></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td align="center">Minor Compaction</td>
-<td align="center">Immutable MemTable -&gt; Level-0 SSTable</td>
-<td align="center"></td>
-</tr>
-<tr>
-<td align="center">Major Compaction</td>
-<td align="center">Low-level SSTable -&gt; High-level SSTable</td>
-<td align="center"></td>
-</tr>
-</tbody>
-</table>
+<p>LevelDB中LSMTree的Compaction操作分为两类，分别是Minor Compaction与Major Compaction。</p>
+<ul>
+<li>Minor Compaction（Immutable MemTable -&gt; SSTable）：将Immutable MemTable直接转为SSTable写入。Minor Compaction不会对Immutable MemTable中</li>
+<li>Major Compaction（Low-level SSTable -&gt; High-level SSTable）：</li>
+</ul>
 <h1 id="施工中--">施工中 &hellip; &hellip;</h1>
 <p>DBImpl::BackgroundCompaction</p>
-<p>DBImplCompactMemTable</p></div><div class="post-footer" id="post-footer">
+<p>DBImplCompactMemTable</p>
+<p>Minor Compaction &gt; Manual Compaction &gt; Size Compaction &gt; Seek Compaction</p>
+<p>btw. Tier Compaction ( Tiering vs. Leveling )</p></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
