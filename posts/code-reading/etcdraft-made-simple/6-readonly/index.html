@@ -8,10 +8,10 @@
         <title>深入浅出etcd/raft —— 0x06 只读请求优化 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出etcd/raft —— 0x06 只读请求优化" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/6-readonly/" />
-<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/6-readonly/etcd-raft.jpg"/>
-<meta property="article:published_time" content="2021-01-01T21:10:17+08:00" />
-<meta property="article:modified_time" content="2021-01-01T21:10:20+08:00" />
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/6-readonly/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/6-readonly/etcd-raft.jpg"/><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2021-01-01T21:10:17&#43;08:00" />
+<meta property="article:modified_time" content="2021-01-01T21:10:20&#43;08:00" />
+
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/6-readonly/etcd-raft.jpg"/>
 <meta name="twitter:title" content="深入浅出etcd/raft —— 0x06 只读请求优化"/>
@@ -279,26 +279,26 @@
 <table>
 <thead>
 <tr>
-<th align="center">方法<div style="width: 12em"></div></th>
-<th align="left">描述</th>
+<th style="text-align:center">方法<div style="width: 12em"></div></th>
+<th style="text-align:left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center"><code>addRequest(index uint64, m pb.Message)</code></td>
-<td align="left">在广播用来确认<em>read index</em>的心跳消息前，需要调用该方法将该<em>read index</em>加入待确认队列。</td>
+<td style="text-align:center"><code>addRequest(index uint64, m pb.Message)</code></td>
+<td style="text-align:left">在广播用来确认<em>read index</em>的心跳消息前，需要调用该方法将该<em>read index</em>加入待确认队列。</td>
 </tr>
 <tr>
-<td align="center"><code>recvAck(id uint64, context []byte) map[uint64]bool</code></td>
-<td align="left">当收到确认<em>read index</em>的心跳响应时，需要调用该方法更新该<em>read index</em>的确认状态，该方法会返回收到的确认心跳响应的发送者的id集合。</td>
+<td style="text-align:center"><code>recvAck(id uint64, context []byte) map[uint64]bool</code></td>
+<td style="text-align:left">当收到确认<em>read index</em>的心跳响应时，需要调用该方法更新该<em>read index</em>的确认状态，该方法会返回收到的确认心跳响应的发送者的id集合。</td>
 </tr>
 <tr>
-<td align="center"><code>advance(m pb.Message) []*readIndexStatus</code></td>
-<td align="left">当有<em>read index</em>得到了达到quorum数量节点的ack时，调用该方法返回相应的<code>ReadState</code>，并从待确认的队列中移除相应的<em>read index</em>及其状态。该方法支持批量与流水线操作，因为如果队列中靠后的<em>read index</em>被确认，则其之前的<em>read index</em>也可以确认，因此该方法会返回所有已确认的<code>ReadState</code>。</td>
+<td style="text-align:center"><code>advance(m pb.Message) []*readIndexStatus</code></td>
+<td style="text-align:left">当有<em>read index</em>得到了达到quorum数量节点的ack时，调用该方法返回相应的<code>ReadState</code>，并从待确认的队列中移除相应的<em>read index</em>及其状态。该方法支持批量与流水线操作，因为如果队列中靠后的<em>read index</em>被确认，则其之前的<em>read index</em>也可以确认，因此该方法会返回所有已确认的<code>ReadState</code>。</td>
 </tr>
 <tr>
-<td align="center"><code>lastPendingRequestCtx() string</code></td>
-<td align="left">该方法用来获取待确认的最后一条<em>read index</em>对应的<code>rctx</code>。在<em>heartbeat timeout</em>超时构造心跳消息时，其携带的<em>read index</em>标识为最后一条待确认的<em>read index</em>的标识，因为如果队列中靠后的<em>read index</em>被确认，则其之前的<em>read index</em>也可以确认，该方法是为支持批量与流水线操作而设计的。</td>
+<td style="text-align:center"><code>lastPendingRequestCtx() string</code></td>
+<td style="text-align:left">该方法用来获取待确认的最后一条<em>read index</em>对应的<code>rctx</code>。在<em>heartbeat timeout</em>超时构造心跳消息时，其携带的<em>read index</em>标识为最后一条待确认的<em>read index</em>的标识，因为如果队列中靠后的<em>read index</em>被确认，则其之前的<em>read index</em>也可以确认，该方法是为支持批量与流水线操作而设计的。</td>
 </tr>
 </tbody>
 </table>
@@ -436,7 +436,7 @@
 </div>
 </article></div>
             </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.81.0">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div>
     </footer></div>

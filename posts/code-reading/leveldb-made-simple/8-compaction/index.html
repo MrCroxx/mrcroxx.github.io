@@ -8,10 +8,10 @@
         <title>深入浅出LevelDB —— 0x08 Compaction [施工中] - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 0x08 Compaction [施工中]" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/8-compaction/" />
-<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/8-compaction/leveldb.jpg"/>
-<meta property="article:published_time" content="2021-03-10T19:35:40+08:00" />
-<meta property="article:modified_time" content="2021-03-10T19:35:46+08:00" />
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/8-compaction/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/8-compaction/leveldb.jpg"/><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2021-03-10T19:35:40&#43;08:00" />
+<meta property="article:modified_time" content="2021-03-10T19:35:46&#43;08:00" />
+
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/8-compaction/leveldb.jpg"/>
 <meta name="twitter:title" content="深入浅出LevelDB —— 0x08 Compaction [施工中]"/>
@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/8-compaction\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  361 ,
+                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  453 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/8-compaction\/","datePublished": "2021-03-10T19:35:40+08:00","dateModified": "2021-03-10T19:35:46+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,7 +110,7 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x08 Compaction [施工中]</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-10">2021-03-10</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 361 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-10">2021-03-10</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 453 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 1 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
@@ -127,19 +127,33 @@
                 <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
   <ul>
     <li><a href="#0-引言">0. 引言</a></li>
-    <li><a href="#1-compcation分类">1. Compcation分类</a></li>
+    <li><a href="#1-compaction的类型">1. Compaction的类型</a></li>
+    <li><a href="#2-compaction的触发">2. Compaction的触发</a></li>
   </ul>
 </nav></div>
             </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
 <h2 id="0-引言">0. 引言</h2>
 <p>正如Rebalance与Spill之于B+Tree，Compaction操作是LSMTree的核心。</p>
 <p>本节将介绍并分析LevelDB中LSMTree的Compaction操作的实现。</p>
-<h2 id="1-compcation分类">1. Compcation分类</h2>
+<h2 id="1-compaction的类型">1. Compaction的类型</h2>
 <p>LevelDB中LSMTree的Compaction操作分为两类，分别是Minor Compaction与Major Compaction。</p>
 <ul>
-<li>Minor Compaction（Immutable MemTable -&gt; SSTable）：将Immutable MemTable直接转为SSTable写入。Minor Compaction不会对Immutable MemTable中</li>
-<li>Major Compaction（Low-level SSTable -&gt; High-level SSTable）：</li>
+<li>Minor Compaction（Immutable MemTable -&gt; SSTable）：将Immutable MemTable转储为level-0 SSTable写入。</li>
+<li>Major Compaction（Low-level SSTable -&gt; High-level SSTable）：合并压缩第i层的SSTable，生成第i+1层的SSTable。</li>
 </ul>
+<p>在LevelDB中，Major Compaction还可以按照触发条件分为三类：</p>
+<ul>
+<li>
+<p>Size Compaction：</p>
+</li>
+<li>
+<p>Seek Compaction：</p>
+</li>
+<li>
+<p>Manual Compaction：</p>
+</li>
+</ul>
+<h2 id="2-compaction的触发">2. Compaction的触发</h2>
 <h1 id="施工中--">施工中 &hellip; &hellip;</h1>
 <p>DBImpl::BackgroundCompaction</p>
 <p>DBImplCompactMemTable</p>
@@ -171,7 +185,7 @@
 </div>
 </article></div>
             </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.81.0">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div>
     </footer></div>
