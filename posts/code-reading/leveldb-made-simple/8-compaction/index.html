@@ -9,8 +9,8 @@
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/8-compaction/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/8-compaction/leveldb.jpg"/><meta property="article:section" content="posts" />
-<meta property="article:published_time" content="2021-03-10T19:35:40&#43;08:00" />
-<meta property="article:modified_time" content="2021-03-10T19:35:46&#43;08:00" />
+<meta property="article:published_time" content="2021-03-11T14:16:25&#43;08:00" />
+<meta property="article:modified_time" content="2021-03-11T14:16:22&#43;08:00" />
 
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/8-compaction/leveldb.jpg"/>
@@ -33,8 +33,8 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/8-compaction\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  453 ,
-        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/8-compaction\/","datePublished": "2021-03-10T19:35:40+08:00","dateModified": "2021-03-10T19:35:46+08:00","publisher": {
+                        }],"genre": "posts","keywords": "LevelDB, LSMTree","wordcount":  2402 ,
+        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/8-compaction\/","datePublished": "2021-03-11T14:16:25+08:00","dateModified": "2021-03-11T14:16:22+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
                 "@type": "Person",
@@ -110,8 +110,8 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x08 Compaction [施工中]</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-10">2021-03-10</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 453 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 1 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-11">2021-03-11</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 2402 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 5 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
@@ -128,7 +128,15 @@
   <ul>
     <li><a href="#0-引言">0. 引言</a></li>
     <li><a href="#1-compaction的类型">1. Compaction的类型</a></li>
-    <li><a href="#2-compaction的触发">2. Compaction的触发</a></li>
+    <li><a href="#2-compaction的触发">2. Compaction的触发</a>
+      <ul>
+        <li><a href="#21-后台线程">2.1 后台线程</a></li>
+        <li><a href="#22-触发判断">2.2 触发判断</a></li>
+        <li><a href="#23-minor-compaction的触发">2.3 Minor Compaction的触发</a></li>
+      </ul>
+    </li>
+    <li><a href="#3-minor-compaction">3. Minor Compaction</a></li>
+    <li><a href="#4-major-compaction">4. Major Compaction</a></li>
   </ul>
 </nav></div>
             </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
@@ -143,17 +151,135 @@
 </ul>
 <p>在LevelDB中，Major Compaction还可以按照触发条件分为三类：</p>
 <ul>
-<li>
-<p>Size Compaction：</p>
-</li>
-<li>
-<p>Seek Compaction：</p>
-</li>
-<li>
-<p>Manual Compaction：</p>
-</li>
+<li>Size Compaction：根据每层文件大小触发（level-0根据文件数）的Major Compaction。</li>
+<li>Seek Compaction：根据SSTable的seek miss触发的Major Compaction。</li>
+<li>Manual Compaction：LevelDB使用者通过接口<code>void CompactRange(const Slice* begin, const Slice* end)</code>手动触发。</li>
 </ul>
+<p>下面我们具体分析各种Compaction的触发时机。</p>
 <h2 id="2-compaction的触发">2. Compaction的触发</h2>
+<p>在介绍LevelDB中Compaction的触发时机前，我们先来了解一下LevelDB的后台线程。</p>
+<h3 id="21-后台线程">2.1 后台线程</h3>
+<p>为了防止Compaction执行时阻塞LevelDB的正常读写，LevelDB的所有Compaction都通过一个后台线程执行。LevelDB的后台线程的实现依赖系统环境，因此其接口定义在了<code>include/leveldb/env.h</code>中，在不同环境中的实现分别位于<code>util/env_windows.cc</code>与<code>env_posix.cc</code>中。本文只考虑其在POSIX环境下的实现。</p>
+<p>如果需要Compaction，LevelDB会通过如下代码调度后台线程：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="kt">void</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">MaybeScheduleCompaction</span><span class="p">()</span> <span class="p">{</span>
+
+    <span class="c1">//... ...
+</span><span class="c1"></span>
+    <span class="n">env_</span><span class="o">-&gt;</span><span class="n">Schedule</span><span class="p">(</span><span class="o">&amp;</span><span class="n">DBImpl</span><span class="o">::</span><span class="n">BGWork</span><span class="p">,</span> <span class="k">this</span><span class="p">);</span>
+
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">BGWork</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span> <span class="n">db</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="n">DBImpl</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">db</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">BackgroundCall</span><span class="p">();</span>
+<span class="p">}</span>
+
+</code></pre></div><p>该方法调用了<code>include/leveldb/env.h</code>中定义的<code>Schedule</code>接口，我们先来看看其接口定义上的注释：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+  <span class="c1">// Arrange to run &#34;(*function)(arg)&#34; once in a background thread.
+</span><span class="c1"></span>  <span class="c1">//
+</span><span class="c1"></span>  <span class="c1">// &#34;function&#34; may run in an unspecified thread.  Multiple functions
+</span><span class="c1"></span>  <span class="c1">// added to the same Env may run concurrently in different threads.
+</span><span class="c1"></span>  <span class="c1">// I.e., the caller may not assume that background work items are
+</span><span class="c1"></span>  <span class="c1">// serialized.
+</span><span class="c1"></span>  <span class="k">virtual</span> <span class="kt">void</span> <span class="nf">Schedule</span><span class="p">(</span><span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">function</span><span class="p">)(</span><span class="kt">void</span><span class="o">*</span> <span class="n">arg</span><span class="p">),</span> <span class="kt">void</span><span class="o">*</span> <span class="n">arg</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+</code></pre></div><p>从该接口上的注释可以看出，该接口会安排后台线程执行一次传入的方法。且该接口既不保证后台线程仅单线程执行，也不传入的方法保序执行。</p>
+<p>下面我们来分析<code>Schedule</code>及其相关方法在POSIX环境下的实现。</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="kt">void</span> <span class="n">PosixEnv</span><span class="o">::</span><span class="n">Schedule</span><span class="p">(</span>
+    <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">background_work_function</span><span class="p">)(</span><span class="kt">void</span><span class="o">*</span> <span class="n">background_work_arg</span><span class="p">),</span>
+    <span class="kt">void</span><span class="o">*</span> <span class="n">background_work_arg</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">background_work_mutex_</span><span class="p">.</span><span class="n">Lock</span><span class="p">();</span>
+
+  <span class="c1">// Start the background thread, if we haven&#39;t done so already.
+</span><span class="c1"></span>  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">started_background_thread_</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">started_background_thread_</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+    <span class="n">std</span><span class="o">::</span><span class="kr">thread</span> <span class="n">background_thread</span><span class="p">(</span><span class="n">PosixEnv</span><span class="o">::</span><span class="n">BackgroundThreadEntryPoint</span><span class="p">,</span> <span class="k">this</span><span class="p">);</span>
+    <span class="n">background_thread</span><span class="p">.</span><span class="n">detach</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="c1">// If the queue is empty, the background thread may be waiting for work.
+</span><span class="c1"></span>  <span class="k">if</span> <span class="p">(</span><span class="n">background_work_queue_</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span> <span class="p">{</span>
+    <span class="n">background_work_cv_</span><span class="p">.</span><span class="n">Signal</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="n">background_work_queue_</span><span class="p">.</span><span class="n">emplace</span><span class="p">(</span><span class="n">background_work_function</span><span class="p">,</span> <span class="n">background_work_arg</span><span class="p">);</span>
+  <span class="n">background_work_mutex_</span><span class="p">.</span><span class="n">Unlock</span><span class="p">();</span>
+<span class="p">}</span>
+
+</code></pre></div><p>该方法首先检测后台线程是否创建，如果没有创建创建后台线程。接下来会将任务放入后台线程的任务队列中，并通过信号量唤醒后台线程执行。创建后台线程与操作任务队列都需要通过锁来保护，因此该方法全程加锁。</p>
+<p>下面是后台线程的逻辑：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="c1">// ... ...
+</span><span class="c1"></span>
+  <span class="k">static</span> <span class="kt">void</span> <span class="nf">BackgroundThreadEntryPoint</span><span class="p">(</span><span class="n">PosixEnv</span><span class="o">*</span> <span class="n">env</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">env</span><span class="o">-&gt;</span><span class="n">BackgroundThreadMain</span><span class="p">();</span>
+  <span class="p">}</span>
+
+<span class="c1">// ... ...
+</span><span class="c1"></span>
+<span class="kt">void</span> <span class="n">PosixEnv</span><span class="o">::</span><span class="n">BackgroundThreadMain</span><span class="p">()</span> <span class="p">{</span>
+  <span class="k">while</span> <span class="p">(</span><span class="nb">true</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">background_work_mutex_</span><span class="p">.</span><span class="n">Lock</span><span class="p">();</span>
+
+    <span class="c1">// Wait until there is work to be done.
+</span><span class="c1"></span>    <span class="k">while</span> <span class="p">(</span><span class="n">background_work_queue_</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span> <span class="p">{</span>
+      <span class="n">background_work_cv_</span><span class="p">.</span><span class="n">Wait</span><span class="p">();</span>
+    <span class="p">}</span>
+
+    <span class="n">assert</span><span class="p">(</span><span class="o">!</span><span class="n">background_work_queue_</span><span class="p">.</span><span class="n">empty</span><span class="p">());</span>
+    <span class="k">auto</span> <span class="n">background_work_function</span> <span class="o">=</span> <span class="n">background_work_queue_</span><span class="p">.</span><span class="n">front</span><span class="p">().</span><span class="n">function</span><span class="p">;</span>
+    <span class="kt">void</span><span class="o">*</span> <span class="n">background_work_arg</span> <span class="o">=</span> <span class="n">background_work_queue_</span><span class="p">.</span><span class="n">front</span><span class="p">().</span><span class="n">arg</span><span class="p">;</span>
+    <span class="n">background_work_queue_</span><span class="p">.</span><span class="n">pop</span><span class="p">();</span>
+
+    <span class="n">background_work_mutex_</span><span class="p">.</span><span class="n">Unlock</span><span class="p">();</span>
+    <span class="n">background_work_function</span><span class="p">(</span><span class="n">background_work_arg</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+</code></pre></div><p>后台线程会循环获取任务丢列中的任务，为了避免线程空转，在队列为空时通过信号量等待唤醒。如果队列中有任务，则获取该任务并将任务出队，然后执行任务。后台线程中操作队列的部分需要通过锁来保护，而执行任务时没有上锁，可以并行执行（但是LevelDB只使用了1个后台线程，因此Compaction仍是串行而不是并行的）。</p>
+<h3 id="22-触发判断">2.2 触发判断</h3>
+<p>无论是Minor Compaction还是Major Compaction，在设置了相应的参数后，都会通过<code>DBImpl::MaybeScheduleCompaction</code>方法来判断是否需要执行Compaction。该方法实现如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="kt">void</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">MaybeScheduleCompaction</span><span class="p">()</span> <span class="p">{</span>
+  <span class="n">mutex_</span><span class="p">.</span><span class="n">AssertHeld</span><span class="p">();</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">background_compaction_scheduled_</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// Already scheduled
+</span><span class="c1"></span>  <span class="p">}</span> <span class="k">else</span> <span class="nf">if</span> <span class="p">(</span><span class="n">shutting_down_</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_acquire</span><span class="p">))</span> <span class="p">{</span>
+    <span class="c1">// DB is being deleted; no more background compactions
+</span><span class="c1"></span>  <span class="p">}</span> <span class="k">else</span> <span class="nf">if</span> <span class="p">(</span><span class="o">!</span><span class="n">bg_error_</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
+    <span class="c1">// Already got an error; no more changes
+</span><span class="c1"></span>  <span class="p">}</span> <span class="k">else</span> <span class="nf">if</span> <span class="p">(</span><span class="n">imm_</span> <span class="o">==</span> <span class="k">nullptr</span> <span class="o">&amp;&amp;</span> <span class="n">manual_compaction_</span> <span class="o">==</span> <span class="k">nullptr</span> <span class="o">&amp;&amp;</span>
+             <span class="o">!</span><span class="n">versions_</span><span class="o">-&gt;</span><span class="n">NeedsCompaction</span><span class="p">())</span> <span class="p">{</span>
+    <span class="c1">// No work to be done
+</span><span class="c1"></span>  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="n">background_compaction_scheduled_</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+    <span class="n">env_</span><span class="o">-&gt;</span><span class="n">Schedule</span><span class="p">(</span><span class="o">&amp;</span><span class="n">DBImpl</span><span class="o">::</span><span class="n">BGWork</span><span class="p">,</span> <span class="k">this</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>MaybeScheduleCompaction</code>方法是需要在上锁时被调用的，因此其首先断言当前正持有着锁。接下来，其按照顺序做了如下判断：</p>
+<ol>
+<li>当前是否正在进行Compaction的调度，如果正在调度则不再调度。这里的“调度”开始于<code>Schedule</code>调度后台线程前，结束于后台线程中<code>BackgroundCompaction</code>真正完成Compaction操作后。</li>
+<li>数据库是否正在关闭，如果数据库已被关闭，则不再调度。</li>
+<li>如果后台线程报告了错误，则不再调度。</li>
+<li>如果此时还没有Immutable MemTable产生，也没有Major Compaction被触发，则不需要调度。</li>
+<li>否则，通过<code>Schedule</code>方法开始新Compaction任务调度。</li>
+</ol>
+<p><code>MaybeScheduleCompaction</code>方法通过<code>imm_</code>是否为空判断是否需要Minor Compaction，通过<code>manual_compaction</code>判断是否需要Manual Compaction；而是否需要Size Compaction或Seek Compaction，则需要通过当前的VersionSet的<code>NeedsCompaction</code>方法来判断。该方法的实现如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+  <span class="c1">// Returns true iff some level needs a compaction.
+</span><span class="c1"></span>  <span class="kt">bool</span> <span class="nf">NeedsCompaction</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="n">Version</span><span class="o">*</span> <span class="n">v</span> <span class="o">=</span> <span class="n">current_</span><span class="p">;</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">v</span><span class="o">-&gt;</span><span class="n">compaction_score_</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">||</span> <span class="p">(</span><span class="n">v</span><span class="o">-&gt;</span><span class="n">file_to_compact_</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">);</span>
+  <span class="p">}</span>
+
+</code></pre></div><p>该方法只检查了当前Version的两个字段：<code>compaction_score_</code>是否大于1或<code>file_to_compact_</code>是否不为空。其中<code>compaction_score_</code>字段用来计算是否需要触发Size Compaction，<code>file_to_compact_</code>用来计算是否需要触发Seek Compaction。关于这两个字段的计算会在下文介绍。</p>
+<p>在了解LevelDB中Compaction整体的触发条件后，下面我们来分析每种Compaction具体的触发方式。</p>
+<h3 id="23-minor-compaction的触发">2.3 Minor Compaction的触发</h3>
+<h2 id="3-minor-compaction">3. Minor Compaction</h2>
+<h2 id="4-major-compaction">4. Major Compaction</h2>
 <h1 id="施工中--">施工中 &hellip; &hellip;</h1>
 <p>DBImpl::BackgroundCompaction</p>
 <p>DBImplCompactMemTable</p>
@@ -162,7 +288,7 @@
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
-                <span>更新于 2021-03-10</span>
+                <span>更新于 2021-03-11</span>
             </div>
             <div class="post-info-license"></div>
         </div>
