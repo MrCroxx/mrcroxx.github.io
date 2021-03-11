@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/6-version\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  5103 ,
+                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  5215 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/6-version\/","datePublished": "2021-03-07T20:45:05+08:00","dateModified": "2021-03-09T22:56:48+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,7 +110,7 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x06 Version</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-07">2021-03-07</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 5103 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-07">2021-03-07</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 5215 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 11 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
@@ -139,6 +139,7 @@
         <li><a href="#22-leveldb的修复">2.2 LevelDB的修复</a></li>
       </ul>
     </li>
+    <li><a href="#3-more">3. More</a></li>
   </ul>
 </nav></div>
             </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
@@ -232,7 +233,9 @@
 <li><code>ConvertLogFilesToTables</code>：该方法会依次遍历所有的Log文件，并对每个Log文件通过<code>ConvertLogToTable</code>方法生成SSTable文件。这一过程不会产生新的VersionEdit，VersionEdit由后续流程生成。</li>
 <li><code>ExtractMetaData</code>：该方法会通过<code>ScanTable</code>方法扫描所有的SSTable，并生成其<code>FileMetaData</code>对象，以便恢复当前的Version。该方法遇到完全无法读取的SSTable时，会将其归档到<code>lost/</code>目录下；在遍历SSTable期间，会尽可能跳过无法解析的key；如果遇到无法解析并导致之后的文件都无法读取的key，则会通过<code>RepairTable</code>方法，将该key前能解析的key写入到新的SSTable中，并将原SSTable归档到<code>lost/</code>目录中。</li>
 <li><code>WriteDescriptor</code>：该方法会根据恢复的Version，重新生成编号为1的Manifest文件，并将旧的Manifest文件归档到<code>lost/</code>目录下。</li>
-</ol></div><div class="post-footer" id="post-footer">
+</ol>
+<h2 id="3-more">3. More</h2>
+<p>本文在介绍VersionEdit、Version、VersionSet和FileMetaData时，只介绍了其与文件版本信息相关的字段。除此之外其中还有一些其它的重要字段。本系列的后续文章会在使用这些字段时对其进行介绍。</p></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
