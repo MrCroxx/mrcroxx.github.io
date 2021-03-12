@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/8-compaction\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  6907 ,
+                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  8542 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/8-compaction\/","datePublished": "2021-03-11T14:16:25+08:00","dateModified": "2021-03-11T14:16:22+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,8 +110,8 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x08 Compaction [施工中]</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-11">2021-03-11</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 6907 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 14 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-11">2021-03-11</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 8542 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 18 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
@@ -138,7 +138,11 @@
         <li><a href="#26-manual-compaction的触发">2.6 Manual Compaction的触发</a></li>
       </ul>
     </li>
-    <li><a href="#3-compaction的范围">3. Compaction的范围</a></li>
+    <li><a href="#3-compaction的范围">3. Compaction的范围</a>
+      <ul>
+        <li><a href="#31-minor-compaction范围的确定">3.1 Minor Compaction范围的确定</a></li>
+      </ul>
+    </li>
   </ul>
 
   <ul>
@@ -606,6 +610,64 @@
 <h3 id="26-manual-compaction的触发">2.6 Manual Compaction的触发</h3>
 <p>Manual Comapction的触发时机比较简单，当LevelDB的用户调用<code>DB::CompactRange</code>接口时，LevelDB会检查用户给定的Compact范围与当前状态，判断是否需要执行Manual Compaction。如果确定执行Manual Compaction，则设置<code>manual_compaction_</code>，再调用<code> MaybeScheduleCompaction</code>方法以尝试触发Manual Compaction。</p>
 <h2 id="3-compaction的范围">3. Compaction的范围</h2>
+<p>Compaction在触发后，首先要确定Compact的范围。本节，笔者将介绍并分析LevelDB中Comapction范围的确定。</p>
+<p>LevelDB在确定Minor Compaction范围与Major Compaction范围的方法区别很大，因此这里分别介绍。</p>
+<h3 id="31-minor-compaction范围的确定">3.1 Minor Compaction范围的确定</h3>
+<p>在LST-Tree的基本概念中，Minor Compaction只需要将Immutable MemTable全量转储为SSTable，并将其推至level-0即可。而LevelDB对这一步骤进行了优化，其会将Minor Comapction生成的SSTable推至更高的层级。该优化的依据如下：</p>
+<ul>
+<li>由于level 0中SSTable间可能存在overlap，发生在level 0=&gt;1的Major Compaction开销相对较大。为了尽可能避免level 0=&gt;1的Major Compaction开销并避免一些开销较大的Manifest文件操作，LevelDB会将Minor Comapction产生的MemTable尽可能推至更高level。</li>
+<li>LevelDB也不会将Minor Compaction产生的SSTable的level推得过高。SSTable的level越高越难被Compaction，因此如果该SSTable中很多Record是override操作，如果不被Compaction会造成很大的空间浪费。</li>
+<li>该优化不能破坏LSM-Tree结构。</li>
+</ul>
+<p>因此计算Minor Compaction范围时需要且只需要确定其生成的SSTable所在的level。其通过<code>Version::PickLevelForMemTableOutput</code>方法实现：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="kt">int</span> <span class="n">Version</span><span class="o">::</span><span class="n">PickLevelForMemTableOutput</span><span class="p">(</span><span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">smallest_user_key</span><span class="p">,</span>
+                                        <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">largest_user_key</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kt">int</span> <span class="n">level</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">OverlapInLevel</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">smallest_user_key</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">largest_user_key</span><span class="p">))</span> <span class="p">{</span>
+    <span class="c1">// Push to next level if there is no overlap in next level,
+</span><span class="c1"></span>    <span class="c1">// and the #bytes overlapping in the level after that are limited.
+</span><span class="c1"></span>    <span class="n">InternalKey</span> <span class="nf">start</span><span class="p">(</span><span class="n">smallest_user_key</span><span class="p">,</span> <span class="n">kMaxSequenceNumber</span><span class="p">,</span> <span class="n">kValueTypeForSeek</span><span class="p">);</span>
+    <span class="n">InternalKey</span> <span class="nf">limit</span><span class="p">(</span><span class="n">largest_user_key</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="n">ValueType</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">));</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">FileMetaData</span><span class="o">*&gt;</span> <span class="n">overlaps</span><span class="p">;</span>
+    <span class="k">while</span> <span class="p">(</span><span class="n">level</span> <span class="o">&lt;</span> <span class="n">config</span><span class="o">::</span><span class="n">kMaxMemCompactLevel</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">OverlapInLevel</span><span class="p">(</span><span class="n">level</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">smallest_user_key</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">largest_user_key</span><span class="p">))</span> <span class="p">{</span>
+        <span class="k">break</span><span class="p">;</span>
+      <span class="p">}</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">level</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">&lt;</span> <span class="n">config</span><span class="o">::</span><span class="n">kNumLevels</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// Check that file does not overlap too many grandparent bytes.
+</span><span class="c1"></span>        <span class="n">GetOverlappingInputs</span><span class="p">(</span><span class="n">level</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">start</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">limit</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">overlaps</span><span class="p">);</span>
+        <span class="k">const</span> <span class="kt">int64_t</span> <span class="n">sum</span> <span class="o">=</span> <span class="n">TotalFileSize</span><span class="p">(</span><span class="n">overlaps</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">sum</span> <span class="o">&gt;</span> <span class="n">MaxGrandParentOverlapBytes</span><span class="p">(</span><span class="n">vset_</span><span class="o">-&gt;</span><span class="n">options_</span><span class="p">))</span> <span class="p">{</span>
+          <span class="k">break</span><span class="p">;</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+      <span class="n">level</span><span class="o">++</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="n">level</span><span class="p">;</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>PickLevelForMemTableOutput</code>方法最初将目标level置为0，并循环判断是否可以将该level推高一层至目标level。其判断条件如下：</p>
+<ol>
+<li>目标level不能超过配置<code>config::kMaxMemCompactLevel</code>中限制的最大高度（默认为2）。</li>
+<li>目标level不能与该level的其它SSTable有overlap。</li>
+<li>目标level与其下一层level的overlap不能过多，其计算规则为：首先根据Immutable MemTable的key范围找出目标level的下一层level中与其存在overlap的所有文件；所有与之存在overlap的文件总大小不能超过LevelDB配置中<code>max_file_size</code>大小的10倍（默认为2MB）。</li>
+</ol>
+<p>LevelDB计算Compaciton范围时，需要确定以下参数：</p>
+<ol>
+<li>确定Compaction起始层级i。</li>
+<li>确定level-i层SSTable input。</li>
+<li>确定level-(i+1)层SSTable input。</li>
+<li>确定Compaction执行后新SSTable所在层级j。</li>
+</ol>
+<p>因为每种Compaction的起始条件与目标不同，因此其确定方式稍有不同。如：</p>
+<ul>
+<li>Minor Compaction将Immutable MemTable直接全量转储至level-0，因此其不需要步骤1~3。</li>
+<li>Size Compaction与Seek Compaction触发时已知Compaction起始层级i，因此不需要步骤1，但二者在步骤2中的确定方式不同。</li>
+<li>Manual Compaction触发时用户只提供了起始key与终止key，因此其需要所有步骤1~4。</li>
+</ul>
+<p>这里需要进一步说明的是步骤4，按照LSM-Tree原理，Minor Compaction生成的SSTable应在level-0、发生在level-i与level-(i+1)间的Major Compaction生成的SSTable应在level-(i+1)，为什么还要确定新SSTable所在层级？</p>
 <h1 id="施工中--">施工中 &hellip; &hellip;</h1>
 <h2 id="x-minor-compaction">x. Minor Compaction</h2>
 <h2 id="x-major-compaction">x. Major Compaction</h2>
