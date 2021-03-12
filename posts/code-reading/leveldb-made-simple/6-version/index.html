@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/6-version\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  5215 ,
+                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  5199 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/6-version\/","datePublished": "2021-03-07T20:45:05+08:00","dateModified": "2021-03-09T22:56:48+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,7 +110,7 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x06 Version</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-07">2021-03-07</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 5215 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-07">2021-03-07</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 5199 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 11 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
@@ -180,7 +180,7 @@
 <li>Log Number：当前Log文件编号。</li>
 <li>Prev Log Number：前一个Log文件编号。</li>
 <li>Last SequenceNumber：当前版本最后一个SequenceNumber的值（仅对于SSTable文件而言，在LevelDB掉电后恢复时，还需要从WAL中恢复MemTable的状态，WAL中的SequenceNumber比文件中的更高）。</li>
-<li>Compact Pointers：(level, compaction key)记录上次Compaction的位置，以便出错后数据库恢复时，可以选择其它Compaction位置重试。</li>
+<li>Compact Pointers：(level, compaction key)记录上次Compaction的位置，用来实现循环Compaction。</li>
 <li>Deleted File：(level, file number)该版本中删除的元数据。</li>
 <li>New File：(level, file number, file size, smallest key, largest key)该版本中新增文件的元数据。</li>
 <li><del>已弃用</del></li>

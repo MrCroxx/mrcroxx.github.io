@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/8-compaction\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  6782 ,
+                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  6907 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/8-compaction\/","datePublished": "2021-03-11T14:16:25+08:00","dateModified": "2021-03-11T14:16:22+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,7 +110,7 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x08 Compaction [施工中]</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-11">2021-03-11</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 6782 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-11">2021-03-11</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 6907 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 14 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
@@ -604,7 +604,7 @@
 
 </code></pre></div><p>这里笔者给出<code>Version::Get</code>方法的实现，但本文我们只需要关注其中<code>State</code>结构体及其<code>Match</code>方法的实现，其它部分笔者会在本系列后续文章中介绍。<code>Version::Get</code>方法会通过<code> Version::ForEachOverlapping</code>方法来逐层遍历覆盖了给定LookUpKey的SSTable，并在该SSTable上调用<code>State::Match</code>判断其中是否有我们想要查找的InternalKey，即只要发生了seek就会调用<code>State::Match</code>方法。如果在该SSTable中没有找到需要的key，该方法会返回true表示需要继续查找；如果找到了需要查找的key，则返回false表示不再需要继续查找。<code>State::Match</code>方法还会记录<strong>第一次</strong>发生seek miss的SSTable。随后<code>DBImpl::Get</code>会将该SSTable的<code>allowed_seeks</code>减一,并通过<code>MaybeScheduleCompaction</code>检查是否需要触发Seek Compaction。</p>
 <h3 id="26-manual-compaction的触发">2.6 Manual Compaction的触发</h3>
-<p>Manual Comapction的触发时机比较简单，当LevelDB的用户调用<code>DB::CompactRange</code>接口时，LevelDB会检查用户给定的Compact范围。</p>
+<p>Manual Comapction的触发时机比较简单，当LevelDB的用户调用<code>DB::CompactRange</code>接口时，LevelDB会检查用户给定的Compact范围与当前状态，判断是否需要执行Manual Compaction。如果确定执行Manual Compaction，则设置<code>manual_compaction_</code>，再调用<code> MaybeScheduleCompaction</code>方法以尝试触发Manual Compaction。</p>
 <h2 id="3-compaction的范围">3. Compaction的范围</h2>
 <h1 id="施工中--">施工中 &hellip; &hellip;</h1>
 <h2 id="x-minor-compaction">x. Minor Compaction</h2>
