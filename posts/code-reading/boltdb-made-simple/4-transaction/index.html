@@ -8,10 +8,10 @@
         <title>深入浅出boltdb —— 0x04 事务 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出boltdb —— 0x04 事务" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/4-transaction/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/4-transaction/boltdb.jpg"/><meta property="article:section" content="posts" />
-<meta property="article:published_time" content="2021-01-26T13:30:24&#43;08:00" />
-<meta property="article:modified_time" content="2021-02-05T21:21:25&#43;08:00" />
-
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/4-transaction/" />
+<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/4-transaction/boltdb.jpg"/>
+<meta property="article:published_time" content="2021-01-26T13:30:24+08:00" />
+<meta property="article:modified_time" content="2021-02-05T21:21:25+08:00" />
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/4-transaction/boltdb.jpg"/>
 <meta name="twitter:title" content="深入浅出boltdb —— 0x04 事务"/>
@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/4-transaction\/boltdb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "boltdb, B\u002bTree","wordcount":  13337 ,
+                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  13331 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/4-transaction\/","datePublished": "2021-01-26T13:30:24+08:00","dateModified": "2021-02-05T21:21:25+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,7 +110,7 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出boltdb —— 0x04 事务</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAboltdb/"><i class="far fa-folder fa-fw"></i>深入浅出boltdb</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-26">2021-01-26</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 13337 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-26">2021-01-26</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 13331 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 27 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
@@ -223,36 +223,36 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 <table>
 <thead>
 <tr>
-<th style="text-align:center">隔离级别<br>（isolation level）<div style="width:12em"></div></th>
-<th style="text-align:center">脏读<br>（dirty reads）<div style="width:8em"></div></th>
-<th style="text-align:center">不可重复读<br>（non-repeatable reads）<div style="width:14em"></div></th>
-<th style="text-align:center">幻读<br>（phantom reads）<div style="width:10em"></div></th>
+<th align="center">隔离级别<br>（isolation level）<div style="width:12em"></div></th>
+<th align="center">脏读<br>（dirty reads）<div style="width:8em"></div></th>
+<th align="center">不可重复读<br>（non-repeatable reads）<div style="width:14em"></div></th>
+<th align="center">幻读<br>（phantom reads）<div style="width:10em"></div></th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align:center">未提交读<br>（read uncommitted）</td>
-<td style="text-align:center">⚠️</td>
-<td style="text-align:center">⚠️</td>
-<td style="text-align:center">⚠️</td>
+<td align="center">未提交读<br>（read uncommitted）</td>
+<td align="center">⚠</td>
+<td align="center">⚠</td>
+<td align="center">⚠</td>
 </tr>
 <tr>
-<td style="text-align:center">提交读<br>（read committed）</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">⚠️</td>
-<td style="text-align:center">⚠️</td>
+<td align="center">提交读<br>（read committed）</td>
+<td align="center"></td>
+<td align="center">⚠</td>
+<td align="center">⚠</td>
 </tr>
 <tr>
-<td style="text-align:center">可重复读<br>（repeatable reads）</td>
-<td style="text-align:center"></td>
-<td style="text-align:center"></td>
-<td style="text-align:center">⚠️</td>
+<td align="center">可重复读<br>（repeatable reads）</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center">⚠</td>
 </tr>
 <tr>
-<td style="text-align:center">序列化读<br>（serializable）</td>
-<td style="text-align:center"></td>
-<td style="text-align:center"></td>
-<td style="text-align:center"></td>
+<td align="center">序列化读<br>（serializable）</td>
+<td align="center"></td>
+<td align="center"></td>
+<td align="center"></td>
 </tr>
 </tbody>
 </table>
@@ -271,46 +271,46 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 <table>
 <thead>
 <tr>
-<th style="text-align:center"><div style="width:6em"></div></th>
-<th style="text-align:center">Locks<div style="width:10em"></div></th>
-<th style="text-align:center">Latches<div style="width:10em"></div></th>
+<th align="center"><div style="width:6em"></div></th>
+<th align="center">Locks<div style="width:10em"></div></th>
+<th align="center">Latches<div style="width:10em"></div></th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align:center">Separate &hellip;</td>
-<td style="text-align:center">User transactions</td>
-<td style="text-align:center">Threads</td>
+<td align="center">Separate &hellip;</td>
+<td align="center">User transactions</td>
+<td align="center">Threads</td>
 </tr>
 <tr>
-<td style="text-align:center">Proetect &hellip;</td>
-<td style="text-align:center">Database contents</td>
-<td style="text-align:center">In-memory data structures</td>
+<td align="center">Proetect &hellip;</td>
+<td align="center">Database contents</td>
+<td align="center">In-memory data structures</td>
 </tr>
 <tr>
-<td style="text-align:center">During &hellip;</td>
-<td style="text-align:center">Entire transactions</td>
-<td style="text-align:center">Critical sections</td>
+<td align="center">During &hellip;</td>
+<td align="center">Entire transactions</td>
+<td align="center">Critical sections</td>
 </tr>
 <tr>
-<td style="text-align:center">Modes &hellip;</td>
-<td style="text-align:center">Shared, exclusive, update, intention, escrow, schema, etc.</td>
-<td style="text-align:center">Read, writes, (perhaps) update</td>
+<td align="center">Modes &hellip;</td>
+<td align="center">Shared, exclusive, update, intention, escrow, schema, etc.</td>
+<td align="center">Read, writes, (perhaps) update</td>
 </tr>
 <tr>
-<td style="text-align:center">Deadlock &hellip;</td>
-<td style="text-align:center">Detection &amp; resolution</td>
-<td style="text-align:center">Avoidance</td>
+<td align="center">Deadlock &hellip;</td>
+<td align="center">Detection &amp; resolution</td>
+<td align="center">Avoidance</td>
 </tr>
 <tr>
-<td style="text-align:center">&hellip; by &hellip;</td>
-<td style="text-align:center">Aanlysis of the waits-for graph, timeout, transaction abort, partial rollback, lock de-escalation</td>
-<td style="text-align:center">Coding discipline, &ldquo;lock leveling&rdquo;</td>
+<td align="center">&hellip; by &hellip;</td>
+<td align="center">Aanlysis of the waits-for graph, timeout, transaction abort, partial rollback, lock de-escalation</td>
+<td align="center">Coding discipline, &ldquo;lock leveling&rdquo;</td>
 </tr>
 <tr>
-<td style="text-align:center">Kept in &hellip;</td>
-<td style="text-align:center">Lock manager&rsquo;s hash table</td>
-<td style="text-align:center">Protected data structure</td>
+<td align="center">Kept in &hellip;</td>
+<td align="center">Lock manager&rsquo;s hash table</td>
+<td align="center">Protected data structure</td>
 </tr>
 </tbody>
 </table>
@@ -354,46 +354,46 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 </code></pre></div><table>
 <thead>
 <tr>
-<th style="text-align:center">字段<div style="width:12em"></div></th>
-<th style="text-align:left">描述</th>
+<th align="center">字段<div style="width:12em"></div></th>
+<th align="left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align:center"><code>writable bool</code></td>
-<td style="text-align:left">true表示当前事务为读写事务，false表示当前事务为只读事务。</td>
+<td align="center"><code>writable bool</code></td>
+<td align="left">true表示当前事务为读写事务，false表示当前事务为只读事务。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>managed bool</code></td>
-<td style="text-align:left">标识当前事务是否为隐式事务，隐式事务由boltdb自动提交或回滚，用户不能主动提交或回滚。</td>
+<td align="center"><code>managed bool</code></td>
+<td align="left">标识当前事务是否为隐式事务，隐式事务由boltdb自动提交或回滚，用户不能主动提交或回滚。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>db *DB</code></td>
-<td style="text-align:left">创建该事务的数据库对象。</td>
+<td align="center"><code>db *DB</code></td>
+<td align="left">创建该事务的数据库对象。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>meta *meta</code></td>
-<td style="text-align:left">当前事务创建时的<code>meta</code>拷贝。</td>
+<td align="center"><code>meta *meta</code></td>
+<td align="left">当前事务创建时的<code>meta</code>拷贝。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>root Bucket</code></td>
-<td style="text-align:left">当前事务所见的root bucket的<code>Bucket</code>实例。</td>
+<td align="center"><code>root Bucket</code></td>
+<td align="left">当前事务所见的root bucket的<code>Bucket</code>实例。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>page map[pgid]*page</code></td>
-<td style="text-align:left">索引当前事务所使用的dirty page（page buffer）。</td>
+<td align="center"><code>page map[pgid]*page</code></td>
+<td align="left">索引当前事务所使用的dirty page（page buffer）。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>stats TxStats</code></td>
-<td style="text-align:left">统计变量。</td>
+<td align="center"><code>stats TxStats</code></td>
+<td align="left">统计变量。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>commitHandlers []func()</code></td>
-<td style="text-align:left">事务成功提交后需调用的回调函数列表。</td>
+<td align="center"><code>commitHandlers []func()</code></td>
+<td align="left">事务成功提交后需调用的回调函数列表。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>WriteFlag int</code></td>
-<td style="text-align:left"><code>WriteTo</code>方法reader打开文件时可配置的额外的flag。</td>
+<td align="center"><code>WriteFlag int</code></td>
+<td align="left"><code>WriteTo</code>方法reader打开文件时可配置的额外的flag。</td>
 </tr>
 </tbody>
 </table>
@@ -401,30 +401,30 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 <table>
 <thead>
 <tr>
-<th style="text-align:center">方法<div style="width:12em"></div></th>
-<th style="text-align:left">描述</th>
+<th align="center">方法<div style="width:12em"></div></th>
+<th align="left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align:center"><code>ID() int</code></td>
-<td style="text-align:left">返回当前事务id（<code>tx.meta.txid</code>）。</td>
+<td align="center"><code>ID() int</code></td>
+<td align="left">返回当前事务id（<code>tx.meta.txid</code>）。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>DB *DB</code></td>
-<td style="text-align:left">返回创建当前事务的数据库实例。</td>
+<td align="center"><code>DB *DB</code></td>
+<td align="left">返回创建当前事务的数据库实例。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>Size() int64</code></td>
-<td style="text-align:left">返回当前事务所见的数据库大小（非数据大小）。</td>
+<td align="center"><code>Size() int64</code></td>
+<td align="left">返回当前事务所见的数据库大小（非数据大小）。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>Writable() bool</code></td>
-<td style="text-align:left">返回当前事务事务可写。</td>
+<td align="center"><code>Writable() bool</code></td>
+<td align="left">返回当前事务事务可写。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>Stats() TxStats</code></td>
-<td style="text-align:left">返回当前事务的统计量。</td>
+<td align="center"><code>Stats() TxStats</code></td>
+<td align="left">返回当前事务的统计量。</td>
 </tr>
 </tbody>
 </table>
@@ -432,34 +432,34 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 <table>
 <thead>
 <tr>
-<th style="text-align:center">方法<div style="width:12em"></div></th>
-<th style="text-align:left">描述</th>
+<th align="center">方法<div style="width:12em"></div></th>
+<th align="left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align:center"><code>Cursor() *Cursor</code></td>
-<td style="text-align:left"><code>tx.root.Cursor()</code>。从当前事务获取root bucket的<code>Cursor</code>。由于root bucket中只保存子bucket，因此其返回的所有value都是nil。</td>
+<td align="center"><code>Cursor() *Cursor</code></td>
+<td align="left"><code>tx.root.Cursor()</code>。从当前事务获取root bucket的<code>Cursor</code>。由于root bucket中只保存子bucket，因此其返回的所有value都是nil。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>Bucket(name []byte) *Bucket</code></td>
-<td style="text-align:left"><code>tx.root.Bucket(name)</code>。获取root bucket的子bucket。</td>
+<td align="center"><code>Bucket(name []byte) *Bucket</code></td>
+<td align="left"><code>tx.root.Bucket(name)</code>。获取root bucket的子bucket。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>CreateBucket(name []byte) (*Bucket, error)</code></td>
-<td style="text-align:left"><code>tx.root.CreateBucket(name)</code></td>
+<td align="center"><code>CreateBucket(name []byte) (*Bucket, error)</code></td>
+<td align="left"><code>tx.root.CreateBucket(name)</code></td>
 </tr>
 <tr>
-<td style="text-align:center"><code>CreateBucketIfNotExists(name []byte) (*Bucket, error)</code></td>
-<td style="text-align:left"><code>tx.root.CreateBucketIfNotExists(name)</code>。如果root bucket的子bucket未创建，则创建子bucket并返回实例；否则直接返回其实例。</td>
+<td align="center"><code>CreateBucketIfNotExists(name []byte) (*Bucket, error)</code></td>
+<td align="left"><code>tx.root.CreateBucketIfNotExists(name)</code>。如果root bucket的子bucket未创建，则创建子bucket并返回实例；否则直接返回其实例。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>DeleteBucket(name []byte) error</code></td>
-<td style="text-align:left"><code>tx.root.DeleteBucket(name)</code>。删除root bucket的子bucket。</td>
+<td align="center"><code>DeleteBucket(name []byte) error</code></td>
+<td align="left"><code>tx.root.DeleteBucket(name)</code>。删除root bucket的子bucket。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>ForEach(fn func(name []byte, b *Bucket) error) error</code></td>
-<td style="text-align:left">遍历root bucket的所有子bucket并执行给定闭包。</td>
+<td align="center"><code>ForEach(fn func(name []byte, b *Bucket) error) error</code></td>
+<td align="left">遍历root bucket的所有子bucket并执行给定闭包。</td>
 </tr>
 </tbody>
 </table>
@@ -469,22 +469,22 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 <table>
 <thead>
 <tr>
-<th style="text-align:center">字段<div style="width:10em"></div></th>
-<th style="text-align:left">描述</th>
+<th align="center">字段<div style="width:10em"></div></th>
+<th align="left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align:center"><code>rwlock sync.Mutex</code></td>
-<td style="text-align:left">用来隔离可写事务的互斥锁（注意，不是读写锁）。</td>
+<td align="center"><code>rwlock sync.Mutex</code></td>
+<td align="left">用来隔离可写事务的互斥锁（注意，不是读写锁）。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>metalock sync.Mutex</code></td>
-<td style="text-align:left">用来保护元数据访问的互斥锁。</td>
+<td align="center"><code>metalock sync.Mutex</code></td>
+<td align="left">用来保护元数据访问的互斥锁。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>mmaplock sync.RWMutex</code></td>
-<td style="text-align:left">用来保护mmap操作的读写锁。</td>
+<td align="center"><code>mmaplock sync.RWMutex</code></td>
+<td align="left">用来保护mmap操作的读写锁。</td>
 </tr>
 </tbody>
 </table>
@@ -1354,7 +1354,7 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 </div>
 </article></div>
             </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.81.0">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div>
     </footer></div>

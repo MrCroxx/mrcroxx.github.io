@@ -8,10 +8,10 @@
         <title>深入浅出boltdb —— 0x02 B&#43;Tree - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出boltdb —— 0x02 B&#43;Tree" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/2-b&#43;tree/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/2-b&#43;tree/boltdb.jpg"/><meta property="article:section" content="posts" />
-<meta property="article:published_time" content="2021-01-19T21:25:36&#43;08:00" />
-<meta property="article:modified_time" content="2021-01-19T21:25:39&#43;08:00" />
-
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/2-b&#43;tree/" />
+<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/2-b&#43;tree/boltdb.jpg"/>
+<meta property="article:published_time" content="2021-01-19T21:25:36+08:00" />
+<meta property="article:modified_time" content="2021-01-19T21:25:39+08:00" />
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/2-b&#43;tree/boltdb.jpg"/>
 <meta name="twitter:title" content="深入浅出boltdb —— 0x02 B&#43;Tree"/>
@@ -27,14 +27,14 @@
         "inLanguage": "zh-CN",
         "mainEntityOfPage": {
             "@type": "WebPage",
-            "@id": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/2-b\u002btree\/"
+            "@id": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/2-b\x2btree\/"
         },"image": [{
                             "@type": "ImageObject",
-                            "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/2-b\u002btree\/boltdb.jpg",
+                            "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/2-b\x2btree\/boltdb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "boltdb, B\u002bTree","wordcount":  7330 ,
-        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/2-b\u002btree\/","datePublished": "2021-01-19T21:25:36+08:00","dateModified": "2021-01-19T21:25:39+08:00","publisher": {
+                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  7330 ,
+        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/2-b\x2btree\/","datePublished": "2021-01-19T21:25:36+08:00","dateModified": "2021-01-19T21:25:39+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
                 "@type": "Person",
@@ -219,46 +219,46 @@
 </code></pre></div><table>
 <thead>
 <tr>
-<th style="text-align:center">字段<div style="width: 14em"></th>
-<th style="text-align:left">描述</th>
+<th align="center">字段<div style="width: 14em"></th>
+<th align="left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align:center"><code>bucket *Bucket</code></td>
-<td style="text-align:left">该node所属的bucket指针。</td>
+<td align="center"><code>bucket *Bucket</code></td>
+<td align="left">该node所属的bucket指针。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>isLeaf bool</code></td>
-<td style="text-align:left">当前node是否为叶子节点。</td>
+<td align="center"><code>isLeaf bool</code></td>
+<td align="left">当前node是否为叶子节点。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>unbalanced bool</code></td>
-<td style="text-align:left">当前node是否可能不平衡。</td>
+<td align="center"><code>unbalanced bool</code></td>
+<td align="left">当前node是否可能不平衡。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>spilled bool</code></td>
-<td style="text-align:left">当前node是否已被调整过。</td>
+<td align="center"><code>spilled bool</code></td>
+<td align="left">当前node是否已被调整过。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>key []byte</code></td>
-<td style="text-align:left">保存node初始化时的第一个key，用于在调整时索引。</td>
+<td align="center"><code>key []byte</code></td>
+<td align="left">保存node初始化时的第一个key，用于在调整时索引。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>pgid pgid</code></td>
-<td style="text-align:left">当前node在mmap内存中相应的页id。</td>
+<td align="center"><code>pgid pgid</code></td>
+<td align="left">当前node在mmap内存中相应的页id。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>parent *node</code></td>
-<td style="text-align:left">父节点指针。</td>
+<td align="center"><code>parent *node</code></td>
+<td align="left">父节点指针。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>children nodes</code></td>
-<td style="text-align:left">保存已实例化的孩子节点的node，用于<code>spill</code>时递归向下更新node。</td>
+<td align="center"><code>children nodes</code></td>
+<td align="left">保存已实例化的孩子节点的node，用于<code>spill</code>时递归向下更新node。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>inodes inodes</code></td>
-<td style="text-align:left">该node的内部节点，即该node所包含的元素。</td>
+<td align="center"><code>inodes inodes</code></td>
+<td align="left">该node的内部节点，即该node所包含的元素。</td>
 </tr>
 </tbody>
 </table>
@@ -403,50 +403,50 @@
 <table>
 <thead>
 <tr>
-<th style="text-align:center">方法<div style="width: 14em"></th>
-<th style="text-align:left">描述</th>
+<th align="center">方法<div style="width: 14em"></th>
+<th align="left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align:center"><code>root() *node</code></td>
-<td style="text-align:left">当前node所在B+Tree的根节点。</td>
+<td align="center"><code>root() *node</code></td>
+<td align="left">当前node所在B+Tree的根节点。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>minKeys() int</code></td>
-<td style="text-align:left">节点至少应有的key的个数，leafNode返回1，branchNode返回2。</td>
+<td align="center"><code>minKeys() int</code></td>
+<td align="left">节点至少应有的key的个数，leafNode返回1，branchNode返回2。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>size() int</code></td>
-<td style="text-align:left">当前节点序列化后的字节数。</td>
+<td align="center"><code>size() int</code></td>
+<td align="left">当前节点序列化后的字节数。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code> sizeLessThan(v int) bool</code></td>
-<td style="text-align:left">判断当前节点序列化后字节数是否小于给定值，当累加计算超出给定值时立即返回false，用于比较时性能比直接调用<code>size</code>方法好一些。</td>
+<td align="center"><code> sizeLessThan(v int) bool</code></td>
+<td align="left">判断当前节点序列化后字节数是否小于给定值，当累加计算超出给定值时立即返回false，用于比较时性能比直接调用<code>size</code>方法好一些。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>pageElementSize() int</code></td>
-<td style="text-align:left">当前类型节点的inode的header大小，用于计算序列化后字节数。</td>
+<td align="center"><code>pageElementSize() int</code></td>
+<td align="left">当前类型节点的inode的header大小，用于计算序列化后字节数。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>childAt(index int) *node</code></td>
-<td style="text-align:left">返回节点当前第<code>index</code>个孩子的指针（而不是初始时的第<code>index</code>个孩子）。</td>
+<td align="center"><code>childAt(index int) *node</code></td>
+<td align="left">返回节点当前第<code>index</code>个孩子的指针（而不是初始时的第<code>index</code>个孩子）。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>childIndex(child *node) int</code></td>
-<td style="text-align:left">返回给定的节点在当前节点的inode中的序号（而不是初始时的序号）。</td>
+<td align="center"><code>childIndex(child *node) int</code></td>
+<td align="left">返回给定的节点在当前节点的inode中的序号（而不是初始时的序号）。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>numChildren() int</code></td>
-<td style="text-align:left">当前节点的孩子（inode）的个数。</td>
+<td align="center"><code>numChildren() int</code></td>
+<td align="left">当前节点的孩子（inode）的个数。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>nextSibling() *node</code></td>
-<td style="text-align:left">当前节点的下一个兄弟节点（通过查询父节点获取）。</td>
+<td align="center"><code>nextSibling() *node</code></td>
+<td align="left">当前节点的下一个兄弟节点（通过查询父节点获取）。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>prevSibling() *node</code></td>
-<td style="text-align:left">当前节点的上一个兄弟节点（通过查询父节点获取）。</td>
+<td align="center"><code>prevSibling() *node</code></td>
+<td align="left">当前节点的上一个兄弟节点（通过查询父节点获取）。</td>
 </tr>
 </tbody>
 </table>
@@ -846,7 +846,7 @@
 </div>
 </article></div>
             </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.81.0">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div>
     </footer></div>
