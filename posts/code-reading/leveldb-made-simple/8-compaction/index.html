@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/8-compaction\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  11933 ,
+                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  13259 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/8-compaction\/","datePublished": "2021-03-11T14:16:25+08:00","dateModified": "2021-03-13T16:48:24+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,8 +110,8 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x08 Compaction [施工中]</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-11">2021-03-11</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 11933 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 24 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-11">2021-03-11</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 13259 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 27 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
@@ -899,7 +899,9 @@
 
 </code></pre></div><p>段(3)计算了level-(i+1)层中与Compaction的范围有overlap的SSTable，以便后续操作使用。段(4)用来设置VersionEdit中记录的Compact Pointer，在Compcation前更新Compact Pointer的好处是：如果本次Compaction失败，则下次Size Compaction发生时，可以跳过这一部分，从下一个位置Compact。</p>
 <h4 id="323-manual-compaction的范围">3.2.3 Manual Compaction的范围</h4>
-<h1 id="施工中--">施工中 &hellip; &hellip;</h1>
+<p>Manual Compaction通过LevelDB提供的接口<code>void CompactRange(const Slice* begin, const Slice* end)</code>触发，其所知Compaction的范围信息最少，只知道需要Compact的起始与终止key，甚至不知道发生Compaction的level。这也意味着，需要Compact的key范围，既可能在MemTable或Immutable Table中，也可能在不同level的SSTable中，甚至二者都有。因此，在Compact的时候需要考虑所有情形。</p>
+<p>LevelDB为了确保用户给出的key范围都能够被Compact，其首先强制触发Minor Compaction，然后按照给定的key范围进行Major Compaction。</p>
+<p>我们从<code>DB::CompactRange</code>的实现<code>DBImpl::CompactRange</code>开始分析：</p>
 <div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="kt">void</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">CompactRange</span><span class="p">(</span><span class="k">const</span> <span class="n">Slice</span><span class="o">*</span> <span class="n">begin</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">*</span> <span class="n">end</span><span class="p">)</span> <span class="p">{</span>
   <span class="kt">int</span> <span class="n">max_level_with_files</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
@@ -918,6 +920,27 @@
   <span class="p">}</span>
 <span class="p">}</span>
 
+</code></pre></div><p><code>DBImpl::CompactRange</code>方法首先根据给定key范围与每个level是否有overlap，得到需要Compact的最高level，然后通过<code>TEST_CompactMemTable</code>方法强制触发并等待Minor Compaction完成（当前版本因MemTable与给定key范围没有overlap而跳过Minor Compaction）。随后遍历从0到需要Compact的最高level，并按需对该层进行Major Compaction。</p>
+<p>接下来我们来分析<code>TEST_CompactMemTable</code>与<code>TEST_CompactRange</code>的实现：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="n">Status</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">TEST_CompactMemTable</span><span class="p">()</span> <span class="p">{</span>
+  <span class="c1">// nullptr batch means just wait for earlier writes to be done
+</span><span class="c1"></span>  <span class="n">Status</span> <span class="n">s</span> <span class="o">=</span> <span class="n">Write</span><span class="p">(</span><span class="n">WriteOptions</span><span class="p">(),</span> <span class="k">nullptr</span><span class="p">);</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
+    <span class="c1">// Wait until the compaction completes
+</span><span class="c1"></span>    <span class="n">MutexLock</span> <span class="nf">l</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mutex_</span><span class="p">);</span>
+    <span class="k">while</span> <span class="p">(</span><span class="n">imm_</span> <span class="o">!=</span> <span class="k">nullptr</span> <span class="o">&amp;&amp;</span> <span class="n">bg_error_</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
+      <span class="n">background_work_finished_signal_</span><span class="p">.</span><span class="n">Wait</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">imm_</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">s</span> <span class="o">=</span> <span class="n">bg_error_</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="n">s</span><span class="p">;</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>TEST_CompactMemTable</code>方法会通过一次“null write batch”来触发<code>force</code>参数为true的<code>MakeRoomForWrite</code>调用，<code>force</code>为true的调用会强制触发Minor Compaction（详见<a href="/posts/code-reading/leveldb-made-simple/8-compaction/#23-minor-compaction%e7%9a%84%e8%a7%a6%e5%8f%91" rel="">2.3 Minor Compaction的触发</a>）。随后该方法等待Minor Compaction完成后返回。</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="kt">void</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">TEST_CompactRange</span><span class="p">(</span><span class="kt">int</span> <span class="n">level</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">*</span> <span class="n">begin</span><span class="p">,</span>
                                <span class="k">const</span> <span class="n">Slice</span><span class="o">*</span> <span class="n">end</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">assert</span><span class="p">(</span><span class="n">level</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">);</span>
@@ -957,49 +980,44 @@
   <span class="p">}</span>
 <span class="p">}</span>
 
-<span class="n">Status</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">TEST_CompactMemTable</span><span class="p">()</span> <span class="p">{</span>
-  <span class="c1">// nullptr batch means just wait for earlier writes to be done
-</span><span class="c1"></span>  <span class="n">Status</span> <span class="n">s</span> <span class="o">=</span> <span class="n">Write</span><span class="p">(</span><span class="n">WriteOptions</span><span class="p">(),</span> <span class="k">nullptr</span><span class="p">);</span>
-  <span class="k">if</span> <span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
-    <span class="c1">// Wait until the compaction completes
-</span><span class="c1"></span>    <span class="n">MutexLock</span> <span class="nf">l</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mutex_</span><span class="p">);</span>
-    <span class="k">while</span> <span class="p">(</span><span class="n">imm_</span> <span class="o">!=</span> <span class="k">nullptr</span> <span class="o">&amp;&amp;</span> <span class="n">bg_error_</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
-      <span class="n">background_work_finished_signal_</span><span class="p">.</span><span class="n">Wait</span><span class="p">();</span>
-    <span class="p">}</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">imm_</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">)</span> <span class="p">{</span>
-      <span class="n">s</span> <span class="o">=</span> <span class="n">bg_error_</span><span class="p">;</span>
-    <span class="p">}</span>
-  <span class="p">}</span>
-  <span class="k">return</span> <span class="n">s</span><span class="p">;</span>
-<span class="p">}</span>
-
-</code></pre></div><div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
-<span class="kt">void</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">BackgroundCompaction</span><span class="p">()</span> <span class="p">{</span>
-  
-  <span class="c1">// ... ...
-</span><span class="c1"></span>
-  <span class="n">Compaction</span><span class="o">*</span> <span class="n">c</span><span class="p">;</span>
-  <span class="kt">bool</span> <span class="n">is_manual</span> <span class="o">=</span> <span class="p">(</span><span class="n">manual_compaction_</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">);</span>
-  <span class="n">InternalKey</span> <span class="n">manual_end</span><span class="p">;</span>
-  <span class="k">if</span> <span class="p">(</span><span class="n">is_manual</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">ManualCompaction</span><span class="o">*</span> <span class="n">m</span> <span class="o">=</span> <span class="n">manual_compaction_</span><span class="p">;</span>
-    <span class="n">c</span> <span class="o">=</span> <span class="n">versions_</span><span class="o">-&gt;</span><span class="n">CompactRange</span><span class="p">(</span><span class="n">m</span><span class="o">-&gt;</span><span class="n">level</span><span class="p">,</span> <span class="n">m</span><span class="o">-&gt;</span><span class="n">begin</span><span class="p">,</span> <span class="n">m</span><span class="o">-&gt;</span><span class="n">end</span><span class="p">);</span>
-    <span class="n">m</span><span class="o">-&gt;</span><span class="n">done</span> <span class="o">=</span> <span class="p">(</span><span class="n">c</span> <span class="o">==</span> <span class="k">nullptr</span><span class="p">);</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">c</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">)</span> <span class="p">{</span>
-      <span class="n">manual_end</span> <span class="o">=</span> <span class="n">c</span><span class="o">-&gt;</span><span class="n">input</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">c</span><span class="o">-&gt;</span><span class="n">num_input_files</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">largest</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="n">Log</span><span class="p">(</span><span class="n">options_</span><span class="p">.</span><span class="n">info_log</span><span class="p">,</span>
-        <span class="s">&#34;Manual compaction at level-%d from %s .. %s; will stop at %s</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span>
-        <span class="n">m</span><span class="o">-&gt;</span><span class="n">level</span><span class="p">,</span> <span class="p">(</span><span class="n">m</span><span class="o">-&gt;</span><span class="n">begin</span> <span class="o">?</span> <span class="n">m</span><span class="o">-&gt;</span><span class="n">begin</span><span class="o">-&gt;</span><span class="n">DebugString</span><span class="p">().</span><span class="n">c_str</span><span class="p">()</span> <span class="o">:</span> <span class="s">&#34;(begin)&#34;</span><span class="p">),</span>
-        <span class="p">(</span><span class="n">m</span><span class="o">-&gt;</span><span class="n">end</span> <span class="o">?</span> <span class="n">m</span><span class="o">-&gt;</span><span class="n">end</span><span class="o">-&gt;</span><span class="n">DebugString</span><span class="p">().</span><span class="n">c_str</span><span class="p">()</span> <span class="o">:</span> <span class="s">&#34;(end)&#34;</span><span class="p">),</span>
-        <span class="p">(</span><span class="n">m</span><span class="o">-&gt;</span><span class="n">done</span> <span class="o">?</span> <span class="s">&#34;(end)&#34;</span> <span class="o">:</span> <span class="n">manual_end</span><span class="p">.</span><span class="n">DebugString</span><span class="p">().</span><span class="n">c_str</span><span class="p">()));</span>
+</code></pre></div><p>该方法的工作也很简单，其生成了需要Compact的InternalKey范围，并配置了<code>manual_compaction_</code>字段，然后通过<code>MaybeScheduleCompaction</code>方法触发Manual Compaction，并等待期执行结束后返回。随后，Manual Compaction的执行交由后台线程来触发。后台线程在执行Manual Compaction时，会通过<code>VersionSet::CompactRange</code>方法计算其具体范围：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="n">Compaction</span><span class="o">*</span> <span class="n">VersionSet</span><span class="o">::</span><span class="n">CompactRange</span><span class="p">(</span><span class="kt">int</span> <span class="n">level</span><span class="p">,</span> <span class="k">const</span> <span class="n">InternalKey</span><span class="o">*</span> <span class="n">begin</span><span class="p">,</span>
+                                     <span class="k">const</span> <span class="n">InternalKey</span><span class="o">*</span> <span class="n">end</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">FileMetaData</span><span class="o">*&gt;</span> <span class="n">inputs</span><span class="p">;</span>
+  <span class="n">current_</span><span class="o">-&gt;</span><span class="n">GetOverlappingInputs</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">begin</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">inputs</span><span class="p">);</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">inputs</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="k">nullptr</span><span class="p">;</span>
   <span class="p">}</span>
 
-  <span class="c1">// ... ...
-</span><span class="c1"></span>
+  <span class="c1">// Avoid compacting too much in one shot in case the range is large.
+</span><span class="c1"></span>  <span class="c1">// But we cannot do this for level-0 since level-0 files can overlap
+</span><span class="c1"></span>  <span class="c1">// and we must not pick one file and drop another older file if the
+</span><span class="c1"></span>  <span class="c1">// two files overlap.
+</span><span class="c1"></span>  <span class="k">if</span> <span class="p">(</span><span class="n">level</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">const</span> <span class="kt">uint64_t</span> <span class="n">limit</span> <span class="o">=</span> <span class="n">MaxFileSizeForLevel</span><span class="p">(</span><span class="n">options_</span><span class="p">,</span> <span class="n">level</span><span class="p">);</span>
+    <span class="kt">uint64_t</span> <span class="n">total</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">inputs</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+      <span class="kt">uint64_t</span> <span class="n">s</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">file_size</span><span class="p">;</span>
+      <span class="n">total</span> <span class="o">+=</span> <span class="n">s</span><span class="p">;</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">total</span> <span class="o">&gt;=</span> <span class="n">limit</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">inputs</span><span class="p">.</span><span class="n">resize</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">);</span>
+        <span class="k">break</span><span class="p">;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="n">Compaction</span><span class="o">*</span> <span class="n">c</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Compaction</span><span class="p">(</span><span class="n">options_</span><span class="p">,</span> <span class="n">level</span><span class="p">);</span>
+  <span class="n">c</span><span class="o">-&gt;</span><span class="n">input_version_</span> <span class="o">=</span> <span class="n">current_</span><span class="p">;</span>
+  <span class="n">c</span><span class="o">-&gt;</span><span class="n">input_version_</span><span class="o">-&gt;</span><span class="n">Ref</span><span class="p">();</span>
+  <span class="n">c</span><span class="o">-&gt;</span><span class="n">inputs_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">inputs</span><span class="p">;</span>
+  <span class="n">SetupOtherInputs</span><span class="p">(</span><span class="n">c</span><span class="p">);</span>
+  <span class="k">return</span> <span class="n">c</span><span class="p">;</span>
 <span class="p">}</span>
 
-</code></pre></div><h2 id="x-minor-compaction">x. Minor Compaction</h2>
+</code></pre></div><p>该方法会在给定level中查找与给定key范围有overlap的所有SSTable。对于非level-0的层级，该方法会限制参与Compaciton的大小不超过配置中每层最大文件大小（如果需要Compact的范围超过了每层最大文件大小，说明之前还有Size Compcation任务）；而对于level-0，由于其SSTable间可能存在overlap，因此不能舍弃参与Compaction的SSTable。在<code>input[0]</code>确定后，同样通过<code>SetupOtherInputs</code>方法，配置其它输入参数（详见<a href="/posts/code-reading/leveldb-made-simple/8-compaction/#322-size-compaction%e4%b8%8eseek-compaction%e7%9a%84%e8%8c%83%e5%9b%b4" rel="">3.2.2 Size Compaction与Seek Compaction的范围</a>）。</p>
+<h1 id="施工中--">施工中 &hellip; &hellip;</h1>
+<h2 id="x-minor-compaction">x. Minor Compaction</h2>
 <h2 id="x-major-compaction">x. Major Compaction</h2>
 <p>DBImpl::BackgroundCompaction</p>
 <p>DBImplCompactMemTable</p>
