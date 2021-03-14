@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/7-cache\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  6918 ,
+                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  8232 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/7-cache\/","datePublished": "2021-03-10T11:17:19+08:00","dateModified": "2021-03-10T19:28:42+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,8 +110,8 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x07 Cache [施工中]</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-10">2021-03-10</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 6918 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 14 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-10">2021-03-10</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 8232 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 17 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
@@ -137,14 +137,11 @@
         <li><a href="#25-shardedlrucache">2.5 ShardedLRUCache</a></li>
       </ul>
     </li>
-    <li><a href="#3-blockcache与tablecache">3. BlockCache与TableCache</a></li>
-  </ul>
-
-  <ul>
-    <li>
+    <li><a href="#3-blockcache与tablecache">3. BlockCache与TableCache</a>
       <ul>
-        <li><a href="#31-tablecache接口">3.1 TableCache接口</a></li>
-        <li><a href="#32-tableandfile">3.2 TableAndFile</a></li>
+        <li><a href="#31-blockcache与tablecache概览">3.1 BlockCache与TableCache概览</a></li>
+        <li><a href="#32-tablecache">3.2 TableCache</a></li>
+        <li><a href="#33-table">3.3 Table</a></li>
       </ul>
     </li>
   </ul>
@@ -557,17 +554,15 @@
 
 </code></pre></div><p><code>ShardedLRUCache</code>通过<code>HashSlice</code>方法对key进行一次哈希，并通过<code>Shard</code>方法为其分配shard。<code>ShardedLRUCache</code>中其它方法都是对shard的操作与对<code>LRUCache</code>的封装，这里也不再赘述。</p>
 <h2 id="3-blockcache与tablecache">3. BlockCache与TableCache</h2>
-<p>LevelDB在实现BlockCache与TableCache时，都用到了ShardedLRUCache。BlockCache直接使用了ShardedLRUCache，TableCache则对ShardedLRUCache的key/value又进行了一次简单的封装。二者的主要区别在于key/value的类型及cache的大小：</p>
+<h3 id="31-blockcache与tablecache概览">3.1 BlockCache与TableCache概览</h3>
+<p>LevelDB在实现BlockCache与TableCache时，都用到了ShardedLRUCache。BlockCache直接使用了ShardedLRUCache，TableCache则对ShardedLRUCache又进行了一次封装。二者的主要区别在于key/value的类型及cache的大小：</p>
 <ul>
 <li>BlockCache：用户可通过Options.block_cache配置来自定义BlockCache的实现，其默认实现为8MB的ShardedLRUCache。其key/value为(table.cache_id,block.offset)-&gt;(Block*)。</li>
 <li>TableCache：用户可通过OptionTable.max_open_file配置来自定义TableCache的大小，其默认可以保存1000个Table的信息。其key/value为(SSTable.file_number)-&gt;(TableAndFile*)。</li>
 </ul>
-<h1 id="施工中--">施工中 &hellip; &hellip;</h1>
-<p>其中BlockCache没有对ShardedLRUCache进行二次封装，而是直接使用了ShardedLRUCache，所以本文不对其做过多的介绍，而将其放在本系列后续文章介绍LevelDB的读写时介绍。</p>
-<p>而TableCache在ShardedLRUCache的基础上又进行了一次封装。为了后续文章能够从更高的层次介绍LevelDB的实现，因此本节将介绍TableCache的设计与实现。</p>
-<p>虽然叫做TableCache，但是其只缓存了SSTable的index与filter，以便caller能够在内存中快速索引到需要查找的SSTable与Key的位置。而对其中数据的索引需要使用BlockCache。</p>
-<h3 id="31-tablecache接口">3.1 TableCache接口</h3>
-<p><code>TableCache</code>的声明如下（位于<code>db/table_cache.h</code>）：</p>
+<p>因为TableCache在ShardedLRUCache上又进行了一次封装，而读取TableCache时，所以本章主要关注TableCache及其实现。</p>
+<h3 id="32-tablecache">3.2 TableCache</h3>
+<p><code>TableCache</code>中key/value为(SSTable.file_number)-&gt;(TableAndFile*)，该类如下（位于<code>db/table_cache.h</code>）：</p>
 <div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="k">class</span> <span class="nc">TableCache</span> <span class="p">{</span>
  <span class="k">public</span><span class="o">:</span>
@@ -604,20 +599,157 @@
 
 <span class="p">}</span>  <span class="c1">// namespace leveldb
 </span><span class="c1"></span>
-</code></pre></div><p>从<code>TableCache</code>的声明中可以发现，其除了构造与析构方法和生成迭代器的方法外，只对外提供了<code>Get</code>方法和<code>Evict</code>方法。caller通过使用SSTable的编号、待查找的key调用<code>Get</code>方法查找键值对时，<code>TableCache</code>会自动将该SSTable（的索引）放入缓存。</p>
-<h3 id="32-tableandfile">3.2 TableAndFile</h3>
-<p>在介绍TableCache的实现前，我们先来介绍一个TableCache中使用的重要数据结构<code>TableAndFile</code>。显然<code>TableAndFile</code>结构体中只有两个字段<code>table</code>和<code>file</code>：</p>
+</code></pre></div><p>从<code>TableCache</code>的声明中可以发现，其除了构造与析构方法和生成迭代器的方法外，只对外提供了<code>Get</code>方法和<code>Evict</code>方法。caller通过使用SSTable的编号、待查找的key调用<code>Get</code>方法查找键值对时，<code>TableCache</code>会自动将该SSTable相应的<code>TableAndFile</code>放入缓存。</p>
+<p><code>TableAndFile</code>结构体正如其名字一样，只有两个字段<code>table</code>和<code>file</code>：</p>
 <div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="k">struct</span> <span class="nc">TableAndFile</span> <span class="p">{</span>
   <span class="n">RandomAccessFile</span><span class="o">*</span> <span class="n">file</span><span class="p">;</span>
   <span class="n">Table</span><span class="o">*</span> <span class="n">table</span><span class="p">;</span>
 <span class="p">};</span>
 
-</code></pre></div><p>其中<code>file</code>是一个<code>RandomAccessFile*</code>指针，该指针指向了真正的SSTable文件；而<code>table</code>字段是一个<code>Table*</code>指针，该类型为SSTable在内存中的表示：为了加快SSTable的查找并减少I/O次数，LevelDB将SSTable的index与filter加载到了内存中，<code>Table</code>即保存了这些数据：</p>
+</code></pre></div><p>其中<code>file</code>字段表示SSTable相应的<code>RandomAccessFile</code>结构，即SSTable在文件中的表示；而<code>Table</code>字段表示SSTable的<code>Table</code>结构，其为SSTable在内存中的数据与接口，笔者将在下一节中介绍其结构。通过<code>TableAndFile</code>，caller可以获取其需要的结构。</p>
+<p><code>TableCache</code>中我们主要关注两个方法的实现：<code>Get</code>与<code>FindTable</code>方法：</p>
 <div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="n">Status</span> <span class="n">TableCache</span><span class="o">::</span><span class="n">FindTable</span><span class="p">(</span><span class="kt">uint64_t</span> <span class="n">file_number</span><span class="p">,</span> <span class="kt">uint64_t</span> <span class="n">file_size</span><span class="p">,</span>
+                             <span class="n">Cache</span><span class="o">::</span><span class="n">Handle</span><span class="o">**</span> <span class="n">handle</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">Status</span> <span class="n">s</span><span class="p">;</span>
+  <span class="kt">char</span> <span class="n">buf</span><span class="p">[</span><span class="k">sizeof</span><span class="p">(</span><span class="n">file_number</span><span class="p">)];</span>
+  <span class="n">EncodeFixed64</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span> <span class="n">file_number</span><span class="p">);</span>
+  <span class="n">Slice</span> <span class="nf">key</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">buf</span><span class="p">));</span>
+  <span class="o">*</span><span class="n">handle</span> <span class="o">=</span> <span class="n">cache_</span><span class="o">-&gt;</span><span class="n">Lookup</span><span class="p">(</span><span class="n">key</span><span class="p">);</span>
+  <span class="k">if</span> <span class="p">(</span><span class="o">*</span><span class="n">handle</span> <span class="o">==</span> <span class="k">nullptr</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">fname</span> <span class="o">=</span> <span class="n">TableFileName</span><span class="p">(</span><span class="n">dbname_</span><span class="p">,</span> <span class="n">file_number</span><span class="p">);</span>
+    <span class="n">RandomAccessFile</span><span class="o">*</span> <span class="n">file</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">;</span>
+    <span class="n">Table</span><span class="o">*</span> <span class="n">table</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">;</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">env_</span><span class="o">-&gt;</span><span class="n">NewRandomAccessFile</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">file</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">s</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">old_fname</span> <span class="o">=</span> <span class="n">SSTTableFileName</span><span class="p">(</span><span class="n">dbname_</span><span class="p">,</span> <span class="n">file_number</span><span class="p">);</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">env_</span><span class="o">-&gt;</span><span class="n">NewRandomAccessFile</span><span class="p">(</span><span class="n">old_fname</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">file</span><span class="p">).</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">Status</span><span class="o">::</span><span class="n">OK</span><span class="p">();</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
+      <span class="n">s</span> <span class="o">=</span> <span class="n">Table</span><span class="o">::</span><span class="n">Open</span><span class="p">(</span><span class="n">options_</span><span class="p">,</span> <span class="n">file</span><span class="p">,</span> <span class="n">file_size</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">table</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">s</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
+      <span class="n">assert</span><span class="p">(</span><span class="n">table</span> <span class="o">==</span> <span class="k">nullptr</span><span class="p">);</span>
+      <span class="k">delete</span> <span class="n">file</span><span class="p">;</span>
+      <span class="c1">// We do not cache error results so that if the error is transient,
+</span><span class="c1"></span>      <span class="c1">// or somebody repairs the file, we recover automatically.
+</span><span class="c1"></span>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="n">TableAndFile</span><span class="o">*</span> <span class="n">tf</span> <span class="o">=</span> <span class="k">new</span> <span class="n">TableAndFile</span><span class="p">;</span>
+      <span class="n">tf</span><span class="o">-&gt;</span><span class="n">file</span> <span class="o">=</span> <span class="n">file</span><span class="p">;</span>
+      <span class="n">tf</span><span class="o">-&gt;</span><span class="n">table</span> <span class="o">=</span> <span class="n">table</span><span class="p">;</span>
+      <span class="o">*</span><span class="n">handle</span> <span class="o">=</span> <span class="n">cache_</span><span class="o">-&gt;</span><span class="n">Insert</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">tf</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">DeleteEntry</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="n">s</span><span class="p">;</span>
+<span class="p">}</span>
+
+</code></pre></div><p>内部方法<code>FindTable</code>首先会构造key并在TableCache查找是否已经缓存该SSTable。如果有则直接返回缓存结构；否则根据传入的<code>file_number</code>和<code>file_size</code>参数，通过<code>Table::Open</code>方法打开相应的<code>SSTable</code>，并将<code>file</code>与<code>table</code>写入<code>TableAndFile</code>结构体，放入自己的ShardedLRUCache缓存中。其中<code>Table::Open</code>方法会加载SSTable中的index和filter，笔者会在下一节介绍其实现。</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="n">Status</span> <span class="n">TableCache</span><span class="o">::</span><span class="n">Get</span><span class="p">(</span><span class="k">const</span> <span class="n">ReadOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span> <span class="kt">uint64_t</span> <span class="n">file_number</span><span class="p">,</span>
+                       <span class="kt">uint64_t</span> <span class="n">file_size</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">k</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">arg</span><span class="p">,</span>
+                       <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">handle_result</span><span class="p">)(</span><span class="kt">void</span><span class="o">*</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span><span class="p">,</span>
+                                             <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span><span class="p">))</span> <span class="p">{</span>
+  <span class="n">Cache</span><span class="o">::</span><span class="n">Handle</span><span class="o">*</span> <span class="n">handle</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">;</span>
+  <span class="n">Status</span> <span class="n">s</span> <span class="o">=</span> <span class="n">FindTable</span><span class="p">(</span><span class="n">file_number</span><span class="p">,</span> <span class="n">file_size</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">handle</span><span class="p">);</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
+    <span class="n">Table</span><span class="o">*</span> <span class="n">t</span> <span class="o">=</span> <span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="n">TableAndFile</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">cache_</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">(</span><span class="n">handle</span><span class="p">))</span><span class="o">-&gt;</span><span class="n">table</span><span class="p">;</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">t</span><span class="o">-&gt;</span><span class="n">InternalGet</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">arg</span><span class="p">,</span> <span class="n">handle_result</span><span class="p">);</span>
+    <span class="n">cache_</span><span class="o">-&gt;</span><span class="n">Release</span><span class="p">(</span><span class="n">handle</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="n">s</span><span class="p">;</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>Get</code>方法是<code>TableCache</code>暴露给caller的外部方法，该方法首先通过<code>FindTable</code>方法打开所需的SSTable，然后通过<code>Table</code>结构体的<code>InternalGet</code>结构获取给定key对应的value。<code>Table::InternalGet</code>方法中既使用了SSTable的index和filter，又使用了BlockCache，下节中笔者将详细介绍其实现。</p>
+<p>从<code>TableCache</code>的代码可以发现，<code>Table</code>是实现TableCache的关键。下一节中，笔者将介绍并分析其实现。</p>
+<h3 id="33-table">3.3 Table</h3>
+<p><code>Table</code>接口定义位于<code>include/leveldb/table.h</code>中，LevelDB的用户可以该接口中的<code>Open</code>方法打开SSTable并通过迭代器来访问其中数据，或者通过<code>ApproximateOffsetOf</code>方法估算key在SSTable中的位置；而<code>TableCache</code>作为其友元类，可以访问其私有方法。</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="c1">// A Table is a sorted map from strings to strings.  Tables are
+</span><span class="c1">// immutable and persistent.  A Table may be safely accessed from
+</span><span class="c1">// multiple threads without external synchronization.
+</span><span class="c1"></span><span class="k">class</span> <span class="nc">LEVELDB_EXPORT</span> <span class="n">Table</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="c1">// Attempt to open the table that is stored in bytes [0..file_size)
+</span><span class="c1"></span>  <span class="c1">// of &#34;file&#34;, and read the metadata entries necessary to allow
+</span><span class="c1"></span>  <span class="c1">// retrieving data from the table.
+</span><span class="c1"></span>  <span class="c1">//
+</span><span class="c1"></span>  <span class="c1">// If successful, returns ok and sets &#34;*table&#34; to the newly opened
+</span><span class="c1"></span>  <span class="c1">// table.  The client should delete &#34;*table&#34; when no longer needed.
+</span><span class="c1"></span>  <span class="c1">// If there was an error while initializing the table, sets &#34;*table&#34;
+</span><span class="c1"></span>  <span class="c1">// to nullptr and returns a non-ok status.  Does not take ownership of
+</span><span class="c1"></span>  <span class="c1">// &#34;*source&#34;, but the client must ensure that &#34;source&#34; remains live
+</span><span class="c1"></span>  <span class="c1">// for the duration of the returned table&#39;s lifetime.
+</span><span class="c1"></span>  <span class="c1">//
+</span><span class="c1"></span>  <span class="c1">// *file must remain live while this Table is in use.
+</span><span class="c1"></span>  <span class="k">static</span> <span class="n">Status</span> <span class="n">Open</span><span class="p">(</span><span class="k">const</span> <span class="n">Options</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span> <span class="n">RandomAccessFile</span><span class="o">*</span> <span class="n">file</span><span class="p">,</span>
+                     <span class="kt">uint64_t</span> <span class="n">file_size</span><span class="p">,</span> <span class="n">Table</span><span class="o">**</span> <span class="n">table</span><span class="p">);</span>
+
+  <span class="n">Table</span><span class="p">(</span><span class="k">const</span> <span class="n">Table</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+  <span class="n">Table</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">Table</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+
+  <span class="o">~</span><span class="n">Table</span><span class="p">();</span>
+
+  <span class="c1">// Returns a new iterator over the table contents.
+</span><span class="c1"></span>  <span class="c1">// The result of NewIterator() is initially invalid (caller must
+</span><span class="c1"></span>  <span class="c1">// call one of the Seek methods on the iterator before using it).
+</span><span class="c1"></span>  <span class="n">Iterator</span><span class="o">*</span> <span class="nf">NewIterator</span><span class="p">(</span><span class="k">const</span> <span class="n">ReadOptions</span><span class="o">&amp;</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+
+  <span class="c1">// Given a key, return an approximate byte offset in the file where
+</span><span class="c1"></span>  <span class="c1">// the data for that key begins (or would begin if the key were
+</span><span class="c1"></span>  <span class="c1">// present in the file).  The returned value is in terms of file
+</span><span class="c1"></span>  <span class="c1">// bytes, and so includes effects like compression of the underlying data.
+</span><span class="c1"></span>  <span class="c1">// E.g., the approximate offset of the last key in the table will
+</span><span class="c1"></span>  <span class="c1">// be close to the file length.
+</span><span class="c1"></span>  <span class="kt">uint64_t</span> <span class="nf">ApproximateOffsetOf</span><span class="p">(</span><span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+
+ <span class="k">private</span><span class="o">:</span>
+  <span class="k">friend</span> <span class="k">class</span> <span class="nc">TableCache</span><span class="p">;</span>
+  <span class="k">struct</span> <span class="nc">Rep</span><span class="p">;</span>
+
+  <span class="k">static</span> <span class="n">Iterator</span><span class="o">*</span> <span class="nf">BlockReader</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">,</span> <span class="k">const</span> <span class="n">ReadOptions</span><span class="o">&amp;</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span><span class="p">);</span>
+
+  <span class="k">explicit</span> <span class="nf">Table</span><span class="p">(</span><span class="n">Rep</span><span class="o">*</span> <span class="n">rep</span><span class="p">)</span> <span class="o">:</span> <span class="n">rep_</span><span class="p">(</span><span class="n">rep</span><span class="p">)</span> <span class="p">{}</span>
+
+  <span class="c1">// Calls (*handle_result)(arg, ...) with the entry found after a call
+</span><span class="c1"></span>  <span class="c1">// to Seek(key).  May not make such a call if filter policy says
+</span><span class="c1"></span>  <span class="c1">// that key is not present.
+</span><span class="c1"></span>  <span class="n">Status</span> <span class="nf">InternalGet</span><span class="p">(</span><span class="k">const</span> <span class="n">ReadOptions</span><span class="o">&amp;</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">arg</span><span class="p">,</span>
+                     <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">handle_result</span><span class="p">)(</span><span class="kt">void</span><span class="o">*</span> <span class="n">arg</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">k</span><span class="p">,</span>
+                                           <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">));</span>
+
+  <span class="kt">void</span> <span class="nf">ReadMeta</span><span class="p">(</span><span class="k">const</span> <span class="n">Footer</span><span class="o">&amp;</span> <span class="n">footer</span><span class="p">);</span>
+  <span class="kt">void</span> <span class="nf">ReadFilter</span><span class="p">(</span><span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">filter_handle_value</span><span class="p">);</span>
+
+  <span class="n">Rep</span><span class="o">*</span> <span class="k">const</span> <span class="n">rep_</span><span class="p">;</span>
+<span class="p">};</span>
+
+</code></pre></div><p><code>Table</code>的所有数据都通过<code>Table::Rep</code>类型的字段<code>rep_</code>保存，其实现位于<code>table/table.cc</code>中：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="k">struct</span> <span class="nc">Table</span><span class="o">::</span><span class="n">Rep</span> <span class="p">{</span>
+  <span class="o">~</span><span class="n">Rep</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">delete</span> <span class="n">filter</span><span class="p">;</span>
+    <span class="k">delete</span><span class="p">[]</span> <span class="n">filter_data</span><span class="p">;</span>
+    <span class="k">delete</span> <span class="n">index_block</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="n">Options</span> <span class="n">options</span><span class="p">;</span>
+  <span class="n">Status</span> <span class="n">status</span><span class="p">;</span>
+  <span class="n">RandomAccessFile</span><span class="o">*</span> <span class="n">file</span><span class="p">;</span>
+  <span class="kt">uint64_t</span> <span class="n">cache_id</span><span class="p">;</span>
+  <span class="n">FilterBlockReader</span><span class="o">*</span> <span class="n">filter</span><span class="p">;</span>
+  <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">filter_data</span><span class="p">;</span>
+
+  <span class="n">BlockHandle</span> <span class="n">metaindex_handle</span><span class="p">;</span>  <span class="c1">// Handle to metaindex_block: saved from footer
+</span><span class="c1"></span>  <span class="n">Block</span><span class="o">*</span> <span class="n">index_block</span><span class="p">;</span>
+<span class="p">};</span>
 
 
-</code></pre></div></div><div class="post-footer" id="post-footer">
+</code></pre></div><p><code>Table</code>中封装了用来读取SSTable元数据的方法<code>ReadMeta</code>，该方法会根据SSTable的Footer找到Filter Block，并通过<code>ReadFilter</code>方法将filter加载到<code>Table::Rep</code>结构体<code>rep_</code>中。<code>Table</code>在读取Block时使用的是<code>table/format.h</code>中定义的方法<code>ReadBlock</code>。这些方法主要用来反序列化数据，有关SSTable的数据格式可以参考<a href="/posts/code-reading/leveldb-made-simple/5-sstable/" rel="">深入浅出LevelDB —— 0x05 SSTable</a>，本文不再赘述。本节我们主要关注<code>Table</code>的<code>Open</code>、<code>InternalGet</code>方法的实现。</p>
+<h1 id="施工中--">施工中 &hellip; &hellip;</h1></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
