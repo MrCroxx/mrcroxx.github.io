@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/8-iterator\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  845 ,
+                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  851 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/8-iterator\/","datePublished": "2021-03-11T11:17:19+08:00","dateModified": "2021-03-14T11:01:13+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,7 +110,7 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x08 Iterator [施工中]</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-11">2021-03-11</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 845 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-11">2021-03-11</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 851 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 2 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
@@ -202,7 +202,17 @@
 <span class="p">}</span>
 
 </code></pre></div><p>LevelDB中几乎所有的迭代器，都实现了<code>Valid</code>、<code>SeekToFirst</code>、<code>SeekToLast</code>、<code>Seek</code>、<code>Next</code>、<code>Prev</code>、<code>key</code>、<code>value</code>等功能。LevelDB对外提供的Iterator接口还支持注册若干个迭代器销毁时的回调函数，以便用户显式地控制一些资源的回收。</p>
-<h2 id="2-iterator分类">2. Iterator分类</h2></div><div class="post-footer" id="post-footer">
+<h2 id="2-iterator分类">2. Iterator分类</h2>
+<p><figure><a class="lightgallery" href="/posts/code-reading/leveldb-made-simple/8-iterator/assets/iterator-system.svg" title="LevelDB Iterators" data-thumbnail="/posts/code-reading/leveldb-made-simple/8-iterator/assets/iterator-system.svg" data-sub-html="<h2>LevelDB Iterators</h2><p>LevelDB Iterators</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/iterator-system.svg"
+            data-srcset="/posts/code-reading/leveldb-made-simple/8-iterator/assets/iterator-system.svg, assets/iterator-system.svg 1.5x, /posts/code-reading/leveldb-made-simple/8-iterator/assets/iterator-system.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/leveldb-made-simple/8-iterator/assets/iterator-system.svg" />
+    </a><figcaption class="image-caption">LevelDB Iterators</figcaption>
+    </figure></p></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
