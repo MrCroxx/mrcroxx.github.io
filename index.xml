@@ -7,14 +7,21 @@
             <webMaster>mrcroxx@outlook.com (叉鸽)</webMaster><lastBuildDate>Thu, 11 Mar 2021 14:16:25 &#43;0800</lastBuildDate>
             <atom:link href="https://mrcroxx.github.io/index.xml" rel="self" type="application/rss+xml" />
         <item>
-    <title>深入浅出LevelDB —— 0x08 Compaction [施工中]</title>
-    <link>https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/8-compaction/</link>
+    <title>深入浅出LevelDB —— 0x09 Compaction [施工中]</title>
+    <link>https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/9-compaction/</link>
     <pubDate>Thu, 11 Mar 2021 14:16:25 &#43;0800</pubDate>
     <author>作者</author>
-    <guid>https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/8-compaction/</guid>
+    <guid>https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/9-compaction/</guid>
     <description><![CDATA[<p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>]]></description>
 </item><item>
-    <title>深入浅出LevelDB —— 0x07 Cache</title>
+    <title>深入浅出LevelDB —— 0x08 Iterator [施工中]</title>
+    <link>https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/8-iterator/</link>
+    <pubDate>Thu, 11 Mar 2021 11:17:19 &#43;0800</pubDate>
+    <author>作者</author>
+    <guid>https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/8-iterator/</guid>
+    <description><![CDATA[<p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>]]></description>
+</item><item>
+    <title>深入浅出LevelDB —— 0x07 Cache [施工中]</title>
     <link>https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/7-cache/</link>
     <pubDate>Wed, 10 Mar 2021 11:17:19 &#43;0800</pubDate>
     <author>作者</author>
@@ -68,13 +75,6 @@
     <pubDate>Thu, 04 Mar 2021 19:37:12 &#43;0800</pubDate>
     <author>作者</author>
     <guid>https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/0-introduction/</guid>
-    <description><![CDATA[<p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>]]></description>
-</item><item>
-    <title>深入浅出boltdb —— 0x04 事务</title>
-    <link>https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/4-transaction/</link>
-    <pubDate>Tue, 26 Jan 2021 13:30:24 &#43;0800</pubDate>
-    <author>作者</author>
-    <guid>https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/4-transaction/</guid>
     <description><![CDATA[<p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>]]></description>
 </item></channel>
 </rss>

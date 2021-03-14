@@ -5,36 +5,36 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="robots" content="noodp" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
-        <title>深入浅出LevelDB —— 0x08 Compaction [施工中] - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 0x08 Compaction [施工中]" />
+        <title>深入浅出LevelDB —— 0x09 Compaction [施工中] - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 0x09 Compaction [施工中]" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/8-compaction/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/8-compaction/leveldb.jpg"/><meta property="article:section" content="posts" />
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/9-compaction/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/9-compaction/leveldb.jpg"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2021-03-11T14:16:25&#43;08:00" />
 <meta property="article:modified_time" content="2021-03-13T16:48:24&#43;08:00" />
 
 <meta name="twitter:card" content="summary_large_image"/>
-<meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/8-compaction/leveldb.jpg"/>
-<meta name="twitter:title" content="深入浅出LevelDB —— 0x08 Compaction [施工中]"/>
+<meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/9-compaction/leveldb.jpg"/>
+<meta name="twitter:title" content="深入浅出LevelDB —— 0x09 Compaction [施工中]"/>
 <meta name="twitter:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。"/>
 <meta name="application-name" content="叉鸽 MrCroxx 的博客">
 <meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/8-compaction/" /><link rel="prev" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/7-cache/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/9-compaction/" /><link rel="prev" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/8-iterator/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
     {
         "@context": "http://schema.org",
         "@type": "BlogPosting",
-        "headline": "深入浅出LevelDB —— 0x08 Compaction [施工中]",
+        "headline": "深入浅出LevelDB —— 0x09 Compaction [施工中]",
         "inLanguage": "zh-CN",
         "mainEntityOfPage": {
             "@type": "WebPage",
-            "@id": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/8-compaction\/"
+            "@id": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/9-compaction\/"
         },"image": [{
                             "@type": "ImageObject",
-                            "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/8-compaction\/leveldb.jpg",
+                            "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/9-compaction\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
                         }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  16696 ,
-        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/8-compaction\/","datePublished": "2021-03-11T14:16:25+08:00","dateModified": "2021-03-13T16:48:24+08:00","publisher": {
+        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/9-compaction\/","datePublished": "2021-03-11T14:16:25+08:00","dateModified": "2021-03-13T16:48:24+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
                 "@type": "Person",
@@ -108,18 +108,18 @@
                 <div class="container"><div class="toc" id="toc-auto">
             <h2 class="toc-title">目录</h2>
             <div class="toc-content" id="toc-content-auto"></div>
-        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x08 Compaction [施工中]</h1><div class="post-meta">
+        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x09 Compaction [施工中]</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
             <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-11">2021-03-11</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 16696 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 34 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
-        data-src="/posts/code-reading/leveldb-made-simple/8-compaction/leveldb.jpg"
-        data-srcset="/posts/code-reading/leveldb-made-simple/8-compaction/leveldb.jpg, /posts/code-reading/leveldb-made-simple/8-compaction/leveldb.jpg 1.5x, /posts/code-reading/leveldb-made-simple/8-compaction/leveldb.jpg 2x"
+        data-src="/posts/code-reading/leveldb-made-simple/9-compaction/leveldb.jpg"
+        data-srcset="/posts/code-reading/leveldb-made-simple/9-compaction/leveldb.jpg, /posts/code-reading/leveldb-made-simple/9-compaction/leveldb.jpg 1.5x, /posts/code-reading/leveldb-made-simple/9-compaction/leveldb.jpg 2x"
         data-sizes="auto"
-        alt="/posts/code-reading/leveldb-made-simple/8-compaction/leveldb.jpg"
-        title="/posts/code-reading/leveldb-made-simple/8-compaction/leveldb.jpg" /></div><div class="details toc" id="toc-static"  kept="">
+        alt="/posts/code-reading/leveldb-made-simple/9-compaction/leveldb.jpg"
+        title="/posts/code-reading/leveldb-made-simple/9-compaction/leveldb.jpg" /></div><div class="details toc" id="toc-static"  kept="">
                 <div class="details-summary toc-title">
                     <span>目录</span>
                     <span><i class="details-icon fas fa-angle-right"></i></span>
@@ -444,36 +444,36 @@
 </code></pre></div><h3 id="25-seek-compaction的触发">2.5 Seek Compaction的触发</h3>
 <p>在介绍Seek Compaction触发条件前，我们先来看为什么需要Seek Compaction。</p>
 <p>在LSM-Tree中，除了level-0外，虽然每个level的SSTable间相互没有overlap，但是level与level间的SSTable是可以有overlap的，如下图中的实例所示。</p>
-<p><figure><a class="lightgallery" href="/posts/code-reading/leveldb-made-simple/8-compaction/assets/overlap.svg" title="overlap" data-thumbnail="/posts/code-reading/leveldb-made-simple/8-compaction/assets/overlap.svg" data-sub-html="<h2>overlap</h2><p>overlap</p>">
+<p><figure><a class="lightgallery" href="/posts/code-reading/leveldb-made-simple/9-compaction/assets/overlap.svg" title="overlap" data-thumbnail="/posts/code-reading/leveldb-made-simple/9-compaction/assets/overlap.svg" data-sub-html="<h2>overlap</h2><p>overlap</p>">
         <img
             class="lazyload"
             src="/svg/loading.min.svg"
             data-src="assets/overlap.svg"
-            data-srcset="/posts/code-reading/leveldb-made-simple/8-compaction/assets/overlap.svg, assets/overlap.svg 1.5x, /posts/code-reading/leveldb-made-simple/8-compaction/assets/overlap.svg 2x"
+            data-srcset="/posts/code-reading/leveldb-made-simple/9-compaction/assets/overlap.svg, assets/overlap.svg 1.5x, /posts/code-reading/leveldb-made-simple/9-compaction/assets/overlap.svg 2x"
             data-sizes="auto"
-            alt="/posts/code-reading/leveldb-made-simple/8-compaction/assets/overlap.svg" />
+            alt="/posts/code-reading/leveldb-made-simple/9-compaction/assets/overlap.svg" />
     </a><figcaption class="image-caption">overlap</figcaption>
     </figure></p>
 <p>在本例中，如果查找键<code>18</code>时在level-k前都没有命中，则查询会下推到level-k。在level-k层中，因为SSTable(k, i)的key范围覆盖了<code>18</code>，LevelDB会在该SSTable中查找是否存在要查找的key <code>18</code>（实际上查找的是该SSTable在TableCache中的filter），该操作被称为“seek”。当LevelDB在level-k中没有找到要查找的key时，才会继续在level-(k+1)中查找。</p>
-<p><figure><a class="lightgallery" href="/posts/code-reading/leveldb-made-simple/8-compaction/assets/seek-miss.svg" title="seek miss" data-thumbnail="/posts/code-reading/leveldb-made-simple/8-compaction/assets/seek-miss.svg" data-sub-html="<h2>seek miss</h2><p>seek miss</p>">
+<p><figure><a class="lightgallery" href="/posts/code-reading/leveldb-made-simple/9-compaction/assets/seek-miss.svg" title="seek miss" data-thumbnail="/posts/code-reading/leveldb-made-simple/9-compaction/assets/seek-miss.svg" data-sub-html="<h2>seek miss</h2><p>seek miss</p>">
         <img
             class="lazyload"
             src="/svg/loading.min.svg"
             data-src="assets/seek-miss.svg"
-            data-srcset="/posts/code-reading/leveldb-made-simple/8-compaction/assets/seek-miss.svg, assets/seek-miss.svg 1.5x, /posts/code-reading/leveldb-made-simple/8-compaction/assets/seek-miss.svg 2x"
+            data-srcset="/posts/code-reading/leveldb-made-simple/9-compaction/assets/seek-miss.svg, assets/seek-miss.svg 1.5x, /posts/code-reading/leveldb-made-simple/9-compaction/assets/seek-miss.svg 2x"
             data-sizes="auto"
-            alt="/posts/code-reading/leveldb-made-simple/8-compaction/assets/seek-miss.svg" />
+            alt="/posts/code-reading/leveldb-made-simple/9-compaction/assets/seek-miss.svg" />
     </a><figcaption class="image-caption">seek miss</figcaption>
     </figure></p>
 <p>在上图的示例中，每当LevelDB要查找key <code>18</code>时，因为SSTable(k, i)的key范围覆盖了<code>18</code>，所以其每次都必须在该SSTable中seek，这一不必要的seek操作会导致性能下降。因此，在FileMetaData结构体中引入了<code>allowed_seeks</code>字段，该字段初始为文件大小与16KB的比值，不足100则取100；每次无效seek发生时LevelDB都会将该字段值减1。当某SSTable的<code>allowed_seeks</code>减为0时，会触发seek compaction，该SSTable会与下层部分SSTable合并。合并后的SSTable如下图所示。</p>
-<p><figure><a class="lightgallery" href="/posts/code-reading/leveldb-made-simple/8-compaction/assets/match.svg" title="match" data-thumbnail="/posts/code-reading/leveldb-made-simple/8-compaction/assets/match.svg" data-sub-html="<h2>match</h2><p>match</p>">
+<p><figure><a class="lightgallery" href="/posts/code-reading/leveldb-made-simple/9-compaction/assets/match.svg" title="match" data-thumbnail="/posts/code-reading/leveldb-made-simple/9-compaction/assets/match.svg" data-sub-html="<h2>match</h2><p>match</p>">
         <img
             class="lazyload"
             src="/svg/loading.min.svg"
             data-src="assets/match.svg"
-            data-srcset="/posts/code-reading/leveldb-made-simple/8-compaction/assets/match.svg, assets/match.svg 1.5x, /posts/code-reading/leveldb-made-simple/8-compaction/assets/match.svg 2x"
+            data-srcset="/posts/code-reading/leveldb-made-simple/9-compaction/assets/match.svg, assets/match.svg 1.5x, /posts/code-reading/leveldb-made-simple/9-compaction/assets/match.svg 2x"
             data-sizes="auto"
-            alt="/posts/code-reading/leveldb-made-simple/8-compaction/assets/match.svg" />
+            alt="/posts/code-reading/leveldb-made-simple/9-compaction/assets/match.svg" />
     </a><figcaption class="image-caption">match</figcaption>
     </figure></p>
 <div class="details admonition quote open">
@@ -786,25 +786,25 @@
 <p>如果触发Compact的SSTable在level-0，<code>PickCompaction</code>方法会将level-0层中所有与该SSTable有overlap的SSTable加入level-0层的输入中。</p>
 <p>在确定了<code>input[0]</code>后，<code>PickCompcation</code>方法会调用<code>VersionSet::SetupOtherInputs</code>方法。该方法首先扩展<code>input[0]</code>范围，然后确定<code>input[1]</code>，即参与Major Compaction的level-(i+1)层的SSTable。扩展<code>input</code>范围的目的是避免Compaction后无法正确查找key版本的问题。这里我们先来看一下这一问题的成因：</p>
 <p>在Major Compaction发生前，UserKey <code>cat</code>在level-i层的SSTable中有两个版本，分别为<code>(cat, 101)</code>与<code>(cat, 100)</code>（这里仅关注UserKey与SequenceNumber）。此时，如果LevelDB查找UserKey <code>cat</code>的最新版本，其会首先查找到<code>(cat, 101)</code>，能够得到正常值。</p>
-<p><figure><a class="lightgallery" href="/posts/code-reading/leveldb-made-simple/8-compaction/assets/boundary-before.svg" title="Major Compaction发生前" data-thumbnail="/posts/code-reading/leveldb-made-simple/8-compaction/assets/boundary-before.svg" data-sub-html="<h2>Major Compaction发生前</h2><p>Major Compaction发生前</p>">
+<p><figure><a class="lightgallery" href="/posts/code-reading/leveldb-made-simple/9-compaction/assets/boundary-before.svg" title="Major Compaction发生前" data-thumbnail="/posts/code-reading/leveldb-made-simple/9-compaction/assets/boundary-before.svg" data-sub-html="<h2>Major Compaction发生前</h2><p>Major Compaction发生前</p>">
         <img
             class="lazyload"
             src="/svg/loading.min.svg"
             data-src="assets/boundary-before.svg"
-            data-srcset="/posts/code-reading/leveldb-made-simple/8-compaction/assets/boundary-before.svg, assets/boundary-before.svg 1.5x, /posts/code-reading/leveldb-made-simple/8-compaction/assets/boundary-before.svg 2x"
+            data-srcset="/posts/code-reading/leveldb-made-simple/9-compaction/assets/boundary-before.svg, assets/boundary-before.svg 1.5x, /posts/code-reading/leveldb-made-simple/9-compaction/assets/boundary-before.svg 2x"
             data-sizes="auto"
-            alt="/posts/code-reading/leveldb-made-simple/8-compaction/assets/boundary-before.svg" />
+            alt="/posts/code-reading/leveldb-made-simple/9-compaction/assets/boundary-before.svg" />
     </a><figcaption class="image-caption">Major Compaction发生前</figcaption>
     </figure></p>
 <p>此时，如果SSTable (i,x)在Major Compaction中与下一层SSTable合并，会导致<code>(cat, 101)</code>位于level-(i+1)，而<code>(cat, 100)</code>位于level-0。</p>
-<p><figure><a class="lightgallery" href="/posts/code-reading/leveldb-made-simple/8-compaction/assets/boundary-after.svg" title="Major Compaction发生后" data-thumbnail="/posts/code-reading/leveldb-made-simple/8-compaction/assets/boundary-after.svg" data-sub-html="<h2>Major Compaction发生后</h2><p>Major Compaction发生后</p>">
+<p><figure><a class="lightgallery" href="/posts/code-reading/leveldb-made-simple/9-compaction/assets/boundary-after.svg" title="Major Compaction发生后" data-thumbnail="/posts/code-reading/leveldb-made-simple/9-compaction/assets/boundary-after.svg" data-sub-html="<h2>Major Compaction发生后</h2><p>Major Compaction发生后</p>">
         <img
             class="lazyload"
             src="/svg/loading.min.svg"
             data-src="assets/boundary-after.svg"
-            data-srcset="/posts/code-reading/leveldb-made-simple/8-compaction/assets/boundary-after.svg, assets/boundary-after.svg 1.5x, /posts/code-reading/leveldb-made-simple/8-compaction/assets/boundary-after.svg 2x"
+            data-srcset="/posts/code-reading/leveldb-made-simple/9-compaction/assets/boundary-after.svg, assets/boundary-after.svg 1.5x, /posts/code-reading/leveldb-made-simple/9-compaction/assets/boundary-after.svg 2x"
             data-sizes="auto"
-            alt="/posts/code-reading/leveldb-made-simple/8-compaction/assets/boundary-after.svg" />
+            alt="/posts/code-reading/leveldb-made-simple/9-compaction/assets/boundary-after.svg" />
     </a><figcaption class="image-caption">Major Compaction发生后</figcaption>
     </figure></p>
 <p>此时，如果LevelDB再次查找UserKey <code>cat</code>的最新版本，其首先会在level-i中查找到<code>(cat, 100)</code>，因此不会再继续查询level-(i+1)，此时返回了陈旧的值。</p>
@@ -836,14 +836,14 @@
 
 </code></pre></div><p>首先我们来看(1)段。这部分通过<code>AddBoundaryInputs</code>方法扩展了level-i层参与Compaction的SSTable（即<code>input[0]</code>），然后在level-(i+1)中找到所有与level-i层参与Compaction的SSTable有overlap的SSTable，将其加入到<code>intput[1]</code>中。</p>
 <p>初次确定的<code>input</code>范围可能出现下图示例中的情况（注：图中SSTable的宽度表示其key范围，而非文件大小）：</p>
-<p><figure><a class="lightgallery" href="/posts/code-reading/leveldb-made-simple/8-compaction/assets/reextend.svg" title="初次确定的input范围" data-thumbnail="/posts/code-reading/leveldb-made-simple/8-compaction/assets/reextend.svg" data-sub-html="<h2>初次确定的input范围</h2><p>初次确定的input范围</p>">
+<p><figure><a class="lightgallery" href="/posts/code-reading/leveldb-made-simple/9-compaction/assets/reextend.svg" title="初次确定的input范围" data-thumbnail="/posts/code-reading/leveldb-made-simple/9-compaction/assets/reextend.svg" data-sub-html="<h2>初次确定的input范围</h2><p>初次确定的input范围</p>">
         <img
             class="lazyload"
             src="/svg/loading.min.svg"
             data-src="assets/reextend.svg"
-            data-srcset="/posts/code-reading/leveldb-made-simple/8-compaction/assets/reextend.svg, assets/reextend.svg 1.5x, /posts/code-reading/leveldb-made-simple/8-compaction/assets/reextend.svg 2x"
+            data-srcset="/posts/code-reading/leveldb-made-simple/9-compaction/assets/reextend.svg, assets/reextend.svg 1.5x, /posts/code-reading/leveldb-made-simple/9-compaction/assets/reextend.svg 2x"
             data-sizes="auto"
-            alt="/posts/code-reading/leveldb-made-simple/8-compaction/assets/reextend.svg" />
+            alt="/posts/code-reading/leveldb-made-simple/9-compaction/assets/reextend.svg" />
     </a><figcaption class="image-caption">初次确定的input范围</figcaption>
     </figure></p>
 <p>图中<em>黄色</em>的SSTable是初次选取的input。如图的示例中，由于level-(i+1)层SSTable中的key较为分散，其input范围能够容纳level-i中更多的SSTable（即图中level-i层<em>蓝色</em>的SSTable）。显然，将这些SSTable加入到<code>input[0]</code>中，不需要扩展<code>input[1]</code>的范围。因此，LevelDB会将这部分SSTable一同合并，以减少未来需要的Compaction。</p>
@@ -1317,7 +1317,7 @@
         </section>
     </div>
 
-    <div class="post-nav"><a href="/posts/code-reading/leveldb-made-simple/7-cache/" class="prev" rel="prev" title="深入浅出LevelDB —— 0x07 Cache"><i class="fas fa-angle-left fa-fw"></i>深入浅出LevelDB —— 0x07 Cache</a></div>
+    <div class="post-nav"><a href="/posts/code-reading/leveldb-made-simple/8-iterator/" class="prev" rel="prev" title="深入浅出LevelDB —— 0x08 Iterator [施工中]"><i class="fas fa-angle-left fa-fw"></i>深入浅出LevelDB —— 0x08 Iterator [施工中]</a></div>
 </div>
 </article></div>
             </main><footer class="footer">
