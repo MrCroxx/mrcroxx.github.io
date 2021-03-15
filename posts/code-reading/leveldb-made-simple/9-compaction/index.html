@@ -5,25 +5,25 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="robots" content="noodp" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
-        <title>深入浅出LevelDB —— 0x09 Compaction [施工中] - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 0x09 Compaction [施工中]" />
+        <title>深入浅出LevelDB —— 0x09 Compaction - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 0x09 Compaction" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/9-compaction/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/9-compaction/leveldb.jpg"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2021-03-11T14:16:25&#43;08:00" />
-<meta property="article:modified_time" content="2021-03-13T16:48:24&#43;08:00" />
+<meta property="article:modified_time" content="2021-03-15T23:26:52&#43;08:00" />
 
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/9-compaction/leveldb.jpg"/>
-<meta name="twitter:title" content="深入浅出LevelDB —— 0x09 Compaction [施工中]"/>
+<meta name="twitter:title" content="深入浅出LevelDB —— 0x09 Compaction"/>
 <meta name="twitter:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。"/>
 <meta name="application-name" content="叉鸽 MrCroxx 的博客">
 <meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/9-compaction/" /><link rel="prev" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/8-iterator/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/9-compaction/" /><link rel="prev" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/8-iterator/" /><link rel="next" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/10-read-write/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
     {
         "@context": "http://schema.org",
         "@type": "BlogPosting",
-        "headline": "深入浅出LevelDB —— 0x09 Compaction [施工中]",
+        "headline": "深入浅出LevelDB —— 0x09 Compaction",
         "inLanguage": "zh-CN",
         "mainEntityOfPage": {
             "@type": "WebPage",
@@ -33,8 +33,8 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/9-compaction\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  18928 ,
-        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/9-compaction\/","datePublished": "2021-03-11T14:16:25+08:00","dateModified": "2021-03-13T16:48:24+08:00","publisher": {
+                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  19348 ,
+        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/9-compaction\/","datePublished": "2021-03-11T14:16:25+08:00","dateModified": "2021-03-15T23:26:52+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
                 "@type": "Person",
@@ -108,10 +108,10 @@
                 <div class="container"><div class="toc" id="toc-auto">
             <h2 class="toc-title">目录</h2>
             <div class="toc-content" id="toc-content-auto"></div>
-        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x09 Compaction [施工中]</h1><div class="post-meta">
+        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x09 Compaction</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-11">2021-03-11</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 18928 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 38 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-11">2021-03-11</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 19348 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 39 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
@@ -374,9 +374,10 @@
 <li>如果<code>force</code>为false且MemTable估算的大小没有超过限制（默认为4MB），则直接退出，不需要进行Minor Compaction。</li>
 <li>如果此时有未完成Minor Compaction的Immutable MemTable，此时循环等待Minor Compaction执行完成再执行。</li>
 <li>如果当前level-0层的SSTable数过多（默认为8），此时循环等待level-0层SSTable数低于该上限，以避免level-0层SSTable过多</li>
-<li>否则，将当前的MemTable转为Immutable，并调用<code>MaybeScheduleCompaction</code>方法尝试通过后台线程调度Compcation执行（此时<code>imm_</code>会引用旧的MemTable，以让<code>MaybeScheduleCompaction</code>得知当前需要Minor Compaction）。</li>
+<li>否则，首先打开新的WAL文件用来记录后续操作，并释放旧的WAL文件。然后将当前的MemTable转为Immutable，调用<code>MaybeScheduleCompaction</code>方法尝试通过后台线程调度Compcation执行（此时<code>imm_</code>会引用旧的MemTable，以让<code>MaybeScheduleCompaction</code>得知当前需要Minor Compaction）。</li>
 </ol>
 <p><code>DBImpl::MakeRoomForWrite</code>方法在判断是否需要进行Minor Compaction时，LevelDB通过流控与等待的方式，避免level-0层SSTable数过多。这是因为level-0层的key之间是有重叠的，因此当查询level-0层SSTable时，需要查找level-0层的所有SSTable。如果level-0层SSTable太多，会严重拖慢查询效率。</p>
+<p>从步骤7可以看出，在LevelDB触发Minor Compaction前，其就切换到新的WAL写入。如果Minor Compaction失败，此时可能需要从该Minor Compaction前的WAL恢复。在<a href="/posts/code-reading/leveldb-made-simple/6-version/" rel="">深入浅出LevelDB —— 0x06 Version</a>介绍LevelDB的恢复中可知，当前版本的LevelDB会查找所有仍存在的WAL文件并恢复；而如果Minor Comapction未完成，LevelDB不会删除旧的WAL。因此，这里不会出现数据丢失问题。LevelDB这样做是为了在保证安全地情况下，避免Minor Compaction操作阻塞对LevelDB的正常读写，详见本系列<a href="/posts/code-reading/leveldb-made-simple/3-log/#2-log%e7%9a%84%e5%ae%9e%e7%8e%b0" rel="">深入浅出LevelDB —— 0x03 Log</a>的2.4节。</p>
 <h3 id="24-size-compaction的触发">2.4 Size Compaction的触发</h3>
 <p>Size Compaction在非level-0层是根据该层的总SSTable大小触发的，而在level-0层是根据该层SSTable数触发的。也就是说，只有发生了Compaction，才有可能触发Size Compaction。因为Compaction的执行会导致Version的更新，因此LevelDB在<code>VersionSet::LogAndApply</code>方法更新Version后，让其调用<code>VersionSet::Finalize</code>方法来计算每层SSTable是否需要Size Compaction，并选出最需要进行Size Compaction的层作为下次Size Compaction的目标。</p>
 <p><code>VersionSet::Finalize</code>方法实现如下：</p>
@@ -1440,12 +1441,12 @@
 <p>如果<code>drop</code>被置为true，则在段(7)中该key不会被写入到SSTable中。关于drop key的规则，需要注意的是，对于非<code>kTypeDeletion</code>类型的key，不能丢弃虽然SequenceNumber在smallest_snapshot前，但是其UserKey第一次出现的key；另外，对于<code>kTypeDeletion</code>类型，虽然可以丢弃在smallest_snapshot前的key，但是还需要保证在更高的level中没有该UserKey，否则在查询时，在当前level失配后会在下层中找到该UserKey的更旧的版本。</p>
 <h3 id="44-compaction清理">4.4 Compaction清理</h3>
 <p>在<code>BackgroundCompaction</code>方法通过<code>DoCompactionWork</code>执行Compaction完成后，会依次调用<code>CleanupCompaction</code>和<code>RemoveObsoleteFiles</code>方法来进行清理。</p>
-<h1 id="施工中--">施工中 &hellip; &hellip;</h1>
-<p>btw. Tier Compaction ( Tiering vs. Leveling )</p></div><div class="post-footer" id="post-footer">
+<p><code>CleanupCompaction</code>方法用来释放Compaction过程中的占用（主要是内存）。</p>
+<p><code>RemoveObsoleteFiles</code>方法用来删除Compaction后不再需要的旧文件。</p></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
-                <span>更新于 2021-03-13</span>
+                <span>更新于 2021-03-15</span>
             </div>
             <div class="post-info-license"></div>
         </div>
@@ -1464,7 +1465,8 @@
         </section>
     </div>
 
-    <div class="post-nav"><a href="/posts/code-reading/leveldb-made-simple/8-iterator/" class="prev" rel="prev" title="深入浅出LevelDB —— 0x08 Iterator"><i class="fas fa-angle-left fa-fw"></i>深入浅出LevelDB —— 0x08 Iterator</a></div>
+    <div class="post-nav"><a href="/posts/code-reading/leveldb-made-simple/8-iterator/" class="prev" rel="prev" title="深入浅出LevelDB —— 0x08 Iterator"><i class="fas fa-angle-left fa-fw"></i>深入浅出LevelDB —— 0x08 Iterator</a>
+            <a href="/posts/code-reading/leveldb-made-simple/10-read-write/" class="next" rel="next" title="深入浅出LevelDB —— 0x10 Read &amp; Write [施工中]">深入浅出LevelDB —— 0x10 Read &amp; Write [施工中]<i class="fas fa-angle-right fa-fw"></i></a></div>
 </div>
 </article></div>
             </main><footer class="footer">
