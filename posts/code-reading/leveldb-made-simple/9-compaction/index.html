@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/9-compaction\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  18562 ,
+                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  18928 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/9-compaction\/","datePublished": "2021-03-11T14:16:25+08:00","dateModified": "2021-03-13T16:48:24+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,7 +110,7 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x09 Compaction [施工中]</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-11">2021-03-11</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 18562 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-11">2021-03-11</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 18928 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 38 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
@@ -1437,9 +1437,10 @@
 </ol>
 </li>
 </ol>
+<p>如果<code>drop</code>被置为true，则在段(7)中该key不会被写入到SSTable中。关于drop key的规则，需要注意的是，对于非<code>kTypeDeletion</code>类型的key，不能丢弃虽然SequenceNumber在smallest_snapshot前，但是其UserKey第一次出现的key；另外，对于<code>kTypeDeletion</code>类型，虽然可以丢弃在smallest_snapshot前的key，但是还需要保证在更高的level中没有该UserKey，否则在查询时，在当前level失配后会在下层中找到该UserKey的更旧的版本。</p>
 <h3 id="44-compaction清理">4.4 Compaction清理</h3>
-<p><code>CleanupCompaction</code> -&gt; 内存
-<code>RemoveObsoleteFiles</code> -&gt; 文件</p>
+<p>在<code>BackgroundCompaction</code>方法通过<code>DoCompactionWork</code>执行Compaction完成后，会依次调用<code>CleanupCompaction</code>和<code>RemoveObsoleteFiles</code>方法来进行清理。</p>
+<h1 id="施工中--">施工中 &hellip; &hellip;</h1>
 <p>btw. Tier Compaction ( Tiering vs. Leveling )</p></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
