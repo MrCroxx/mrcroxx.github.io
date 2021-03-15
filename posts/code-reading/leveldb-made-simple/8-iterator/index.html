@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/8-iterator\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  4138 ,
+                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  4472 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/8-iterator\/","datePublished": "2021-03-11T11:17:19+08:00","dateModified": "2021-03-15T15:17:49+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,7 +110,7 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x08 Iterator</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-11">2021-03-11</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 4138 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-11">2021-03-11</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 4472 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 9 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
@@ -324,18 +324,24 @@
 </span><span class="c1"></span><span class="n">Iterator</span><span class="o">*</span> <span class="nf">NewMergingIterator</span><span class="p">(</span><span class="k">const</span> <span class="n">Comparator</span><span class="o">*</span> <span class="n">comparator</span><span class="p">,</span> <span class="n">Iterator</span><span class="o">**</span> <span class="n">children</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n</span><span class="p">);</span>
 
 </code></pre></div><p>在创建<code>MergingIterator</code>时，需要传入待组合的<code>Iterator</code>数组，及用来比较每个<code>Iterator</code>中的key的<code>Comparator</code>。在通过<code>MerginIterator</code>遍历所有iterator的key时，<code>MergingIterator</code>会比较其中所有iterator的key，并按照顺序选取最小的遍历；在所有iterator的空间中seek时，<code>MergingIterator</code>会调用所有iterator的<code>Seek</code>方法，然后比较所有iterator的seek结果，按顺序选取最小的返回。</p>
-<p>LevelDB中主要只有一处使用了<code>MergingIterator</code>，即用访问整个LevelDB中数据的迭代器<code>InternalIterator</code>。该迭代器组合了MemTable Iterator、Immutable MemTable Iterator、每个Level-0 SSTable的Iterator，和level&gt;1的所有SSTable的Concatenating Iterator</p>
+<p>LevelDB中主要有两处使用了<code>MergingIterator</code>：</p>
+<p>其一是用来访问整个LevelDB中数据的迭代器<code>InternalIterator</code>。该迭代器组合了MemTable Iterator、Immutable MemTable Iterator、每个Level-0 SSTable的Iterator，和level&gt;1的所有SSTable的Concatenating Iterator。</p>
+<p>其二是执行Major Compaction时访问需要Compact的所有SSTable的迭代器<code>InputIterator</code>。对于level-0的SSTable，其直接组装了所有SSTable的Table Iterator，因为level-0中每个SSTable的key空间不保证全局有序；而对于其它level的SSTable，其通过Concatenating Iterator（即组装了LevelFileNumIterator和Table Iterator的TwoLevelIterator），该Concatenating Iterator中组装了该层需要参与Major Compaction的SSTable。</p>
 <table>
 <thead>
 <tr>
 <th style="text-align:center">Collection<div style='width:8em'></div></th>
-<th style="text-align:center">Iterators[0]<div style='width:60em'></div></th>
+<th style="text-align:center">Iterators<div style='width:60em'></div></th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td style="text-align:center">InternalIterator</td>
-<td style="text-align:center">MemTatble Iterator、Immutable MemTable Iterator、Level-0 SSTavke Iterators、Level&gt;0 SSTable Concatenating Iterator</td>
+<td style="text-align:center">MemTatble Iterator、Immutable MemTable Iterator、level-0 SSTavke Iterators、level&gt;0 SSTable Concatenating Iterator</td>
+</tr>
+<tr>
+<td style="text-align:center">InputIterator</td>
+<td style="text-align:center">level-0 Table Iterator、level&gt;0 Concatenating Iterator (if necessary)</td>
 </tr>
 </tbody>
 </table>

@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/9-compaction\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  16696 ,
+                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  18562 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/9-compaction\/","datePublished": "2021-03-11T14:16:25+08:00","dateModified": "2021-03-13T16:48:24+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,8 +110,8 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x09 Compaction [施工中]</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-11">2021-03-11</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 16696 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 34 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-11">2021-03-11</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 18562 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 38 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
@@ -158,11 +158,6 @@
         <li><a href="#44-compaction清理">4.4 Compaction清理</a></li>
       </ul>
     </li>
-  </ul>
-
-  <ul>
-    <li><a href="#x-minor-compaction">x. Minor Compaction</a></li>
-    <li><a href="#x-major-compaction">x. Major Compaction</a></li>
   </ul>
 </nav></div>
             </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
@@ -1284,16 +1279,167 @@
   <span class="k">return</span> <span class="n">status</span><span class="p">;</span>
 
 </code></pre></div><p>接着我们来看第(2)段代码，这段代码看上去很长，但做的工作较为简单。<code>DoCompactionWork</code>方法在遍历和生成SSTable是解锁的，我们将其放在后面分析，第(2)代码主要关注解锁前和上锁后的部分。</p>
-<p>在解锁前，该方法准备了需要避免竟态的数据：需要保留的最大SequenceNumber（以实现Snapshot Read）和参与Major Compaction的所有SSTable的全局迭代器。</p>
+<p>在解锁前，该方法准备了需要避免竟态的数据：需要保留的最大SequenceNumber（以实现Snapshot Read），并通过<code>MakeInputIterator</code>方法生成了所有参与Major Compaction的SSTable的全局迭代器Input Iterator（详见<a href="/posts/code-reading/leveldb-made-simple/8-iterator/" rel="">深入浅出LevelDB —— 0x08 Iterator</a>）。</p>
 <p>在完成Compaction并上锁后，该方法更新了统计量和状态，输出日志后返回。</p>
+<p>下面我们介绍的部分，几乎都是在解锁的情况下执行的，其不会阻塞LevelDB正常的读写操作。</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+  <span class="c1">// (3)
+</span><span class="c1"></span>  <span class="n">input</span><span class="o">-&gt;</span><span class="n">SeekToFirst</span><span class="p">();</span>
+  <span class="n">Status</span> <span class="n">status</span><span class="p">;</span>
+  <span class="n">ParsedInternalKey</span> <span class="n">ikey</span><span class="p">;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">current_user_key</span><span class="p">;</span>
+  <span class="kt">bool</span> <span class="n">has_current_user_key</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+  <span class="n">SequenceNumber</span> <span class="n">last_sequence_for_key</span> <span class="o">=</span> <span class="n">kMaxSequenceNumber</span><span class="p">;</span>
+  <span class="k">while</span> <span class="p">(</span><span class="n">input</span><span class="o">-&gt;</span><span class="n">Valid</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">shutting_down_</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_acquire</span><span class="p">))</span> <span class="p">{</span>
+
+    <span class="c1">// (...)
+</span><span class="c1"></span>    <span class="c1">// ... ...
+</span><span class="c1"></span>
+    <span class="n">input</span><span class="o">-&gt;</span><span class="n">Next</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="k">if</span> <span class="p">(</span><span class="n">status</span><span class="p">.</span><span class="n">ok</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">shutting_down_</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_acquire</span><span class="p">))</span> <span class="p">{</span>
+    <span class="n">status</span> <span class="o">=</span> <span class="n">Status</span><span class="o">::</span><span class="n">IOError</span><span class="p">(</span><span class="s">&#34;Deleting DB during compaction&#34;</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">status</span><span class="p">.</span><span class="n">ok</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">compact</span><span class="o">-&gt;</span><span class="n">builder</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">status</span> <span class="o">=</span> <span class="n">FinishCompactionOutputFile</span><span class="p">(</span><span class="n">compact</span><span class="p">,</span> <span class="n">input</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">status</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
+    <span class="n">status</span> <span class="o">=</span> <span class="n">input</span><span class="o">-&gt;</span><span class="n">status</span><span class="p">();</span>
+  <span class="p">}</span>
+  <span class="k">delete</span> <span class="n">input</span><span class="p">;</span>
+  <span class="n">input</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">;</span>
+
+  <span class="n">CompactionStats</span> <span class="n">stats</span><span class="p">;</span>
+  <span class="n">stats</span><span class="p">.</span><span class="n">micros</span> <span class="o">=</span> <span class="n">env_</span><span class="o">-&gt;</span><span class="n">NowMicros</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_micros</span> <span class="o">-</span> <span class="n">imm_micros</span><span class="p">;</span>
+  <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">which</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">which</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">;</span> <span class="n">which</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">compact</span><span class="o">-&gt;</span><span class="n">compaction</span><span class="o">-&gt;</span><span class="n">num_input_files</span><span class="p">(</span><span class="n">which</span><span class="p">);</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">stats</span><span class="p">.</span><span class="n">bytes_read</span> <span class="o">+=</span> <span class="n">compact</span><span class="o">-&gt;</span><span class="n">compaction</span><span class="o">-&gt;</span><span class="n">input</span><span class="p">(</span><span class="n">which</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">file_size</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="k">for</span> <span class="p">(</span><span class="n">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">compact</span><span class="o">-&gt;</span><span class="n">outputs</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">stats</span><span class="p">.</span><span class="n">bytes_written</span> <span class="o">+=</span> <span class="n">compact</span><span class="o">-&gt;</span><span class="n">outputs</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">file_size</span><span class="p">;</span>
+  <span class="p">}</span>
+
+</code></pre></div><p>第(3)段代码主要通过InputIterator顺序遍历参与Major Compaction的key/value，对每个key/value的处理会在下文介绍。在处理完所有key后，根据状态判断是否需要返回错误，同时通过<code>FinishCompactionOutputFile</code>方法关闭最后一个写入的SSTable。</p>
+<p>因为LevelDB限制了每个SSTable的大小，因此在Major Compaction期间，如果当前写入的SSTable过大，会将其拆分成多个SSTable写入，所以这里关闭的是最后一个SSTable。该方法主要通过SSTable的Builder的<code>Finish</code>方法完成对SSTable的写入，这里不再赘述，感兴趣的读者可以自行阅读。</p>
+<p>最后，这段代码更新了相关统计量。</p>
+<p>接下来我们来看LevelDB对每个key/value的处理：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+    <span class="c1">// (4)
+</span><span class="c1"></span>    <span class="c1">// Prioritize immutable compaction work
+</span><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="n">has_imm_</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">))</span> <span class="p">{</span>
+      <span class="k">const</span> <span class="kt">uint64_t</span> <span class="n">imm_start</span> <span class="o">=</span> <span class="n">env_</span><span class="o">-&gt;</span><span class="n">NowMicros</span><span class="p">();</span>
+      <span class="n">mutex_</span><span class="p">.</span><span class="n">Lock</span><span class="p">();</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">imm_</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">CompactMemTable</span><span class="p">();</span>
+        <span class="c1">// Wake up MakeRoomForWrite() if necessary.
+</span><span class="c1"></span>        <span class="n">background_work_finished_signal_</span><span class="p">.</span><span class="n">SignalAll</span><span class="p">();</span>
+      <span class="p">}</span>
+      <span class="n">mutex_</span><span class="p">.</span><span class="n">Unlock</span><span class="p">();</span>
+      <span class="n">imm_micros</span> <span class="o">+=</span> <span class="p">(</span><span class="n">env_</span><span class="o">-&gt;</span><span class="n">NowMicros</span><span class="p">()</span> <span class="o">-</span> <span class="n">imm_start</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="c1">// (5)
+</span><span class="c1"></span>    <span class="n">Slice</span> <span class="n">key</span> <span class="o">=</span> <span class="n">input</span><span class="o">-&gt;</span><span class="n">key</span><span class="p">();</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">compact</span><span class="o">-&gt;</span><span class="n">compaction</span><span class="o">-&gt;</span><span class="n">ShouldStopBefore</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="o">&amp;&amp;</span>
+        <span class="n">compact</span><span class="o">-&gt;</span><span class="n">builder</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">status</span> <span class="o">=</span> <span class="n">FinishCompactionOutputFile</span><span class="p">(</span><span class="n">compact</span><span class="p">,</span> <span class="n">input</span><span class="p">);</span>
+      <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">status</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
+        <span class="k">break</span><span class="p">;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">// (6)
+</span><span class="c1"></span>    <span class="c1">// Handle key/value, add to state, etc.
+</span><span class="c1"></span>    <span class="kt">bool</span> <span class="n">drop</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+    <span class="c1">// ... ...
+</span><span class="c1"></span>
+    <span class="c1">// (7)
+</span><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">drop</span><span class="p">)</span> <span class="p">{</span>
+      <span class="c1">// Open output file if necessary
+</span><span class="c1"></span>      <span class="k">if</span> <span class="p">(</span><span class="n">compact</span><span class="o">-&gt;</span><span class="n">builder</span> <span class="o">==</span> <span class="k">nullptr</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="n">OpenCompactionOutputFile</span><span class="p">(</span><span class="n">compact</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">status</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
+          <span class="k">break</span><span class="p">;</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">compact</span><span class="o">-&gt;</span><span class="n">builder</span><span class="o">-&gt;</span><span class="n">NumEntries</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">compact</span><span class="o">-&gt;</span><span class="n">current_output</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">smallest</span><span class="p">.</span><span class="n">DecodeFrom</span><span class="p">(</span><span class="n">key</span><span class="p">);</span>
+      <span class="p">}</span>
+      <span class="n">compact</span><span class="o">-&gt;</span><span class="n">current_output</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">largest</span><span class="p">.</span><span class="n">DecodeFrom</span><span class="p">(</span><span class="n">key</span><span class="p">);</span>
+      <span class="n">compact</span><span class="o">-&gt;</span><span class="n">builder</span><span class="o">-&gt;</span><span class="n">Add</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">input</span><span class="o">-&gt;</span><span class="n">value</span><span class="p">());</span>
+
+      <span class="c1">// Close output file if it is big enough
+</span><span class="c1"></span>      <span class="k">if</span> <span class="p">(</span><span class="n">compact</span><span class="o">-&gt;</span><span class="n">builder</span><span class="o">-&gt;</span><span class="n">FileSize</span><span class="p">()</span> <span class="o">&gt;=</span>
+          <span class="n">compact</span><span class="o">-&gt;</span><span class="n">compaction</span><span class="o">-&gt;</span><span class="n">MaxOutputFileSize</span><span class="p">())</span> <span class="p">{</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="n">FinishCompactionOutputFile</span><span class="p">(</span><span class="n">compact</span><span class="p">,</span> <span class="n">input</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">status</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
+          <span class="k">break</span><span class="p">;</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+
+</code></pre></div><p>我们首先来看(4)、(5)、(7)。</p>
+<p>段(4)判断当前是否有需要Minor Compaction的Immutable MemTable，如果有则让出任务，先进行Minor Compaction（该过程需要加锁）。</p>
+<p>段(5)通过<code>ShouldStopBefore</code>方法估算当前SSTable大小，并判断其是否超过了<code>max_file_size</code>的限制，如果超过了则通过<code>FinishCompactionOutputFile</code>完整对当前SSTable的写入。</p>
+<p>段(6)会判断当前key/value是否保留，如果保留则将<code>drop</code>置为true。其判断规则在下文介绍。</p>
+<p>段(7)用来将需要保留的key/value加入到当前SSTable中。因为在段(5)中当前写入的SSTable可能已因文件过大而被关闭，所以这里需要在SSTable被关闭时通过<code>OpenCompactionOutputFIle</code>打开一个新的SSTable并为其分配新的编号。</p>
+<p>最后我们来看段(6)中判断key/value是否需要保留的实现：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">ParseInternalKey</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">ikey</span><span class="p">))</span> <span class="p">{</span>
+      <span class="c1">// Do not hide error keys
+</span><span class="c1"></span>      <span class="n">current_user_key</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span>
+      <span class="n">has_current_user_key</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+      <span class="n">last_sequence_for_key</span> <span class="o">=</span> <span class="n">kMaxSequenceNumber</span><span class="p">;</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">has_current_user_key</span> <span class="o">||</span>
+          <span class="n">user_comparator</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">Compare</span><span class="p">(</span><span class="n">ikey</span><span class="p">.</span><span class="n">user_key</span><span class="p">,</span> <span class="n">Slice</span><span class="p">(</span><span class="n">current_user_key</span><span class="p">))</span> <span class="o">!=</span>
+              <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// First occurrence of this user key
+</span><span class="c1"></span>        <span class="n">current_user_key</span><span class="p">.</span><span class="n">assign</span><span class="p">(</span><span class="n">ikey</span><span class="p">.</span><span class="n">user_key</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span> <span class="n">ikey</span><span class="p">.</span><span class="n">user_key</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
+        <span class="n">has_current_user_key</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+        <span class="n">last_sequence_for_key</span> <span class="o">=</span> <span class="n">kMaxSequenceNumber</span><span class="p">;</span>
+      <span class="p">}</span>
+
+      <span class="k">if</span> <span class="p">(</span><span class="n">last_sequence_for_key</span> <span class="o">&lt;=</span> <span class="n">compact</span><span class="o">-&gt;</span><span class="n">smallest_snapshot</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// Hidden by an newer entry for same user key
+</span><span class="c1"></span>        <span class="n">drop</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>  <span class="c1">// (A)
+</span><span class="c1"></span>      <span class="p">}</span> <span class="k">else</span> <span class="nf">if</span> <span class="p">(</span><span class="n">ikey</span><span class="p">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">kTypeDeletion</span> <span class="o">&amp;&amp;</span>
+                 <span class="n">ikey</span><span class="p">.</span><span class="n">sequence</span> <span class="o">&lt;=</span> <span class="n">compact</span><span class="o">-&gt;</span><span class="n">smallest_snapshot</span> <span class="o">&amp;&amp;</span>
+                 <span class="n">compact</span><span class="o">-&gt;</span><span class="n">compaction</span><span class="o">-&gt;</span><span class="n">IsBaseLevelForKey</span><span class="p">(</span><span class="n">ikey</span><span class="p">.</span><span class="n">user_key</span><span class="p">))</span> <span class="p">{</span>
+        <span class="c1">// For this user key:
+</span><span class="c1"></span>        <span class="c1">// (1) there is no data in higher levels
+</span><span class="c1"></span>        <span class="c1">// (2) data in lower levels will have larger sequence numbers
+</span><span class="c1"></span>        <span class="c1">// (3) data in layers that are being compacted here and have
+</span><span class="c1"></span>        <span class="c1">//     smaller sequence numbers will be dropped in the next
+</span><span class="c1"></span>        <span class="c1">//     few iterations of this loop (by rule (A) above).
+</span><span class="c1"></span>        <span class="c1">// Therefore this deletion marker is obsolete and can be dropped.
+</span><span class="c1"></span>        <span class="n">drop</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+      <span class="p">}</span>
+
+      <span class="n">last_sequence_for_key</span> <span class="o">=</span> <span class="n">ikey</span><span class="p">.</span><span class="n">sequence</span><span class="p">;</span>
+    <span class="p">}</span>
+
+</code></pre></div><p>段(6)中记录了当前key的UserKey的两个重要状态：</p>
+<ul>
+<li><code>has_current_user_key</code>：当前key的UserKey之前是否出现过。</li>
+<li><code>last_sequence_for_key</code>：当前key的UserKey的上一次出现时的SequenceNumber，如果该UserKey之前未出现过，则将其置为最大的SequenceNumber（<code>kMaxSequenceNumber</code>），以避免当前key的最新状态在小于需要保留的snapshot number时被丢弃。</li>
+</ul>
+<p>段(6)执行了如下流程：</p>
+<ol>
+<li>解析当前key/value，如果解析失败则跳过当前key/value。</li>
+<li>如果当前key/value解析成功，判断其UserKey是否未出现过，如果是则更新<code>has_current_user_key</code>和<code>last_sequence_for_key</code>的状态。</li>
+<li>判断当前是否丢弃当前key/value：
+<ol>
+<li>如果当前key的UserKey不是第一次出现，且其SequenceNumber小于保留的最小snapshot number，则丢弃该key/value。</li>
+<li>如果该key的InternalKey类型为<code>kTypeDeletion</code>、且其SequenceNumber小于需要保留的最小snapshot number，同时更高的level中不存在该key时，可以丢弃该key/value。</li>
+</ol>
+</li>
+</ol>
 <h3 id="44-compaction清理">4.4 Compaction清理</h3>
 <p><code>CleanupCompaction</code> -&gt; 内存
 <code>RemoveObsoleteFiles</code> -&gt; 文件</p>
-<h1 id="施工中--">施工中 &hellip; &hellip;</h1>
-<h2 id="x-minor-compaction">x. Minor Compaction</h2>
-<h2 id="x-major-compaction">x. Major Compaction</h2>
-<p>DBImpl::BackgroundCompaction</p>
-<p>DBImplCompactMemTable</p>
 <p>btw. Tier Compaction ( Tiering vs. Leveling )</p></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
