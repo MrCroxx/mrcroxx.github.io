@@ -5,16 +5,16 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="robots" content="noodp" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
-        <title>深入浅出LevelDB —— 0x08 Iterator [施工中] - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 0x08 Iterator [施工中]" />
+        <title>深入浅出LevelDB —— 0x08 Iterator - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 0x08 Iterator" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/8-iterator/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/8-iterator/leveldb.jpg"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2021-03-11T11:17:19&#43;08:00" />
-<meta property="article:modified_time" content="2021-03-14T11:01:13&#43;08:00" />
+<meta property="article:modified_time" content="2021-03-15T15:17:49&#43;08:00" />
 
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/8-iterator/leveldb.jpg"/>
-<meta name="twitter:title" content="深入浅出LevelDB —— 0x08 Iterator [施工中]"/>
+<meta name="twitter:title" content="深入浅出LevelDB —— 0x08 Iterator"/>
 <meta name="twitter:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。"/>
 <meta name="application-name" content="叉鸽 MrCroxx 的博客">
 <meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
@@ -23,7 +23,7 @@
     {
         "@context": "http://schema.org",
         "@type": "BlogPosting",
-        "headline": "深入浅出LevelDB —— 0x08 Iterator [施工中]",
+        "headline": "深入浅出LevelDB —— 0x08 Iterator",
         "inLanguage": "zh-CN",
         "mainEntityOfPage": {
             "@type": "WebPage",
@@ -33,8 +33,8 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/8-iterator\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  851 ,
-        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/8-iterator\/","datePublished": "2021-03-11T11:17:19+08:00","dateModified": "2021-03-14T11:01:13+08:00","publisher": {
+                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  3900 ,
+        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/8-iterator\/","datePublished": "2021-03-11T11:17:19+08:00","dateModified": "2021-03-15T15:17:49+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
                 "@type": "Person",
@@ -108,10 +108,10 @@
                 <div class="container"><div class="toc" id="toc-auto">
             <h2 class="toc-title">目录</h2>
             <div class="toc-content" id="toc-content-auto"></div>
-        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x08 Iterator [施工中]</h1><div class="post-meta">
+        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x08 Iterator</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-11">2021-03-11</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 851 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 2 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-11">2021-03-11</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 3900 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 8 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
@@ -128,7 +128,18 @@
   <ul>
     <li><a href="#0-引言">0. 引言</a></li>
     <li><a href="#1-iterator接口">1. Iterator接口</a></li>
-    <li><a href="#2-iterator分类">2. Iterator分类</a></li>
+    <li><a href="#2-iterators">2. Iterators</a>
+      <ul>
+        <li><a href="#21-基本集合的迭代器">2.1 基本集合的迭代器</a></li>
+        <li><a href="#22-复杂集合的迭代器">2.2 复杂集合的迭代器</a>
+          <ul>
+            <li><a href="#221-twoleveliterator">2.2.1 TwoLevelIterator</a></li>
+            <li><a href="#222-mergingiterator">2.2.2 MergingIterator</a></li>
+          </ul>
+        </li>
+        <li><a href="#223-通过cache优化twoleveliterator与mergingiterator">2.2.3 通过cache优化TwoLevelIterator与MergingIterator</a></li>
+      </ul>
+    </li>
   </ul>
 </nav></div>
             </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
@@ -202,7 +213,8 @@
 <span class="p">}</span>
 
 </code></pre></div><p>LevelDB中几乎所有的迭代器，都实现了<code>Valid</code>、<code>SeekToFirst</code>、<code>SeekToLast</code>、<code>Seek</code>、<code>Next</code>、<code>Prev</code>、<code>key</code>、<code>value</code>等功能。LevelDB对外提供的Iterator接口还支持注册若干个迭代器销毁时的回调函数，以便用户显式地控制一些资源的回收。</p>
-<h2 id="2-iterator分类">2. Iterator分类</h2>
+<h2 id="2-iterators">2. Iterators</h2>
+<p>LevelDB中，既有直接在集合上的基本迭代器，也有对一个迭代器进行封装来解析更复杂数据的迭代器，还有多个迭代器组成的组合迭代器，关系较为复杂。下图给出了LevelDB中数据结构与相应的迭代器的总览。其中绿的方框为数据结构，与之相连的黄色的方框为该数据结构上的迭代器。迭代器括号中指出了其本质是什么迭代器（该图并非类图，也没有严格标注类型）：</p>
 <p><figure><a class="lightgallery" href="/posts/code-reading/leveldb-made-simple/8-iterator/assets/iterator-system.svg" title="LevelDB Iterators" data-thumbnail="/posts/code-reading/leveldb-made-simple/8-iterator/assets/iterator-system.svg" data-sub-html="<h2>LevelDB Iterators</h2><p>LevelDB Iterators</p>">
         <img
             class="lazyload"
@@ -212,11 +224,193 @@
             data-sizes="auto"
             alt="/posts/code-reading/leveldb-made-simple/8-iterator/assets/iterator-system.svg" />
     </a><figcaption class="image-caption">LevelDB Iterators</figcaption>
-    </figure></p></div><div class="post-footer" id="post-footer">
+    </figure></p>
+<p>因为旨在梳理LevelDB中各种迭代器的功能与使用场景，因此不会分析其具体实现。下面，笔者将按照基本迭代器到组合迭代器的顺序介绍。</p>
+<h3 id="21-基本集合的迭代器">2.1 基本集合的迭代器</h3>
+<p>本文提到的“基本迭代器”指直接在集合类上实现的迭代器，是用来顺序访问或随机查找集合类中数据的游标结构。LevelDB中每个重要的集合类上几乎都实现了相应的迭代器。下表给出了有关这些迭代器的信息：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">Collection<div style='width:8em'></div></th>
+<th style="text-align:center">Target<div style='width:16em'></div></th>
+<th style="text-align:left">Creator<div style='width:60em'></div></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center"><code>SkipList</code></td>
+<td style="text-align:center">SkipList中的Node</td>
+<td style="text-align:left"><code>SkipList</code>::<code>Iterator(const SkipList* list)</code></td>
+</tr>
+<tr>
+<td style="text-align:center"><code>MemTable</code></td>
+<td style="text-align:center">MemTable中的key/value</td>
+<td style="text-align:left"><code>MemTable</code>.<code>Iterator* NewIterator();</code></td>
+</tr>
+<tr>
+<td style="text-align:center"><code>Block</code></td>
+<td style="text-align:center">Block中的Entry（按restart拼接）</td>
+<td style="text-align:left"><code>Block</code>.<code>Iterator* NewIterator(const Comparator* comparator)</code></td>
+</tr>
+<tr>
+<td style="text-align:center"><code>FileMetaData*</code></td>
+<td style="text-align:center">每层SSTable的编号（按key顺序）</td>
+<td style="text-align:left"><code>Version</code>::<code>LevelFileNumIterator(const InternalKeyComparator&amp; icmp, const std::vector&lt;FileMetaData*&gt;* flist)</code></td>
+</tr>
+</tbody>
+</table>
+<p>其中，<code>MemTable</code>的iterator是对<code>SkipList</code>的iterator的封装，因为<code>SkipList</code>的iterator只需要关注<code>Node</code>即可，而<code>MemTable</code>的iterator需要关注<code>Node</code>中保存的key/value。这种封装在LevelDB的iterator中还有，下文不再赘述。</p>
+<h3 id="22-复杂集合的迭代器">2.2 复杂集合的迭代器</h3>
+<p>了解的基本集合的迭代器之后，我们来学习LevelDB中复杂集合的迭代器实现。</p>
+<p>如果直接在复杂集合上实现迭代器，其逻辑会非常复杂且难以复用。为了处理这一问题，LevelDB的方案是：通过“组合迭代器”，来讲多个迭代器组合在一起，来实现复杂的迭代器。LevelDB设计了两个组合迭代器<code>TwoLevelIterator</code>与<code>MergingIterator</code>。</p>
+<h4 id="221-twoleveliterator">2.2.1 TwoLevelIterator</h4>
+<p><code>TwoLevelIterator</code>在LevelDB中常用于有索引结构的二级查询。这里简单看一下创建<code>TwoLevelIterator</code>的接口：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="c1">// Return a new two level iterator.  A two-level iterator contains an
+</span><span class="c1">// index iterator whose values point to a sequence of blocks where
+</span><span class="c1">// each block is itself a sequence of key,value pairs.  The returned
+</span><span class="c1">// two-level iterator yields the concatenation of all key/value pairs
+</span><span class="c1">// in the sequence of blocks.  Takes ownership of &#34;index_iter&#34; and
+</span><span class="c1">// will delete it when no longer needed.
+</span><span class="c1">//
+</span><span class="c1">// Uses a supplied function to convert an index_iter value into
+</span><span class="c1">// an iterator over the contents of the corresponding block.
+</span><span class="c1"></span><span class="n">Iterator</span><span class="o">*</span> <span class="nf">NewTwoLevelIterator</span><span class="p">(</span>
+    <span class="n">Iterator</span><span class="o">*</span> <span class="n">index_iter</span><span class="p">,</span>
+    <span class="n">Iterator</span><span class="o">*</span> <span class="p">(</span><span class="o">*</span><span class="n">block_function</span><span class="p">)(</span><span class="kt">void</span><span class="o">*</span> <span class="n">arg</span><span class="p">,</span> <span class="k">const</span> <span class="n">ReadOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span>
+                                <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">index_value</span><span class="p">),</span>
+    <span class="kt">void</span><span class="o">*</span> <span class="n">arg</span><span class="p">,</span> <span class="k">const</span> <span class="n">ReadOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">);</span>
+
+<span class="p">}</span> 
+
+</code></pre></div><p>从创建<code>TwoLevelIterator</code>的接口可以看出，<code>TwoLevelIterator</code>可以将index的iterator和data的iterator组合到一起。在seek时，<code>TwoLevelIterator</code>会先通过index iterator，seek到相应的index处，并将index的value作为<code>arg</code>传给data iterator（<code>block_funciton</code>），通过data iterator来访问真正的数据。</p>
+<p>如果从key顺序的角度来看<code>TwoLevelIterator</code>，其需要index有序、每个index下的data有序、所有index下的所有data全局有序。即<code>TwoLevelIterator</code>实际上是一个建立在多级查找结构上的iterator。LevelDB中主要有两个符合该结构的组件：</p>
+<p>其一是level&gt;0的SSTable，其每层SSTable可以按照key排序，每个SSTable内也按照key排序，且每层SSTable中的key没有overlap且全局有序。因此LevelDB中Version的Comcaterating Iterator实际上就是一个<code>TwoLevelIterator</code>，其第一级iterator是<code>LevelFileNumIterator</code>，该iterator按照key的顺序遍历每层SSTable；其第二级iterator是Table Iterator，该iterator可以按照key的顺序遍历SSTable中的key/value。Table Iterator本身也是一个<code>TwoLevelIterator</code>，这也是LevelDB中第二个符合该结构的部分。</p>
+<p>其二即为SSTable内部的index与data。Table Iterator作为<code>TwoLevelIterator</code>，其第一级iterator遍历SSTable中的index，第二级iterator遍历index相应的data block中的key/value。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">Collection<div style='width:8em'></div></th>
+<th style="text-align:center">Iterator[0]<div style='width:12em'></div></th>
+<th style="text-align:center">Iterator[1]<div style='width:12em'></div></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center"><code>SSTable</code></td>
+<td style="text-align:center">IndexBlock的BlockIterator</td>
+<td style="text-align:center">DataBlock的BlockIterator</td>
+</tr>
+<tr>
+<td style="text-align:center"><code>SSTable*</code> (level&gt;0)</td>
+<td style="text-align:center">LevelFileNumIterator</td>
+<td style="text-align:center">Table Iterator</td>
+</tr>
+</tbody>
+</table>
+<p>然而，如果每个iterator中的key有序，但是所有iterator中的所有key全局无序，就不能使用<code>TwoLevelIterator</code>来组装多个iterator。此时，需要一种能够“归并”多路有序iterator的结构。下一节中，笔者将介绍这一结构。</p>
+<h4 id="222-mergingiterator">2.2.2 MergingIterator</h4>
+<p>正如上一节中描述的情形，如果每个iterator中的key有序，但是所有iterator中的所有key全局无序，此时，需要一种能够“归并”多路有序iterator的结构。这一结构即为<code>MergingIterator</code>。</p>
+<p><code>MergingIterator</code>的creator方法如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="c1">// Return an iterator that provided the union of the data in
+</span><span class="c1">// children[0,n-1].  Takes ownership of the child iterators and
+</span><span class="c1">// will delete them when the result iterator is deleted.
+</span><span class="c1">//
+</span><span class="c1">// The result does no duplicate suppression.  I.e., if a particular
+</span><span class="c1">// key is present in K child iterators, it will be yielded K times.
+</span><span class="c1">//
+</span><span class="c1">// REQUIRES: n &gt;= 0
+</span><span class="c1"></span><span class="n">Iterator</span><span class="o">*</span> <span class="nf">NewMergingIterator</span><span class="p">(</span><span class="k">const</span> <span class="n">Comparator</span><span class="o">*</span> <span class="n">comparator</span><span class="p">,</span> <span class="n">Iterator</span><span class="o">**</span> <span class="n">children</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n</span><span class="p">);</span>
+
+</code></pre></div><p>在创建<code>MergingIterator</code>时，需要传入待组合的<code>Iterator</code>数组，及用来比较每个<code>Iterator</code>中的key的<code>Comparator</code>。在通过<code>MerginIterator</code>遍历所有iterator的key时，<code>MergingIterator</code>会比较其中所有iterator的key，并按照顺序选取最小的遍历；在所有iterator的空间中seek时，<code>MergingIterator</code>会调用所有iterator的<code>Seek</code>方法，然后比较所有iterator的seek结果，按顺序选取最小的返回。</p>
+<h3 id="223-通过cache优化twoleveliterator与mergingiterator">2.2.3 通过cache优化TwoLevelIterator与MergingIterator</h3>
+<p>无论是<code>TwoLevelIterator</code>还是<code>MergingIterator</code>，在使用时都反复需要获取其中iterator是否为valid或获取其value。比如在<code>MergingIterator</code>获取下一个key时，其需要比较所有iterator的key，但最终只会修改一个iterator的位置。</p>
+<p>为了减少这一开销，LevelDB在<code>TwoLevelIterator</code>和<code>MergingIterator</code>中，通过<code>IteratorWrapper</code>对其组合的iterator进行了封装。<code>IteratorWrapper</code>会缓存iterator当前位置的valid状态和key，只有在iterator的位置改变时才会更新。这样，当访问<code>TwoLevelIterator</code>和<code>MergingIterator</code>时，不需要每次都访问到最下层的iterator，只需要访问缓存状态即可。</p>
+<p><code>IteratorWrapper</code>的实现较为简单，这里仅贴出其实现，不再赘述。</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="c1">// A internal wrapper class with an interface similar to Iterator that
+</span><span class="c1">// caches the valid() and key() results for an underlying iterator.
+</span><span class="c1">// This can help avoid virtual function calls and also gives better
+</span><span class="c1">// cache locality.
+</span><span class="c1"></span><span class="k">class</span> <span class="nc">IteratorWrapper</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">IteratorWrapper</span><span class="p">()</span> <span class="o">:</span> <span class="n">iter_</span><span class="p">(</span><span class="k">nullptr</span><span class="p">),</span> <span class="n">valid_</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span> <span class="p">{}</span>
+  <span class="k">explicit</span> <span class="nf">IteratorWrapper</span><span class="p">(</span><span class="n">Iterator</span><span class="o">*</span> <span class="n">iter</span><span class="p">)</span> <span class="o">:</span> <span class="n">iter_</span><span class="p">(</span><span class="k">nullptr</span><span class="p">)</span> <span class="p">{</span> <span class="n">Set</span><span class="p">(</span><span class="n">iter</span><span class="p">);</span> <span class="p">}</span>
+  <span class="o">~</span><span class="n">IteratorWrapper</span><span class="p">()</span> <span class="p">{</span> <span class="k">delete</span> <span class="n">iter_</span><span class="p">;</span> <span class="p">}</span>
+  <span class="n">Iterator</span><span class="o">*</span> <span class="nf">iter</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">iter_</span><span class="p">;</span> <span class="p">}</span>
+
+  <span class="c1">// Takes ownership of &#34;iter&#34; and will delete it when destroyed, or
+</span><span class="c1"></span>  <span class="c1">// when Set() is invoked again.
+</span><span class="c1"></span>  <span class="kt">void</span> <span class="nf">Set</span><span class="p">(</span><span class="n">Iterator</span><span class="o">*</span> <span class="n">iter</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">delete</span> <span class="n">iter_</span><span class="p">;</span>
+    <span class="n">iter_</span> <span class="o">=</span> <span class="n">iter</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">iter_</span> <span class="o">==</span> <span class="k">nullptr</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">valid_</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="n">Update</span><span class="p">();</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="c1">// Iterator interface methods
+</span><span class="c1"></span>  <span class="kt">bool</span> <span class="nf">Valid</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">valid_</span><span class="p">;</span> <span class="p">}</span>
+  <span class="n">Slice</span> <span class="nf">key</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="n">assert</span><span class="p">(</span><span class="n">Valid</span><span class="p">());</span>
+    <span class="k">return</span> <span class="n">key_</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="n">Slice</span> <span class="nf">value</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="n">assert</span><span class="p">(</span><span class="n">Valid</span><span class="p">());</span>
+    <span class="k">return</span> <span class="n">iter_</span><span class="o">-&gt;</span><span class="n">value</span><span class="p">();</span>
+  <span class="p">}</span>
+  <span class="c1">// Methods below require iter() != nullptr
+</span><span class="c1"></span>  <span class="n">Status</span> <span class="nf">status</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="n">assert</span><span class="p">(</span><span class="n">iter_</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">iter_</span><span class="o">-&gt;</span><span class="n">status</span><span class="p">();</span>
+  <span class="p">}</span>
+  <span class="kt">void</span> <span class="nf">Next</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">assert</span><span class="p">(</span><span class="n">iter_</span><span class="p">);</span>
+    <span class="n">iter_</span><span class="o">-&gt;</span><span class="n">Next</span><span class="p">();</span>
+    <span class="n">Update</span><span class="p">();</span>
+  <span class="p">}</span>
+  <span class="kt">void</span> <span class="nf">Prev</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">assert</span><span class="p">(</span><span class="n">iter_</span><span class="p">);</span>
+    <span class="n">iter_</span><span class="o">-&gt;</span><span class="n">Prev</span><span class="p">();</span>
+    <span class="n">Update</span><span class="p">();</span>
+  <span class="p">}</span>
+  <span class="kt">void</span> <span class="nf">Seek</span><span class="p">(</span><span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">k</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">assert</span><span class="p">(</span><span class="n">iter_</span><span class="p">);</span>
+    <span class="n">iter_</span><span class="o">-&gt;</span><span class="n">Seek</span><span class="p">(</span><span class="n">k</span><span class="p">);</span>
+    <span class="n">Update</span><span class="p">();</span>
+  <span class="p">}</span>
+  <span class="kt">void</span> <span class="nf">SeekToFirst</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">assert</span><span class="p">(</span><span class="n">iter_</span><span class="p">);</span>
+    <span class="n">iter_</span><span class="o">-&gt;</span><span class="n">SeekToFirst</span><span class="p">();</span>
+    <span class="n">Update</span><span class="p">();</span>
+  <span class="p">}</span>
+  <span class="kt">void</span> <span class="nf">SeekToLast</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">assert</span><span class="p">(</span><span class="n">iter_</span><span class="p">);</span>
+    <span class="n">iter_</span><span class="o">-&gt;</span><span class="n">SeekToLast</span><span class="p">();</span>
+    <span class="n">Update</span><span class="p">();</span>
+  <span class="p">}</span>
+
+ <span class="k">private</span><span class="o">:</span>
+  <span class="kt">void</span> <span class="n">Update</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">valid_</span> <span class="o">=</span> <span class="n">iter_</span><span class="o">-&gt;</span><span class="n">Valid</span><span class="p">();</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">valid_</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">key_</span> <span class="o">=</span> <span class="n">iter_</span><span class="o">-&gt;</span><span class="n">key</span><span class="p">();</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="n">Iterator</span><span class="o">*</span> <span class="n">iter_</span><span class="p">;</span>
+  <span class="kt">bool</span> <span class="n">valid_</span><span class="p">;</span>
+  <span class="n">Slice</span> <span class="n">key_</span><span class="p">;</span>
+<span class="p">};</span>
+
+</code></pre></div></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
-                <span>更新于 2021-03-14</span>
+                <span>更新于 2021-03-15</span>
             </div>
             <div class="post-info-license"></div>
         </div>
