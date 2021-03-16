@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="robots" content="noodp" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
-        <title>深入浅出LevelDB —— 0x10 Read &amp; Write [施工中] - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 0x10 Read &amp; Write [施工中]" />
+        <title>深入浅出LevelDB —— 0x10 Read &amp; Write - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 0x10 Read &amp; Write" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/10-read-write/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/10-read-write/leveldb.jpg"/><meta property="article:section" content="posts" />
@@ -14,7 +14,7 @@
 
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/10-read-write/leveldb.jpg"/>
-<meta name="twitter:title" content="深入浅出LevelDB —— 0x10 Read &amp; Write [施工中]"/>
+<meta name="twitter:title" content="深入浅出LevelDB —— 0x10 Read &amp; Write"/>
 <meta name="twitter:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。"/>
 <meta name="application-name" content="叉鸽 MrCroxx 的博客">
 <meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
@@ -23,7 +23,7 @@
     {
         "@context": "http://schema.org",
         "@type": "BlogPosting",
-        "headline": "深入浅出LevelDB —— 0x10 Read \u0026 Write [施工中]",
+        "headline": "深入浅出LevelDB —— 0x10 Read \u0026 Write",
         "inLanguage": "zh-CN",
         "mainEntityOfPage": {
             "@type": "WebPage",
@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/10-read-write\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  3861 ,
+                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  5641 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/10-read-write\/","datePublished": "2021-03-16T12:49:45+08:00","dateModified": "2021-03-16T12:49:48+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -108,10 +108,10 @@
                 <div class="container"><div class="toc" id="toc-auto">
             <h2 class="toc-title">目录</h2>
             <div class="toc-content" id="toc-content-auto"></div>
-        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x10 Read &amp; Write [施工中]</h1><div class="post-meta">
+        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x10 Read &amp; Write</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-16">2021-03-16</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 3861 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 8 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-16">2021-03-16</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 5641 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 12 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
@@ -338,7 +338,192 @@
 <span class="p">}</span>
 
 </code></pre></div><h3 id="23-get">2.3 Get</h3>
-<h1 id="施工中--">施工中 &hellip; &hellip;</h1></div><div class="post-footer" id="post-footer">
+<p>本节笔者将分段介绍并分析<code>DBImpl::Get</code>方法的设计与实现。虽然<code>Get</code>方法不会修改LevelDB中的数据，但是为了避免在读取期间MemTable、Immutable MemTable或Snapshot被释放，因此<code>Get</code>方法在真正读取数据前，还是需要通过锁来保护其所需的元数据。</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="n">Status</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">Get</span><span class="p">(</span><span class="k">const</span> <span class="n">ReadOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span>
+                   <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">*</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
+
+  <span class="c1">// (1)                     
+</span><span class="c1"></span>  <span class="n">Status</span> <span class="n">s</span><span class="p">;</span>
+  <span class="n">MutexLock</span> <span class="nf">l</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mutex_</span><span class="p">);</span>
+  <span class="n">SequenceNumber</span> <span class="n">snapshot</span><span class="p">;</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">snapshot</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">snapshot</span> <span class="o">=</span>
+        <span class="k">static_cast</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">SnapshotImpl</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">snapshot</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">sequence_number</span><span class="p">();</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="n">snapshot</span> <span class="o">=</span> <span class="n">versions_</span><span class="o">-&gt;</span><span class="n">LastSequence</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="n">MemTable</span><span class="o">*</span> <span class="n">mem</span> <span class="o">=</span> <span class="n">mem_</span><span class="p">;</span>
+  <span class="n">MemTable</span><span class="o">*</span> <span class="n">imm</span> <span class="o">=</span> <span class="n">imm_</span><span class="p">;</span>
+  <span class="n">Version</span><span class="o">*</span> <span class="n">current</span> <span class="o">=</span> <span class="n">versions_</span><span class="o">-&gt;</span><span class="n">current</span><span class="p">();</span>
+  <span class="n">mem</span><span class="o">-&gt;</span><span class="n">Ref</span><span class="p">();</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">imm</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">)</span> <span class="n">imm</span><span class="o">-&gt;</span><span class="n">Ref</span><span class="p">();</span>
+  <span class="n">current</span><span class="o">-&gt;</span><span class="n">Ref</span><span class="p">();</span>
+
+  <span class="kt">bool</span> <span class="n">have_stat_update</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+  <span class="n">Version</span><span class="o">::</span><span class="n">GetStats</span> <span class="n">stats</span><span class="p">;</span>
+
+  <span class="c1">// (2)
+</span><span class="c1"></span>  <span class="c1">// Unlock while reading from files and memtables
+</span><span class="c1"></span>  <span class="p">{</span>
+    <span class="n">mutex_</span><span class="p">.</span><span class="n">Unlock</span><span class="p">();</span>
+    <span class="c1">// First look in the memtable, then in the immutable memtable (if any).
+</span><span class="c1"></span>    <span class="n">LookupKey</span> <span class="nf">lkey</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">snapshot</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">mem</span><span class="o">-&gt;</span><span class="n">Get</span><span class="p">(</span><span class="n">lkey</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">s</span><span class="p">))</span> <span class="p">{</span>
+      <span class="c1">// Done
+</span><span class="c1"></span>    <span class="p">}</span> <span class="k">else</span> <span class="nf">if</span> <span class="p">(</span><span class="n">imm</span> <span class="o">!=</span> <span class="k">nullptr</span> <span class="o">&amp;&amp;</span> <span class="n">imm</span><span class="o">-&gt;</span><span class="n">Get</span><span class="p">(</span><span class="n">lkey</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">s</span><span class="p">))</span> <span class="p">{</span>
+      <span class="c1">// Done
+</span><span class="c1"></span>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="n">s</span> <span class="o">=</span> <span class="n">current</span><span class="o">-&gt;</span><span class="n">Get</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">lkey</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">stats</span><span class="p">);</span>
+      <span class="n">have_stat_update</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="n">mutex_</span><span class="p">.</span><span class="n">Lock</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="c1">// (3)
+</span><span class="c1"></span>  <span class="k">if</span> <span class="p">(</span><span class="n">have_stat_update</span> <span class="o">&amp;&amp;</span> <span class="n">current</span><span class="o">-&gt;</span><span class="n">UpdateStats</span><span class="p">(</span><span class="n">stats</span><span class="p">))</span> <span class="p">{</span>
+    <span class="n">MaybeScheduleCompaction</span><span class="p">();</span>
+  <span class="p">}</span>
+  <span class="n">mem</span><span class="o">-&gt;</span><span class="n">Unref</span><span class="p">();</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">imm</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">)</span> <span class="n">imm</span><span class="o">-&gt;</span><span class="n">Unref</span><span class="p">();</span>
+  <span class="n">current</span><span class="o">-&gt;</span><span class="n">Unref</span><span class="p">();</span>
+  <span class="k">return</span> <span class="n">s</span><span class="p">;</span>
+<span class="p">}</span>
+
+</code></pre></div><p>我们先来看<code>Get</code>方法持有锁时，即段(1)和(3)的操作：</p>
+<p>在段(1)中，<code>Get</code>方法会根据<code>ReadOptions</code>获取其需要读取的Snapshot的SequenceNumber，对于非Snapshot Read，<code>Get</code>方法会将当前最新的SequenceNumber作为本次查找可见的最大SequenceNumber。随后，<code>Get</code>方法保存了此时MemTable和Immutable MemTable的引用及current Version，同时增加这些对象的引用计数避免其在读取阶段被其它线程回收。</p>
+<p>在段(3)中，<code>Get</code>方法按需更新current Version的统计量，并按需尝试触发Compaction。最后释放之前增加的引用计数，并返回查询状态。</p>
+<p><code>Get</code>的段(2)是真正执行查找的部分，因为当前线程已经持有了所需对象的引用，因此不需要再加锁。在这一部分中，<code>Get</code>方法首先根据caller传入的UserKey和Snapshot Read的SequenceNumber构造LookupKey。然后一次按照MemTable-&gt;Immutable MemTable-&gt;SSTable的顺序查找，如果中途找到所需key/value，则不需要继续查找。</p>
+<p>在MemTable和Immutable MemTable上的查找，都是在<code>SkipList</code>上的查找，这里不再赘述。下面我们关注一下在SSTable中查找的实现。</p>
+<p>在SSTable中查找给定UserKey是通过current Version的<code>Version::Get</code>方法实现的：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="n">Status</span> <span class="n">Version</span><span class="o">::</span><span class="n">Get</span><span class="p">(</span><span class="k">const</span> <span class="n">ReadOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span> <span class="k">const</span> <span class="n">LookupKey</span><span class="o">&amp;</span> <span class="n">k</span><span class="p">,</span>
+                    <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">*</span> <span class="n">value</span><span class="p">,</span> <span class="n">GetStats</span><span class="o">*</span> <span class="n">stats</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">stats</span><span class="o">-&gt;</span><span class="n">seek_file</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">;</span>
+  <span class="n">stats</span><span class="o">-&gt;</span><span class="n">seek_file_level</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+
+  <span class="k">struct</span> <span class="nc">State</span> <span class="p">{</span>
+    <span class="n">Saver</span> <span class="n">saver</span><span class="p">;</span>
+    <span class="n">GetStats</span><span class="o">*</span> <span class="n">stats</span><span class="p">;</span>
+    <span class="k">const</span> <span class="n">ReadOptions</span><span class="o">*</span> <span class="n">options</span><span class="p">;</span>
+    <span class="n">Slice</span> <span class="n">ikey</span><span class="p">;</span>
+    <span class="n">FileMetaData</span><span class="o">*</span> <span class="n">last_file_read</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">last_file_read_level</span><span class="p">;</span>
+
+    <span class="n">VersionSet</span><span class="o">*</span> <span class="n">vset</span><span class="p">;</span>
+    <span class="n">Status</span> <span class="n">s</span><span class="p">;</span>
+    <span class="kt">bool</span> <span class="n">found</span><span class="p">;</span>
+
+    <span class="k">static</span> <span class="kt">bool</span> <span class="nf">Match</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span> <span class="n">arg</span><span class="p">,</span> <span class="kt">int</span> <span class="n">level</span><span class="p">,</span> <span class="n">FileMetaData</span><span class="o">*</span> <span class="n">f</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">State</span><span class="o">*</span> <span class="n">state</span> <span class="o">=</span> <span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="n">State</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">arg</span><span class="p">);</span>
+
+      <span class="k">if</span> <span class="p">(</span><span class="n">state</span><span class="o">-&gt;</span><span class="n">stats</span><span class="o">-&gt;</span><span class="n">seek_file</span> <span class="o">==</span> <span class="k">nullptr</span> <span class="o">&amp;&amp;</span>
+          <span class="n">state</span><span class="o">-&gt;</span><span class="n">last_file_read</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// We have had more than one seek for this read.  Charge the 1st file.
+</span><span class="c1"></span>        <span class="n">state</span><span class="o">-&gt;</span><span class="n">stats</span><span class="o">-&gt;</span><span class="n">seek_file</span> <span class="o">=</span> <span class="n">state</span><span class="o">-&gt;</span><span class="n">last_file_read</span><span class="p">;</span>
+        <span class="n">state</span><span class="o">-&gt;</span><span class="n">stats</span><span class="o">-&gt;</span><span class="n">seek_file_level</span> <span class="o">=</span> <span class="n">state</span><span class="o">-&gt;</span><span class="n">last_file_read_level</span><span class="p">;</span>
+      <span class="p">}</span>
+
+      <span class="n">state</span><span class="o">-&gt;</span><span class="n">last_file_read</span> <span class="o">=</span> <span class="n">f</span><span class="p">;</span>
+      <span class="n">state</span><span class="o">-&gt;</span><span class="n">last_file_read_level</span> <span class="o">=</span> <span class="n">level</span><span class="p">;</span>
+
+      <span class="n">state</span><span class="o">-&gt;</span><span class="n">s</span> <span class="o">=</span> <span class="n">state</span><span class="o">-&gt;</span><span class="n">vset</span><span class="o">-&gt;</span><span class="n">table_cache_</span><span class="o">-&gt;</span><span class="n">Get</span><span class="p">(</span><span class="o">*</span><span class="n">state</span><span class="o">-&gt;</span><span class="n">options</span><span class="p">,</span> <span class="n">f</span><span class="o">-&gt;</span><span class="n">number</span><span class="p">,</span>
+                                                <span class="n">f</span><span class="o">-&gt;</span><span class="n">file_size</span><span class="p">,</span> <span class="n">state</span><span class="o">-&gt;</span><span class="n">ikey</span><span class="p">,</span>
+                                                <span class="o">&amp;</span><span class="n">state</span><span class="o">-&gt;</span><span class="n">saver</span><span class="p">,</span> <span class="n">SaveValue</span><span class="p">);</span>
+      <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">state</span><span class="o">-&gt;</span><span class="n">s</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
+        <span class="n">state</span><span class="o">-&gt;</span><span class="n">found</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+        <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+      <span class="p">}</span>
+      <span class="k">switch</span> <span class="p">(</span><span class="n">state</span><span class="o">-&gt;</span><span class="n">saver</span><span class="p">.</span><span class="n">state</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="nl">kNotFound</span><span class="p">:</span>
+          <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>  <span class="c1">// Keep searching in other files
+</span><span class="c1"></span>        <span class="k">case</span> <span class="nl">kFound</span><span class="p">:</span>
+          <span class="n">state</span><span class="o">-&gt;</span><span class="n">found</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+          <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+        <span class="k">case</span> <span class="nl">kDeleted</span><span class="p">:</span>
+          <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+        <span class="k">case</span> <span class="nl">kCorrupt</span><span class="p">:</span>
+          <span class="n">state</span><span class="o">-&gt;</span><span class="n">s</span> <span class="o">=</span>
+              <span class="n">Status</span><span class="o">::</span><span class="n">Corruption</span><span class="p">(</span><span class="s">&#34;corrupted key for &#34;</span><span class="p">,</span> <span class="n">state</span><span class="o">-&gt;</span><span class="n">saver</span><span class="p">.</span><span class="n">user_key</span><span class="p">);</span>
+          <span class="n">state</span><span class="o">-&gt;</span><span class="n">found</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+          <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+      <span class="p">}</span>
+
+      <span class="c1">// Not reached. Added to avoid false compilation warnings of
+</span><span class="c1"></span>      <span class="c1">// &#34;control reaches end of non-void function&#34;.
+</span><span class="c1"></span>      <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">};</span>
+
+  <span class="n">State</span> <span class="n">state</span><span class="p">;</span>
+  <span class="n">state</span><span class="p">.</span><span class="n">found</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+  <span class="n">state</span><span class="p">.</span><span class="n">stats</span> <span class="o">=</span> <span class="n">stats</span><span class="p">;</span>
+  <span class="n">state</span><span class="p">.</span><span class="n">last_file_read</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">;</span>
+  <span class="n">state</span><span class="p">.</span><span class="n">last_file_read_level</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+
+  <span class="n">state</span><span class="p">.</span><span class="n">options</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">options</span><span class="p">;</span>
+  <span class="n">state</span><span class="p">.</span><span class="n">ikey</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">internal_key</span><span class="p">();</span>
+  <span class="n">state</span><span class="p">.</span><span class="n">vset</span> <span class="o">=</span> <span class="n">vset_</span><span class="p">;</span>
+
+  <span class="n">state</span><span class="p">.</span><span class="n">saver</span><span class="p">.</span><span class="n">state</span> <span class="o">=</span> <span class="n">kNotFound</span><span class="p">;</span>
+  <span class="n">state</span><span class="p">.</span><span class="n">saver</span><span class="p">.</span><span class="n">ucmp</span> <span class="o">=</span> <span class="n">vset_</span><span class="o">-&gt;</span><span class="n">icmp_</span><span class="p">.</span><span class="n">user_comparator</span><span class="p">();</span>
+  <span class="n">state</span><span class="p">.</span><span class="n">saver</span><span class="p">.</span><span class="n">user_key</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">user_key</span><span class="p">();</span>
+  <span class="n">state</span><span class="p">.</span><span class="n">saver</span><span class="p">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="p">;</span>
+
+  <span class="n">ForEachOverlapping</span><span class="p">(</span><span class="n">state</span><span class="p">.</span><span class="n">saver</span><span class="p">.</span><span class="n">user_key</span><span class="p">,</span> <span class="n">state</span><span class="p">.</span><span class="n">ikey</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">state</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">State</span><span class="o">::</span><span class="n">Match</span><span class="p">);</span>
+
+  <span class="k">return</span> <span class="n">state</span><span class="p">.</span><span class="n">found</span> <span class="o">?</span> <span class="n">state</span><span class="p">.</span><span class="nl">s</span> <span class="p">:</span> <span class="n">Status</span><span class="o">::</span><span class="n">NotFound</span><span class="p">(</span><span class="n">Slice</span><span class="p">());</span>
+<span class="p">}</span>
+
+</code></pre></div><p>在介绍LevelDB中Compaction的实现时已经介绍过了<code>Match</code>方法，介绍过<code>Match</code>方法判断需要Seek Comapction的部分，而<code>Match</code>方法在查找SSTable时，是在TableCache上查找的。关于TableCache的部分，本系列也在<a href="posts/code-reading/leveldb-made-simple/7-cache/" rel="">深入浅出LevelDB —— 0x07 Cache</a>中介绍过，这里不再赘述。</p>
+<p><code>Version::Get</code>方法通过<code>ForEachOverlapping</code>方法，逐层扫描当前Version中的SSTable，并对其调用<code>Match</code>方法匹配LookupKey，直到LookupKey匹配或没有更多SSTable。</p>
+<p><code>Version::ForEachOverLapping</code>方法实现如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="kt">void</span> <span class="n">Version</span><span class="o">::</span><span class="n">ForEachOverlapping</span><span class="p">(</span><span class="n">Slice</span> <span class="n">user_key</span><span class="p">,</span> <span class="n">Slice</span> <span class="n">internal_key</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">arg</span><span class="p">,</span>
+                                 <span class="kt">bool</span> <span class="p">(</span><span class="o">*</span><span class="n">func</span><span class="p">)(</span><span class="kt">void</span><span class="o">*</span><span class="p">,</span> <span class="kt">int</span><span class="p">,</span> <span class="n">FileMetaData</span><span class="o">*</span><span class="p">))</span> <span class="p">{</span>
+  <span class="k">const</span> <span class="n">Comparator</span><span class="o">*</span> <span class="n">ucmp</span> <span class="o">=</span> <span class="n">vset_</span><span class="o">-&gt;</span><span class="n">icmp_</span><span class="p">.</span><span class="n">user_comparator</span><span class="p">();</span>
+
+  <span class="c1">// Search level-0 in order from newest to oldest.
+</span><span class="c1"></span>  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">FileMetaData</span><span class="o">*&gt;</span> <span class="n">tmp</span><span class="p">;</span>
+  <span class="n">tmp</span><span class="p">.</span><span class="n">reserve</span><span class="p">(</span><span class="n">files_</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">size</span><span class="p">());</span>
+  <span class="k">for</span> <span class="p">(</span><span class="kt">uint32_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">files_</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">size</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">FileMetaData</span><span class="o">*</span> <span class="n">f</span> <span class="o">=</span> <span class="n">files_</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">];</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">ucmp</span><span class="o">-&gt;</span><span class="n">Compare</span><span class="p">(</span><span class="n">user_key</span><span class="p">,</span> <span class="n">f</span><span class="o">-&gt;</span><span class="n">smallest</span><span class="p">.</span><span class="n">user_key</span><span class="p">())</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span>
+        <span class="n">ucmp</span><span class="o">-&gt;</span><span class="n">Compare</span><span class="p">(</span><span class="n">user_key</span><span class="p">,</span> <span class="n">f</span><span class="o">-&gt;</span><span class="n">largest</span><span class="p">.</span><span class="n">user_key</span><span class="p">())</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">tmp</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">f</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">tmp</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span> <span class="p">{</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">sort</span><span class="p">(</span><span class="n">tmp</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span> <span class="n">tmp</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span> <span class="n">NewestFirst</span><span class="p">);</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kt">uint32_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">tmp</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="o">*</span><span class="n">func</span><span class="p">)(</span><span class="n">arg</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">tmp</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span> <span class="p">{</span>
+        <span class="k">return</span><span class="p">;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="c1">// Search other levels.
+</span><span class="c1"></span>  <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">level</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">level</span> <span class="o">&lt;</span> <span class="n">config</span><span class="o">::</span><span class="n">kNumLevels</span><span class="p">;</span> <span class="n">level</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">size_t</span> <span class="n">num_files</span> <span class="o">=</span> <span class="n">files_</span><span class="p">[</span><span class="n">level</span><span class="p">].</span><span class="n">size</span><span class="p">();</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">num_files</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="k">continue</span><span class="p">;</span>
+
+    <span class="c1">// Binary search to find earliest index whose largest key &gt;= internal_key.
+</span><span class="c1"></span>    <span class="kt">uint32_t</span> <span class="n">index</span> <span class="o">=</span> <span class="n">FindFile</span><span class="p">(</span><span class="n">vset_</span><span class="o">-&gt;</span><span class="n">icmp_</span><span class="p">,</span> <span class="n">files_</span><span class="p">[</span><span class="n">level</span><span class="p">],</span> <span class="n">internal_key</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">index</span> <span class="o">&lt;</span> <span class="n">num_files</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">FileMetaData</span><span class="o">*</span> <span class="n">f</span> <span class="o">=</span> <span class="n">files_</span><span class="p">[</span><span class="n">level</span><span class="p">][</span><span class="n">index</span><span class="p">];</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">ucmp</span><span class="o">-&gt;</span><span class="n">Compare</span><span class="p">(</span><span class="n">user_key</span><span class="p">,</span> <span class="n">f</span><span class="o">-&gt;</span><span class="n">smallest</span><span class="p">.</span><span class="n">user_key</span><span class="p">())</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// All of &#34;f&#34; is past any data for user_key
+</span><span class="c1"></span>      <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="o">*</span><span class="n">func</span><span class="p">)(</span><span class="n">arg</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="n">f</span><span class="p">))</span> <span class="p">{</span>
+          <span class="k">return</span><span class="p">;</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+</code></pre></div><p><code>ForEachOverlapping</code>方法在level-0中查找时，由于level-0 SSTable之间可能存在overlap，所以其按照level-0 SSTable的生成顺序，从新SSTable到旧SSTable匹配；而在level&gt;0中查找时，由于该层key全局有序，因此可以通过二分搜索的方式定位LookupKey所在的SSTable并匹配。</p></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
