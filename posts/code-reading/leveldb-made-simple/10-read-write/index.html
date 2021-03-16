@@ -9,8 +9,8 @@
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/10-read-write/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/10-read-write/leveldb.jpg"/><meta property="article:section" content="posts" />
-<meta property="article:published_time" content="2021-03-15T23:46:05&#43;08:00" />
-<meta property="article:modified_time" content="2021-03-15T23:46:09&#43;08:00" />
+<meta property="article:published_time" content="2021-03-16T12:49:45&#43;08:00" />
+<meta property="article:modified_time" content="2021-03-16T12:49:48&#43;08:00" />
 
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/10-read-write/leveldb.jpg"/>
@@ -33,8 +33,8 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/10-read-write\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  34 ,
-        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/10-read-write\/","datePublished": "2021-03-15T23:46:05+08:00","dateModified": "2021-03-15T23:46:09+08:00","publisher": {
+                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  3321 ,
+        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/10-read-write\/","datePublished": "2021-03-16T12:49:45+08:00","dateModified": "2021-03-16T12:49:48+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
                 "@type": "Person",
@@ -110,8 +110,8 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x10 Read &amp; Write [施工中]</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-15">2021-03-15</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 34 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 1 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-16">2021-03-16</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 3321 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 7 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
@@ -127,15 +127,177 @@
                 <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
   <ul>
     <li><a href="#0-引言">0. 引言</a></li>
+    <li><a href="#1-mutation">1. Mutation</a>
+      <ul>
+        <li><a href="#11-mutation接口">1.1 Mutation接口</a></li>
+        <li><a href="#12-writebatch">1.2 WriteBatch</a></li>
+        <li><a href="#13-write">1.3 Write</a></li>
+      </ul>
+    </li>
   </ul>
 </nav></div>
             </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
 <h2 id="0-引言">0. 引言</h2>
-<h1 id="施工中">施工中</h1></div><div class="post-footer" id="post-footer">
+<p>本文主要介绍LevelDB中增删改查操作的设计与实现。</p>
+<p>在此之前，本系列已经通过近10篇文章对LevelDB的各个组件进行了介绍与分析，而本文是对之前所有文章的“集大成者”。在读写LevelDB的读写过程中，几乎会用到之前介绍的所有内容。因此，对LevelDB不熟悉的读者可以先阅读本系列之前的文章。</p>
+<p>本文将LevelDB的增删改查操作分为两类介绍：一类是会修改数据内容的操作，本文称之为Mutation，包括增、删、改；另一类是只读操作，本文称之为ReadOnly操作，由于LevelDB实现了Snapshot Read，因此笔者将Snapshot也放在ReadOnly操作中一并介绍。</p>
+<h2 id="1-mutation">1. Mutation</h2>
+<h3 id="11-mutation接口">1.1 Mutation接口</h3>
+<p>LevelDB提供了3个Mutation类型的接口：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+  <span class="c1">// Set the database entry for &#34;key&#34; to &#34;value&#34;.  Returns OK on success,
+</span><span class="c1"></span>  <span class="c1">// and a non-OK status on error.
+</span><span class="c1"></span>  <span class="c1">// Note: consider setting options.sync = true.
+</span><span class="c1"></span>  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Put</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span>
+                     <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+  <span class="c1">// Remove the database entry (if any) for &#34;key&#34;.  Returns OK on
+</span><span class="c1"></span>  <span class="c1">// success, and a non-OK status on error.  It is not an error if &#34;key&#34;
+</span><span class="c1"></span>  <span class="c1">// did not exist in the database.
+</span><span class="c1"></span>  <span class="c1">// Note: consider setting options.sync = true.
+</span><span class="c1"></span>  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Delete</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+  <span class="c1">// Apply the specified updates to the database.
+</span><span class="c1"></span>  <span class="c1">// Returns OK on success, non-OK on failure.
+</span><span class="c1"></span>  <span class="c1">// Note: consider setting options.sync = true.
+</span><span class="c1"></span>  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Write</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span> <span class="n">WriteBatch</span><span class="o">*</span> <span class="n">updates</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+</code></pre></div><p>其中<code>Put</code>接口用来插入或修改数据；<code>Delete</code>用来删除已有数据；而<code>Write</code>接口用来批量执行<code>Put</code>或<code>Delete</code>操作，在同一批（即同一个<code>WriteBatch</code>）中的操作，其插入的entry的SequenceNumber相同。</p>
+<p>虽然LevelDB为不同类型的Mutation操作提供了不同接口，但其实这些接口都是对<code>DBImpl::Write</code>方法的封装：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="c1">// Convenience methods
+</span><span class="c1"></span><span class="n">Status</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">Put</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">o</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">val</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">DB</span><span class="o">::</span><span class="n">Put</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="n">Status</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">Delete</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">DB</span><span class="o">::</span><span class="n">Delete</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">key</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="c1">// Default implementations of convenience methods that subclasses of DB
+</span><span class="c1">// can call if they wish
+</span><span class="c1"></span><span class="n">Status</span> <span class="n">DB</span><span class="o">::</span><span class="n">Put</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">opt</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">WriteBatch</span> <span class="n">batch</span><span class="p">;</span>
+  <span class="n">batch</span><span class="p">.</span><span class="n">Put</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">);</span>
+  <span class="k">return</span> <span class="nf">Write</span><span class="p">(</span><span class="n">opt</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">batch</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="n">Status</span> <span class="n">DB</span><span class="o">::</span><span class="n">Delete</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">opt</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">WriteBatch</span> <span class="n">batch</span><span class="p">;</span>
+  <span class="n">batch</span><span class="p">.</span><span class="n">Delete</span><span class="p">(</span><span class="n">key</span><span class="p">);</span>
+  <span class="n">retu</span>
+
+</code></pre></div><p>因此，本章后面的内容，主要介绍LevelDB中的WriteBatch及Write接口的实现。</p>
+<h3 id="12-writebatch">1.2 WriteBatch</h3>
+<p><code>WriteBatch</code>是用来记录需要批处理的若干个<code>Put</code>或<code>Delete</code>操作的结构体。LevelDB会为同一个<code>WriteBatch</code>中所有操作分配相同的SequenceNumber。<code>WriteBatch</code>的接口与实现位于<code>include/leveldb/write_batch.h</code>、<code>db/write_batch_internal.h</code>和<code>db/write_batch.cc</code>中，其实现非常简单，这里不再赘述。下面仅对<code>WriteBatch</code>的结构进行简要描述，<code>WriteBatch</code>的结构如下图所示：</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/leveldb-made-simple/10-read-write/assets/writebatch.svg" title="WriteBatch结构" data-thumbnail="/posts/code-reading/leveldb-made-simple/10-read-write/assets/writebatch.svg" data-sub-html="<h2>WriteBatch结构</h2><p>WriteBatch结构</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/writebatch.svg"
+            data-srcset="/posts/code-reading/leveldb-made-simple/10-read-write/assets/writebatch.svg, assets/writebatch.svg 1.5x, /posts/code-reading/leveldb-made-simple/10-read-write/assets/writebatch.svg 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/leveldb-made-simple/10-read-write/assets/writebatch.svg" />
+    </a><figcaption class="image-caption">WriteBatch结构</figcaption>
+    </figure></p>
+<p>每个<code>WriteBatch</code>在内存中是一个连续的字节数组，其头12个字节是WriteBatch的Header，其中前8字节是该WriteBatch的SequenceNumber，后4字节是该WriteBatch中Entry的数量。Header后面连续存放着WriteBatch中的Entry。每个Entry的头一个字节标识了该Entry的操作类型。对于Put操作的Entry，在类型标识后以LengthPrefixedSlice编码存放着key和value；对于Delete操作的Entry，在类型标识后以LengthPrefixedSlice编码存放着待删除忽的key。</p>
+<h3 id="13-write">1.3 Write</h3>
+<p><code>Write</code>是LevelDB写入Mutation的方法。为了维护LSM-Tree结构不被破坏，LevelDB必须保证写入的Mutation的SequenceNumber有序。在并发写入场景下，如果采用多线程同时写入的方式，将需要很大的同步开销。</p>
+<p><code>Write</code>方法对此进行了优化，该方法会“投机地”将多个并发的WriteBatch合并到一个<code>Write</code>线程中写入。WriteBatch的合并通过队列实现，这不会导致被合并的WriteBatch中有相同的SequenceNumber。</p>
+<p>LevelDB为每个调用了<code>Write</code>方法线程分配一个<code>Writer</code>，Writer记录了三个字段：需要写入的WriteBatch <code>batch</code>、是否需要同步写入<code>sync</code>、和写入是否完成<code>done</code>。</p>
+<p>LevelDB中，同时只有一个Write线程在向LevelDB中写入数据。在有Write线程正在写入LevelDB时，其它Write线程先将自己的<code>Writer</code>加入到队列<code>writers_</code>中并阻塞。当上一个向LevelDB中写入数据的Write线程执行完成时，其会唤醒队列中第一个Writer所在线程。该线程会将<code>writers_</code>队列中所有Writer待写入的数据写入到LevelDB中，并将这些Writer的<code>done</code>字段置为true。在<code>writers_</code>队列中的线程被唤醒后，其会检查自己的<code>done</code>字段是否已被置为<code>true</code>，如果是则说明其WriteBatch已经被队列前的Writer写入，直接返回即可；否则，说明当前Write线程为队列中第一个Writer所在线程，由该线程负责当前队列中所有Writer数据的写入。</p>
+<p>这样，<code>Write</code>方法只需要保证<code>writers_</code>队列的同步即可，在真正写入数据时，不会影响后续Write线程向<code>writers_</code>队列中写入任务。</p>
+<p><code>DBImpl::Write</code>方法的实现如下：</p>
+<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<span class="n">Status</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">Write</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span> <span class="n">WriteBatch</span><span class="o">*</span> <span class="n">updates</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// (1)
+</span><span class="c1"></span>  <span class="n">Writer</span> <span class="nf">w</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mutex_</span><span class="p">);</span>
+  <span class="n">w</span><span class="p">.</span><span class="n">batch</span> <span class="o">=</span> <span class="n">updates</span><span class="p">;</span>
+  <span class="n">w</span><span class="p">.</span><span class="n">sync</span> <span class="o">=</span> <span class="n">options</span><span class="p">.</span><span class="n">sync</span><span class="p">;</span>
+  <span class="n">w</span><span class="p">.</span><span class="n">done</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+
+  <span class="c1">// (2)
+</span><span class="c1"></span>  <span class="n">MutexLock</span> <span class="nf">l</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mutex_</span><span class="p">);</span>
+  <span class="n">writers_</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="o">&amp;</span><span class="n">w</span><span class="p">);</span>
+  <span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">w</span><span class="p">.</span><span class="n">done</span> <span class="o">&amp;&amp;</span> <span class="o">&amp;</span><span class="n">w</span> <span class="o">!=</span> <span class="n">writers_</span><span class="p">.</span><span class="n">front</span><span class="p">())</span> <span class="p">{</span>
+    <span class="n">w</span><span class="p">.</span><span class="n">cv</span><span class="p">.</span><span class="n">Wait</span><span class="p">();</span>
+  <span class="p">}</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">w</span><span class="p">.</span><span class="n">done</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">w</span><span class="p">.</span><span class="n">status</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="c1">// (3)
+</span><span class="c1"></span>  <span class="c1">// May temporarily unlock and wait.
+</span><span class="c1"></span>  <span class="n">Status</span> <span class="n">status</span> <span class="o">=</span> <span class="n">MakeRoomForWrite</span><span class="p">(</span><span class="n">updates</span> <span class="o">==</span> <span class="k">nullptr</span><span class="p">);</span>
+  <span class="kt">uint64_t</span> <span class="n">last_sequence</span> <span class="o">=</span> <span class="n">versions_</span><span class="o">-&gt;</span><span class="n">LastSequence</span><span class="p">();</span>
+  <span class="n">Writer</span><span class="o">*</span> <span class="n">last_writer</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">w</span><span class="p">;</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">status</span><span class="p">.</span><span class="n">ok</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">updates</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">)</span> <span class="p">{</span>  <span class="c1">// nullptr batch is for compactions
+</span><span class="c1"></span>    <span class="n">WriteBatch</span><span class="o">*</span> <span class="n">write_batch</span> <span class="o">=</span> <span class="n">BuildBatchGroup</span><span class="p">(</span><span class="o">&amp;</span><span class="n">last_writer</span><span class="p">);</span>
+    <span class="n">WriteBatchInternal</span><span class="o">::</span><span class="n">SetSequence</span><span class="p">(</span><span class="n">write_batch</span><span class="p">,</span> <span class="n">last_sequence</span> <span class="o">+</span> <span class="mi">1</span><span class="p">);</span>
+    <span class="n">last_sequence</span> <span class="o">+=</span> <span class="n">WriteBatchInternal</span><span class="o">::</span><span class="n">Count</span><span class="p">(</span><span class="n">write_batch</span><span class="p">);</span>
+
+    <span class="c1">// (4)
+</span><span class="c1"></span>    <span class="c1">// Add to log and apply to memtable.  We can release the lock
+</span><span class="c1"></span>    <span class="c1">// during this phase since &amp;w is currently responsible for logging
+</span><span class="c1"></span>    <span class="c1">// and protects against concurrent loggers and concurrent writes
+</span><span class="c1"></span>    <span class="c1">// into mem_.
+</span><span class="c1"></span>    <span class="p">{</span>
+      <span class="n">mutex_</span><span class="p">.</span><span class="n">Unlock</span><span class="p">();</span>
+      <span class="n">status</span> <span class="o">=</span> <span class="n">log_</span><span class="o">-&gt;</span><span class="n">AddRecord</span><span class="p">(</span><span class="n">WriteBatchInternal</span><span class="o">::</span><span class="n">Contents</span><span class="p">(</span><span class="n">write_batch</span><span class="p">));</span>
+      <span class="kt">bool</span> <span class="n">sync_error</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">status</span><span class="p">.</span><span class="n">ok</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">options</span><span class="p">.</span><span class="n">sync</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="n">logfile_</span><span class="o">-&gt;</span><span class="n">Sync</span><span class="p">();</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">status</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
+          <span class="n">sync_error</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">status</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="n">WriteBatchInternal</span><span class="o">::</span><span class="n">InsertInto</span><span class="p">(</span><span class="n">write_batch</span><span class="p">,</span> <span class="n">mem_</span><span class="p">);</span>
+      <span class="p">}</span>
+      <span class="n">mutex_</span><span class="p">.</span><span class="n">Lock</span><span class="p">();</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">sync_error</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// The state of the log file is indeterminate: the log record we
+</span><span class="c1"></span>        <span class="c1">// just added may or may not show up when the DB is re-opened.
+</span><span class="c1"></span>        <span class="c1">// So we force the DB into a mode where all future writes fail.
+</span><span class="c1"></span>        <span class="n">RecordBackgroundError</span><span class="p">(</span><span class="n">status</span><span class="p">);</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">write_batch</span> <span class="o">==</span> <span class="n">tmp_batch_</span><span class="p">)</span> <span class="n">tmp_batch_</span><span class="o">-&gt;</span><span class="n">Clear</span><span class="p">();</span>
+
+    <span class="n">versions_</span><span class="o">-&gt;</span><span class="n">SetLastSequence</span><span class="p">(</span><span class="n">last_sequence</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="c1">// (5)
+</span><span class="c1"></span>  <span class="k">while</span> <span class="p">(</span><span class="nb">true</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">Writer</span><span class="o">*</span> <span class="n">ready</span> <span class="o">=</span> <span class="n">writers_</span><span class="p">.</span><span class="n">front</span><span class="p">();</span>
+    <span class="n">writers_</span><span class="p">.</span><span class="n">pop_front</span><span class="p">();</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">ready</span> <span class="o">!=</span> <span class="o">&amp;</span><span class="n">w</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">ready</span><span class="o">-&gt;</span><span class="n">status</span> <span class="o">=</span> <span class="n">status</span><span class="p">;</span>
+      <span class="n">ready</span><span class="o">-&gt;</span><span class="n">done</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+      <span class="n">ready</span><span class="o">-&gt;</span><span class="n">cv</span><span class="p">.</span><span class="n">Signal</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">ready</span> <span class="o">==</span> <span class="n">last_writer</span><span class="p">)</span> <span class="k">break</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="c1">// Notify new head of write queue
+</span><span class="c1"></span>  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">writers_</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span> <span class="p">{</span>
+    <span class="n">writers_</span><span class="p">.</span><span class="n">front</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">cv</span><span class="p">.</span><span class="n">Signal</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="k">return</span> <span class="n">status</span><span class="p">;</span>
+<span class="p">}</span>
+
+</code></pre></div><p>下面笔者分段介绍<code>Write</code>方法的设计与实现：</p>
+<p>段(1)部分，Write方法为当前线程分配<code>Writer</code>，此时每个Write线程互不影响，不需要锁。</p>
+<p>段(2)部分，Write方法加锁操作<code>writers_</code>队列，其将当前线程的Writer追加到<code>writers_</code>队列的最后。然后通过信号量循环等待被唤醒，直到当前线程的Writer的<code>done</code>字段被置为了<code>true</code>，或当前线程的Writer成为了队列中的第一个Writer。若干<code>done</code>被置为了<code>true</code>，说明当前线程的Writer需要写入的WriteBatch已经被队列中之前的Writer写入，可以直接返回；否则，当前线程的Writer作为队列的第一个Writer，负责写入此时队列中所有Writer的WriteBatch。</p>
+<p>段(3)部分我们先来关注持有锁时的操作（即非段(4)的部分）。在仍持有以锁时，当前Write线程需要通过<code>MakeRoomForWrite</code>方法为写入的数据留出足够的buffer。<code>MakeRoomForWrite</code>方法会根据当前MemTable的使用率来选择是否触发Minor Compaction（如果当前updates为空，则为Manual Compaction用来强制触发Minor Compaction的操作）。随后，Write线程会根据<code>writers_</code>队列和上一次写入的最新的SequenceNumber，构建需要写入的WriteBatchGroup。</p>
+<p>段(4)部分是Write线程真正将数据写入到LevelDB的部分。在Write真正写入数据时，其会暂时释放锁，以避免阻塞后续Write线程向<code>writers_</code>中提交任务。在写入阶段，Write线程首先写入WAL，并根据传入的<code>WriteOptions</code>的<code>sync</code>字段决定是否需要等待WAL同步到稳定存储。然后，Write方法再将数据插入到MemTable中。最后，Write线程重新上锁，完成对<code>writes_</code>队列的处理等。</p>
+<p>段(5)是Write线程完成写入后的收尾阶段，该阶段会在持有锁的情况下将<code>writers_</code>队列中已完成写入的Writer的<code>done</code>字段置为true，并将这些Writer从<code>writers_</code>中移除。最后，Write线程通过信号量通知后续Write线程继续执行。</p>
+<h1 id="施工中--">施工中 &hellip; &hellip;</h1></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
-                <span>更新于 2021-03-15</span>
+                <span>更新于 2021-03-16</span>
             </div>
             <div class="post-info-license"></div>
         </div>
