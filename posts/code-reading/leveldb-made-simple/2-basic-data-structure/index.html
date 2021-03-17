@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="robots" content="noodp" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
-        <title>深入浅出LevelDB —— 0x02 Bisic Data Format [施工中] - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 0x02 Bisic Data Format [施工中]" />
+        <title>深入浅出LevelDB —— 0x02 Slice - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 0x02 Slice" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/2-basic-data-structure/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/2-basic-data-structure/leveldb.jpg"/><meta property="article:section" content="posts" />
@@ -14,7 +14,7 @@
 
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/2-basic-data-structure/leveldb.jpg"/>
-<meta name="twitter:title" content="深入浅出LevelDB —— 0x02 Bisic Data Format [施工中]"/>
+<meta name="twitter:title" content="深入浅出LevelDB —— 0x02 Slice"/>
 <meta name="twitter:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。"/>
 <meta name="application-name" content="叉鸽 MrCroxx 的博客">
 <meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
@@ -23,7 +23,7 @@
     {
         "@context": "http://schema.org",
         "@type": "BlogPosting",
-        "headline": "深入浅出LevelDB —— 0x02 Bisic Data Format [施工中]",
+        "headline": "深入浅出LevelDB —— 0x02 Slice",
         "inLanguage": "zh-CN",
         "mainEntityOfPage": {
             "@type": "WebPage",
@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/2-basic-data-structure\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  1584 ,
+                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  1650 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/2-basic-data-structure\/","datePublished": "2021-03-04T20:20:15+08:00","dateModified": "2021-03-04T20:20:19+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -108,9 +108,9 @@
                 <div class="container"><div class="toc" id="toc-auto">
             <h2 class="toc-title">目录</h2>
             <div class="toc-content" id="toc-content-auto"></div>
-        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x02 Bisic Data Format [施工中]</h1><div class="post-meta">
+        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x02 Slice</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-04">2021-03-04</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1584 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-04">2021-03-04</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1650 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 4 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
@@ -127,20 +127,21 @@
                 <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
   <ul>
     <li><a href="#0-引言">0. 引言</a></li>
-    <li><a href="#1切片slice">1.切片Slice</a></li>
+    <li><a href="#1slice">1.Slice</a></li>
     <li><a href="#2-整型与slice编码方式">2. 整型与Slice编码方式</a>
       <ul>
         <li><a href="#21-整型定长编码">2.1 整型定长编码</a></li>
         <li><a href="#22-整型变长编码">2.2 整型变长编码</a></li>
-        <li><a href="#23-长度确定的slice编码">2.3 长度确定的Slice编码</a></li>
+        <li><a href="#23-带长度的slice编码">2.3 带长度的Slice编码</a></li>
       </ul>
     </li>
   </ul>
 </nav></div>
             </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
 <h2 id="0-引言">0. 引言</h2>
-<p>为了便于后续的分析，本节将介绍LevelDB中常用的基本数据格式。</p>
-<h2 id="1切片slice">1.切片Slice</h2>
+<p>为了避免操作字节数组或字符串时不必要的拷贝，LevelDB使用了其自己实现的Slice类。同时，提供了字节数组和定长或变长整型的编码方式。</p>
+<p>本文将介绍LevelDB中的Slice及相关编码方式，以便介绍并分析LevelDB的实现。</p>
+<h2 id="1slice">1.Slice</h2>
 <p>相关文件：<code>include/leveldb/slice.h</code>。</p>
 <p><code>Slice</code>是LevelDB中广泛使用的切片类。Slice的结构非常简单，其只有两个字段，分别保存切片指针与切片大小：</p>
 <div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
@@ -272,15 +273,15 @@
 <span class="p">}</span>
 
 </code></pre></div><p>在解码时，LevelDB只需要根据字节的最高位判断变长编码是否结束即可，这里不再赘述。另外，LevelDB提供了解码同时返回一些信息的方法，以方便在不通场景下的使用。</p>
-<h3 id="23-长度确定的slice编码">2.3 长度确定的Slice编码</h3>
-<p>长度确定的Slice的编码方式非常简单，只需要在原Slice之前加上用变长整型表示的Slice长度即可：</p>
+<h3 id="23-带长度的slice编码">2.3 带长度的Slice编码</h3>
+<p>带长度的Slice的编码方式非常简单，只需要在原Slice之前加上用变长整型表示的Slice长度即可：</p>
 <div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="kt">void</span> <span class="nf">PutLengthPrefixedSlice</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">*</span> <span class="n">dst</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">PutVarint32</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">value</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
   <span class="n">dst</span><span class="o">-&gt;</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span> <span class="n">value</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
 <span class="p">}</span>
 
-</code></pre></div><h1 id="施工中--">施工中 &hellip; &hellip;</h1></div><div class="post-footer" id="post-footer">
+</code></pre></div></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">

@@ -61,7 +61,7 @@
     <guid>https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/3-log/</guid>
     <description><![CDATA[<p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>]]></description>
 </item><item>
-    <title>深入浅出LevelDB —— 0x02 Bisic Data Format [施工中]</title>
+    <title>深入浅出LevelDB —— 0x02 Slice</title>
     <link>https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/2-basic-data-structure/</link>
     <pubDate>Thu, 04 Mar 2021 20:20:15 &#43;0800</pubDate>
     <author>作者</author>
