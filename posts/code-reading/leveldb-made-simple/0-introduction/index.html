@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="robots" content="noodp" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
-        <title>深入浅出LevelDB —— 0x00 Intro [施工中] - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 0x00 Intro [施工中]" />
+        <title>深入浅出LevelDB —— 00 Intro - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 00 Intro" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/0-introduction/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/0-introduction/leveldb.jpg"/><meta property="article:section" content="posts" />
@@ -14,16 +14,16 @@
 
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/0-introduction/leveldb.jpg"/>
-<meta name="twitter:title" content="深入浅出LevelDB —— 0x00 Intro [施工中]"/>
+<meta name="twitter:title" content="深入浅出LevelDB —— 00 Intro"/>
 <meta name="twitter:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。"/>
 <meta name="application-name" content="叉鸽 MrCroxx 的博客">
 <meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/0-introduction/" /><link rel="prev" href="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/4-transaction/" /><link rel="next" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/1-overview/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/0-introduction/" /><link rel="prev" href="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/4-transaction/" /><link rel="next" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/1-architecture/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
     {
         "@context": "http://schema.org",
         "@type": "BlogPosting",
-        "headline": "深入浅出LevelDB —— 0x00 Intro [施工中]",
+        "headline": "深入浅出LevelDB —— 00 Intro",
         "inLanguage": "zh-CN",
         "mainEntityOfPage": {
             "@type": "WebPage",
@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/0-introduction\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  40 ,
+                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  1068 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/0-introduction\/","datePublished": "2021-03-04T19:37:12+08:00","dateModified": "2021-03-04T19:37:15+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -108,10 +108,10 @@
                 <div class="container"><div class="toc" id="toc-auto">
             <h2 class="toc-title">目录</h2>
             <div class="toc-content" id="toc-content-auto"></div>
-        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x00 Intro [施工中]</h1><div class="post-meta">
+        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 00 Intro</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-04">2021-03-04</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 40 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 1 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-04">2021-03-04</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1068 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 3 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
@@ -124,13 +124,38 @@
                     <span>目录</span>
                     <span><i class="details-icon fas fa-angle-right"></i></span>
                 </div>
-                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
-  <ul>
-    <li><a href="#施工中-">施工中&hellip; &hellip;</a></li>
-  </ul>
-</nav></div>
+                <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents"></nav></div>
             </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
-<h2 id="施工中-">施工中&hellip; &hellip;</h2></div><div class="post-footer" id="post-footer">
+<h1 id="0-引言">0. 引言</h1>
+<p>在完成<a href="/categories/%e6%b7%b1%e5%85%a5%e6%b5%85%e5%87%baetcd/raft/" rel="">深入浅出etcd/raft</a>和<a href="/categories/%e6%b7%b1%e5%85%a5%e6%b5%85%e5%87%baboltdb" rel="">深入浅出boltdb</a>两个系列后，笔者又来开新坑<a href="/categories/%e6%b7%b1%e5%85%a5%e6%b5%85%e5%87%baleveldb" rel="">深入浅出LevelDB</a>了。</p>
+<p>LevelDB是LSM-Tree的开源实现。LSM-Tree最早可以追溯到O&rsquo;Neil在1996年发表的论文《The Log-Structured Merge-Tree (LSM-Tree)》，但因为受限于当时的应用场景和硬件限制，LSM-Tree期初并没有在工业界大规模应用。真正让LSM-Tree重新回到工业界视野的，应该是Google大数据论文老三样中的《Bigtable: A distributed storage system for structured data》（这里不得不吹一手Google，几篇重量级Paper差不多养活了整个行业）。</p>
+<p>而LevelDB是Google的两位大佬Sanjay Ghemawat与Jeff Dean根据BigTable论文完成的LST-Tree的开源实现。LevelDB是通过C++实现的，其代码水平非常高。之前在知乎某个相关问题下看到这样一句评价：“跟LevelDB学习LSM-Tree和C++98实践，跟RocksDB学习存储引擎实现”，笔者对此也深以为然。</p>
+<div class="details admonition quote open">
+        <div class="details-summary admonition-title">
+            <i class="icon fas fa-quote-right fa-fw"></i>引文<i class="details-icon fas fa-angle-right fa-fw"></i>
+        </div>
+        <div class="details-content">
+            <div class="admonition-content"><p>Wikipedia &ldquo;LevelDB - History&rdquo; :</p>
+<p>LevelDB is based on concepts from Google&rsquo;s Bigtable database system. The table implementation for the Bigtable system was developed starting in about 2004, and is based on a different Google internal code base than the LevelDB code. That code base relies on a number of Google code libraries that are not themselves open sourced, so directly open sourcing that code would have been difficult. Jeff Dean and Sanjay Ghemawat wanted to create a system resembling the Bigtable tablet stack that had minimal dependencies and would be suitable for open sourcing, and also would be suitable for use in Chrome for the IndexedDB implementation. They wrote LevelDB starting in early 2011, with the same general design as the Bigtable tablet stack, but not sharing any of the code.</p>
+</div>
+        </div>
+    </div>
+<p>虽然作为一个新坑，但笔者这次仍采用了自底向上的方法解读LevelDB的源码。由于笔者之前并没有大型C++项目经验，在编写本系列文章的同时也是在学习C++最佳实践，因此难免有些地方理解有偏差，欢迎各位读者批评指正。另外，LevelDB的代码量比之前的两个坑（etcd/raft、boltdb）大很多，而且涉及处理格式的部分也很多，因此本系列笔者对源码的分析较之前两个系列会更少，更多分析的是其设计和实现的关键点。</p>
+<p>另外，本系列重点着眼于LevelDB的实现，不会过多介绍LSM-Tree及相关原理，这一部分网上博客与论文很多，笔者也不是很擅长原理的介绍，就不在此班门弄斧了。</p>
+<h1 id="1-目录">1. 目录</h1>
+<ul>
+<li><a href="/posts/code-reading/leveldb-made-simple/0-introduction/" rel="">深入浅出LevelDB —— 00 Intro</a></li>
+<li><a href="/posts/code-reading/leveldb-made-simple/1-architecture/" rel="">深入浅出LevelDB —— 01 Architecture</a></li>
+<li><a href="/posts/code-reading/leveldb-made-simple/2-slice/" rel="">深入浅出LevelDB —— 02 Slice</a></li>
+<li><a href="/posts/code-reading/leveldb-made-simple/3-log/" rel="">深入浅出LevelDB —— 03 Log</a></li>
+<li><a href="/posts/code-reading/leveldb-made-simple/4-memtable/" rel="">深入浅出LevelDB —— 04 MemTable</a></li>
+<li><a href="/posts/code-reading/leveldb-made-simple/5-sstable/" rel="">深入浅出LevelDB —— 05 SSTable</a></li>
+<li><a href="/posts/code-reading/leveldb-made-simple/6-version/" rel="">深入浅出LevelDB —— 06 Version</a></li>
+<li><a href="/posts/code-reading/leveldb-made-simple/7-cache/" rel="">深入浅出LevelDB —— 07 Cache</a></li>
+<li><a href="/posts/code-reading/leveldb-made-simple/8-iterator/" rel="">深入浅出LevelDB —— 08 Iterator</a></li>
+<li><a href="/posts/code-reading/leveldb-made-simple/9-compaction/" rel="">深入浅出LevelDB —— 09 Compaction</a></li>
+<li><a href="/posts/code-reading/leveldb-made-simple/10-read-write/" rel="">深入浅出LevelDB —— 10 Read &amp; Write</a></li>
+</ul></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
@@ -154,7 +179,7 @@
     </div>
 
     <div class="post-nav"><a href="/posts/code-reading/boltdb-made-simple/4-transaction/" class="prev" rel="prev" title="深入浅出boltdb —— 0x04 事务"><i class="fas fa-angle-left fa-fw"></i>深入浅出boltdb —— 0x04 事务</a>
-            <a href="/posts/code-reading/leveldb-made-simple/1-overview/" class="next" rel="next" title="深入浅出LevelDB —— 0x01 Overview [施工中]">深入浅出LevelDB —— 0x01 Overview [施工中]<i class="fas fa-angle-right fa-fw"></i></a></div>
+            <a href="/posts/code-reading/leveldb-made-simple/1-architecture/" class="next" rel="next" title="深入浅出LevelDB —— 01 Architecture">深入浅出LevelDB —— 01 Architecture<i class="fas fa-angle-right fa-fw"></i></a></div>
 </div>
 </article></div>
             </main><footer class="footer">

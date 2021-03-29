@@ -126,13 +126,13 @@
                 </div>
                 <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
   <ul>
-    <li><a href="#1-引言">1. 引言</a></li>
-    <li><a href="#2-目录">2. 目录</a></li>
-    <li><a href="#3-施工路线图">3. 施工路线图</a></li>
+    <li><a href="#0-引言">0. 引言</a></li>
+    <li><a href="#1-目录">1. 目录</a></li>
+    <li><a href="#2-施工路线图">2. 施工路线图</a></li>
   </ul>
 </nav></div>
             </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
-<h2 id="1-引言">1. 引言</h2>
+<h2 id="0-引言">0. 引言</h2>
 <p>boltDB是一个完全由go语言编写的基于B+树的kv数据库，其完全支持事务的ACID特性，整个数据库只有一个文件，且有较高的读性能与加载时间。etcd的后端存储使用的便是基于boltdb优化的kv存储<a href="https://github.com/etcd-io/bbolt" target="_blank" rel="noopener noreffer">etcd-io/bbolt</a>。</p>
 <p>boltdb的源码非常适合用来学习B+Tree的实现。boltdb支持完整的事务ACID特性且实现方式较为简单，也适合存储与数据库初学者学习事务与简单的MVCC实现。另外，boltdb完全由go语言编写，因此其对于go语言或其它需要通过unsafe方式管理堆外内存的开发者，也是一个很好的示例。</p>
 <p>本系列文章将自底向上地介绍并分析boltdb的实现，较为详细地分析了其源码功能。本文源码基于已归档的<a href="https://github.com/boltdb/bolt" target="_blank" rel="noopener noreffer">boltdb/bolt</a>项目（commit#fd01fc）。</p>
@@ -142,7 +142,7 @@
 <li>详细阅读boltdb的<a href="https://github.com/boltdb/bolt/blob/master/README.md" target="_blank" rel="noopener noreffer">README</a>，对boltdb有初步认识。</li>
 </ol>
 <p>与前一个《深入浅出etcd/raft》系列相比，boltdb更多偏向工程实现而非算法，因此本系列不会逐行地分析每一行源码。</p>
-<h2 id="2-目录">2. 目录</h2>
+<h2 id="1-目录">1. 目录</h2>
 <ul>
 <li><a href="/posts/code-reading/boltdb-made-simple/0-introduction/" rel="">深入浅出boltdb —— 0x00 引言</a></li>
 <li><a href="/posts/code-reading/boltdb-made-simple/1-storage-cache/" rel="">深入浅出boltdb —— 0x01 存储与缓存</a></li>
@@ -150,7 +150,7 @@
 <li><a href="/posts/code-reading/boltdb-made-simple/3-bucket-cursor/" rel="">深入浅出boltdb —— 0x03 bucket &amp; cursor</a></li>
 <li><a href="/posts/code-reading/boltdb-made-simple/4-transaction/" rel="">深入浅出boltdb —— 0x04 事务</a></li>
 </ul>
-<h2 id="3-施工路线图">3. 施工路线图</h2>
+<h2 id="2-施工路线图">2. 施工路线图</h2>
 <ul>
 <li><i class="far fa-check-square fa-fw"></i> 引言</li>
 <li><i class="far fa-check-square fa-fw"></i> 存储</li>

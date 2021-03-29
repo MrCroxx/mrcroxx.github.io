@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="robots" content="noodp" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
-        <title>深入浅出LevelDB —— 0x07 Cache - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 0x07 Cache" />
+        <title>深入浅出LevelDB —— 07 Cache - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 07 Cache" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/7-cache/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/7-cache/leveldb.jpg"/><meta property="article:section" content="posts" />
@@ -14,7 +14,7 @@
 
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/7-cache/leveldb.jpg"/>
-<meta name="twitter:title" content="深入浅出LevelDB —— 0x07 Cache"/>
+<meta name="twitter:title" content="深入浅出LevelDB —— 07 Cache"/>
 <meta name="twitter:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。"/>
 <meta name="application-name" content="叉鸽 MrCroxx 的博客">
 <meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
@@ -23,7 +23,7 @@
     {
         "@context": "http://schema.org",
         "@type": "BlogPosting",
-        "headline": "深入浅出LevelDB —— 0x07 Cache",
+        "headline": "深入浅出LevelDB —— 07 Cache",
         "inLanguage": "zh-CN",
         "mainEntityOfPage": {
             "@type": "WebPage",
@@ -108,7 +108,7 @@
                 <div class="container"><div class="toc" id="toc-auto">
             <h2 class="toc-title">目录</h2>
             <div class="toc-content" id="toc-content-auto"></div>
-        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x07 Cache</h1><div class="post-meta">
+        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 07 Cache</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
             <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-10">2021-03-10</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 10178 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 21 分钟&nbsp;</div>
@@ -749,7 +749,7 @@
 <span class="p">};</span>
 
 
-</code></pre></div><p><code>Table</code>中封装了用来读取SSTable元数据的方法<code>ReadMeta</code>，该方法会根据SSTable的Footer找到Filter Block，并通过<code>ReadFilter</code>方法将filter加载到<code>Table::Rep</code>结构体<code>rep_</code>中。<code>Table</code>在读取Block时使用的是<code>table/format.h</code>中定义的方法<code>ReadBlock</code>。这些方法主要用来反序列化数据，有关SSTable的数据格式可以参考<a href="/posts/code-reading/leveldb-made-simple/5-sstable/" rel="">深入浅出LevelDB —— 0x05 SSTable</a>，本文不再赘述。本节我们介绍关注<code>Table</code>的<code>Open</code>、<code>BlockReader</code>、<code>InternalGet</code>方法的功能。</p>
+</code></pre></div><p><code>Table</code>中封装了用来读取SSTable元数据的方法<code>ReadMeta</code>，该方法会根据SSTable的Footer找到Filter Block，并通过<code>ReadFilter</code>方法将filter加载到<code>Table::Rep</code>结构体<code>rep_</code>中。<code>Table</code>在读取Block时使用的是<code>table/format.h</code>中定义的方法<code>ReadBlock</code>。这些方法主要用来反序列化数据，有关SSTable的数据格式可以参考<a href="/posts/code-reading/leveldb-made-simple/5-sstable/" rel="">深入浅出LevelDB —— 05 SSTable</a>，本文不再赘述。本节我们介绍关注<code>Table</code>的<code>Open</code>、<code>BlockReader</code>、<code>InternalGet</code>方法的功能。</p>
 <div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="n">Status</span> <span class="n">Table</span><span class="o">::</span><span class="n">Open</span><span class="p">(</span><span class="k">const</span> <span class="n">Options</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span> <span class="n">RandomAccessFile</span><span class="o">*</span> <span class="n">file</span><span class="p">,</span>
                    <span class="kt">uint64_t</span> <span class="n">size</span><span class="p">,</span> <span class="n">Table</span><span class="o">**</span> <span class="n">table</span><span class="p">)</span> <span class="p">{</span>
@@ -854,7 +854,7 @@
   <span class="k">return</span> <span class="n">iter</span><span class="p">;</span>
 <span class="p">}</span>
 
-</code></pre></div><p><code>BlockReader</code>方法可以将在IndexBlock中查到的value值转为相应DataBlock的Iterator（index block中key/value为(index key -&gt; DataBlockHandle)，详见<a href="/posts/code-reading/leveldb-made-simple/5-sstable/" rel="">深入浅出LevelDB —— 0x05 SSTable</a>）。关于数据的解析这里不再赘述，我们主要关注的是该方法使用BlockCache的方式：</p>
+</code></pre></div><p><code>BlockReader</code>方法可以将在IndexBlock中查到的value值转为相应DataBlock的Iterator（index block中key/value为(index key -&gt; DataBlockHandle)，详见<a href="/posts/code-reading/leveldb-made-simple/5-sstable/" rel="">深入浅出LevelDB —— 05 SSTable</a>）。关于数据的解析这里不再赘述，我们主要关注的是该方法使用BlockCache的方式：</p>
 <ol>
 <li>如果options中没有传入<code>block_cache</code>，则直接通过<code>ReadBlock</code>方法读取DataBlock的内容并返回构造好的<code>Block</code>实例。</li>
 <li>如果options中传入了<code>block_cache</code>，则通过当前<code>Table</code>的<code>cache_id</code>字段与DataBlock的<code>offset</code>以Fixed64编码拼接为一个Slice作为BlockCache（默认为8M的ShardedLRUCache）的key。</li>
@@ -926,8 +926,8 @@
         </section>
     </div>
 
-    <div class="post-nav"><a href="/posts/code-reading/leveldb-made-simple/6-version/" class="prev" rel="prev" title="深入浅出LevelDB —— 0x06 Version"><i class="fas fa-angle-left fa-fw"></i>深入浅出LevelDB —— 0x06 Version</a>
-            <a href="/posts/code-reading/leveldb-made-simple/8-iterator/" class="next" rel="next" title="深入浅出LevelDB —— 0x08 Iterator">深入浅出LevelDB —— 0x08 Iterator<i class="fas fa-angle-right fa-fw"></i></a></div>
+    <div class="post-nav"><a href="/posts/code-reading/leveldb-made-simple/6-version/" class="prev" rel="prev" title="深入浅出LevelDB —— 06 Version"><i class="fas fa-angle-left fa-fw"></i>深入浅出LevelDB —— 06 Version</a>
+            <a href="/posts/code-reading/leveldb-made-simple/8-iterator/" class="next" rel="next" title="深入浅出LevelDB —— 08 Iterator">深入浅出LevelDB —— 08 Iterator<i class="fas fa-angle-right fa-fw"></i></a></div>
 </div>
 </article></div>
             </main><footer class="footer">

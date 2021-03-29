@@ -5,36 +5,36 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="robots" content="noodp" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
-        <title>深入浅出LevelDB —— 0x01 Overview [施工中] - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 0x01 Overview [施工中]" />
+        <title>深入浅出LevelDB —— 01 Architecture - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 01 Architecture" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/1-overview/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/1-overview/leveldb.jpg"/><meta property="article:section" content="posts" />
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/1-architecture/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/1-architecture/leveldb.jpg"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2021-03-04T19:37:23&#43;08:00" />
 <meta property="article:modified_time" content="2021-03-04T19:37:27&#43;08:00" />
 
 <meta name="twitter:card" content="summary_large_image"/>
-<meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/1-overview/leveldb.jpg"/>
-<meta name="twitter:title" content="深入浅出LevelDB —— 0x01 Overview [施工中]"/>
+<meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/1-architecture/leveldb.jpg"/>
+<meta name="twitter:title" content="深入浅出LevelDB —— 01 Architecture"/>
 <meta name="twitter:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。"/>
 <meta name="application-name" content="叉鸽 MrCroxx 的博客">
 <meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/1-overview/" /><link rel="prev" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/0-introduction/" /><link rel="next" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/2-basic-data-structure/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/1-architecture/" /><link rel="prev" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/0-introduction/" /><link rel="next" href="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/2-slice/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
     {
         "@context": "http://schema.org",
         "@type": "BlogPosting",
-        "headline": "深入浅出LevelDB —— 0x01 Overview [施工中]",
+        "headline": "深入浅出LevelDB —— 01 Architecture",
         "inLanguage": "zh-CN",
         "mainEntityOfPage": {
             "@type": "WebPage",
-            "@id": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/1-overview\/"
+            "@id": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/1-architecture\/"
         },"image": [{
                             "@type": "ImageObject",
-                            "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/1-overview\/leveldb.jpg",
+                            "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/1-architecture\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  40 ,
-        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/1-overview\/","datePublished": "2021-03-04T19:37:23+08:00","dateModified": "2021-03-04T19:37:27+08:00","publisher": {
+                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  995 ,
+        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/1-architecture\/","datePublished": "2021-03-04T19:37:23+08:00","dateModified": "2021-03-04T19:37:27+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
                 "@type": "Person",
@@ -108,18 +108,18 @@
                 <div class="container"><div class="toc" id="toc-auto">
             <h2 class="toc-title">目录</h2>
             <div class="toc-content" id="toc-content-auto"></div>
-        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 0x01 Overview [施工中]</h1><div class="post-meta">
+        </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出LevelDB —— 01 Architecture</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-04">2021-03-04</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 40 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 1 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-04">2021-03-04</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 995 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 2 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         src="/svg/loading.min.svg"
-        data-src="/posts/code-reading/leveldb-made-simple/1-overview/leveldb.jpg"
-        data-srcset="/posts/code-reading/leveldb-made-simple/1-overview/leveldb.jpg, /posts/code-reading/leveldb-made-simple/1-overview/leveldb.jpg 1.5x, /posts/code-reading/leveldb-made-simple/1-overview/leveldb.jpg 2x"
+        data-src="/posts/code-reading/leveldb-made-simple/1-architecture/leveldb.jpg"
+        data-srcset="/posts/code-reading/leveldb-made-simple/1-architecture/leveldb.jpg, /posts/code-reading/leveldb-made-simple/1-architecture/leveldb.jpg 1.5x, /posts/code-reading/leveldb-made-simple/1-architecture/leveldb.jpg 2x"
         data-sizes="auto"
-        alt="/posts/code-reading/leveldb-made-simple/1-overview/leveldb.jpg"
-        title="/posts/code-reading/leveldb-made-simple/1-overview/leveldb.jpg" /></div><div class="details toc" id="toc-static"  kept="">
+        alt="/posts/code-reading/leveldb-made-simple/1-architecture/leveldb.jpg"
+        title="/posts/code-reading/leveldb-made-simple/1-architecture/leveldb.jpg" /></div><div class="details toc" id="toc-static"  kept="">
                 <div class="details-summary toc-title">
                     <span>目录</span>
                     <span><i class="details-icon fas fa-angle-right"></i></span>
@@ -127,15 +127,39 @@
                 <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
   <ul>
     <li><a href="#0-引言">0. 引言</a></li>
-    <li><a href="#1-lsm-tree">1. LSM-Tree</a></li>
-    <li><a href="#2-architecture">2. Architecture</a></li>
+    <li><a href="#1-架构设计">1. 架构设计</a></li>
   </ul>
 </nav></div>
             </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
 <h2 id="0-引言">0. 引言</h2>
-<h2 id="1-lsm-tree">1. LSM-Tree</h2>
-<h2 id="2-architecture">2. Architecture</h2>
-<h1 id="施工中--">施工中 &hellip; &hellip;</h1></div><div class="post-footer" id="post-footer">
+<p>本文主要介绍LevelDB的架构设计，以便读者对LevelDB有一个整体认识，便于后续文章自底向上地逐模块介绍LevelDB的设计与实现。</p>
+<h2 id="1-架构设计">1. 架构设计</h2>
+<p>这里首先给出一张经典的LevelDB的架构图（<a href="https://microsoft.github.io/MLOS/notebooks/LevelDbTuning/" target="_blank" rel="noopener noreffer">出处</a>）：</p>
+<p><figure><a class="lightgallery" href="/posts/code-reading/leveldb-made-simple/1-architecture/assets/leveldb-architecture.png" title="LevelDB Architecture" data-thumbnail="/posts/code-reading/leveldb-made-simple/1-architecture/assets/leveldb-architecture.png" data-sub-html="<h2>LevelDB Architecture</h2><p>LevelDB Architecture</p>">
+        <img
+            class="lazyload"
+            src="/svg/loading.min.svg"
+            data-src="assets/leveldb-architecture.png"
+            data-srcset="/posts/code-reading/leveldb-made-simple/1-architecture/assets/leveldb-architecture.png, assets/leveldb-architecture.png 1.5x, /posts/code-reading/leveldb-made-simple/1-architecture/assets/leveldb-architecture.png 2x"
+            data-sizes="auto"
+            alt="/posts/code-reading/leveldb-made-simple/1-architecture/assets/leveldb-architecture.png" />
+    </a><figcaption class="image-caption">LevelDB Architecture</figcaption>
+    </figure></p>
+<p>为了条理更清晰地介绍LevelDB中的各个部分，这里以写入流程为例，依次介绍每一部分的功能：</p>
+<ol>
+<li>Log（<code>*.log</code>）：即Write Ahead Log，是用来记录LevelDB变更的append-only的文件，在LevelDB重启时用来恢复内存中的数据。</li>
+<li>MemTable、Immutable MemTable：用来Buffer最近写入的内存结构，其通过SkipList实现。当MemTable达到一定大小时会转为只读的Immutable MemTable，并等待后台线程通过Minor Compaction将其转为level-0的SSTable。MemTable是LSM-Tree将随机写入转为顺序写入的关键。</li>
+<li>SSTable（新：<code>*.ldb</code>、旧：<code>*.sst</code>）：通过Compaction生成的SSTable。level-0的SSTable由Immutable MemTable直接转储得到，因此level-0的SSTable的key间存在overlap；其它level的SSTable每层间没有overlap。另外，除了level-0外，每层SSTable的总大小比上一层大10倍。</li>
+<li>Manifest（<code>MANIFEST-*</code>）：记录SSTable文件等的版本变更，其中Record的格式与Log相同，LevelDB每次重启都会从一个新的Manifest文件写入。</li>
+<li>Current（<code>CURRENT</code>）：用来指向最新的Manifest文件。</li>
+</ol>
+<p>除了图中的模块外，LevelDB中还有一些重要的模块或文件：</p>
+<ol>
+<li>Cache：分为Table Cache与Block Cache，核心为ShardedLRUCache，用来缓存数据块、索引块或过滤器。</li>
+<li>Iterator：提供遍历LevelDB中各种数据结构的功能，LevelDB中Iterator可以作为一个体系，本系列单独用一个篇幅对其进行了介绍。</li>
+<li><code>LOCK</code>文件：LevelDB仅支持单个LevelDB进程操作一个数据库，因此其通过<code>LOCK</code>文件防止其它LevelDB进程访问该数据库。</li>
+<li><code>LOG</code>文件：LevelDB的日志文件。</li>
+</ol></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
@@ -158,8 +182,8 @@
         </section>
     </div>
 
-    <div class="post-nav"><a href="/posts/code-reading/leveldb-made-simple/0-introduction/" class="prev" rel="prev" title="深入浅出LevelDB —— 0x00 Intro [施工中]"><i class="fas fa-angle-left fa-fw"></i>深入浅出LevelDB —— 0x00 Intro [施工中]</a>
-            <a href="/posts/code-reading/leveldb-made-simple/2-basic-data-structure/" class="next" rel="next" title="深入浅出LevelDB —— 0x02 Slice">深入浅出LevelDB —— 0x02 Slice<i class="fas fa-angle-right fa-fw"></i></a></div>
+    <div class="post-nav"><a href="/posts/code-reading/leveldb-made-simple/0-introduction/" class="prev" rel="prev" title="深入浅出LevelDB —— 00 Intro"><i class="fas fa-angle-left fa-fw"></i>深入浅出LevelDB —— 00 Intro</a>
+            <a href="/posts/code-reading/leveldb-made-simple/2-slice/" class="next" rel="next" title="深入浅出LevelDB —— 02 Slice">深入浅出LevelDB —— 02 Slice<i class="fas fa-angle-right fa-fw"></i></a></div>
 </div>
 </article></div>
             </main><footer class="footer">
