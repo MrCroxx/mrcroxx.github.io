@@ -8,10 +8,10 @@
         <title>深入浅出LevelDB —— 08 Iterator - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 08 Iterator" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/8-iterator/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/8-iterator/leveldb.jpg"/><meta property="article:section" content="posts" />
-<meta property="article:published_time" content="2021-03-11T11:17:19&#43;08:00" />
-<meta property="article:modified_time" content="2021-03-15T15:17:49&#43;08:00" />
-
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/8-iterator/" />
+<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/8-iterator/leveldb.jpg"/>
+<meta property="article:published_time" content="2021-03-11T11:17:19+08:00" />
+<meta property="article:modified_time" content="2021-03-15T15:17:49+08:00" />
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/8-iterator/leveldb.jpg"/>
 <meta name="twitter:title" content="深入浅出LevelDB —— 08 Iterator"/>
@@ -231,31 +231,31 @@
 <table>
 <thead>
 <tr>
-<th style="text-align:center">Collection<div style='width:8em'></div></th>
-<th style="text-align:center">Target<div style='width:16em'></div></th>
-<th style="text-align:left">Creator<div style='width:60em'></div></th>
+<th align="center">Collection<div style='width:8em'></div></th>
+<th align="center">Target<div style='width:16em'></div></th>
+<th align="left">Creator<div style='width:60em'></div></th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align:center"><code>SkipList</code></td>
-<td style="text-align:center">SkipList中的Node</td>
-<td style="text-align:left"><code>SkipList</code>::<code>Iterator(const SkipList* list)</code></td>
+<td align="center"><code>SkipList</code></td>
+<td align="center">SkipList中的Node</td>
+<td align="left"><code>SkipList</code>::<code>Iterator(const SkipList* list)</code></td>
 </tr>
 <tr>
-<td style="text-align:center"><code>MemTable</code></td>
-<td style="text-align:center">MemTable中的key/value</td>
-<td style="text-align:left"><code>MemTable</code>.<code>Iterator* NewIterator();</code></td>
+<td align="center"><code>MemTable</code></td>
+<td align="center">MemTable中的key/value</td>
+<td align="left"><code>MemTable</code>.<code>Iterator* NewIterator();</code></td>
 </tr>
 <tr>
-<td style="text-align:center"><code>Block</code></td>
-<td style="text-align:center">Block中的Entry（按restart拼接）</td>
-<td style="text-align:left"><code>Block</code>.<code>Iterator* NewIterator(const Comparator* comparator)</code></td>
+<td align="center"><code>Block</code></td>
+<td align="center">Block中的Entry（按restart拼接）</td>
+<td align="left"><code>Block</code>.<code>Iterator* NewIterator(const Comparator* comparator)</code></td>
 </tr>
 <tr>
-<td style="text-align:center"><code>FileMetaData*</code></td>
-<td style="text-align:center">每层SSTable的编号（按key顺序）</td>
-<td style="text-align:left"><code>Version</code>::<code>LevelFileNumIterator(const InternalKeyComparator&amp; icmp, const std::vector&lt;FileMetaData*&gt;* flist)</code></td>
+<td align="center"><code>FileMetaData*</code></td>
+<td align="center">每层SSTable的编号（按key顺序）</td>
+<td align="left"><code>Version</code>::<code>LevelFileNumIterator(const InternalKeyComparator&amp; icmp, const std::vector&lt;FileMetaData*&gt;* flist)</code></td>
 </tr>
 </tbody>
 </table>
@@ -290,21 +290,21 @@
 <table>
 <thead>
 <tr>
-<th style="text-align:center">Collection<div style='width:8em'></div></th>
-<th style="text-align:center">Iterator[0]<div style='width:12em'></div></th>
-<th style="text-align:center">Iterator[1]<div style='width:12em'></div></th>
+<th align="center">Collection<div style='width:8em'></div></th>
+<th align="center">Iterator[0]<div style='width:12em'></div></th>
+<th align="center">Iterator[1]<div style='width:12em'></div></th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align:center"><code>SSTable</code></td>
-<td style="text-align:center">IndexBlock的BlockIterator</td>
-<td style="text-align:center">DataBlock的BlockIterator</td>
+<td align="center"><code>SSTable</code></td>
+<td align="center">IndexBlock的BlockIterator</td>
+<td align="center">DataBlock的BlockIterator</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>SSTable*</code> (level&gt;0)</td>
-<td style="text-align:center">LevelFileNumIterator</td>
-<td style="text-align:center">Table Iterator</td>
+<td align="center"><code>SSTable*</code> (level&gt;0)</td>
+<td align="center">LevelFileNumIterator</td>
+<td align="center">Table Iterator</td>
 </tr>
 </tbody>
 </table>
@@ -330,18 +330,18 @@
 <table>
 <thead>
 <tr>
-<th style="text-align:center">Collection<div style='width:8em'></div></th>
-<th style="text-align:center">Iterators<div style='width:60em'></div></th>
+<th align="center">Collection<div style='width:8em'></div></th>
+<th align="center">Iterators<div style='width:60em'></div></th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align:center">InternalIterator</td>
-<td style="text-align:center">MemTatble Iterator、Immutable MemTable Iterator、level-0 SSTavke Iterators、level&gt;0 SSTable Concatenating Iterator</td>
+<td align="center">InternalIterator</td>
+<td align="center">MemTatble Iterator、Immutable MemTable Iterator、level-0 SSTavke Iterators、level&gt;0 SSTable Concatenating Iterator</td>
 </tr>
 <tr>
-<td style="text-align:center">InputIterator</td>
-<td style="text-align:center">level-0 Table Iterator、level&gt;0 Concatenating Iterator (if necessary)</td>
+<td align="center">InputIterator</td>
+<td align="center">level-0 Table Iterator、level&gt;0 Concatenating Iterator (if necessary)</td>
 </tr>
 </tbody>
 </table>
@@ -455,7 +455,7 @@
 </div>
 </article></div>
             </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.81.0">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div>
     </footer></div>

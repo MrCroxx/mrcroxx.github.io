@@ -8,10 +8,10 @@
         <title>《XORing Elephants: Novel Erasure Codes for Big Data》论文翻译（arXiv:1301.3791v1） - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《XORing Elephants: Novel Erasure Codes for Big Data》论文翻译（arXiv:1301.3791v1）" />
 <meta property="og:description" content="本篇文章是对论文XORing Elephants: Novel Erasure Codes for Big Data的原创翻译，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/xoring-elephants/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/paper-reading/xoring-elephants/paper-reading.jpg"/><meta property="article:section" content="posts" />
-<meta property="article:published_time" content="2020-09-03T12:01:45&#43;08:00" />
-<meta property="article:modified_time" content="2020-09-07T11:10:45&#43;08:00" />
-
+<meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/xoring-elephants/" />
+<meta property="og:image" content="https://mrcroxx.github.io/posts/paper-reading/xoring-elephants/paper-reading.jpg"/>
+<meta property="article:published_time" content="2020-09-03T12:01:45+08:00" />
+<meta property="article:modified_time" content="2020-09-07T11:10:45+08:00" />
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/paper-reading/xoring-elephants/paper-reading.jpg"/>
 <meta name="twitter:title" content="《XORing Elephants: Novel Erasure Codes for Big Data》论文翻译（arXiv:1301.3791v1）"/>
@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/xoring-elephants\/paper-reading.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "Erasure Code, Translation","wordcount":  19993 ,
+                        }],"genre": "posts","keywords": "Erasure Code, Translation","wordcount":  19994 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/xoring-elephants\/","datePublished": "2020-09-03T12:01:45+08:00","dateModified": "2020-09-07T11:10:45+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,7 +110,7 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">《XORing Elephants: Novel Erasure Codes for Big Data》论文翻译（arXiv:1301.3791v1）</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-03">2020-09-03</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 19993 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-03">2020-09-03</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 19994 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 40 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
@@ -198,7 +198,7 @@
 <p>我们的实验表明，Xorbas比正在生产环境中使用的RS码大概减少了2倍的磁盘I/O和修复时的网络流量。这种新编码方案的缺点在于其需要比RS多14%的存储，为了获取局部性，这一开销从信息论的角度看已经是最优的了。</p>
 <p>一个很有趣的好处是：Xorbas由于能在读取降级时提供更高效的性能表现，因此能够更快地修复故障，这提供了更高的可用性。在一个简单的Markov（马尔可夫）模型的评估下，Xorbas的平均数据丢失时间（Mean Time to Data Loss，MTTDL。译注：存储设备从运行开始到因故障导致数据永久丢失的平均时间）比RS(10,4)多了2个0，比3副本多了5个0。</p>
 <h3 id="11-修复的重要性">1.1 修复的重要性</h3>
-<p>在Facebook，大型数据分析集群存储这PB级的数据并处理多个MapReduce分析任务。在有3000个节点的生产集群中存储了大概2亿2千万个块（每个块256MB），目前仅8%的数据正在使用RS编码（使用&quot;RAID&quot;）。<strong>图1</strong>展示了对这个生产集群中最近的节点故障的跟踪。即使在已经推迟大部分的修复任务以避免对暂时性故障进行不必要的修复的情况下，通常每天仍会有20个或更多的节点故障并触发修复任务。一个数据节点通常会存储约15TB的数据，在当前的集群配置下，其修复时需要的流量大概占集群每日网络流量（2PB/day）的10%到20%。就像我们之前讨论过的，(10,4)RS编码修复每位时需要比冗余块的方式多出10倍的网络流量。我们估计当集群中50%的数据使用RS编码时，其修复占用的网络流量会使集群的网络连接完全饱和。<em>我们的目标是设计一个更高效的编码方案，使能够在不遇到修复瓶颈的情况下允许更高比例的数据使用该编码方案。这将会节约数PB的存储额外开销并能够大大较小集群的开销。</em></p>
+<p>在Facebook，大型数据分析集群存储这PB级的数据并处理多个MapReduce分析任务。在有3000个节点的生产集群中存储了大概2亿2千万个块（每个块256MB），目前仅8%的数据正在使用RS编码（使用&quot;RAID&rdquo;）。<strong>图1</strong>展示了对这个生产集群中最近的节点故障的跟踪。即使在已经推迟大部分的修复任务以避免对暂时性故障进行不必要的修复的情况下，通常每天仍会有20个或更多的节点故障并触发修复任务。一个数据节点通常会存储约15TB的数据，在当前的集群配置下，其修复时需要的流量大概占集群每日网络流量（2PB/day）的10%到20%。就像我们之前讨论过的，(10,4)RS编码修复每位时需要比冗余块的方式多出10倍的网络流量。我们估计当集群中50%的数据使用RS编码时，其修复占用的网络流量会使集群的网络连接完全饱和。<em>我们的目标是设计一个更高效的编码方案，使能够在不遇到修复瓶颈的情况下允许更高比例的数据使用该编码方案。这将会节约数PB的存储额外开销并能够大大较小集群的开销。</em></p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/xoring-elephants/figure-1.png" title="图1 Facebook中由3000个节点组成的生产集群中一个月内节点故障数量" data-thumbnail="/posts/paper-reading/xoring-elephants/figure-1.png" data-sub-html="<h2>图1 Facebook中由3000个节点组成的生产集群中一个月内节点故障数量</h2><p>图1 Facebook中由3000个节点组成的生产集群中一个月内节点故障数量</p>">
         <img
             class="lazyload"
@@ -484,7 +484,7 @@
 </div>
 </article></div>
             </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.81.0">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div>
     </footer></div>

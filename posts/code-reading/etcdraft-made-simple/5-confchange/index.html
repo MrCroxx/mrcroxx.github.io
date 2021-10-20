@@ -8,10 +8,10 @@
         <title>深入浅出etcd/raft —— 0x05 Raft成员变更 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出etcd/raft —— 0x05 Raft成员变更" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/5-confchange/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/5-confchange/etcd-raft.jpg"/><meta property="article:section" content="posts" />
-<meta property="article:published_time" content="2020-12-29T16:36:16&#43;08:00" />
-<meta property="article:modified_time" content="2020-12-29T16:36:19&#43;08:00" />
-
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/5-confchange/" />
+<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/5-confchange/etcd-raft.jpg"/>
+<meta property="article:published_time" content="2020-12-29T16:36:16+08:00" />
+<meta property="article:modified_time" content="2020-12-29T16:36:19+08:00" />
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/5-confchange/etcd-raft.jpg"/>
 <meta name="twitter:title" content="深入浅出etcd/raft —— 0x05 Raft成员变更"/>
@@ -238,18 +238,18 @@
 <table>
 <thead>
 <tr>
-<th style="text-align:center">方法<div style="width: 12em"></div></th>
-<th style="text-align:left">描述</th>
+<th align="center">方法<div style="width: 12em"></div></th>
+<th align="left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align:center"><code>CommittedIndex(l AckedIndexer) Index</code></td>
-<td style="text-align:left">根据给定的<code>AckedIndexer</code>计算被大多数节点接受了的<em>commit index</em> 。</td>
+<td align="center"><code>CommittedIndex(l AckedIndexer) Index</code></td>
+<td align="left">根据给定的<code>AckedIndexer</code>计算被大多数节点接受了的<em>commit index</em> 。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>VoteResult(votes map[uint64]bool) VoteResult</code></td>
-<td style="text-align:left">根据给定的投票统计计算投票结果。</td>
+<td align="center"><code>VoteResult(votes map[uint64]bool) VoteResult</code></td>
+<td align="left">根据给定的投票统计计算投票结果。</td>
 </tr>
 </tbody>
 </table>
@@ -396,54 +396,54 @@
 <table>
 <thead>
 <tr>
-<th style="text-align:center">方法<div style="width: 20em"></div></th>
-<th style="text-align:left">描述</th>
+<th align="center">方法<div style="width: 20em"></div></th>
+<th align="left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align:center"><code>func MakeProgressTracker(maxInflight int) ProgressTracker</code></td>
-<td style="text-align:left">新建空配置。</td>
+<td align="center"><code>func MakeProgressTracker(maxInflight int) ProgressTracker</code></td>
+<td align="left">新建空配置。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>ConfState() pb.ConfState</code></td>
-<td style="text-align:left">返回当前激活的配置。</td>
+<td align="center"><code>ConfState() pb.ConfState</code></td>
+<td align="left">返回当前激活的配置。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>IsSingleton() bool</code></td>
-<td style="text-align:left">判断当前配置是否为单节点模式（voter数为0，且不处于<em>joint configuration</em>中）。</td>
+<td align="center"><code>IsSingleton() bool</code></td>
+<td align="left">判断当前配置是否为单节点模式（voter数为0，且不处于<em>joint configuration</em>中）。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>Committed() uint64</code></td>
-<td style="text-align:left">返回被quorum接受的<em>commit index</em>。</td>
+<td align="center"><code>Committed() uint64</code></td>
+<td align="left">返回被quorum接受的<em>commit index</em>。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>Visit(f func(id uint64, pr *Progress))</code></td>
-<td style="text-align:left">有序遍历追踪的所有进度，并对其执行传入的函数闭包。</td>
+<td align="center"><code>Visit(f func(id uint64, pr *Progress))</code></td>
+<td align="left">有序遍历追踪的所有进度，并对其执行传入的函数闭包。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>QuorumActive() bool</code></td>
-<td style="text-align:left">判断是否有达到quorum数量的节点处于活跃状态（用于<strong>Check Quorum</strong>）。</td>
+<td align="center"><code>QuorumActive() bool</code></td>
+<td align="left">判断是否有达到quorum数量的节点处于活跃状态（用于<strong>Check Quorum</strong>）。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>VoterNodes() []uint64</code></td>
-<td style="text-align:left">返回有序的voter节点id集合。</td>
+<td align="center"><code>VoterNodes() []uint64</code></td>
+<td align="left">返回有序的voter节点id集合。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>LearnerNodes() []uint64</code></td>
-<td style="text-align:left">返回有序的learner节点id集合。</td>
+<td align="center"><code>LearnerNodes() []uint64</code></td>
+<td align="left">返回有序的learner节点id集合。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>ResetVotes()</code></td>
-<td style="text-align:left">重置记录的选票。</td>
+<td align="center"><code>ResetVotes()</code></td>
+<td align="left">重置记录的选票。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>RecordVote(id uint64, v bool)</code></td>
-<td style="text-align:left">记录来自节点<code>id</code>的选票。</td>
+<td align="center"><code>RecordVote(id uint64, v bool)</code></td>
+<td align="left">记录来自节点<code>id</code>的选票。</td>
 </tr>
 <tr>
-<td style="text-align:center"><code>TallyVotes() (granted int, rejected int, _ quorum.VoteResult)</code></td>
-<td style="text-align:left">返回选票中赞同数、反对数、与当前投票结果。</td>
+<td align="center"><code>TallyVotes() (granted int, rejected int, _ quorum.VoteResult)</code></td>
+<td align="left">返回选票中赞同数、反对数、与当前投票结果。</td>
 </tr>
 </tbody>
 </table>
@@ -686,7 +686,7 @@
 </div>
 </article></div>
             </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.81.0">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div>
     </footer></div>
