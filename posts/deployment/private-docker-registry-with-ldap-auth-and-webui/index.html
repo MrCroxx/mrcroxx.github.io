@@ -8,10 +8,10 @@
         <title>带LDAP认证与WebUI的Docker私有仓库搭建 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="带LDAP认证与WebUI的Docker私有仓库搭建" />
 <meta property="og:description" content="带LDAP认证与WebUI的Docker私有仓库搭建 1. 获取docker仓库并运行 docker pull registry:latest docker run -d -p 127.0.0.1:5000:5000 --name registry-localhost -v /opt/docker-registry:/var/lib/registry --restart=always registry:latest 2. 获取WebUI并运行 Docker Regi" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/deployment/private-docker-registry-with-ldap-auth-and-webui/" />
-<meta property="og:image" content="https://mrcroxx.github.io/posts/deployment/private-docker-registry-with-ldap-auth-and-webui/config.jpg"/>
+<meta property="og:url" content="https://mrcroxx.github.io/posts/deployment/private-docker-registry-with-ldap-auth-and-webui/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/deployment/private-docker-registry-with-ldap-auth-and-webui/config.jpg"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2019-07-22T16:37:55+08:00" />
 <meta property="article:modified_time" content="2019-07-22T16:37:55+08:00" />
+
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/deployment/private-docker-registry-with-ldap-auth-and-webui/config.jpg"/>
 <meta name="twitter:title" content="带LDAP认证与WebUI的Docker私有仓库搭建"/>
@@ -147,16 +147,16 @@
 </nav></div>
             </div><div class="content" id="content"><h1 id="带ldap认证与webui的docker私有仓库搭建">带LDAP认证与WebUI的Docker私有仓库搭建</h1>
 <h2 id="1-获取docker仓库并运行">1. 获取docker仓库并运行</h2>
-<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">docker pull registry:latest
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash">docker pull registry:latest
 docker run -d -p 127.0.0.1:5000:5000 --name registry-localhost -v /opt/docker-registry:/var/lib/registry --restart<span class="o">=</span>always registry:latest
 </code></pre></div><h2 id="2-获取webui并运行">2. 获取WebUI并运行</h2>
 <p><em>Docker Registry的WebUI有很多，这里使用konradkleine/docker-registry-frontend:v2</em></p>
-<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">docker pull konradkleine/docker-registry-frontend:v2
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash">docker pull konradkleine/docker-registry-frontend:v2
 docker run -d -e <span class="nv">ENV_DOCKER_REGISTRY_HOST</span><span class="o">=</span>barricade.ivic.org.cn -e <span class="nv">ENV_DOCKER_REGISTRY_PORT</span><span class="o">=</span><span class="m">80</span> -p 127.0.0.1:8081:80 --restart<span class="o">=</span>always --name frontend-localhost konradkleine/docker-registry-frontend:v2
 </code></pre></div><h2 id="3-搭建带有ldap认证的nginx服务">3. 搭建带有LDAP认证的Nginx服务</h2>
 <p>预编译版本的nginx默认不带有LDAP认证所需模块，需要手动编译nginx与拓展模块。</p>
 <h3 id="31-编译安装nginx依赖">3.1 编译安装nginx依赖</h3>
-<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash"><span class="c1"># 编译安装pcre</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="c1"># 编译安装pcre</span>
 wget ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.42.tar.gz
 tar -zxf pcre-8.42.tar.gz
 <span class="nb">cd</span> pcre-8.42
@@ -181,7 +181,7 @@ sudo apt install libldap2-dev
 <span class="c1"># CentOS</span>
 yum install openldap-devel
 </code></pre></div><h3 id="32-下载nginx与拓展模块源码">3.2 下载nginx与拓展模块源码</h3>
-<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash"><span class="c1"># 下载解压nginx源码</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="c1"># 下载解压nginx源码</span>
 wget https://nginx.org/download/nginx-1.15.11.tar.gz
 tar zxf nginx-1.15.11.tar.gz
 
@@ -189,7 +189,7 @@ tar zxf nginx-1.15.11.tar.gz
 wget https://github.com/kvspb/nginx-auth-ldap/archive/master.zip
 unzip master.zip
 </code></pre></div><h3 id="33-编译安装nginx">3.3 编译安装nginx</h3>
-<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash"><span class="c1"># 编译nginx</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="c1"># 编译nginx</span>
 <span class="nb">cd</span> nginx-1.15.11
 ./configure --sbin-path<span class="o">=</span>/usr/local/nginx/nginx --conf-path<span class="o">=</span>/etc/nginx/nginx.conf --pid-path<span class="o">=</span>/usr/local/nginx/nginx.pid --with-pcre<span class="o">=</span>../pcre-8.42 --with-zlib<span class="o">=</span>../zlib-1.2.11 --with-http_ssl_module --with-stream --with-mail<span class="o">=</span>dynamic  --add-module<span class="o">=</span>~/nginx-auth-ldap-master
 
@@ -200,7 +200,7 @@ sudo make install
 sudo ln -s /usr/local/nginx/nginx /usr/bin/nginx
 </code></pre></div><h3 id="34-编写nginx配置文件etcnginxnginxconf">3.4 编写nginx配置文件/etc/nginx/nginx.conf</h3>
 <p><strong>注意替换ldap_server中参数，同时注意其他位置关于host与port的配置</strong></p>
-<pre><code>worker_processes  1;
+<pre tabindex="0"><code>worker_processes  1;
 
 events {
     worker_connections  1024;
@@ -281,7 +281,7 @@ http {
 }
 </code></pre><h3 id="35-配置nginx服务管理与自启动">3.5 配置Nginx服务管理与自启动</h3>
 <p>编写服务<code>/lib/systemd/system/nginx.service</code></p>
-<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash"><span class="o">[</span>Unit<span class="o">]</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="o">[</span>Unit<span class="o">]</span>
 <span class="nv">Description</span><span class="o">=</span>nginx - high performance web server
 <span class="nv">Documentation</span><span class="o">=</span>http://nginx.org/en/docs/
 <span class="nv">After</span><span class="o">=</span>network.target
@@ -297,20 +297,20 @@ http {
 <span class="o">[</span>Install<span class="o">]</span>
 <span class="nv">WantedBy</span><span class="o">=</span>multi-user.target
 </code></pre></div><p>启动Nginx服务并设置自启动</p>
-<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">sudo systemctl daemon-reload
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash">sudo systemctl daemon-reload
 sudo systemctl start nginx
 sudo systemctl status nginx
 sudo systemctl <span class="nb">enable</span> nginx
 </code></pre></div><h2 id="4-客户端配置">4. 客户端配置</h2>
 <p>docker仅支持https的仓库，在内网中无需使用https，因此需要将仓库加入docker的白名单。</p>
 <h3 id="41-编写etcdockerdaemonjson">4.1 编写/etc/docker/daemon.json</h3>
-<div class="highlight"><pre class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
     <span class="nt">&#34;insecure-registries&#34;</span><span class="p">:[</span>
         <span class="s2">&#34;barricade.ivic.org.cn&#34;</span>
     <span class="p">]</span>
 <span class="p">}</span>
 </code></pre></div><h3 id="42-重启docker服务">4.2 重启docker服务</h3>
-<div class="highlight"><pre class="chroma"><code class="language-bash" data-lang="bash">sudo systemctl restart docker
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash">sudo systemctl restart docker
 </code></pre></div></div><div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
@@ -339,7 +339,7 @@ sudo systemctl <span class="nb">enable</span> nginx
 </div>
 </article></div>
             </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div>
     </footer></div>

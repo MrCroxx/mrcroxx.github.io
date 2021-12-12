@@ -8,10 +8,10 @@
         <title>《Paxos Made Simple》论文翻译 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《Paxos Made Simple》论文翻译" />
 <meta property="og:description" content="本篇文章是对论文Paxos Made Simple的原创翻译，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/paxos-made-simple/" />
-<meta property="og:image" content="https://mrcroxx.github.io/posts/paper-reading/paxos-made-simple/paper-reading.jpg"/>
+<meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/paxos-made-simple/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/paper-reading/paxos-made-simple/paper-reading.jpg"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2020-09-21T13:34:37+08:00" />
 <meta property="article:modified_time" content="2020-09-24T10:23:56+08:00" />
+
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/paper-reading/paxos-made-simple/paper-reading.jpg"/>
 <meta name="twitter:title" content="《Paxos Made Simple》论文翻译"/>
@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/paxos-made-simple\/paper-reading.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "Paxos, Translation","wordcount":  9749 ,
+                        }],"genre": "posts","keywords": "Paxos, Translation","wordcount":  9757 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/paxos-made-simple\/","datePublished": "2020-09-21T13:34:37+08:00","dateModified": "2020-09-24T10:23:56+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,7 +110,7 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">《Paxos Made Simple》论文翻译</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-21">2020-09-21</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 9749 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-21">2020-09-21</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 9757 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 20 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
@@ -189,14 +189,14 @@
 <p>因为提议号全都是有序的，条件<strong>P2</strong>保证了“只有一个值被选取”的关键属性。</p>
 <p>为了能被选中，提议必须要被至少一个acceptor接受。所以，我们可以通过满足如下的条件来满足<strong>P2</strong>：</p>
 <p><strong>P2<sup>a</sup>：</strong> 如果一个有值$v$的提议被选取，那么被任意acceptor选取的每个有更大的提议号的提议的值都为$v$。</p>
-<p>我们仍保持<strong>P1</strong>以确保某个提议被选取。因为通信是异步的，提议可以被某个从未收到任何提议的acceptor $c$选取。假设一个新proposer被“唤醒”，并提出了一个有不同值的提议号更高的提议。<strong>P1</strong>要求$c$接受该提议，这违背了<strong>P2<sup>a</sup></strong>。为了同时维护<strong>P1</strong>和<strong>P2<sup>a</sup></strong>，需要将<strong>P2<sup>a</sup></strong>增强为：</p>
+<p>我们仍保持<strong>P1</strong>以确保某个提议被选取。因为通信是异步的，提议可以被某个从未收到任何提议的acceptor $c$选取。假设一个新proposer被“唤醒”，并提出了一个有不同值的提议号更高的提议。<strong>P1</strong>要求$c$接受该提议，这违背了<strong>P2<sup>a</sup></strong>。为了同时维护<strong>P1</strong>和<strong>P2<sup>a</sup></strong>，需要将**P2<sup>a</sup>**增强为：</p>
 <p><strong>P2<sup>b</sup>：</strong> 如果一个有值$v$的提议被选取，那么被任意proposer提出的每个有更大的提议号的提议的值都为$v$。</p>
-<p>因为提议在被acceptor提出前，必须先被proposer提出，因此<strong>P2<sup>b</sup></strong>包含<strong>P2<sup>a</sup></strong>，而<strong>P2<sup>a</sup></strong>也包含<strong>P2</strong>。</p>
+<p>因为提议在被acceptor提出前，必须先被proposer提出，因此<strong>P2<sup>b</sup><strong>包含</strong>P2<sup>a</sup></strong>，而<strong>P2<sup>a</sup><strong>也包含</strong>P2</strong>。</p>
 <p>为了探究如何满足P2<sup>b</sup>，让我们来考虑一下如何证明它成立。我们先假设某个提议号为$m$、值为$v$的提议被选取了，这意味着任何被提出的提议号为$n（n&gt;m）$的提议同样有值$v$。我们通过对$n$进行归纳来使证明更加简单，因此我们可以通过如下方式证明。假设每个被提出的提议号为$m..(n-1)$的提议值为$v$，$i..j$表示从$i$到$j$的一组数，那么提议号为$n$的提议的值为$v$。对于将会被选取的提议号为$m$的提议，必须有某个acceptor的集合$C$，$C$由大多数的acceptor组成，且每个$C$中的acceptor的都接受了该提议。将其与归纳假设结合，可得知，$m$被选取的假设包含了：</p>
 <p>$C$中的每个acceptor都接受了一个提议号在$m..(n-1)$间的提议，且每个提议号在$m..(n-1)$且被任意acceptor接受的提议的值都为$v$。</p>
 <p>因为任意由大多数acceptor组成的集合$S$中会包含$C$中的至少一个acceptor，我们可以得出，在确保如下的不变式成立时，提议号为$n$的提议值为$v$成立：</p>
 <p><strong>P2<sup>c</sup>：</strong> 对于任意$v$和$n$，如果有提议号为$n$且值为$v$的提议被提出，那么有由大多数acceptor组成的集合$S$，（a）$S$中没有acceptor接受了提议号小于$n$的提议，或（b）$v$是被$S$中的acceptor接受的提议号小于$n$的所有提议中，提议号最高的提议的值。</p>
-<p>因此，我们可以通过维护不变式<strong>P2<sup>c</sup></strong>来满足<strong>P2<sup>b</sup></strong>。</p>
+<p>因此，我们可以通过维护不变式<strong>P2<sup>c</sup><strong>来满足</strong>P2<sup>b</sup></strong>。</p>
 <p>为了维护不变式<strong>P2<sup>c</sup></strong>，想要提出一个提议号为$n$的proposer必须获悉（如果存在的话）已经被或将要被任意大多数acceptor接受的提议号小于$n$的提议中提议号最大的提议。获悉已经被接受的提议很简单，但是预测未来要被接受的提议就很困难。与其试图预测未来，proposer通过兑现“未来不存在这种接受情况”这一承诺来控制这一点。换句话说，porposer要求acceptor不再接受提议号小于$n$的提议。这导致采用如下算法来提出协议：</p>
 <ol>
 <li>
@@ -212,10 +212,10 @@
 </ol>
 <p>这描述了proposer的算法。那么acceptor的算法是怎样的呢？其可能接受两种来自proposer的请求：prepare请求和accept请求。acceptor可以在不影响安全性的情况下接受或忽略任何请求。所以，我们只需要说明其什么时候可以相应请求。acceptor总是可以响应prepare请求。当且仅当acceptor没有承诺不接受时，acceptor可以响应accept请求并接受其提议。换句话说：</p>
 <p><strong>P1<sup>a</sup>：</strong> 当且仅当acceptor没有响应一个提议号大于$n$的prepare请求时，其可以接受一个提议号为$n$的提议。</p>
-<p>显然，<strong>P1<sup>a</sup></strong>包含了<strong>P1</strong>。</p>
+<p>显然，<strong>P1<sup>a</sup><strong>包含了</strong>P1</strong>。</p>
 <p>现在，我们在假设提议号唯一的条件下，得到了满足安全性的完整的选取值的算法。最终算法只需要一个小优化就能得到。</p>
 <p>假设acceptor收到了一个提议号为$n$的prepare请求，但是它已经响应了提议号大于$n$的prepare请求（因此它承诺了不再接受提议号为$n$的新提议）。这样acceptor没有响应这个新prepare请求的理由，因为它不会接受该proposer想要提出的提议号为$n$的提议。所以，我们让acceptor忽略这样的prepare请求。我们还让acceptor忽略其已经接受的提议的prepare请求。</p>
-<p>通过这个优化，acceptor只需要记住其曾经接受过的提议号最高的提议和其响应过的prepare请求中最高的提议号。因为无论是否发生故障，<strong>P2<sup>c</sup></strong>都需要被保证，所以即使acceptor故障且随后重启，其也必须能够记住这个信息。需要注意的是，proposer总是可以丢弃一个提议并忘记关于该提议的一切，只要该proposer不再试图提出另一个有相同提议号的提议。</p>
+<p>通过这个优化，acceptor只需要记住其曾经接受过的提议号最高的提议和其响应过的prepare请求中最高的提议号。因为无论是否发生故障，**P2<sup>c</sup>**都需要被保证，所以即使acceptor故障且随后重启，其也必须能够记住这个信息。需要注意的是，proposer总是可以丢弃一个提议并忘记关于该提议的一切，只要该proposer不再试图提出另一个有相同提议号的提议。</p>
 <p>将proposer和acceptor的行为放在一起，我们可以发现算法操作包括如下两个阶段。</p>
 <p><strong>阶段1：</strong></p>
 <p>（a）prposer选取一个提议号$n$，并向大多数acceptor发送有提议号$n$的prepare请求。</p>
@@ -286,7 +286,7 @@
 </div>
 </article></div>
             </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div>
     </footer></div>

@@ -8,10 +8,10 @@
         <title>《An Empirical Evaluation of In-Memory Multi-Version Concurrency Control》论文翻译 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《An Empirical Evaluation of In-Memory Multi-Version Concurrency Control》论文翻译" />
 <meta property="og:description" content="本篇文章是对论文An Empirical Evaluation of In-Memory Multi-Version Concurrency Control的原创翻译，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/wu-vldb2017/" />
-<meta property="og:image" content="https://mrcroxx.github.io/posts/paper-reading/wu-vldb2017/paper-reading.jpg"/>
+<meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/wu-vldb2017/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/paper-reading/wu-vldb2017/paper-reading.jpg"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2020-10-08T16:02:56+08:00" />
 <meta property="article:modified_time" content="2020-10-12T14:36:33+08:00" />
+
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/paper-reading/wu-vldb2017/paper-reading.jpg"/>
 <meta name="twitter:title" content="《An Empirical Evaluation of In-Memory Multi-Version Concurrency Control》论文翻译"/>
@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/wu-vldb2017\/paper-reading.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "MVCC, Translation","wordcount":  28118 ,
+                        }],"genre": "posts","keywords": "MVCC, Translation","wordcount":  28112 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/wu-vldb2017\/","datePublished": "2020-10-08T16:02:56+08:00","dateModified": "2020-10-12T14:36:33+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,7 +110,7 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">《An Empirical Evaluation of In-Memory Multi-Version Concurrency Control》论文翻译</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-10-08">2020-10-08</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 28118 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-10-08">2020-10-08</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 28112 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 57 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
@@ -183,11 +183,11 @@
 </nav></div>
             </div><div class="content" id="content"><p><em>本篇文章是对论文<a href="https://15721.courses.cs.cmu.edu/spring2019/papers/03-mvcc1/wu-vldb2017.pdf" target="_blank" rel="noopener noreffer">An Empirical Evaluation of In-Memory Multi-Version Concurrency Control</a>的原创翻译，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
 <h2 id="作者">作者</h2>
-<p>Yingjun Wu National University of Singapore <a href="mailto:yingjun@comp.nus.edu.sg">yingjun@comp.nus.edu.sg</a></p>
-<p>Joy Arulraj Carnegie Mellon University <a href="mailto:jarulraj@cs.cmu.edu">jarulraj@cs.cmu.edu</a></p>
-<p>Jiexi Lin Carnegie Mellon University <a href="mailto:jiexil@cs.cmu.edu">jiexil@cs.cmu.edu</a></p>
-<p>Ran Xian Carnegie Mellon University <a href="mailto:rxian@cs.cmu.edu">rxian@cs.cmu.edu</a></p>
-<p>Andrew Pavlo Carnegie Mellon University <a href="mailto:pavlo@cs.cmu.edu">pavlo@cs.cmu.edu</a></p>
+<p>Yingjun Wu National University of Singapore <a href="mailto:yingjun@comp.nus.edu.sg" rel="">yingjun@comp.nus.edu.sg</a></p>
+<p>Joy Arulraj Carnegie Mellon University <a href="mailto:jarulraj@cs.cmu.edu" rel="">jarulraj@cs.cmu.edu</a></p>
+<p>Jiexi Lin Carnegie Mellon University <a href="mailto:jiexil@cs.cmu.edu" rel="">jiexil@cs.cmu.edu</a></p>
+<p>Ran Xian Carnegie Mellon University <a href="mailto:rxian@cs.cmu.edu" rel="">rxian@cs.cmu.edu</a></p>
+<p>Andrew Pavlo Carnegie Mellon University <a href="mailto:pavlo@cs.cmu.edu" rel="">pavlo@cs.cmu.edu</a></p>
 <h2 id="摘要">摘要</h2>
 <p>多版本并发控制（Multi-version concurrency control，MVCC）目前是现代数据库管理系统（DBMS）中最热门的事务管理策略。尽管MVCC在1970年代晚期就已经被发明出来了，但是在过去的十年中，在几乎所有主要的关系型DBMS中都使用了它。在处理事务时，维护数据的多个版本可以在不牺牲串行性的同时提高并行性。但是在多核和内存的配置中扩展MVCC并非易事：当有大量线程并行运行时，同步带来的开销可能超过多版本带来的好处。</p>
 <p>为了理解在现代的硬件配置下处理事务时MVCC如何执行，我们对MVCC的4个关键设计决策进行了大量研究：并发控制协议、版本存储、垃圾回收、和索引管理。我们在内存式DBMS中以最高水平实现了这些所有内容的变体，并通过OLTP负载对它们进行了评估。我们的分析确定了每种设计选择的基本瓶颈。</p>
@@ -232,7 +232,7 @@
 <p>本章中，我们描述了MVCC DBMS的4中核心并发控制协议。我们仅考虑了使用元组级锁的协议，因为这足以确保串行化执行。我们忽略了范围查询，因为多版本没有为防止幻读带来任何好处<sup>[7]</sup>。已有的提供了串行事务处理的方法，（1）或者在索引上使用了额外的闩<sup>[35, 44]</sup>，（2）或者在事务提交时使用了额外的校验步骤<sup>[27]</sup>。</p>
 <h3 id="31-时间戳排序timestamp-orderingmvto">3.1 时间戳排序（Timestamp Ordering）——MVTO</h3>
 <p>1979年的MVTO算法被认为是最初的并发控制协议<sup>[38, 39]</sup>。该方法的核心在于使用事务的标识符（$ T_{id} $）来预计算它们的串行顺序。除了<a href="#22-dbms%e5%85%83%e6%95%b0%e6%8d%ae" rel="">章节2.2</a>中描述的字段以外，其版本头中还包括最后一次读取了它的事务的标识符（<code>read-ts</code>）。当事务视图读取或更新一个被其它事务持有其写入锁的版本时，DBMS会打断该事务。</p>
-<p>当事务$T$在逻辑元组$A$上调用了一个读操作时，DBMS会搜索一个能使该$ T_{id} $在其<code>begin-ts</code>和<code>end-ts</code>字段的范围间的物理版本。如**图2a**所示，如果版本$A_x$的写入锁没有被另一个活动的事务持有（即，<code>txn-id</code>的值为0或等于$ T_{id} $），那么$T$会被允许读取该版本，因为MVTO永远不会允许一个事务读取未提交的版本。一旦事务读取了$A_x$，如果$A_x$的<code>read-ts</code>字段的当前值小于$ T_{id} $，那么DBMS会将其置为$ T_{id} $。否则，该事务将读取一个较旧的版本，且不会更新该字段。</p>
+<p>当事务$T$在逻辑元组$A$上调用了一个读操作时，DBMS会搜索一个能使该$ T_{id} $在其<code>begin-ts</code>和<code>end-ts</code>字段的范围间的物理版本。如<strong>图2a</strong>所示，如果版本$A_x$的写入锁没有被另一个活动的事务持有（即，<code>txn-id</code>的值为0或等于$ T_{id} $），那么$T$会被允许读取该版本，因为MVTO永远不会允许一个事务读取未提交的版本。一旦事务读取了$A_x$，如果$A_x$的<code>read-ts</code>字段的当前值小于$ T_{id} $，那么DBMS会将其置为$ T_{id} $。否则，该事务将读取一个较旧的版本，且不会更新该字段。</p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/figure-2.png" title="图2 并发控制协议——协议如何处理先执行READ然后执行UPDATE的事务的示例。" data-thumbnail="/posts/paper-reading/wu-vldb2017/figure-2.png" data-sub-html="<h2>图2 并发控制协议——协议如何处理先执行READ然后执行UPDATE的事务的示例。</h2><p>图2 并发控制协议——协议如何处理先执行READ然后执行UPDATE的事务的示例。</p>">
         <img
             class="lazyload"
@@ -247,7 +247,7 @@
 <h3 id="32-乐观并发控制optimistic-concurrency-controlmvocc">3.2 乐观并发控制（Optimistic Concurrency Control）——MVOCC</h3>
 <p>接下来的协议基于1981年提出的乐观并发控制策略（OCC）<sup>[26]</sup>。OCC背后的动机是，DBMS假设事务冲突的可能性不大，因此当事务读取或更新元组时没有必要获取元组上的锁。这减少了事务持有锁的总时间。为了使原始的OCC协议适应多版本，需要对它作出一些修改<sup>[27]</sup>。其中最重要的是，DBMS不会为事务维护一个私有的工作空间（workspace），因为元组的版本信息已经防止了事务读取或更新应对它们不可见的版本。</p>
 <p>MVOCC协议将事务分为了3个阶段。当事务开始时，它处于<em>读阶段（read phase）</em> 。这是事务在数据库上调用读或更新操作的阶段。与MVTO相似，为了在元组$A$上执行读操作，DBMS首先会基于元组的<code>begin-ts</code>和<code>end-ts</code>字段搜索一个可见的版本$A_x$。如果版本$A_x$的写入锁没被获取，那么$T$会被允许更新该版本。在多版本配置下，如果事务更新了版本$B_x$，那么DBMS会创建版本$ B_{x+1} $并将其<code>txn-id</code>置为$ T_{id} $。</p>
-<p>当事务告知DBMS它要提交时，事务会进入<em>校验阶段（validation phase）</em> 。首先，DBMS会为该事务分配另一个时间戳（$ T_{commit} $）来确定该事务读取的元组的集合是否被一个已提交的事务更新了。如果该事务通过过了这些检查，那么它会进入*写阶段（write phase）* ，在这一阶段DBMS会安装（install）所有的新版本且将它们的<code>begin-ts</code>置为$ T_{commit} $并将<code>end-ts</code>置为INF。</p>
+<p>当事务告知DBMS它要提交时，事务会进入<em>校验阶段（validation phase）</em> 。首先，DBMS会为该事务分配另一个时间戳（$ T_{commit} $）来确定该事务读取的元组的集合是否被一个已提交的事务更新了。如果该事务通过过了这些检查，那么它会进入<em>写阶段（write phase）</em> ，在这一阶段DBMS会安装（install）所有的新版本且将它们的<code>begin-ts</code>置为$ T_{commit} $并将<code>end-ts</code>置为INF。</p>
 <p>事务只能更新元组的最新的版本。但是事务在其它事务创建新版本的提交前，它都不能读该新版本。读到过时版本的事务仅会在校验阶段发现它应该终止。</p>
 <h3 id="33-两阶段锁two-phase-lockingmv2pl">3.3 两阶段锁（Two-phase Locking）——MV2PL</h3>
 <p>该协议使用了两阶段锁（2PL）的方法<sup>[11]</sup>来确保事务的串行性。每个事务在被允许读取或修改逻辑元组的当前版本前，需要获取适当的锁。在基于磁盘的DBMS中，锁会与元组分开存储，这样锁永远不会被换出（swap）到磁盘中。而在内存式DBMS中，分开存储时不必要的，因此使用MV2PL时，锁被嵌入在了元组的头部中。元组的<em>写入锁</em> 是<code>txn-id</code>字段。而对于<em>读取锁</em> ，DBMS使用<code>read-cnt</code>字段对读取该元组的活动的事务计数。尽管不是必需的，DBMS还是将<code>txn-id</code>和<code>read-cnt</code>装入连续的64位字中，这样DBMS可以使用一个CaS指令来同时更新它们。</p>
@@ -598,12 +598,12 @@
 <p>致谢： This work was supported (in part) by the National Science Foundation (CCF-1438955) and the Samsung Fellowship Program. We also thank Tianzheng Wang for his feedback.</p>
 <h2 id="参考文献">参考文献</h2>
 <div class="reference">
-<p>[1] MemSQL. <a href="http://www.memsql.com">http://www.memsql.com</a>.</p>
-<p>[2] MySQL. <a href="http://www.mysql.com">http://www.mysql.com</a>.</p>
-<p>[3] NuoDB. <a href="http://www.nuodb.com">http://www.nuodb.com</a>.</p>
-<p>[4] Oracle Timeline. <a href="http://oracle.com.edgesuite.net/timeline/oracle/">http://oracle.com.edgesuite.net/timeline/oracle/</a>.</p>
-<p>[5] Peloton. <a href="http://pelotondb.org">http://pelotondb.org</a>.</p>
-<p>[6] PostgreSQL. <a href="http://www.postgresql.org">http://www.postgresql.org</a>.</p>
+<p>[1] MemSQL. <a href="http://www.memsql.com" target="_blank" rel="noopener noreffer">http://www.memsql.com</a>.</p>
+<p>[2] MySQL. <a href="http://www.mysql.com" target="_blank" rel="noopener noreffer">http://www.mysql.com</a>.</p>
+<p>[3] NuoDB. <a href="http://www.nuodb.com" target="_blank" rel="noopener noreffer">http://www.nuodb.com</a>.</p>
+<p>[4] Oracle Timeline. <a href="http://oracle.com.edgesuite.net/timeline/oracle/" target="_blank" rel="noopener noreffer">http://oracle.com.edgesuite.net/timeline/oracle/</a>.</p>
+<p>[5] Peloton. <a href="http://pelotondb.org" target="_blank" rel="noopener noreffer">http://pelotondb.org</a>.</p>
+<p>[6] PostgreSQL. <a href="http://www.postgresql.org" target="_blank" rel="noopener noreffer">http://www.postgresql.org</a>.</p>
 <p>[7] J. Arulraj and et al. Bridging the Archipelago between Row-Stores and Column-Stores for Hybrid Workloads. SIGMOD, 2016.</p>
 <p>[8] H. Berenson and et al. A Critique of ANSI SQL Isolation Levels. SIGMOD’95.</p>
 <p>[9] P. A. Bernstein and N. Goodman. Concurrency Control in Distributed Database Systems. CSUR, 13(2), 1981.</p>
@@ -619,10 +619,10 @@
 <p>[19] B. Fan, D. G. Andersen, and M. Kaminsky. MemC3: Compact and Concurrent MemCache with Dumber Caching and Smarter Hashing. In NSDI, 2013.</p>
 <p>[20] A. Fekete, D. Liarokapis, E. O’Neil, P. O’Neil, and D. Shasha. Making Snapshot Isolation Serializable. TODS, 30(2), 2005.</p>
 <p>[21] M. Grund, J. Krüger, H. Plattner, A. Zeier, P. Cudre-Mauroux, and S. Madden. HYRISE: A Main Memory Hybrid Storage Engine. VLDB, 2010.</p>
-<p>[22] A. Harrison. InterBase’s Beginnings. <a href="http://www.firebirdsql.org/en/annharrison-s-reminiscences-on-interbase-s-beginnings/">http://www.firebirdsql.org/en/annharrison-s-reminiscences-on-interbase-s-beginnings/</a>.</p>
+<p>[22] A. Harrison. InterBase’s Beginnings. <a href="http://www.firebirdsql.org/en/annharrison-s-reminiscences-on-interbase-s-beginnings/" target="_blank" rel="noopener noreffer">http://www.firebirdsql.org/en/annharrison-s-reminiscences-on-interbase-s-beginnings/</a>.</p>
 <p>[23] S. Héman, M. Zukowski, N. J. Nes, L. Sidirourgos, and P. Boncz. Positional Update Handling in Column Stores. SIGMOD, 2010.</p>
 <p>[24] K. Kim, T. Wang, J. Ryan, and I. Pandis. ERMIA: Fast Memory-Optimized Database System for Heterogeneous Workloads. SIGMOD, 2016.</p>
-<p>[25] E. Klitzke. Why uber engineering switched from postgres to mysql. <a href="https://eng.uber.com/mysql-migration/,">https://eng.uber.com/mysql-migration/,</a> July 2016.</p>
+<p>[25] E. Klitzke. Why uber engineering switched from postgres to mysql. <a href="https://eng.uber.com/mysql-migration/" target="_blank" rel="noopener noreffer">https://eng.uber.com/mysql-migration/</a>, July 2016.</p>
 <p>[26] H.-T. Kung and J. T. Robinson. On Optimistic Methods for Concurrency Control. TODS, 6(2), 1981.</p>
 <p>[27] P.-Å. Larson and et al. High-Performance Concurrency Control Mechanisms for Main-Memory Databases. VLDB, 2011.</p>
 <p>[28] J. Lee, M. Muehle, N. May, F. Faerber, V. Sikka, H. Plattner, J. Krueger, and M. Grund. High-Performance Transaction Processing in SAP HANA. IEEE Data Eng. Bull., 36(2), 2013.</p>
@@ -640,7 +640,7 @@
 <p>[40] V. Sikka and et al. Efficient Transaction Processing in SAP HANA Database: The End of a Column Store Myth. SIGMOD, 2012.</p>
 <p>[41] M. Stonebraker and L. A. Rowe. The Design of POSTGRES. SIGMOD, 1986.</p>
 <p>[42] M. Stonebraker and et al. The End of an Architectural Era: (It’s Time for a Complete Rewrite). VLDB, 2007.</p>
-<p>[43] The Transaction Processing Council. TPC-C Benchmark (Revision 5.9.0). <a href="http://www.tpc.org/tpcc/spec/tpcc_current.pdf,">http://www.tpc.org/tpcc/spec/tpcc_current.pdf,</a> June 2007.</p>
+<p>[43] The Transaction Processing Council. TPC-C Benchmark (Revision 5.9.0). <a href="http://www.tpc.org/tpcc/spec/tpcc_current.pdf" target="_blank" rel="noopener noreffer">http://www.tpc.org/tpcc/spec/tpcc_current.pdf</a>, June 2007.</p>
 <p>[44] S. Tu, W. Zheng, E. Kohler, B. Liskov, and S. Madden. Speedy Transactions in Multicore In-Memory Databases. In SOSP, 2013.</p>
 <p>[45] T. Wang, R. Johnson, A. Fekete, and I. Pandis. Efficiently Making (Almost) Any Concurrency Control Mechanism Serializable. arXiv:1605.04292, 2016.</p>
 <p>[46] Y. Wu, C.-Y. Chan, and K.-L. Tan. Transaction Healing: Scaling Optimistic Concurrency Control on Multicores. In SIGMOD, 2016.</p>
@@ -675,7 +675,7 @@
 </div>
 </article></div>
             </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div>
     </footer></div>

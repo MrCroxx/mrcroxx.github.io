@@ -8,10 +8,10 @@
         <title>深入浅出boltdb —— 0x02 B&#43;Tree - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出boltdb —— 0x02 B&#43;Tree" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/2-b&#43;tree/" />
-<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/2-b&#43;tree/boltdb.jpg"/>
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/2-b&#43;tree/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/2-b&#43;tree/boltdb.jpg"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2021-01-19T21:25:36+08:00" />
 <meta property="article:modified_time" content="2021-01-19T21:25:39+08:00" />
+
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/2-b&#43;tree/boltdb.jpg"/>
 <meta name="twitter:title" content="深入浅出boltdb —— 0x02 B&#43;Tree"/>
@@ -27,14 +27,14 @@
         "inLanguage": "zh-CN",
         "mainEntityOfPage": {
             "@type": "WebPage",
-            "@id": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/2-b\x2btree\/"
+            "@id": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/2-b\u002btree\/"
         },"image": [{
                             "@type": "ImageObject",
-                            "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/2-b\x2btree\/boltdb.jpg",
+                            "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/2-b\u002btree\/boltdb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  7330 ,
-        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/2-b\x2btree\/","datePublished": "2021-01-19T21:25:36+08:00","dateModified": "2021-01-19T21:25:39+08:00","publisher": {
+                        }],"genre": "posts","keywords": "boltdb, B\u002bTree","wordcount":  7330 ,
+        "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/2-b\u002btree\/","datePublished": "2021-01-19T21:25:36+08:00","dateModified": "2021-01-19T21:25:39+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
                 "@type": "Person",
@@ -190,7 +190,7 @@
 <p>本文主要关注boltdb中B+Tree在内存中的实现（heap memory），B+Tree在存储中的实现（mmap memory - page）笔者已经在本系列的<a href="/posts/code-reading/boltdb-made-simple/1-storage-cache/" rel="">存储与缓存</a>中介绍过，这里不再赘述。而node实例化的具体时机与boltdb中cursor的实现有关，因此笔者将其留到了本系列的后续文章中介绍。</p>
 <h3 id="11-node结构体">1.1 node结构体</h3>
 <p>boltdb中B+Tree的实现主要在<code>node.go</code>中。node结构体表示了boltdb中B+Tree的节点，其实现如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// node represents an in-memory, deserialized page.
 </span><span class="c1"></span><span class="kd">type</span> <span class="nx">node</span> <span class="kd">struct</span> <span class="p">{</span>
 	<span class="nx">bucket</span>     <span class="o">*</span><span class="nx">Bucket</span>
@@ -219,52 +219,52 @@
 </code></pre></div><table>
 <thead>
 <tr>
-<th align="center">字段<div style="width: 14em"></th>
-<th align="left">描述</th>
+<th style="text-align:center">字段<div style="width: 14em"></th>
+<th style="text-align:left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center"><code>bucket *Bucket</code></td>
-<td align="left">该node所属的bucket指针。</td>
+<td style="text-align:center"><code>bucket *Bucket</code></td>
+<td style="text-align:left">该node所属的bucket指针。</td>
 </tr>
 <tr>
-<td align="center"><code>isLeaf bool</code></td>
-<td align="left">当前node是否为叶子节点。</td>
+<td style="text-align:center"><code>isLeaf bool</code></td>
+<td style="text-align:left">当前node是否为叶子节点。</td>
 </tr>
 <tr>
-<td align="center"><code>unbalanced bool</code></td>
-<td align="left">当前node是否可能不平衡。</td>
+<td style="text-align:center"><code>unbalanced bool</code></td>
+<td style="text-align:left">当前node是否可能不平衡。</td>
 </tr>
 <tr>
-<td align="center"><code>spilled bool</code></td>
-<td align="left">当前node是否已被调整过。</td>
+<td style="text-align:center"><code>spilled bool</code></td>
+<td style="text-align:left">当前node是否已被调整过。</td>
 </tr>
 <tr>
-<td align="center"><code>key []byte</code></td>
-<td align="left">保存node初始化时的第一个key，用于在调整时索引。</td>
+<td style="text-align:center"><code>key []byte</code></td>
+<td style="text-align:left">保存node初始化时的第一个key，用于在调整时索引。</td>
 </tr>
 <tr>
-<td align="center"><code>pgid pgid</code></td>
-<td align="left">当前node在mmap内存中相应的页id。</td>
+<td style="text-align:center"><code>pgid pgid</code></td>
+<td style="text-align:left">当前node在mmap内存中相应的页id。</td>
 </tr>
 <tr>
-<td align="center"><code>parent *node</code></td>
-<td align="left">父节点指针。</td>
+<td style="text-align:center"><code>parent *node</code></td>
+<td style="text-align:left">父节点指针。</td>
 </tr>
 <tr>
-<td align="center"><code>children nodes</code></td>
-<td align="left">保存已实例化的孩子节点的node，用于<code>spill</code>时递归向下更新node。</td>
+<td style="text-align:center"><code>children nodes</code></td>
+<td style="text-align:left">保存已实例化的孩子节点的node，用于<code>spill</code>时递归向下更新node。</td>
 </tr>
 <tr>
-<td align="center"><code>inodes inodes</code></td>
-<td align="left">该node的内部节点，即该node所包含的元素。</td>
+<td style="text-align:center"><code>inodes inodes</code></td>
+<td style="text-align:left">该node的内部节点，即该node所包含的元素。</td>
 </tr>
 </tbody>
 </table>
 <h3 id="12-node在内存与存储中的关系">1.2 node在内存与存储中的关系</h3>
 <p>node的存储结构即为branchNodePage或leafNodePage，因此，boltdb仅持久化保存了node的<code>isLeaf</code>、<code>pgid</code>、<code>inodes</code>信息，其它信息都是在node创建或加载时指定的。node的<code>write</code>、<code>read</code>方法揭示了node是怎样被序列化或反序列化的：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// read initializes the node from a page.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="o">*</span><span class="nx">node</span><span class="p">)</span> <span class="nf">read</span><span class="p">(</span><span class="nx">p</span> <span class="o">*</span><span class="nx">page</span><span class="p">)</span> <span class="p">{</span>
 	<span class="nx">n</span><span class="p">.</span><span class="nx">pgid</span> <span class="p">=</span> <span class="nx">p</span><span class="p">.</span><span class="nx">id</span>
@@ -354,7 +354,7 @@
 </span><span class="c1"></span><span class="p">}</span>
 
 </code></pre></div><p>需要注意的是，当读取page构建node时，<code>inode</code>的key与value是直接引用的page的地址，即node构建后并非完全不在依赖其page中的数据。但是随着数据库增大，当boltdb需要重新mmap以扩展存储空间时，boltdb需要执行<code>dereference</code>操作：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// dereference causes the node to copy all its inode key/value references to heap memory.
 </span><span class="c1">// This is required when the mmap is reallocated so inodes are not pointing to stale data.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="o">*</span><span class="nx">node</span><span class="p">)</span> <span class="nf">dereference</span><span class="p">()</span> <span class="p">{</span>
@@ -403,57 +403,57 @@
 <table>
 <thead>
 <tr>
-<th align="center">方法<div style="width: 14em"></th>
-<th align="left">描述</th>
+<th style="text-align:center">方法<div style="width: 14em"></th>
+<th style="text-align:left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center"><code>root() *node</code></td>
-<td align="left">当前node所在B+Tree的根节点。</td>
+<td style="text-align:center"><code>root() *node</code></td>
+<td style="text-align:left">当前node所在B+Tree的根节点。</td>
 </tr>
 <tr>
-<td align="center"><code>minKeys() int</code></td>
-<td align="left">节点至少应有的key的个数，leafNode返回1，branchNode返回2。</td>
+<td style="text-align:center"><code>minKeys() int</code></td>
+<td style="text-align:left">节点至少应有的key的个数，leafNode返回1，branchNode返回2。</td>
 </tr>
 <tr>
-<td align="center"><code>size() int</code></td>
-<td align="left">当前节点序列化后的字节数。</td>
+<td style="text-align:center"><code>size() int</code></td>
+<td style="text-align:left">当前节点序列化后的字节数。</td>
 </tr>
 <tr>
-<td align="center"><code> sizeLessThan(v int) bool</code></td>
-<td align="left">判断当前节点序列化后字节数是否小于给定值，当累加计算超出给定值时立即返回false，用于比较时性能比直接调用<code>size</code>方法好一些。</td>
+<td style="text-align:center"><code> sizeLessThan(v int) bool</code></td>
+<td style="text-align:left">判断当前节点序列化后字节数是否小于给定值，当累加计算超出给定值时立即返回false，用于比较时性能比直接调用<code>size</code>方法好一些。</td>
 </tr>
 <tr>
-<td align="center"><code>pageElementSize() int</code></td>
-<td align="left">当前类型节点的inode的header大小，用于计算序列化后字节数。</td>
+<td style="text-align:center"><code>pageElementSize() int</code></td>
+<td style="text-align:left">当前类型节点的inode的header大小，用于计算序列化后字节数。</td>
 </tr>
 <tr>
-<td align="center"><code>childAt(index int) *node</code></td>
-<td align="left">返回节点当前第<code>index</code>个孩子的指针（而不是初始时的第<code>index</code>个孩子）。</td>
+<td style="text-align:center"><code>childAt(index int) *node</code></td>
+<td style="text-align:left">返回节点当前第<code>index</code>个孩子的指针（而不是初始时的第<code>index</code>个孩子）。</td>
 </tr>
 <tr>
-<td align="center"><code>childIndex(child *node) int</code></td>
-<td align="left">返回给定的节点在当前节点的inode中的序号（而不是初始时的序号）。</td>
+<td style="text-align:center"><code>childIndex(child *node) int</code></td>
+<td style="text-align:left">返回给定的节点在当前节点的inode中的序号（而不是初始时的序号）。</td>
 </tr>
 <tr>
-<td align="center"><code>numChildren() int</code></td>
-<td align="left">当前节点的孩子（inode）的个数。</td>
+<td style="text-align:center"><code>numChildren() int</code></td>
+<td style="text-align:left">当前节点的孩子（inode）的个数。</td>
 </tr>
 <tr>
-<td align="center"><code>nextSibling() *node</code></td>
-<td align="left">当前节点的下一个兄弟节点（通过查询父节点获取）。</td>
+<td style="text-align:center"><code>nextSibling() *node</code></td>
+<td style="text-align:left">当前节点的下一个兄弟节点（通过查询父节点获取）。</td>
 </tr>
 <tr>
-<td align="center"><code>prevSibling() *node</code></td>
-<td align="left">当前节点的上一个兄弟节点（通过查询父节点获取）。</td>
+<td style="text-align:center"><code>prevSibling() *node</code></td>
+<td style="text-align:left">当前节点的上一个兄弟节点（通过查询父节点获取）。</td>
 </tr>
 </tbody>
 </table>
 <p>这些方法的实现都非常简单，这里不再赘述。</p>
 <h3 id="14-node中用于修改的方法">1.4 node中用于修改的方法</h3>
 <p>node还提供了在当前节点上插入（或修改）与删除inode的<code>put</code>、<code>del</code>方法：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// put inserts a key/value.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="o">*</span><span class="nx">node</span><span class="p">)</span> <span class="nf">put</span><span class="p">(</span><span class="nx">oldKey</span><span class="p">,</span> <span class="nx">newKey</span><span class="p">,</span> <span class="nx">value</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">pgid</span> <span class="nx">pgid</span><span class="p">,</span> <span class="nx">flags</span> <span class="kt">uint32</span><span class="p">)</span> <span class="p">{</span>
 	<span class="k">if</span> <span class="nx">pgid</span> <span class="o">&gt;=</span> <span class="nx">n</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">tx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">pgid</span> <span class="p">{</span>
@@ -505,7 +505,7 @@
 <p>boltdb的B+Tree实现中，用来调整B+Tree结构的方法有两个：<code>rebalance</code>和<code>spill</code>。<code>rebalance</code>用于检查node是否由于删除了inode而导致数据填充率低于阈值，并将数据填充率低于阈值的node与其兄弟节点合并，<code>rebalance</code>还会将只有一个孩子的根节点与该其唯一的孩子合并。<code>spill</code>则可以进一步分为两个步骤，<code>spill</code>首先会检查并将填充率过高的节点拆分为多个小节点（split），并维护B+Tree的结构，然后将更新后的节点写到新的page中。因此，在事务提交时，boltdb会先对B+Tree执行<code>rebalance</code>操作再执行<code>spill</code>操作。</p>
 <h4 id="151-rebalance">1.5.1 rebalance</h4>
 <p>首先分析<code>rebalance</code>的实现：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// rebalance attempts to combine the node with sibling nodes if the node fill
 </span><span class="c1">// size is below a threshold or if there are not enough keys.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="o">*</span><span class="nx">node</span><span class="p">)</span> <span class="nf">rebalance</span><span class="p">()</span> <span class="p">{</span>
@@ -639,7 +639,7 @@
 <p>注意，这里“释放page”，指将占用的page加到当前事务的<code>pending</code>列表中，而不是立即释放，因此此时可能仍有只读事务正在读取旧page。由于在合并时，一定在父节点中删除了当前节点的key，因此父节点会变为<code>unbalanced</code>状态，所以需要递归对父节点进行<code>rebalance</code>操作。</p>
 <h4 id="152-spill">1.5.2 spill</h4>
 <p>接下来分析<code>spill</code>及相关方法的实现：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// split breaks up a node into multiple smaller nodes, if appropriate.
 </span><span class="c1">// This should only be called from the spill() function.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="o">*</span><span class="nx">node</span><span class="p">)</span> <span class="nf">split</span><span class="p">(</span><span class="nx">pageSize</span> <span class="kt">int</span><span class="p">)</span> <span class="p">[]</span><span class="o">*</span><span class="nx">node</span> <span class="p">{</span>
@@ -846,7 +846,7 @@
 </div>
 </article></div>
             </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div>
     </footer></div>

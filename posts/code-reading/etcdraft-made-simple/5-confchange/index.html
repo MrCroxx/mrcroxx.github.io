@@ -8,10 +8,10 @@
         <title>深入浅出etcd/raft —— 0x05 Raft成员变更 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出etcd/raft —— 0x05 Raft成员变更" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/5-confchange/" />
-<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/5-confchange/etcd-raft.jpg"/>
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/5-confchange/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/5-confchange/etcd-raft.jpg"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2020-12-29T16:36:16+08:00" />
 <meta property="article:modified_time" content="2020-12-29T16:36:19+08:00" />
+
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/5-confchange/etcd-raft.jpg"/>
 <meta name="twitter:title" content="深入浅出etcd/raft —— 0x05 Raft成员变更"/>
@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/etcdraft-made-simple\/5-confchange\/etcd-raft.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "etcd, Raft","wordcount":  8873 ,
+                        }],"genre": "posts","keywords": "etcd, Raft","wordcount":  8867 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/etcdraft-made-simple\/5-confchange\/","datePublished": "2020-12-29T16:36:16+08:00","dateModified": "2020-12-29T16:36:19+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,7 +110,7 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出etcd/raft —— 0x05 Raft成员变更</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAetcd/raft/"><i class="far fa-folder fa-fw"></i>深入浅出etcd/raft</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-12-29">2020-12-29</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 8873 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-12-29">2020-12-29</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 8867 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 18 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
@@ -230,7 +230,7 @@
 <p>etcd/raft实现的配置是按照<em>joint configuration</em>组织的，本节笔者将以自底向上的方法介绍etcd/raft中配置的实现。</p>
 <h3 id="21-majorityconfig">2.1 MajorityConfig</h3>
 <p>在<em>joint consensus</em>中，中间状态$C_{old},C_{new}$的quorum同时需要$C_{old}$和$C_{new}$各自的majority。$C_{old}$或$C_{new}$配置中voter的集合（voter即有投票权的角色，包括candidate、follower、leader，而不包括learner），是通过<code>MajorityConfig</code>表示的，<code>MajorityConfig</code>还包括了一些统计majority信息的方法。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// MajorityConfig is a set of IDs that uses majority quorums to make decisions.
 </span><span class="c1"></span><span class="kd">type</span> <span class="nx">MajorityConfig</span> <span class="kd">map</span><span class="p">[</span><span class="kt">uint64</span><span class="p">]</span><span class="kd">struct</span><span class="p">{}</span>
 
@@ -238,23 +238,23 @@
 <table>
 <thead>
 <tr>
-<th align="center">方法<div style="width: 12em"></div></th>
-<th align="left">描述</th>
+<th style="text-align:center">方法<div style="width: 12em"></div></th>
+<th style="text-align:left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center"><code>CommittedIndex(l AckedIndexer) Index</code></td>
-<td align="left">根据给定的<code>AckedIndexer</code>计算被大多数节点接受了的<em>commit index</em> 。</td>
+<td style="text-align:center"><code>CommittedIndex(l AckedIndexer) Index</code></td>
+<td style="text-align:left">根据给定的<code>AckedIndexer</code>计算被大多数节点接受了的<em>commit index</em> 。</td>
 </tr>
 <tr>
-<td align="center"><code>VoteResult(votes map[uint64]bool) VoteResult</code></td>
-<td align="left">根据给定的投票统计计算投票结果。</td>
+<td style="text-align:center"><code>VoteResult(votes map[uint64]bool) VoteResult</code></td>
+<td style="text-align:left">根据给定的投票统计计算投票结果。</td>
 </tr>
 </tbody>
 </table>
 <p><code>CommittedIndex</code>是根据该<code>MajorityConfig</code>计算被大多数接受的<em>commit index</em>，其参数<code>AckedIndexer</code>是一个接口：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// quorum.go
 </span><span class="c1"></span>
 <span class="c1">// AckedIndexer allows looking up a commit index for a given ID of a voter
@@ -281,16 +281,16 @@
 <p><code>VoteResult</code>方法的实现也很简单，其根据参数中的投票情况与该<code>MajorityConfig</code>中的voter，计算投票结果。投票结果有三种：<code>VoteWon</code>表示赢得投票、<code>VoteLost</code>表示输掉投票、<code>VotePending</code>表示投票还未完成（既没被大多数接受，也没被大多数拒绝），需要继续等待投票。</p>
 <h3 id="22-jointconfig">2.2 JointConfig</h3>
 <p><code>JointConfig</code>表示<em>joint consensus</em>下的配置，即$C_{old}$与$C_{new}$的组合：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// JointConfig is a configuration of two groups of (possibly overlapping)
 </span><span class="c1">// majority configurations. Decisions require the support of both majorities.
 </span><span class="c1"></span><span class="kd">type</span> <span class="nx">JointConfig</span> <span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="nx">MajorityConfig</span>
 
-</code></pre></div><p>为了实现方便，<code>JointConfig</code>的元素0表示$C_{new}$或非*joint consensus*状态下的当前配置，元素0表示$C_{old}$，在非*joint consensus*状态下的元素1应是一个空配置。</p>
+</code></pre></div><p>为了实现方便，<code>JointConfig</code>的元素0表示$C_{new}$或非<em>joint consensus</em>状态下的当前配置，元素0表示$C_{old}$，在非<em>joint consensus</em>状态下的元素1应是一个空配置。</p>
 <p><code>JointConfig</code>提供的方法与<code>MajorityConfig</code>几乎一样，其也提供了<code>CommittedIndex</code>方法与<code>VoteResult</code>方法。</p>
-<p><code>JointConfig</code>的<code>CommittedIndex</code>方法会获取两个<code>MajorityConfig</code>的<code>CommittedIndex</code>的返回值（若<code>MajorityConfig</code>为空配置，其返回类型最大值），并返回较小的结果，即被$C_{old}$和$C_{new}$都接受的*commit index*。</p>
+<p><code>JointConfig</code>的<code>CommittedIndex</code>方法会获取两个<code>MajorityConfig</code>的<code>CommittedIndex</code>的返回值（若<code>MajorityConfig</code>为空配置，其返回类型最大值），并返回较小的结果，即被$C_{old}$和$C_{new}$都接受的<em>commit index</em>。</p>
 <p><code>JointConfig</code>的<code>VoteResult</code>方法也会获取两个<code>MajorityConfig</code>的<code>VoteResult</code>，如果二者结果相同可以直接返回，否则如果其中之一为<code>VoteLost</code>则直接返回<code>VoteLost</code>，否则还无法给出结果，返回<code>VotePending</code>。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// VoteResult takes a mapping of voters to yes/no (true/false) votes and returns
 </span><span class="c1">// a result indicating whether the vote is pending, lost, or won. A joint quorum
 </span><span class="c1">// requires both majority quorums to vote in favor.
@@ -312,7 +312,7 @@
 
 </code></pre></div><h3 id="23-config">2.3 Config</h3>
 <p><code>Config</code>记录了全部的成员配置，既包括voter也包括learner。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// Config reflects the configuration tracked in a ProgressTracker.
 </span><span class="c1"></span><span class="kd">type</span> <span class="nx">Config</span> <span class="kd">struct</span> <span class="p">{</span>
 	<span class="nx">Voters</span> <span class="nx">quorum</span><span class="p">.</span><span class="nx">JointConfig</span>
@@ -378,7 +378,7 @@
 </ol>
 <h3 id="24-progresstracker">2.4 ProgressTracker</h3>
 <p>本系列前文中在介绍etcd/raft的选举与日志复制的实现时，其实已经简单接触过了<code>ProgressTracker</code>。因为leader用来追踪follower复制进度的字段<code>Progress</code>和记录选票的<code>Vote</code>字段就在<code>ProgressTracker</code>中。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// ProgressTracker tracks the currently active configuration and the information
 </span><span class="c1">// known about the nodes and learners in it. In particular, it tracks the match
 </span><span class="c1">// index for each peer which in turn allows reasoning about the committed index.
@@ -396,54 +396,54 @@
 <table>
 <thead>
 <tr>
-<th align="center">方法<div style="width: 20em"></div></th>
-<th align="left">描述</th>
+<th style="text-align:center">方法<div style="width: 20em"></div></th>
+<th style="text-align:left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center"><code>func MakeProgressTracker(maxInflight int) ProgressTracker</code></td>
-<td align="left">新建空配置。</td>
+<td style="text-align:center"><code>func MakeProgressTracker(maxInflight int) ProgressTracker</code></td>
+<td style="text-align:left">新建空配置。</td>
 </tr>
 <tr>
-<td align="center"><code>ConfState() pb.ConfState</code></td>
-<td align="left">返回当前激活的配置。</td>
+<td style="text-align:center"><code>ConfState() pb.ConfState</code></td>
+<td style="text-align:left">返回当前激活的配置。</td>
 </tr>
 <tr>
-<td align="center"><code>IsSingleton() bool</code></td>
-<td align="left">判断当前配置是否为单节点模式（voter数为0，且不处于<em>joint configuration</em>中）。</td>
+<td style="text-align:center"><code>IsSingleton() bool</code></td>
+<td style="text-align:left">判断当前配置是否为单节点模式（voter数为0，且不处于<em>joint configuration</em>中）。</td>
 </tr>
 <tr>
-<td align="center"><code>Committed() uint64</code></td>
-<td align="left">返回被quorum接受的<em>commit index</em>。</td>
+<td style="text-align:center"><code>Committed() uint64</code></td>
+<td style="text-align:left">返回被quorum接受的<em>commit index</em>。</td>
 </tr>
 <tr>
-<td align="center"><code>Visit(f func(id uint64, pr *Progress))</code></td>
-<td align="left">有序遍历追踪的所有进度，并对其执行传入的函数闭包。</td>
+<td style="text-align:center"><code>Visit(f func(id uint64, pr *Progress))</code></td>
+<td style="text-align:left">有序遍历追踪的所有进度，并对其执行传入的函数闭包。</td>
 </tr>
 <tr>
-<td align="center"><code>QuorumActive() bool</code></td>
-<td align="left">判断是否有达到quorum数量的节点处于活跃状态（用于<strong>Check Quorum</strong>）。</td>
+<td style="text-align:center"><code>QuorumActive() bool</code></td>
+<td style="text-align:left">判断是否有达到quorum数量的节点处于活跃状态（用于<strong>Check Quorum</strong>）。</td>
 </tr>
 <tr>
-<td align="center"><code>VoterNodes() []uint64</code></td>
-<td align="left">返回有序的voter节点id集合。</td>
+<td style="text-align:center"><code>VoterNodes() []uint64</code></td>
+<td style="text-align:left">返回有序的voter节点id集合。</td>
 </tr>
 <tr>
-<td align="center"><code>LearnerNodes() []uint64</code></td>
-<td align="left">返回有序的learner节点id集合。</td>
+<td style="text-align:center"><code>LearnerNodes() []uint64</code></td>
+<td style="text-align:left">返回有序的learner节点id集合。</td>
 </tr>
 <tr>
-<td align="center"><code>ResetVotes()</code></td>
-<td align="left">重置记录的选票。</td>
+<td style="text-align:center"><code>ResetVotes()</code></td>
+<td style="text-align:left">重置记录的选票。</td>
 </tr>
 <tr>
-<td align="center"><code>RecordVote(id uint64, v bool)</code></td>
-<td align="left">记录来自节点<code>id</code>的选票。</td>
+<td style="text-align:center"><code>RecordVote(id uint64, v bool)</code></td>
+<td style="text-align:left">记录来自节点<code>id</code>的选票。</td>
 </tr>
 <tr>
-<td align="center"><code>TallyVotes() (granted int, rejected int, _ quorum.VoteResult)</code></td>
-<td align="left">返回选票中赞同数、反对数、与当前投票结果。</td>
+<td style="text-align:center"><code>TallyVotes() (granted int, rejected int, _ quorum.VoteResult)</code></td>
+<td style="text-align:left">返回选票中赞同数、反对数、与当前投票结果。</td>
 </tr>
 </tbody>
 </table>
@@ -466,7 +466,7 @@
 <li><code>ConfChangeAddLearnerNode</code>：添加learner节点。</li>
 </ol>
 <h3 id="32-提议confchange">3.2 提议ConfChange</h3>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 		<span class="c1">// stepLeader
 </span><span class="c1"></span>		<span class="c1">// case pb.MsgProp:
 </span><span class="c1"></span>		<span class="c1">// ... ...
@@ -538,7 +538,7 @@
     </div>
 <h3 id="33-应用confchange">3.3 应用ConfChange</h3>
 <p>上文中已经提到，etcd/raft需要使用者自行调用<code>Node</code>的<code>ApplyConfChange</code>方法来应用新配置，该方法最终会调用<code>raft</code>结构体的<code>applyConfChange</code>方法，其源码如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">)</span> <span class="nf">applyConfChange</span><span class="p">(</span><span class="nx">cc</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">ConfChangeV2</span><span class="p">)</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">ConfState</span> <span class="p">{</span>
 	<span class="nx">cfg</span><span class="p">,</span> <span class="nx">prs</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="kd">func</span><span class="p">()</span> <span class="p">(</span><span class="nx">tracker</span><span class="p">.</span><span class="nx">Config</span><span class="p">,</span> <span class="nx">tracker</span><span class="p">.</span><span class="nx">ProgressMap</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
 		<span class="nx">changer</span> <span class="o">:=</span> <span class="nx">confchange</span><span class="p">.</span><span class="nx">Changer</span><span class="p">{</span>
@@ -562,7 +562,7 @@
 <span class="p">}</span>
 
 </code></pre></div><p>该方法首先通过检查<code>ConfChangeV2</code>的行为与变更内容，并通过<code>confChange.Changer</code>创建新的配置与用于进度跟踪的字典，最后调用<code>switchToConfig</code>方法切换到新配置并更新进度跟踪映射。其中<code>confChange.Changer</code>主要用于校验<code>ConfChangeV2</code>是否合法并生成新配置等，感兴趣的读者可以自行阅读其源码实现，本文不再赘述。下面来分析<code>switchToConfig</code>的实现：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// switchToConfig reconfigures this node to use the provided configuration. It
 </span><span class="c1">// updates the in-memory state and, when necessary, carries out additional
 </span><span class="c1">// actions such as reacting to the removal of nodes or changed quorum
@@ -629,7 +629,7 @@
 <p>如果该节点原来为leader且继续运行，那么按需广播日志复制请求与<em>commit index</em>。最后，该leader检查此时是否在进行<strong>leader transfer</strong>，如果正在进行<strong>leader transfer</strong>但目标节点已被从配置中移除，那么终止<strong>leader transfer</strong>。</p>
 <h3 id="34-autoleave">3.4 AutoLeave</h3>
 <p>当<code>ConfChange</code>的类型为<code>ConfChangeTransitionAuto</code>或<code>ConfChangeTransitionJointImplicit</code>时，退出<em>joint configuration</em>由etcd/raft自动实现。由于配置是在用户处理<code>Ready</code>结构体时主动调用<code>ConfChange</code>方法时生效的，因此实现“auto leave”的代码在<code>Advance</code>方法的实现<code>advance</code>方法中，即<code>ConfChange</code>已被用户应用后。在<code>advance</code>方法中，有如下代码：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 		<span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">prs</span><span class="p">.</span><span class="nx">Config</span><span class="p">.</span><span class="nx">AutoLeave</span> <span class="o">&amp;&amp;</span> <span class="nx">oldApplied</span> <span class="o">&lt;=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">pendingConfIndex</span> <span class="o">&amp;&amp;</span> <span class="nx">newApplied</span> <span class="o">&gt;=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">pendingConfIndex</span> <span class="o">&amp;&amp;</span> <span class="nx">r</span><span class="p">.</span><span class="nx">state</span> <span class="o">==</span> <span class="nx">StateLeader</span> <span class="p">{</span>
 			<span class="c1">// If the current (and most recent, at least for this leader&#39;s term)
 </span><span class="c1"></span>			<span class="c1">// configuration should be auto-left, initiate that now. We use a
@@ -686,7 +686,7 @@
 </div>
 </article></div>
             </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div>
     </footer></div>

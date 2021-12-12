@@ -8,10 +8,10 @@
         <title>深入浅出etcd/raft —— 0x04 Raft日志 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出etcd/raft —— 0x04 Raft日志" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/4-log/" />
-<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/4-log/etcd-raft.jpg"/>
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/4-log/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/4-log/etcd-raft.jpg"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2020-12-23T12:22:41+08:00" />
 <meta property="article:modified_time" content="2020-12-23T12:22:44+08:00" />
+
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/4-log/etcd-raft.jpg"/>
 <meta name="twitter:title" content="深入浅出etcd/raft —— 0x04 Raft日志"/>
@@ -282,7 +282,7 @@
     </div>
 <h3 id="22-storage的设计与实现">2.2 Storage的设计与实现</h3>
 <p><code>Storage</code>接口定义了etcd/raft中需要的读取稳定存储中日志、快照、状态等方法。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// Storage is an interface that may be implemented by the application
 </span><span class="c1">// to retrieve log entries from storage.
 </span><span class="c1">//
@@ -319,7 +319,7 @@
 
 </code></pre></div><p><code>Storage</code>中定义了需要从稳定存储读取的6种方法（具体定义见上面给出的代码与注释，这里不再赘述）。其中<code>HardState</code>指Raft状态机需要在本地稳定存储中持久化保存的状态，对应论文中的<em>Persistent State</em>（etcd/raft为了优化Raft日志，其保存的字段与原文稍有不同），相应的，<code>SoftState</code>只不需要持久化保存的状态，对应论文中的<em>Volatile State</em>；另外，由于陈旧的日志会被压缩成快照，因此有些方法并不总能获取到所需的值。</p>
 <p>接下来对<code>MemoryStorage</code>的实现进行分析。<code>MemoryStorage</code>是etcd中使用的<code>Storage</code>实现，其实现了<code>Storage</code>中定义的读取稳定存储的方法，还实现了相应的写入稳定存储的方法。<code>MemoryStorage</code>结构体中的字段如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// MemoryStorage implements the Storage interface backed by an
 </span><span class="c1">// in-memory array.
 </span><span class="c1"></span><span class="kd">type</span> <span class="nx">MemoryStorage</span> <span class="kd">struct</span> <span class="p">{</span>
@@ -349,7 +349,7 @@
 <p><code>MemoryStorage</code>的实现不是很复杂，其中很多逻辑是在处理越界和<em>dummy entry</em>，这里不再占用篇幅详细解释。此外，<code>MemoryStorage</code>通过互斥锁保证其操作是线程安全的。</p>
 <h3 id="23-unstable的设计与实现">2.3 unstable的设计与实现</h3>
 <p><code>unstable</code>结构体中保存了还未被保存到稳定存储中的快照或日志条目。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// unstable.entries[i] has raft log position i+unstable.offset.
 </span><span class="c1">// Note that unstable.offset may be less than the highest log
 </span><span class="c1">// position in storage; this means that the next write to storage
@@ -369,47 +369,47 @@
 <table>
 <thead>
 <tr>
-<th align="center">方法<div style="width: 18em"></div></th>
-<th align="left">描述</th>
+<th style="text-align:center">方法<div style="width: 18em"></div></th>
+<th style="text-align:left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center"><code>maybeFirstIndex() (uint64, bool)</code></td>
-<td align="left">获取相对整个<code>raftLog</code>的<em>first index</em>，当<code>unstable</code>无法得知该值时，第二个返回值返回<code>false</code>。</td>
+<td style="text-align:center"><code>maybeFirstIndex() (uint64, bool)</code></td>
+<td style="text-align:left">获取相对整个<code>raftLog</code>的<em>first index</em>，当<code>unstable</code>无法得知该值时，第二个返回值返回<code>false</code>。</td>
 </tr>
 <tr>
-<td align="center"><code>maybeLastIndex() (uint64, bool)</code></td>
-<td align="left">获取相对整个<code>raftLog</code>的<em>last index</em>，当<code>unstable</code>无法得知该值时，第二个返回值返回<code>false</code>。</td>
+<td style="text-align:center"><code>maybeLastIndex() (uint64, bool)</code></td>
+<td style="text-align:left">获取相对整个<code>raftLog</code>的<em>last index</em>，当<code>unstable</code>无法得知该值时，第二个返回值返回<code>false</code>。</td>
 </tr>
 <tr>
-<td align="center"><code>maybeTerm(i uint64) (uint64, bool)</code></td>
-<td align="left">获取给定index的日志条目的term，当<code>unstable</code>无法得知该值时，第二个返回值返回<code>false</code></td>
+<td style="text-align:center"><code>maybeTerm(i uint64) (uint64, bool)</code></td>
+<td style="text-align:left">获取给定index的日志条目的term，当<code>unstable</code>无法得知该值时，第二个返回值返回<code>false</code></td>
 </tr>
 <tr>
-<td align="center"><code>stableTo(i, t uint64)</code></td>
-<td align="left">通知<code>unstable</code>当前index为<code>i</code>、term为<code>t</code>及其之前的日志已经被保存到了稳定存储中，可以裁剪掉<code>unstable</code>中的这段日志了。裁剪后会根据空间利用率适当地对空间进行优化。</td>
+<td style="text-align:center"><code>stableTo(i, t uint64)</code></td>
+<td style="text-align:left">通知<code>unstable</code>当前index为<code>i</code>、term为<code>t</code>及其之前的日志已经被保存到了稳定存储中，可以裁剪掉<code>unstable</code>中的这段日志了。裁剪后会根据空间利用率适当地对空间进行优化。</td>
 </tr>
 <tr>
-<td align="center"><code>stableSnapTo(i uint64)</code></td>
-<td align="left">通知<code>unstable</code>当前index在<code>i</code>及其之前的快照已经保存到了稳定存储中，如果<code>unstable</code>中保存了该快照，那么可以释放该快照了。</td>
+<td style="text-align:center"><code>stableSnapTo(i uint64)</code></td>
+<td style="text-align:left">通知<code>unstable</code>当前index在<code>i</code>及其之前的快照已经保存到了稳定存储中，如果<code>unstable</code>中保存了该快照，那么可以释放该快照了。</td>
 </tr>
 <tr>
-<td align="center"><code>restore(s pb.Snapshot)</code></td>
-<td align="left">根据快照恢复<code>unstable</code>的状态（设置<code>unstbale</code>中的<code>offset</code>、<code>snapshot</code>，并将<code>entries</code>置空）。</td>
+<td style="text-align:center"><code>restore(s pb.Snapshot)</code></td>
+<td style="text-align:left">根据快照恢复<code>unstable</code>的状态（设置<code>unstbale</code>中的<code>offset</code>、<code>snapshot</code>，并将<code>entries</code>置空）。</td>
 </tr>
 <tr>
-<td align="center"><code>truncateAndAppend(ents []pb.Entry)</code></td>
-<td align="left">对给定的日志切片进行裁剪，并将其加入到<code>unstable</code>保存的日志中。</td>
+<td style="text-align:center"><code>truncateAndAppend(ents []pb.Entry)</code></td>
+<td style="text-align:left">对给定的日志切片进行裁剪，并将其加入到<code>unstable</code>保存的日志中。</td>
 </tr>
 <tr>
-<td align="center"><code>slice(lo uint64, hi uint64)</code></td>
-<td align="left">返回给定范围内的日志切片。首先会通过<code>mustCheckOutOfBounds(lo, hi uint64)</code>方法检查是否越界，如果越界会因此panic。</td>
+<td style="text-align:center"><code>slice(lo uint64, hi uint64)</code></td>
+<td style="text-align:left">返回给定范围内的日志切片。首先会通过<code>mustCheckOutOfBounds(lo, hi uint64)</code>方法检查是否越界，如果越界会因此panic。</td>
 </tr>
 </tbody>
 </table>
 <p><code>unstable</code>中的<em>first index</em>和<em>last index</em>的实现与<code>Storage</code>稍有不同。<code>unstable</code>的<code>maybeFirstIndex</code>方法与<code>maybeLastIndex</code>方法获取的是相对整个<code>raftLog</code>的<em>first index</em>或<em>last index</em>，当<code>unstable</code>无法得知整个<code>raftLog</code>的<em>first index</em>或<em>last index</em>时，这两个方法的第二个返回值会被置为<code>false</code>。这种设计与<code>raftLog</code>的实现有关，在<code>raftLog</code>的<code>firstIndex</code>和<code>lastIndex</code>方法中，首先会调用<code>unstable</code>的<code>maybeFirstIndex</code>方法或<code>maybeLastIndex</code>方法，如果查询的索引不在<code>unstable</code>中时，其会继续询问<code>Storage</code>。<code>unstable</code>中<code>maybeFirstIndex</code>方法与<code>maybeLastIndex</code>方法的实现如下。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// maybeFirstIndex returns the index of the first possible entry in entries
 </span><span class="c1">// if it has a snapshot.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">u</span> <span class="o">*</span><span class="nx">unstable</span><span class="p">)</span> <span class="nf">maybeFirstIndex</span><span class="p">()</span> <span class="p">(</span><span class="kt">uint64</span><span class="p">,</span> <span class="kt">bool</span><span class="p">)</span> <span class="p">{</span>
@@ -433,7 +433,7 @@
 
 </code></pre></div><p>简单来说，只有<code>unstable</code>中包含快照时，<code>unstable</code>才可能得知整个<code>raftLog</code>的<em>first index</em>的位置（快照前的日志不会影响快照后的状态）；而只有当<code>unstable</code>中既没有日志也没有快照时，<code>unstable</code>才无法得知<em>last index</em>的位置。</p>
 <p><code>unstable</code>中另一处比较重要的方法是<code>truncateAndAppend</code>。当<code>raftLog</code>需要将新日志保存到<code>unstable</code>中时会调用该方法。该方法会根据给定的日志切片的范围和当前<code>unstable</code>中日志切片的范围对二者进行适当地裁剪，其逻辑如下。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="kd">func</span> <span class="p">(</span><span class="nx">u</span> <span class="o">*</span><span class="nx">unstable</span><span class="p">)</span> <span class="nf">truncateAndAppend</span><span class="p">(</span><span class="nx">ents</span> <span class="p">[]</span><span class="nx">pb</span><span class="p">.</span><span class="nx">Entry</span><span class="p">)</span> <span class="p">{</span>
 	<span class="nx">after</span> <span class="o">:=</span> <span class="nx">ents</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">Index</span>
 	<span class="k">switch</span> <span class="p">{</span>
@@ -463,7 +463,7 @@
 <li>当<code>after</code>在<code>offset</code>之后但与<code>unstable</code>中部分日志重叠时，重叠部分和之后部分可能会有冲突，因此裁剪掉<code>unstable</code>的日志中在<code>after</code>及其之后的部分，并将给定日志追加到其后。</li>
 </ol>
 <p>另外，在<code>unstable</code>的<code>stableTo</code>方法裁剪完日志后，会调用<code>shrinkEntriesArray</code>方法优化空间利用率。即如果剩余日志条目小于用来保存日志的切片容量的一半时，将剩余的日志拷贝到容量恰好为剩余日志长度的新切片中，并释放对原切片的引用。需要注意的是，这里不能直接释放原切片的空间或在原切片上进行修改，因为程序的其它部分可能还持有对原切片的引用。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// shrinkEntriesArray discards the underlying array used by the entries slice
 </span><span class="c1">// if most of it isn&#39;t being used. This avoids holding references to a bunch of
 </span><span class="c1">// potentially large entries that aren&#39;t needed anymore. Simply clearing the
@@ -485,7 +485,7 @@
 
 </code></pre></div><h3 id="24-raftlog的实现">2.4 raftLog的实现</h3>
 <p>在介绍了<code>Storage</code>接口和<code>unstable</code>结构体后，接下来继续看<code>raftLog</code>的具体实现。<code>raftLog</code>结构体源码如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="kd">type</span> <span class="nx">raftLog</span> <span class="kd">struct</span> <span class="p">{</span>
 	<span class="c1">// storage contains all stable entries since the last snapshot.
 </span><span class="c1"></span>	<span class="nx">storage</span> <span class="nx">Storage</span>
@@ -510,7 +510,7 @@
 <span class="p">}</span>
 
 </code></pre></div><p>可以看到，<code>raftLog</code>由<code>Storage</code>接口实例<code>storage</code>和<code>unstable</code>结构体实例<code>unstable</code>组成。在<a href="#21-raftlog%e7%9a%84%e8%ae%be%e8%ae%a1" rel="">2.1节</a>提到的4个常用索引中，<code>committed</code>和<code>applied</code>索引是通过<code>raftLog</code>的字段实现的，而<code>firstIndex</code>和<code>lastIndex</code>是通过<code>raftLog</code>的方法实现的：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="kd">func</span> <span class="p">(</span><span class="nx">l</span> <span class="o">*</span><span class="nx">raftLog</span><span class="p">)</span> <span class="nf">firstIndex</span><span class="p">()</span> <span class="kt">uint64</span> <span class="p">{</span>
 	<span class="k">if</span> <span class="nx">i</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">l</span><span class="p">.</span><span class="nx">unstable</span><span class="p">.</span><span class="nf">maybeFirstIndex</span><span class="p">();</span> <span class="nx">ok</span> <span class="p">{</span>
 		<span class="k">return</span> <span class="nx">i</span>
@@ -534,7 +534,7 @@
 <span class="p">}</span>
 
 </code></pre></div><p><code>firstIndex</code>和<code>lastIndex</code>的实现方式在<a href="#23-unstable%e7%9a%84%e8%ae%be%e8%ae%a1%e4%b8%8e%e5%ae%9e%e7%8e%b0" rel="">2.3节</a>中已经介绍过，这里不再赘述。<code>raftLog</code>在创建时，会将<code>unstable</code>的<code>offset</code>置为<code>storage</code>的<em>last index + 1</em>，并将<code>committed</code>和<code>applied</code>置为<code>storage</code>的<em>forst index - 1</em>。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// newLog returns log using the given storage and default options. It
 </span><span class="c1">// recovers the log to the state that it just commits and applies the
 </span><span class="c1">// latest snapshot.
@@ -574,87 +574,87 @@
 <table>
 <thead>
 <tr>
-<th align="center">方法<div style="width: 16em"></div></th>
+<th style="text-align:center">方法<div style="width: 16em"></div></th>
 <th>描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center"><code>maybeAppend(index, logTerm, committed uint64, ents ...pb.Entry)</code></td>
+<td style="text-align:center"><code>maybeAppend(index, logTerm, committed uint64, ents ...pb.Entry)</code></td>
 <td>尝试追加新日志，并更新<em>committed</em>索引（详见下文分析）。</td>
 </tr>
 <tr>
-<td align="center"><code>unstableEntries() []pb.Entry</code></td>
+<td style="text-align:center"><code>unstableEntries() []pb.Entry</code></td>
 <td>返回全部<code>unstable</code>中的日志条目。</td>
 </tr>
 <tr>
-<td align="center"><code>nextEnts() (ents []pb.Entry)</code></td>
+<td style="text-align:center"><code>nextEnts() (ents []pb.Entry)</code></td>
 <td>返回可被应用到状态机的日志条目（已提交但还未应用），返回的长度受创建<code>raftLog</code>时指定的<code>maxNextEntsSize</code>限制。</td>
 </tr>
 <tr>
-<td align="center"><code>hasNextEnts() bool</code></td>
+<td style="text-align:center"><code>hasNextEnts() bool</code></td>
 <td>返回是否存在可被应用到状态机的日志。该方法不会调用<code>slice</code>方法，性能更高。</td>
 </tr>
 <tr>
-<td align="center"><code>hasPendingSnapshot() bool</code></td>
+<td style="text-align:center"><code>hasPendingSnapshot() bool</code></td>
 <td>返回是否有未应用到状态机的快照（即<code>unstable</code>中保存的快照）。</td>
 </tr>
 <tr>
-<td align="center"><code>commitTo(tocommit uint64)</code></td>
+<td style="text-align:center"><code>commitTo(tocommit uint64)</code></td>
 <td>更新<code>committed</code>索引，该方法会检查参数合法性。</td>
 </tr>
 <tr>
-<td align="center"><code>appliedTo(i uint64)</code></td>
+<td style="text-align:center"><code>appliedTo(i uint64)</code></td>
 <td>更新<code>applied</code>索引，该方法会检查参数合法性。</td>
 </tr>
 <tr>
-<td align="center"><code>stableTo(i, t uint64)</code></td>
+<td style="text-align:center"><code>stableTo(i, t uint64)</code></td>
 <td>通知<code>unstable</code>当前已保存到稳定存储中最后的日志的index与term，让其适当裁剪日志。</td>
 </tr>
 <tr>
-<td align="center"><code>stableSnapTo(i uint64)</code></td>
+<td style="text-align:center"><code>stableSnapTo(i uint64)</code></td>
 <td>通知<code>unstable</code>当前已保存到稳定存储中最后的快照的index，让其释放快照。</td>
 </tr>
 <tr>
-<td align="center"><code>lastTerm() uint64</code></td>
+<td style="text-align:center"><code>lastTerm() uint64</code></td>
 <td>获取最后一条日志的term。</td>
 </tr>
 <tr>
-<td align="center"><code>term(i uint64) (uint64, error)</code></td>
+<td style="text-align:center"><code>term(i uint64) (uint64, error)</code></td>
 <td>获取给定index的日志条目的term。</td>
 </tr>
 <tr>
-<td align="center"><code>entries(i, maxsize uint64) ([]pb.Entry, error)</code></td>
+<td style="text-align:center"><code>entries(i, maxsize uint64) ([]pb.Entry, error)</code></td>
 <td>获取index从<code>i</code>开始的最多<code>maxsize</code>条日志。</td>
 </tr>
 <tr>
-<td align="center"><code>allEntries() []pb.Entry</code></td>
+<td style="text-align:center"><code>allEntries() []pb.Entry</code></td>
 <td>获取全部日志条目。</td>
 </tr>
 <tr>
-<td align="center"><code>isUpToDate(lasti, term uint64) bool</code></td>
+<td style="text-align:center"><code>isUpToDate(lasti, term uint64) bool</code></td>
 <td>判断给定的term和index对应的日志条目是否至少与当前最后一个日志条目一样新。</td>
 </tr>
 <tr>
-<td align="center"><code>matchTerm(i, term uint64) bool</code></td>
+<td style="text-align:center"><code>matchTerm(i, term uint64) bool</code></td>
 <td>判断给定的index与term是否日志中相应index的条目的term匹配。</td>
 </tr>
 <tr>
-<td align="center"><code>maybeCommit(maxIndex, term uint64) bool</code></td>
+<td style="text-align:center"><code>maybeCommit(maxIndex, term uint64) bool</code></td>
 <td>如果给定的index和term对应的日志条目还未被提交，将日志提交到给日志条目处并返回<code>true</code>，否则返回<code>false</code>。</td>
 </tr>
 <tr>
-<td align="center"><code>restore(s pb.Snapshot)</code></td>
+<td style="text-align:center"><code>restore(s pb.Snapshot)</code></td>
 <td>将给定快照应用到（unstable）日志中。</td>
 </tr>
 <tr>
-<td align="center"><code>slice(lo, hi, maxSize uint64) ([]pb.Entry, error)</code></td>
+<td style="text-align:center"><code>slice(lo, hi, maxSize uint64) ([]pb.Entry, error)</code></td>
 <td>返回index从<code>lo</code>到<code>hi</code>的最多<code>maxSize</code>条日志，该方法会检查参数是否合法。</td>
 </tr>
 </tbody>
 </table>
 <p><code>append</code>与<code>maybeAppend</code>是向<code>raftLog</code>写入日志的方法。二者的区别在于<code>append</code>不会检查给定的日志切片是否与已有日志有冲突，因此leader向<code>raftLog</code>中追加日志时会调用该函数；而<code>maybeAppend</code>会检查是否有冲突并找到冲突位置，并试图通过覆盖本地日志的方式解决冲突。但是，二者都会检查给定的日志起点是否在<code>committed</code>索引位置之前，如果在其之前，这违背了Raft算法的<strong>Log Matching</strong>性质，因此会引起panic（其实follower不会将<code>committed</code>之前的日志传给该函数，因此永远不会进入该分支）。源码如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// maybeAppend returns (0, false) if the entries cannot be appended. Otherwise,
 </span><span class="c1">// it returns (last index of new entries, true).
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">l</span> <span class="o">*</span><span class="nx">raftLog</span><span class="p">)</span> <span class="nf">maybeAppend</span><span class="p">(</span><span class="nx">index</span><span class="p">,</span> <span class="nx">logTerm</span><span class="p">,</span> <span class="nx">committed</span> <span class="kt">uint64</span><span class="p">,</span> <span class="nx">ents</span> <span class="o">...</span><span class="nx">pb</span><span class="p">.</span><span class="nx">Entry</span><span class="p">)</span> <span class="p">(</span><span class="nx">lastnewi</span> <span class="kt">uint64</span><span class="p">,</span> <span class="nx">ok</span> <span class="kt">bool</span><span class="p">)</span> <span class="p">{</span>
@@ -688,7 +688,7 @@
 
 </code></pre></div><p><code>maybeAppend</code>方法会检查参数的合法性，当可以追加时，其会返回追加的最后一条日志的index与true，否则返回0与false。其需要的参数有这批日志的前一个日志条目的index与term（用于校验匹配）、leader最新确认的<code>committed</code>索引、和待追加的日志<code>ents</code>。</p>
 <p>首先，<code>maybeAppend</code>方法会检查这批日志的前一个条目的index和这批日志的term与<code>raftLog</code>对应条目的index与term是否匹配，如果不匹配则返回(0, false)。如果匹配无误，其会调用<code>findConflict</code>方法寻找待追加的日志与已有日志的第一个冲突条目的index或第一条新日志的index。在进一步分析前，先看一下<code>findConflict</code>的实现方式：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// findConflict finds the index of the conflict.
 </span><span class="c1">// It returns the first pair of conflicting entries between the existing
 </span><span class="c1">// entries and the given entries, if there are any.
@@ -731,7 +731,7 @@
 <li>follower能够跟上leader，leader传给follower的日志中有未确认被法定数量节点稳定存储的日志，此时传入的<code>committed</code>比<code>lastnewi</code>小，该follower的新<code>committed</code>值为传入的<code>committed</code>值。</li>
 </ol>
 <p><code>raftLog</code>的<code>slice</code>方法是会返回指定的日志片段，该方法会检查给定的范围是否可以访问。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// slice returns a slice of log entries from lo through hi-1, inclusive.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">l</span> <span class="o">*</span><span class="nx">raftLog</span><span class="p">)</span> <span class="nf">slice</span><span class="p">(</span><span class="nx">lo</span><span class="p">,</span> <span class="nx">hi</span><span class="p">,</span> <span class="nx">maxSize</span> <span class="kt">uint64</span><span class="p">)</span> <span class="p">([]</span><span class="nx">pb</span><span class="p">.</span><span class="nx">Entry</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
 	<span class="nx">err</span> <span class="o">:=</span> <span class="nx">l</span><span class="p">.</span><span class="nf">mustCheckOutOfBounds</span><span class="p">(</span><span class="nx">lo</span><span class="p">,</span> <span class="nx">hi</span><span class="p">)</span>
@@ -774,7 +774,7 @@
 <span class="p">}</span>
 
 </code></pre></div><p>在获取<code>raftLog</code>中的日志切片时，该方法首先会通过<code>mustCheckOutOfBounds</code>方法检查给定的范围是否越界。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// l.firstIndex &lt;= lo &lt;= hi &lt;= l.firstIndex + len(l.entries)
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">l</span> <span class="o">*</span><span class="nx">raftLog</span><span class="p">)</span> <span class="nf">mustCheckOutOfBounds</span><span class="p">(</span><span class="nx">lo</span><span class="p">,</span> <span class="nx">hi</span> <span class="kt">uint64</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
 	<span class="k">if</span> <span class="nx">lo</span> <span class="p">&gt;</span> <span class="nx">hi</span> <span class="p">{</span>
@@ -804,7 +804,7 @@
 <h3 id="31-progress结构体">3.1 Progress结构体</h3>
 <p><code>Progess</code>结构体是leader用来跟踪follower日志复制进度的结构，即“表示从leader视角看到的follower的进度”。leader会为每个follower（和learner）维护各自的<code>Progress</code>结构。官方提供了<code>Progress</code>的<a href="https://github.com/etcd-io/etcd/blob/master/raft/design.md" target="_blank" rel="noopener noreffer">设计文档</a>，该文档简单介绍了其设计与功能。</p>
 <p><code>Progress</code>的结构如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// Progress represents a follower’s progress in the view of the leader. Leader
 </span><span class="c1">// maintains progresses of all followers, and sends entries to the follower
 </span><span class="c1">// based on its progress.
@@ -869,41 +869,41 @@
 <table>
 <thead>
 <tr>
-<th align="center">方法<div style="width: 14em"></div></th>
+<th style="text-align:center">方法<div style="width: 14em"></div></th>
 <th>描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center"><code>ResetState(state StateType)</code></td>
+<td style="text-align:center"><code>ResetState(state StateType)</code></td>
 <td>重置状态为目标状态，该方法会清空所有状态记录的数据。该方法由<code>BecomeXXX</code>方法调用。</td>
 </tr>
 <tr>
-<td align="center"><code>BecomeProbe()</code></td>
+<td style="text-align:center"><code>BecomeProbe()</code></td>
 <td>将follower转为Probe状态。</td>
 </tr>
 <tr>
-<td align="center"><code>BecomeReplicate()</code></td>
+<td style="text-align:center"><code>BecomeReplicate()</code></td>
 <td>将follower转为Replicate状态。</td>
 </tr>
 <tr>
-<td align="center"><code>BecomeSnapshot(snapshoti uint64)</code></td>
+<td style="text-align:center"><code>BecomeSnapshot(snapshoti uint64)</code></td>
 <td>将follower转为Snapshot状态，并指定需要为其发送的快照的index。</td>
 </tr>
 <tr>
-<td align="center"><code>MaybeUpdate(n uint64) bool</code></td>
+<td style="text-align:center"><code>MaybeUpdate(n uint64) bool</code></td>
 <td>用于更新follower的进度（<em>match index</em>），如果传入的进度比当前进度旧，则不会更新进度并返回false，该方法还会根据传入的进度更新<em>next index</em>。leader会在收到来自follower的<code>MsgAppResp</code>消息时调用该方法。</td>
 </tr>
 <tr>
-<td align="center"><code>OptimisticUpdate(n uint64)</code></td>
+<td style="text-align:center"><code>OptimisticUpdate(n uint64)</code></td>
 <td>不做检查直接更新<em>next index</em>，用于<code>StateReplicate</code>状态下日志复制流水线优化。</td>
 </tr>
 <tr>
-<td align="center"><code>MaybeDecrTo(rejected, last uint64) bool</code></td>
+<td style="text-align:center"><code>MaybeDecrTo(rejected, last uint64) bool</code></td>
 <td>用于回退<em>next index</em>，该方法会根据参数判断是否需要回退，如果参数是来自过期的消息，那么不会回退。如果回退，则会返回true。</td>
 </tr>
 <tr>
-<td align="center"><code>IsPaused() bool</code></td>
+<td style="text-align:center"><code>IsPaused() bool</code></td>
 <td>判断为该follower发送消息的发送窗口是否阻塞，发送窗口大小与该follower的状态和<code>Raft</code>的配置有关。</td>
 </tr>
 </tbody>
@@ -935,7 +935,7 @@
 <li><code>StateSnapshot</code> =&gt; <code>Inflight.size = 0</code></li>
 </ol>
 <p>从<code>IsPaused</code>方法中看到类似的逻辑：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// IsPaused returns whether sending log entries to this node has been throttled.
 </span><span class="c1">// This is done when a node has rejected recent MsgApps, is currently waiting
 </span><span class="c1">// for a snapshot, or has reached the MaxInflightMsgs limit. In normal
@@ -957,7 +957,7 @@
 
 </code></pre></div><h3 id="33-状态转换与更新回退">3.3 状态转换与更新回退</h3>
 <p>在进一步分析etcd/raft的日志复制实现时，需要先简单了解<code>BecomeXXX</code>在进行状态转换时的做的操作及更新进度、回退进度的操作。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// BecomeProbe transitions into StateProbe. Next is reset to Match+1 or,
 </span><span class="c1">// optionally and if larger, the index of the pending snapshot.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">pr</span> <span class="o">*</span><span class="nx">Progress</span><span class="p">)</span> <span class="nf">BecomeProbe</span><span class="p">()</span> <span class="p">{</span>
@@ -975,7 +975,7 @@
 <span class="p">}</span>
 
 </code></pre></div><p><code>BecomeProbe</code>分为两种情况，一种是从<code>StateSnapshot</code>进入<code>StateProbe</code>状态，当leader得知follower成功应用了快照后，需要调用<code>Node</code>的<code>ReportSnapshot</code>方法，该方法会调用<code>BecomeProbe</code>将该follower的进度状态转为<code>StateProbe</code>。此时，可以将<em>next index</em>置为该快照的index的下一条。在一般情况下，则从<em>match index</em>处开始检测冲突（<code>Next</code>是下一条应为该follower发送的日志的index，因此应为当前认为的最后一条匹配日志的index+1）。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// BecomeReplicate transitions into StateReplicate, resetting Next to Match+1.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">pr</span> <span class="o">*</span><span class="nx">Progress</span><span class="p">)</span> <span class="nf">BecomeReplicate</span><span class="p">()</span> <span class="p">{</span>
 	<span class="nx">pr</span><span class="p">.</span><span class="nf">ResetState</span><span class="p">(</span><span class="nx">StateReplicate</span><span class="p">)</span>
@@ -991,7 +991,7 @@
 
 </code></pre></div><p><code>BecomeReplicate</code>和<code>BecomeSnapshot</code>逻辑都很简单，在重置状态后，二者分别设置了相应的<em>next index</em>和正在发送的快照的index。</p>
 <p>接下来分析更新<em>match index</em>和<em>next index</em>与回退<em>next index</em>的相关逻辑：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// MaybeUpdate is called when an MsgAppResp arrives from the follower, with the
 </span><span class="c1">// index acked by it. The method returns false if the given n index comes from
 </span><span class="c1">// an outdated message. Otherwise it updates the progress and returns true.
@@ -1011,7 +1011,7 @@
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">pr</span> <span class="o">*</span><span class="nx">Progress</span><span class="p">)</span> <span class="nf">OptimisticUpdate</span><span class="p">(</span><span class="nx">n</span> <span class="kt">uint64</span><span class="p">)</span> <span class="p">{</span> <span class="nx">pr</span><span class="p">.</span><span class="nx">Next</span> <span class="p">=</span> <span class="nx">n</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">}</span>
 
 </code></pre></div><p><code>MaybeUpdate</code>会根据传入的index更新<code>Match</code>和<code>Next</code>到更高的值，如果<code>Match</code>更新，则会返回true，同时立刻对<code>StateProbe</code>状态的follower进行确认，否则返回false。其调用者会根据返回值判断该follower是否跟上了复制进度。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// MaybeDecrTo adjusts the Progress to the receipt of a MsgApp rejection. The
 </span><span class="c1">// arguments are the index the follower rejected to append to its log, and its
 </span><span class="c1">// last index.
@@ -1061,7 +1061,7 @@
 <h2 id="4-etcdraft中日志复制实现">4. etcd/raft中日志复制实现</h2>
 <h3 id="41-节点启动时日志处理">4.1 节点启动时日志处理</h3>
 <p>在节点启动时，日志的<em>last index</em>就是稳定存储<code>Storage</code>的<em>last index</em>。follower和candidate不需要对日志进行额外的处理，而leader需要获取每个follower（和learner）的进度，并以当前term提交一条空日志条目，以提交之前term的日志（详见《In Search of an Understandable Consensus Algorithm (Extended Version)》中<em>5.4.2 Committing entries from previous terms</em>）。同样，当新leader当选时，也需要做同样的操作。如下是<code>becomeLeader</code>与<code>reset</code>中与日志复制有关的源码：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">)</span> <span class="nf">becomeLeader</span><span class="p">()</span> <span class="p">{</span>
 	<span class="c1">// ... ...
 </span><span class="c1"></span>	<span class="nx">r</span><span class="p">.</span><span class="nf">reset</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">)</span>
@@ -1109,7 +1109,7 @@
 <p>随后，leader会在当前term为自己的日志追加一条空日志条目，以提交之前term的日志（详见《In Search of an Understandable Consensus Algorithm (Extended Version)》中<em>5.4.2 Committing entries from previous terms</em>）。</p>
 <p>在将控日志条目加入到日志后，有一行<code>r.reduceUncommittedSize([]pb.Entry{emptyEnt})</code>代码。想了解这样代码的作用，需要先了解etcd/raft中避免新日志过多无法处理速度跟不上的机制。</p>
 <p>在<code>Config</code>中，可以看到如下的一条配置：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 	<span class="c1">// MaxUncommittedEntriesSize limits the aggregate byte size of the
 </span><span class="c1"></span>	<span class="c1">// uncommitted entries that may be appended to a leader&#39;s log. Once this
 </span><span class="c1"></span>	<span class="c1">// limit is exceeded, proposals will begin to return ErrProposalDropped
@@ -1122,7 +1122,7 @@
 <li>在etcd/raft的使用者调用<code>Node</code>的<code>Advance</code>方法时，会调用<code>reduceUncommittedSize(ents []pb.Entry)</code>方法，以释放流控容量。</li>
 </ul>
 <p><code>increaseUncommittedSize</code>和<code>reduceUncommittedSize</code>的源码如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// increaseUncommittedSize computes the size of the proposed entries and
 </span><span class="c1">// determines whether they would push leader over its maxUncommittedSize limit.
 </span><span class="c1">// If the new entries would exceed the limit, the method returns false. If not,
@@ -1178,7 +1178,7 @@
 <h3 id="42-leader中的日志提议">4.2 leader中的日志提议</h3>
 <p>“提议”是新的日志条目的起点，因此这里从日志的提议开始分析。</p>
 <p>日志的提议是通过<code>MsgProp</code>消息实现的。candidate或pre candidate直接丢弃<code>MsgProp</code>消息，follower会将<code>MsgProp</code>消息转发给leader，只有leader会对<code>MsgProp</code>消息做真正的处理：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">	<span class="c1">// stepCandidate
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">	<span class="c1">// stepCandidate
 </span><span class="c1"></span>	<span class="c1">// ... ...
 </span><span class="c1"></span>	<span class="k">case</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgProp</span><span class="p">:</span>
 		<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;%x no leader at term %d; dropping proposal&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">)</span>
@@ -1233,7 +1233,7 @@
 <p>如果leader成功地将这些日志追加到了本地日志中，leade会调用<code>bcastAppend</code>方法，为所有follower（和learner）广播日志追加消息。</p>
 <h3 id="43-leader为follower复制日志">4.3 leader为follower复制日志</h3>
 <p>leader通过<code>bcastAppend</code>方法为follower（和learner）复制日志，该方法及其相关方法源码如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// bcastAppend sends RPC, with entries to all peers that are not up-to-date
 </span><span class="c1">// according to the progress recorded in r.prs.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">)</span> <span class="nf">bcastAppend</span><span class="p">()</span> <span class="p">{</span>
@@ -1294,7 +1294,7 @@
 <li>调用<code>send</code>方法，填充需要发送的消息中缺失的字段（如<code>Term</code>、<code>From</code>，具体逻辑见<code>send</code>方法的源码，这里不再赘述），并将消息放入该节点的信箱。由于etcd/raft不负责通信模块，因此这里不会真正发送，而是通过<code>Ready</code>结构体将需要发送的消息交给etcd/raft的使用者处理。</li>
 </ol>
 <p>接下来先来分析第5步中<code>MsgApp</code>消息的生成方式：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 		<span class="c1">// ... ... #2
 </span><span class="c1"></span>
 		<span class="nx">m</span><span class="p">.</span><span class="nx">Type</span> <span class="p">=</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgApp</span>
@@ -1323,7 +1323,7 @@
 <li>如果节点处于<code>StateProbe</code>状态，此时将<code>ProbeSent</code>置为true，阻塞后续的消息，直到收到确认。</li>
 </ul>
 <p>在分析了<code>MsgApp</code>消息的生成方式后，接下来分析<code>MsgSnap</code>消息的生成：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 		<span class="c1">// ... ... #1
 </span><span class="c1"></span>
 		<span class="k">if</span> <span class="p">!</span><span class="nx">pr</span><span class="p">.</span><span class="nx">RecentActive</span> <span class="p">{</span>
@@ -1359,7 +1359,7 @@
 </ol>
 <p>方法1的逻辑会在后文介绍leader对<code>MsgAppResp</code>消息的处理时介绍，这里仅介绍方法2。</p>
 <p>在<code>Ready</code>的<code>Entries</code>字段的注释中可以看到，如果需要发送的日志中包含<code>MsgSnap</code>消息，那么当前节点（一定是leader节点）必须在目标节点应用完该消息后调用<code>Node</code>的<code>ReportSnapshot</code>方法上报快照状态。该方法在<code>rawnode</code>中的实现方式如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// ReportSnapshot reports the status of the sent snapshot.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">rn</span> <span class="o">*</span><span class="nx">RawNode</span><span class="p">)</span> <span class="nf">ReportSnapshot</span><span class="p">(</span><span class="nx">id</span> <span class="kt">uint64</span><span class="p">,</span> <span class="nx">status</span> <span class="nx">SnapshotStatus</span><span class="p">)</span> <span class="p">{</span>
 	<span class="nx">rej</span> <span class="o">:=</span> <span class="nx">status</span> <span class="o">==</span> <span class="nx">SnapshotFailure</span>
@@ -1368,7 +1368,7 @@
 <span class="p">}</span>
 
 </code></pre></div><p><code>ReportSnapshot</code>方法会将一条<code>MsgSnapStatus</code>消息应用给leader状态机。如果快照应用失败，该消息的<code>Reject</code>字段会被置为true。只有leader需要处理<code>MsgSnapStatus</code>消息，其处理方式如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 		<span class="c1">// stepLeader
 </span><span class="c1"></span>		<span class="c1">// ... ...
 </span><span class="c1"></span>
@@ -1398,7 +1398,7 @@
 </code></pre></div><p>从这段逻辑中可以看到，无论快照应用是否成功，leader都会将该follower的进度状态转为<code>StateProbe</code>状态。不同之处仅在于在调用<code>BecomeProbe</code>方法之前是否将<code>PendingSnapshot</code>的值置为0。读者可以回顾<code>ResetState(StateProbe)</code>的实现（详见<a href="#33-%e7%8a%b6%e6%80%81%e8%bd%ac%e6%8d%a2%e4%b8%8e%e6%9b%b4%e6%96%b0%e5%9b%9e%e9%80%80" rel="">3.3节</a>），在没有将其置为0时，下一次检测日志匹配时会从该follower的<em>match index + 1</em>和该快照的index+1二者中较大者开始检测；而将其置为0后，只会从该follower的<em>match index + 1</em>开始检测。</p>
 <h3 id="44-follower处理来自leader的日志">4.4 follower处理来自leader的日志</h3>
 <p>follower处理来自leader的日志复制消息时，同样分为对<code>MsgApp</code>和对<code>MsgSnap</code>的处理，<code>handleAppendEntries</code>方法用来处理<code>MsgApp</code>消息、<code>handleSnapshot</code>用来处理<code>MsgSnap</code>消息。在处理这两种消息时，都会使用<code>MsgAppResp</code>方法对其进行相应。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">)</span> <span class="nf">handleAppendEntries</span><span class="p">(</span><span class="nx">m</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span><span class="p">)</span> <span class="p">{</span>
 	<span class="k">if</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Index</span> <span class="p">&lt;</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nx">committed</span> <span class="p">{</span>
 		<span class="nx">r</span><span class="p">.</span><span class="nf">send</span><span class="p">(</span><span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span><span class="p">{</span><span class="nx">To</span><span class="p">:</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span><span class="p">,</span> <span class="nx">Type</span><span class="p">:</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgAppResp</span><span class="p">,</span> <span class="nx">Index</span><span class="p">:</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nx">committed</span><span class="p">})</span>
@@ -1422,7 +1422,7 @@
 </ol>
 <p>关于<code>RejectHint</code>的使用在<a href="#11-%e5%bf%ab%e9%80%9f%e5%9b%9e%e9%80%80" rel="">1.1节</a>和<a href="#33-%e7%8a%b6%e6%80%81%e8%bd%ac%e6%8d%a2%e4%b8%8e%e6%9b%b4%e6%96%b0%e5%9b%9e%e9%80%80" rel="">3.3节</a>中已经介绍过，这里不再赘述。需要注意的是，这里的“返回”，指的同样是将消息存入相应节点的信箱中，等待etcd/raft模块的使用者处理<code>Ready</code>结构体时发送给相应的节点。</p>
 <p>而<code>handleSnapshot</code>的处理方式如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">)</span> <span class="nf">handleSnapshot</span><span class="p">(</span><span class="nx">m</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span><span class="p">)</span> <span class="p">{</span>
 	<span class="nx">sindex</span><span class="p">,</span> <span class="nx">sterm</span> <span class="o">:=</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Snapshot</span><span class="p">.</span><span class="nx">Metadata</span><span class="p">.</span><span class="nx">Index</span><span class="p">,</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Snapshot</span><span class="p">.</span><span class="nx">Metadata</span><span class="p">.</span><span class="nx">Term</span>
 	<span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nf">restore</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">Snapshot</span><span class="p">)</span> <span class="p">{</span>
@@ -1438,7 +1438,7 @@
 
 </code></pre></div><p>处理<code>MsgSnap</code>消息时，<code>handleSnapshot</code>方法会调用<code>restore</code>方法尝试应用快照。如果快照应用功能成功，则返回一条<code>MsgAppResp</code>消息，该消息的<code>Index</code>字段为本地最后一条日志的index；而如果快照没有被应用，那么返回的<code>MsgAppResp</code>消息的<code>Index</code>字段会被置为本地的<code>committed</code>索引。</p>
 <p>可以看出，对<code>MsgSnap</code>消息的处理，重点在<code>restore</code>方法的实现。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// restore recovers the state machine from a snapshot. It restores the log and the
 </span><span class="c1">// configuration of state machine. If this method returns false, the snapshot was
 </span><span class="c1">// ignored, either because it was obsolete or because of an error.
@@ -1477,7 +1477,7 @@
 <p>无论是处理<code>MsgApp</code>消息还是处理<code>MsgSnap</code>消息，返回的消息都是<code>MsgAppResp</code>。下一节中将分析leader对<code>MsgAppResp</code>消息的处理方式。</p>
 <h3 id="45-leader处理来自follower的日志复制响应">4.5 leader处理来自follower的日志复制响应</h3>
 <p><code>stepLeader</code>方法在处理<code>MsgAppResp</code>消息时，会根据该消息和发送该消息的follower的状态来进行不同的处理：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">	
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">	
 	<span class="c1">// stepLeader
 </span><span class="c1"></span>	<span class="c1">// ... ...
 </span><span class="c1"></span>
@@ -1557,7 +1557,7 @@
 <h3 id="46-心跳消息中日志复制相关操作">4.6 心跳消息中日志复制相关操作</h3>
 <p>除了<code>MsgApp</code>、<code>MsgSnap</code>、<code>MsgAppResp</code>消息外，心跳消息<code>MsgHeartbeat</code>即其相应的相应消息<code>MsgHeartbeatResp</code>中也有一些与日志复制相关的逻辑（如<code>StateProbe</code>状态下释放阻塞状态的逻辑）。虽然这部分逻辑不多但同样重要，本节分析这部分逻辑。</p>
 <p>首先是leader为follower发送心跳消息时的相关逻辑：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// stepLeader
 </span><span class="c1">// ... ...
 </span><span class="c1"></span><span class="k">case</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgBeat</span><span class="p">:</span>
@@ -1585,14 +1585,14 @@
 <span class="p">}</span>
 
 </code></pre></div><p>在<code>tickHeartbeat</code>方法中，每次心跳会将一条<code>MsgBeat</code>应用到状态机。该消息会触发<code>bcastHeartbeat</code>方法，为其它节点广播心跳消息。<code>bcastHeartbeat</code>方法中有一些与实现线性一致性读相关的逻辑，这里将其留给本系列的后续文章。这里只需要看该方法最后调用的<code>sendHeartbeat</code>方法，方法生成的<code>MsgHeartbeat</code>消息中的<code>Index</code>字段为leader的<code>committed</code>索引。而在follower处理<code>MsgHeartbeat</code>消息时，会根据该字段更新自己的<code>committed</code>索引，以避免空闲集群没有新提议无法更新follower的<code>committed</code>状态的问题。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">)</span> <span class="nf">handleHeartbeat</span><span class="p">(</span><span class="nx">m</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span><span class="p">)</span> <span class="p">{</span>
 	<span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nf">commitTo</span><span class="p">(</span><span class="nx">m</span><span class="p">.</span><span class="nx">Commit</span><span class="p">)</span>
 	<span class="nx">r</span><span class="p">.</span><span class="nf">send</span><span class="p">(</span><span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span><span class="p">{</span><span class="nx">To</span><span class="p">:</span> <span class="nx">m</span><span class="p">.</span><span class="nx">From</span><span class="p">,</span> <span class="nx">Type</span><span class="p">:</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgHeartbeatResp</span><span class="p">,</span> <span class="nx">Context</span><span class="p">:</span> <span class="nx">m</span><span class="p">.</span><span class="nx">Context</span><span class="p">})</span>
 <span class="p">}</span>
 
 </code></pre></div><p>随后，follower会向leader发送<code>MsgHeartbeatResp</code>消息作为响应。leader在处理该消息时，主要做的也是线性一致性读相关的处理，但也有部分与日志复制相关的逻辑：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 	<span class="k">case</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgHeartbeatResp</span><span class="p">:</span>
 		<span class="nx">pr</span><span class="p">.</span><span class="nx">RecentActive</span> <span class="p">=</span> <span class="kc">true</span>
 		<span class="nx">pr</span><span class="p">.</span><span class="nx">ProbeSent</span> <span class="p">=</span> <span class="kc">false</span>
@@ -1623,7 +1623,7 @@
 <li>将包含<code>unstable</code>的<em>last index</em>的<code>MsgAppResp</code>消息放入信箱，等待发送。</li>
 </ol>
 <p>当用户收到下一个<code>Ready</code>结构体时，其收到的其实是如下内容：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// node.go
 </span><span class="c1"></span><span class="kd">func</span> <span class="nf">newReady</span><span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">,</span> <span class="nx">prevSoftSt</span> <span class="o">*</span><span class="nx">SoftState</span><span class="p">,</span> <span class="nx">prevHardSt</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">HardState</span><span class="p">)</span> <span class="nx">Ready</span> <span class="p">{</span>
 	<span class="nx">rd</span> <span class="o">:=</span> <span class="nx">Ready</span><span class="p">{</span>
@@ -1689,7 +1689,7 @@
     </div>
 <h3 id="52-entrieshardstatesnapshot持久化顺序有要求吗">5.2 Entries、HardState、Snapshot持久化顺序有要求吗？</h3>
 <p>在处理<code>Ready</code>结构体时，除了要保证先持久化再发送消息的顺序，需要持久化的字段的保存顺序也值得关注。官方的建议是按照<code>Entries</code>、<code>HardState</code>、<code>Snapshot</code>的顺序持久化。因为在<code>raft</code>初始化加载<code>HardState</code>时，会检查<em>commit index</em>是否在[<em>snapshot last index</em>, <em>log last index</em>)范围内，</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// raft.go
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">)</span> <span class="nf">loadState</span><span class="p">(</span><span class="nx">state</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">HardState</span><span class="p">)</span> <span class="p">{</span>
 	<span class="k">if</span> <span class="nx">state</span><span class="p">.</span><span class="nx">Commit</span> <span class="p">&lt;</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nx">committed</span> <span class="o">||</span> <span class="nx">state</span><span class="p">.</span><span class="nx">Commit</span> <span class="p">&gt;</span> <span class="nx">r</span><span class="p">.</span><span class="nx">raftLog</span><span class="p">.</span><span class="nf">lastIndex</span><span class="p">()</span> <span class="p">{</span>
@@ -1739,7 +1739,7 @@
 </div>
 </article></div>
             </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div>
     </footer></div>

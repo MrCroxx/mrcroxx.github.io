@@ -8,10 +8,10 @@
         <title>《Ceph: A Scalable, High-Performance Distributed File System》论文翻译 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《Ceph: A Scalable, High-Performance Distributed File System》论文翻译" />
 <meta property="og:description" content="本篇文章是对论文weil-osdi06的原创翻译，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/weil-osde06/" />
-<meta property="og:image" content="https://mrcroxx.github.io/posts/paper-reading/weil-osde06/paper-reading.jpg"/>
+<meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/weil-osde06/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/paper-reading/weil-osde06/paper-reading.jpg"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2020-09-14T17:38:45+08:00" />
 <meta property="article:modified_time" content="2020-09-19T17:03:23+08:00" />
+
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/paper-reading/weil-osde06/paper-reading.jpg"/>
 <meta name="twitter:title" content="《Ceph: A Scalable, High-Performance Distributed File System》论文翻译"/>
@@ -184,7 +184,7 @@
 <h2 id="作者">作者</h2>
 <p>Sage A. Weil, Scott A. Brandt, Ethan L. Miller, Darrell D. E. Long, Carlos Maltzahn</p>
 <p>University of California, Santa Cruz</p>
-<p>{sage, scott, elm, darrell, <a href="mailto:carlosm%7D@cs.ucsc.edu">carlosm}@cs.ucsc.edu</a></p>
+<p>{sage, scott, elm, darrell, <a href="mailto:carlosm%7d@cs.ucsc.edu" rel="">carlosm}@cs.ucsc.edu</a></p>
 <h2 id="摘要">摘要</h2>
 <p>我们开发了分布式文件系统——Ceph，其能提供极好的性能、可靠性和伸缩性。Ceph使用为不可靠的对象存储设备（unreliable object storage devices，OSD）的异构动态集群设计的伪随机数据分布函数（pseudo-random data distribution function）CRUSH来替代分配表（allocation），从而最大化地分离了数据管理与元数据管理。我们通过数据副本、故障检测、和恢复的方式，将设备的智能<sup>译注1</sup>应用到运行专用本地对象文件系统的半自治OSD中。动态的分布式元数据集群提供了极为高效的元数据管理能力，并适用于大部分通用文件系统和科学计算文件系统的负载。从在各种负载下的性能测试中可以得出，Ceph有着极好的I/O性能和可伸缩的元数据管理能力，能够支持超过每秒25000次元数据操作。</p>
 <blockquote>
@@ -412,7 +412,7 @@
 <p>[1] A. Adya, W. J. Bolosky, M. Castro, R. Chaiken, G. Cermak, J. R. Douceur, J. Howell, J. R. Lorch, M. Theimer, and R. Wattenhofer. FARSITE: Federated, available, and reliable storage for an incompletely trusted environment. In Proceedings of the 5th Symposium on Operating Systems Design and Implementation (OSDI), Boston, MA, Dec. 2002. USENIX.</p>
 <p>[2] P. A. Alsberg and J. D. Day. A principle for resilient sharing of distributed resources. In Proceedings of the 2nd International Conference on Software Engineering, pages 562-570. IEEE Computer Society Press, 1976.</p>
 <p>[3] A. Azagury, V. Dreizin, M. Factor, E. Henis, D. Naor, N. Rinetzky, O. Rodeh, J. Satran, A. Tavory, and L. Yerushalmi. Towards an object store. In Proceedings of the 20th IEEE / 11th NASA Goddard Conference on Mass Storage Systems and Technologies, pages 165-176, Apr. 2003.</p>
-<p>[4] P. J. Braam. The Lustre storage architecture. <a href="https://www.lustre.org/documentation.html,">https://www.lustre.org/documentation.html,</a> Cluster File Systems, Inc., Aug. 2004.</p>
+<p>[4] P. J. Braam. The Lustre storage architecture. <a href="https://www.lustre.org/documentation.html" target="_blank" rel="noopener noreffer">https://www.lustre.org/documentation.html</a>, Cluster File Systems, Inc., Aug. 2004.</p>
 <p>[5] L.-F. Cabrera and D. D. E. Long. Swift: Using distributed disk striping to provide high I/O data rates. Computing Systems, 4(4):405-436, 1991.</p>
 <p>[6] P. F. Corbett and D. G. Feitelson. The Vesta parallel file system. ACM Transactions on Computer Systems, 14(3):225-264, 1996.</p>
 <p>[7] S. Ghemawat, H. Gobioff, and S.-T. Leung. The Google file system. In Proceedings of the 19th ACM Symposium on Operating Systems Principles (SOSP &lsquo;03), Bolton Landing, NY, Oct. 2003. ACM.</p>
@@ -433,7 +433,7 @@
 <p>[22] D. Roselli, J. Lorch, and T. Anderson. A comparison of file system workloads. In Proceedings of the 2000 USENIX Annual Technical Conference, pages 41-54, San Diego, CA, June 2000. USENIX Association.</p>
 <p>[23] Y. Saito, S. Frølund, A. Veitch, A. Merchant, and S. Spence. FAB: Building distributed enterprise disk arrays from commodity components. In Proceedings of the 11th International Conference on Architectural Support for Programming Languages and Operating Systems (ASPLOS), pages 48-58, 2004.</p>
 <p>[24] F. Schmuck and R. Haskin. GPFS: A shared-disk file system for large computing clusters. In Proceedings of the 2002 Conference on File and Storage Technologies (FAST), pages 231-244. USENIX, Jan. 2002.</p>
-<p>[25] M. Szeredi. File System in User Space. <a href="https://fuse.sourceforge.net">https://fuse.sourceforge.net</a>, 2006.</p>
+<p>[25] M. Szeredi. File System in User Space. <a href="https://fuse.sourceforge.net" target="_blank" rel="noopener noreffer">https://fuse.sourceforge.net</a>, 2006.</p>
 <p>[26] H. Tang, A. Gulbeden, J. Zhou, W. Strathearn, T. Yang, and L. Chu. A self-organizing storage cluster for parallel data-intensive applications. In Proceedings of the 2004 ACM/IEEE Conference on Supercomputing (SC &lsquo;04), Pittsburgh, PA, Nov. 2004.</p>
 <p>[27] F. Wang, Q. Xin, B. Hong, S. A. Brandt, E. L. Miller, D. D. E. Long, and T. T. McLarty. File system workload analysis for large scale scientific computing applications. In Proceedings of the 21st IEEE / 12th NASA Goddard Conference on Mass Storage Systems and Technologies, pages 139-152, College Park, MD, Apr. 2004.</p>
 <p>[28] S. A. Weil. Scalable archival data and metadata management in object-based file systems. Technical Report SSRC-04-01, University of California, Santa Cruz, May 2004.</p>
@@ -474,7 +474,7 @@
 </div>
 </article></div>
             </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div>
     </footer></div>

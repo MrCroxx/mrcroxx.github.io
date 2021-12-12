@@ -8,10 +8,10 @@
         <title>深入浅出boltdb —— 0x03 bucket &amp; cursor - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出boltdb —— 0x03 bucket &amp; cursor" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/3-bucket-cursor/" />
-<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/3-bucket-cursor/boltdb.jpg"/>
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/3-bucket-cursor/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/3-bucket-cursor/boltdb.jpg"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2021-01-20T23:55:22+08:00" />
 <meta property="article:modified_time" content="2021-01-20T23:55:26+08:00" />
+
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/3-bucket-cursor/boltdb.jpg"/>
 <meta name="twitter:title" content="深入浅出boltdb —— 0x03 bucket &amp; cursor"/>
@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/3-bucket-cursor\/boltdb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  14354 ,
+                        }],"genre": "posts","keywords": "boltdb, B\u002bTree","wordcount":  14354 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/3-bucket-cursor\/","datePublished": "2021-01-20T23:55:22+08:00","dateModified": "2021-01-20T23:55:26+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -230,7 +230,7 @@
     </a><figcaption class="image-caption">bucket与B+Tree示意图</figcaption>
     </figure></p>
 <p>从上图中可以看出，<em>b1</em>和<em>b2</em>的元数据，分别保存在了<em>b0</em>的第0个（<em>page l0</em>的<em>elem 0</em>）和第11个（<em>page l2</em>的<em>elem 3</em>）键值对中。其中，键值对的key即为bucket的<code>name</code>，value为<code>bucket</code>结构体，该结构体由bucket的B+Tree树根节点的pgid <code>root</code>和64位整型序列号<code>sequence</code>组成：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// bucket represents the on-file representation of a bucket.
 </span><span class="c1">// This is stored as the &#34;value&#34; of a bucket key. If the bucket is small enough,
 </span><span class="c1">// then its root page can be stored inline in the &#34;value&#34;, after the bucket
@@ -253,7 +253,7 @@
     </a><figcaption class="image-caption">普通bucket与inline bucket存储结构示意图</figcaption>
     </figure></p>
 <p>boltdb中判断bucket是否作为inline bucket存储的方法为<code>inlineable</code>。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// inlineable returns true if a bucket is small enough to be written inline
 </span><span class="c1">// and if it contains no subbuckets. Otherwise returns false.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">Bucket</span><span class="p">)</span> <span class="nf">inlineable</span><span class="p">()</span> <span class="kt">bool</span> <span class="p">{</span>
@@ -295,13 +295,13 @@
 <h4 id="113-bucket元数据的序列化与反序列化">1.1.3 bucket元数据的序列化与反序列化</h4>
 <p>由于bucket需要存储的元数据较少，且bucket的元数据是作为B+Tree中的key/value保存的，因此bucket的序列化与反序列化方法较为简单。</p>
 <p>在序列化普通bucket时，只需要序列化其元数据，因此直接深拷贝<code>bucket</code>结构体即可。相关代码在<code>spill</code>方法中（该方法序列化的是子bucket的元数据），如下所示：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="nx">value</span> <span class="p">=</span> <span class="nb">make</span><span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">unsafe</span><span class="p">.</span><span class="nf">Sizeof</span><span class="p">(</span><span class="nx">bucket</span><span class="p">{}))</span>
 <span class="kd">var</span> <span class="nx">bucket</span> <span class="p">=</span> <span class="p">(</span><span class="o">*</span><span class="nx">bucket</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">value</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
 <span class="o">*</span><span class="nx">bucket</span> <span class="p">=</span> <span class="o">*</span><span class="nx">child</span><span class="p">.</span><span class="nx">bucket</span>
 
 </code></pre></div><p>而<code>write</code>是序列化inline bucket的方法，其实现方式如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// write allocates and writes a bucket to a byte slice.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">Bucket</span><span class="p">)</span> <span class="nf">write</span><span class="p">()</span> <span class="p">[]</span><span class="kt">byte</span> <span class="p">{</span>
 	<span class="c1">// Allocate the appropriate size.
@@ -321,7 +321,7 @@
 
 </code></pre></div><p><code>write</code>方法的实现非常简单。其除了写入了<code>bucket</code>结构体中的数据，还将<code>value</code>的剩余空间作为虚拟页，将该bucket中唯一的B+Tree节点（也是根节点）的数据写入到该虚拟页中。这类似于操作系统中虚拟内存的实现。</p>
 <p><code>openBucket</code>是bucket反序列化方法中读取value部分元数据的方法，其实现方式如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// Helper method that re-interprets a sub-bucket value
 </span><span class="c1">// from a parent into a Bucket
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">Bucket</span><span class="p">)</span> <span class="nf">openBucket</span><span class="p">(</span><span class="nx">value</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="o">*</span><span class="nx">Bucket</span> <span class="p">{</span>
@@ -362,7 +362,7 @@
 <h3 id="12-bucket的内存结构">1.2 bucket的内存结构</h3>
 <p>当bucket被事务打开时，boltdb还需要记录bucket打开过的node、打开过的子bucket等信息，以避免同一事务重复打开bucket或node，同时在事务提交时便于找到所有相关数据一并写入到存储。</p>
 <p>被事务打开的bucket在内存中表示为<code>Bucket</code>结构体，其包含字段如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// Bucket represents a collection of key/value pairs inside the database.
 </span><span class="c1"></span><span class="kd">type</span> <span class="nx">Bucket</span> <span class="kd">struct</span> <span class="p">{</span>
 	<span class="o">*</span><span class="nx">bucket</span>
@@ -383,38 +383,38 @@
 </code></pre></div><table>
 <thead>
 <tr>
-<th align="center">字段<div style="width: 14em"></th>
-<th align="left">描述</th>
+<th style="text-align:center">字段<div style="width: 14em"></th>
+<th style="text-align:left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center"><code>*bucket</code></td>
-<td align="left">bucket需要存储的元数据的value部分（详见上节），被只读事务打开的<code>Bucket</code>中该指针指向mmap memory，被读写事务打开的<code>Bucket</code>中该指针指向heap memory。</td>
+<td style="text-align:center"><code>*bucket</code></td>
+<td style="text-align:left">bucket需要存储的元数据的value部分（详见上节），被只读事务打开的<code>Bucket</code>中该指针指向mmap memory，被读写事务打开的<code>Bucket</code>中该指针指向heap memory。</td>
 </tr>
 <tr>
-<td align="center"><code>tx *Tx</code></td>
-<td align="left">保存打开该bucket的事务实例。</td>
+<td style="text-align:center"><code>tx *Tx</code></td>
+<td style="text-align:left">保存打开该bucket的事务实例。</td>
 </tr>
 <tr>
-<td align="center"><code>buckets map[string]*Bucket</code></td>
-<td align="left">记录打开的子bucket。</td>
+<td style="text-align:center"><code>buckets map[string]*Bucket</code></td>
+<td style="text-align:left">记录打开的子bucket。</td>
 </tr>
 <tr>
-<td align="center"><code>page *page</code></td>
-<td align="left">如果该bucket为inline bucket，那么该字段指向了其虚拟页的位置。</td>
+<td style="text-align:center"><code>page *page</code></td>
+<td style="text-align:left">如果该bucket为inline bucket，那么该字段指向了其虚拟页的位置。</td>
 </tr>
 <tr>
-<td align="center"><code>rootNode *node</code></td>
-<td align="left">用来记录该bucket的B+Tree根节点实例化后的node（根节点同样是按需实例化的，因此该字段可能为nil）。</td>
+<td style="text-align:center"><code>rootNode *node</code></td>
+<td style="text-align:left">用来记录该bucket的B+Tree根节点实例化后的node（根节点同样是按需实例化的，因此该字段可能为nil）。</td>
 </tr>
 <tr>
-<td align="center"><code>nodes map[pgid]*node</code></td>
-<td align="left">用来记录该bucket的B+Tree中已实例化的node。</td>
+<td style="text-align:center"><code>nodes map[pgid]*node</code></td>
+<td style="text-align:left">用来记录该bucket的B+Tree中已实例化的node。</td>
 </tr>
 <tr>
-<td align="center"><code>FillPercent float64</code></td>
-<td align="left">bucket中B+Tree的填充率阈值。</td>
+<td style="text-align:center"><code>FillPercent float64</code></td>
+<td style="text-align:left">bucket中B+Tree的填充率阈值。</td>
 </tr>
 </tbody>
 </table>
@@ -422,22 +422,22 @@
 <table>
 <thead>
 <tr>
-<th align="center">方法<div style="width: 14em"></th>
-<th align="left">描述</th>
+<th style="text-align:center">方法<div style="width: 14em"></th>
+<th style="text-align:left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center"><code>Tx() *Tx</code></td>
-<td align="left">返回打开该bucket的事务。</td>
+<td style="text-align:center"><code>Tx() *Tx</code></td>
+<td style="text-align:left">返回打开该bucket的事务。</td>
 </tr>
 <tr>
-<td align="center"><code>Root() pgid</code></td>
-<td align="left">返回该bucket的B+Tree的根节点的pgid。</td>
+<td style="text-align:center"><code>Root() pgid</code></td>
+<td style="text-align:left">返回该bucket的B+Tree的根节点的pgid。</td>
 </tr>
 <tr>
-<td align="center"><code> Writable() bool</code></td>
-<td align="left">返回该bucket是否可写（打开该bucket的事务是否可写）。</td>
+<td style="text-align:center"><code> Writable() bool</code></td>
+<td style="text-align:left">返回该bucket是否可写（打开该bucket的事务是否可写）。</td>
 </tr>
 </tbody>
 </table>
@@ -446,7 +446,7 @@
 <p>本节笔者将介绍这些方法与其实现。</p>
 <h4 id="131-coursor">1.3.1 Coursor</h4>
 <p>Bucket中许多操作需要依赖游标<code>Cursor</code>，游标是<code>Bucket</code>用来遍历B+Tree寻找key/value的工具。<code>Cursor</code>的实现笔者放在本文后面的部分介绍，这里读者这需要知道<code>Cursor</code>的作用即可。游标的获取方法为<code>Cursor</code>：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// Cursor creates a cursor associated with the bucket.
 </span><span class="c1">// The cursor is only valid as long as the transaction is open.
 </span><span class="c1">// Do not use a cursor after the transaction is closed.
@@ -465,7 +465,7 @@
 <h4 id="132-btree节点的访问">1.3.2 B+Tree节点的访问</h4>
 <p>由于Bucket操作涉及到B+Tree的更新，因此这里先介绍<code>Bucket</code>与<code>Cursor</code>访问或打开B+Tree节点的操作。这一部分与<code>Cursor</code>的实现关系更大，但由于<code>bucket.go</code>中包含了相关代码，因此笔者在这里先介绍B+Tree节点的访问方式。</p>
 <p>当Cursor只需要读取B+Tree的内容时，其只需要根据节点的pgid，在mmap memory中找到相应位置读取即可；而在Cursor需要更新B+Tree时，由于boltdb只读取mmap memory中的内容，因此需要先读取page并实例化相应的node（但此时node的key/value还是直接指向mmap memory）。<code>Bucket</code>实例化node的方法是<code>node</code>：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// node creates a node from a page and associates it with a given parent.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">Bucket</span><span class="p">)</span> <span class="nf">node</span><span class="p">(</span><span class="nx">pgid</span> <span class="nx">pgid</span><span class="p">,</span> <span class="nx">parent</span> <span class="o">*</span><span class="nx">node</span><span class="p">)</span> <span class="o">*</span><span class="nx">node</span> <span class="p">{</span>
 	<span class="nf">_assert</span><span class="p">(</span><span class="nx">b</span><span class="p">.</span><span class="nx">nodes</span> <span class="o">!=</span> <span class="kc">nil</span><span class="p">,</span> <span class="s">&#34;nodes map expected&#34;</span><span class="p">)</span>
@@ -508,7 +508,7 @@
 <li>更新统计变量，返回node实例。</li>
 </ol>
 <p><code>node</code>方法时是明确需要更新节点时才需要调用的。而如果只需要读取节点，<code>Bucket</code>提供了<code>pageNode</code>方法，该方法会返回给定pgid相应的page或node。即如果该节点已被实例化为node，则返回node，否则直接返回page：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// pageNode returns the in-memory node, if it exists.
 </span><span class="c1">// Otherwise returns the underlying page.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">Bucket</span><span class="p">)</span> <span class="nf">pageNode</span><span class="p">(</span><span class="nx">id</span> <span class="nx">pgid</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="nx">page</span><span class="p">,</span> <span class="o">*</span><span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
@@ -539,7 +539,7 @@
 <h4 id="133-bucket中btree的rebalance与spill">1.3.3 bucket中B+Tree的rebalance与spill</h4>
 <p>当事务提交时，其需要从根bucket开始递归进行<code>rebalance</code>与<code>spill</code>操作，以调整所有修改过的bucket的B+Tree的结构。因此，bucket需要提供<code>rebalance</code>与<code>spill</code>方法，以封装其递归过程。</p>
 <p><code>Bucket</code>的<code>rebalance</code>方法实现如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// rebalance attempts to balance all nodes.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">Bucket</span><span class="p">)</span> <span class="nf">rebalance</span><span class="p">()</span> <span class="p">{</span>
 	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">n</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">b</span><span class="p">.</span><span class="nx">nodes</span> <span class="p">{</span>
@@ -552,7 +552,7 @@
 
 </code></pre></div><p>该方法实现非常简单，首先其遍历了当前<code>Bucket</code>对象的<code>nodes</code>中缓存的node，调用<code>rebalance</code>方法，然后递归遍历<code>buckets</code>中缓存的子bucket的<code>Bucket</code>实例，调用<code>rebalance</code>方法。</p>
 <p>相比<code>rebalance</code>方法，<code>Bucket</code>的<code>spill</code>方法实现稍微复杂一些：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// spill writes all the nodes for this bucket to dirty pages.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">Bucket</span><span class="p">)</span> <span class="nf">spill</span><span class="p">()</span> <span class="kt">error</span> <span class="p">{</span>
 	<span class="c1">// Spill all child buckets first.
@@ -677,7 +677,7 @@
 <p>其中，<code>Bucket</code>的<code>free</code>方法会递归遍历并释放bucket的B+Tree中所有的page，其特殊处理了inline bucket的虚拟页、因重新mmap而没有引用page的node等特殊情况，这里不再赘述。</p>
 <h4 id="134-bucket的创建打开与删除">1.3.4 Bucket的创建、打开与删除</h4>
 <p>boltdb的用户可以通过<code>CreateBucket</code>、<code>CreateBucketIfNotExists</code>方法创建并打开bucket，通过<code>Bucket</code>方法打开已创建的bucket，通过<code>DeleteBucket</code>方法删除bucket。由于boltdb将bucket的元数据作为B+Tree的key/value存储，因此需要访问bucket的元数据时也需要访问B+Tree。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// Bucket retrieves a nested bucket by name.
 </span><span class="c1">// Returns nil if the bucket does not exist.
 </span><span class="c1">// The bucket instance is only valid for the lifetime of the transaction.
@@ -707,7 +707,7 @@
 <span class="p">}</span>
 
 </code></pre></div><p>当通过<code>Bucket</code>方法打开已创建的bucket时，首先会检查当前<code>Bucket</code>的<code>buckets</code>字段中是否保存了需要打开的bucket，该字段记录了当前事务已打开的当前bucket的子bucket。如果需要打开的bucket已被打开，则直接返回已实例化的<code>Bucket</code>。如果还没有打开，则先通过Cursor，根据bucket名找到其在B+Tree中的key/value。如果key不存在，或当前key的位置记录的不是bucekt，则返回空结果。如果找到了当前bucket相应的key/value，则在该value处调用<code>openBucket</code>方法反序列化bucket元数据并实例化<code>Bucket</code>实例，然后将其记录在当前<code>Bucket</code>结构体的<code>buckets</code>字段中，然后返回子<code>Bucket</code>实例。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// CreateBucket creates a new bucket at the given key and returns the new bucket.
 </span><span class="c1">// Returns an error if the key already exists, if the bucket name is blank, or if the bucket name is too long.
 </span><span class="c1">// The bucket instance is only valid for the lifetime of the transaction.
@@ -775,7 +775,7 @@
 <li>通过<code>Bucket</code>方法返回新创建好的bucket的<code>Bucket</code>实例。</li>
 </ol>
 <p><code>CreateBucketIfNotExists</code>则会调用<code>CreateBucket</code>方法尝试创建新bucket，如果bucket已存在则直接通过<code>Bucket</code>方法返回已创建的bucket，否则返回错误。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// DeleteBucket deletes a bucket at the given key.
 </span><span class="c1">// Returns an error if the bucket does not exists, or if the key represents a non-bucket value.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">Bucket</span><span class="p">)</span> <span class="nf">DeleteBucket</span><span class="p">(</span><span class="nx">key</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
@@ -836,7 +836,7 @@
 </ol>
 <h4 id="135-keyvalue的增删改查">1.3.5 key/value的增删改查</h4>
 <p>bucket中key/value的增删改查的实现同样依赖Cursor，其实现方式较子bucket的增删改查更简单，这里不再赘述，只给出其源码。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// Get retrieves the value for a key in the bucket.
 </span><span class="c1">// Returns a nil value if the key does not exist or if the key is a nested bucket.
 </span><span class="c1">// The returned value is only valid for the life of the transaction.
@@ -855,7 +855,7 @@
 	<span class="k">return</span> <span class="nx">v</span>
 <span class="p">}</span>
 
-</code></pre></div><div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+</code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// Put sets the value for a key in the bucket.
 </span><span class="c1">// If the key exist then its previous value will be overwritten.
 </span><span class="c1">// Supplied value must remain valid for the life of the transaction.
@@ -889,7 +889,7 @@
 	<span class="k">return</span> <span class="kc">nil</span>
 <span class="p">}</span>
 
-</code></pre></div><div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+</code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// Delete removes a key from the bucket.
 </span><span class="c1">// If the key does not exist then nothing is done and a nil error is returned.
 </span><span class="c1">// Returns an error if the bucket was created from a read-only transaction.
@@ -918,12 +918,12 @@
 </code></pre></div><h4 id="136-自增序列号生成">1.3.6 自增序列号生成</h4>
 <p>boltdb的bucket能够提供自增序列号生成功能。用户可以通过<code>Bucket</code>的<code>Sqeuence</code>方法获取当前bucket的序列号、通过<code>SetSequence</code>将当前bucekt的序列号置为一个给定值、或通过<code>NextSequence</code>增大并获取下一个序列号。</p>
 <p>前文中介绍过bucket的序列号保存在其元数据的<code>sequence</code>字段中，因此<code>Sqeuence</code>方法获取序列号时，只需要返回相应字段即可：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// Sequence returns the current integer for the bucket without incrementing it.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">Bucket</span><span class="p">)</span> <span class="nf">Sequence</span><span class="p">()</span> <span class="kt">uint64</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">b</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nx">sequence</span> <span class="p">}</span>
 
 </code></pre></div><p>而<code>SetSequence</code>设置序列号和<code>NextSequence</code>增大序列号则不能只更新该字段的值。其原因如下：由于只有可写事务才能调用这两个方法，而可写事务中bucket的元数据被复制到了heap memory中，如果只修改了heap memory中相应的值，但没有修改当前bucket的B+Tree的结构，则事务提交调用<code>spill</code>方法时，会跳过该<code>Bucket</code>实例（详见<a href="#133-bucket%e4%b8%adbtree%e7%9a%84rebalance%e4%b8%8espill" rel="">1.3.3节</a>中<code>spill</code>方法的实现）。因此，在修改<code>sequence</code>的值时，<code>SetSequence</code>和<code>NextSequence</code>方法还实例化了bucket中B+Tree的根node。这样，在调用<code>spill</code>时就不会跳过当前<code>Bucket</code>实例，更新才得以写入到存储中。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// SetSequence updates the sequence number for the bucket.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">Bucket</span><span class="p">)</span> <span class="nf">SetSequence</span><span class="p">(</span><span class="nx">v</span> <span class="kt">uint64</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
 	<span class="k">if</span> <span class="nx">b</span><span class="p">.</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
@@ -964,7 +964,7 @@
 
 </code></pre></div><h4 id="137-bucket的遍历">1.3.7 bucket的遍历</h4>
 <p><code>Bucket</code>的遍历非常简单：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// ForEach executes a function for each key/value pair in a bucket.
 </span><span class="c1">// If the provided function returns an error then the iteration is stopped and
 </span><span class="c1">// the error is returned to the caller. The provided function must not modify
@@ -988,7 +988,7 @@
 <p>boltdb的cursor实现主要在<code>cursor.go</code>中，由<code>Cursor</code>结构体实现，本节将介绍其实现方式。</p>
 <h3 id="21-cursor结构体">2.1 Cursor结构体</h3>
 <p><code>Cursor</code>结构体中只有两个字段，其分别记录了<code>Cursor</code>所属的<code>Bucket</code>实例，与从根节点到当前key/value的路径。用于可以通过其<code>Bucket</code>方法获取其所属<code>Bucket</code>实例。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// Cursor represents an iterator that can traverse over all key/value pairs in a bucket in sorted order.
 </span><span class="c1">// Cursors see nested buckets with value == nil.
 </span><span class="c1">// Cursors can be obtained from a transaction and are valid as long as the transaction is open.
@@ -1009,7 +1009,7 @@
 <span class="p">}</span>
 
 </code></pre></div><p>由于在不需要更新时，Cursor直接通过B+Tree节点的pgid访问mmap memory中的页，只有在需要更新时才会将其实例化为node。因此，在Cursor遍历节点的过程中，不同路径可能既有通过page表示的节点，也可能有通过node表示的节点。因此，<code>stack</code>字段记录的节点结构<code>elemRef</code>中有page指针<code>page</code>、node指针<code>node</code>、还有表示位于节点的第几个元素（element或inode）的索引<code>index</code>，在访问时，如果<code>node</code>为空，则通过<code>page</code>访问。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// elemRef represents a reference to an element on a given page/node.
 </span><span class="c1"></span><span class="kd">type</span> <span class="nx">elemRef</span> <span class="kd">struct</span> <span class="p">{</span>
 	<span class="nx">page</span>  <span class="o">*</span><span class="nx">page</span>
@@ -1034,7 +1034,7 @@
 <span class="p">}</span>
 
 </code></pre></div><p><code>Cursor</code>的栈顶元素即为当前Cursor所在位置，<code>keyValue</code>方法是<code>Cursor</code>用来获取当前键值对的方法，其会根据当前节点是page还是node，通过不同方式获取键值对：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// keyValue returns the key and value of the current leaf element.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">Cursor</span><span class="p">)</span> <span class="nf">keyValue</span><span class="p">()</span> <span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">,</span> <span class="kt">uint32</span><span class="p">)</span> <span class="p">{</span>
 	<span class="nx">ref</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">stack</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
@@ -1060,12 +1060,12 @@
             <i class="icon fas fa-exclamation-triangle fa-fw"></i>注意<i class="details-icon fas fa-angle-right fa-fw"></i>
         </div>
         <div class="details-content">
-            <div class="admonition-content">当事务删除了key但还未提交时，B+Tree中部分叶子节点可能没有内部元素。此时，应该跳过空节点。这一问题在<a href="https://github.com/boltdb/bolt/commit/852d3024fa8d89dcc9a715bab6f4dcd7d59577dd" target="_blank" rel="noopener noreffer">pull#452</a>中修复，其修复方式为在部分方法的实现最外成加入for循环，如果访问到空节点则进入下一次循环继续寻找，相关位置一般还有相应的注释“// If we land on an empty page then move to the next value. <a href="https://github.com/boltdb/bolt/issues/450">https://github.com/boltdb/bolt/issues/450</a>”。后文分析源码中不再赘述。</div>
+            <div class="admonition-content">当事务删除了key但还未提交时，B+Tree中部分叶子节点可能没有内部元素。此时，应该跳过空节点。这一问题在<a href="https://github.com/boltdb/bolt/commit/852d3024fa8d89dcc9a715bab6f4dcd7d59577dd" target="_blank" rel="noopener noreffer">pull#452</a>中修复，其修复方式为在部分方法的实现最外成加入for循环，如果访问到空节点则进入下一次循环继续寻找，相关位置一般还有相应的注释“// If we land on an empty page then move to the next value. <a href="https://github.com/boltdb/bolt/issues/450" target="_blank" rel="noopener noreffer">https://github.com/boltdb/bolt/issues/450</a>”。后文分析源码中不再赘述。</div>
         </div>
     </div>
 <h4 id="221-firstlastfirstlast">2.2.1 First、Last、first、last</h4>
 <p><code>First</code>方法与<code>Last</code>方法是将Cursor移动到第一个或最后一个键值对处的方法，二者实现方式相似，这里一同介绍。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// First moves the cursor to the first item in the bucket and returns its key and value.
 </span><span class="c1">// If the bucket is empty then a nil key and value are returned.
 </span><span class="c1">// The returned key and value are only valid for the life of the transaction.
@@ -1109,7 +1109,7 @@
 <span class="p">}</span>
 
 </code></pre></div><p><code>First</code>与<code>Last</code>方法本身并没有移动Cursor的实现，其只获取了bucket中B+Tree的根节点（page或node），并将其加入到<code>stack</code>中。真正实现移动Cursor的是<code>first</code>与<code>last</code>方法（分开实现以便其它方法复用），<code>first</code>与<code>last</code>方法会以<code>stack</code>中栈顶节点作为根节点，将Cursor移动到其下第一个键值对位置。<code>First</code>方法与<code>Last</code>方法除了设置查找起点外，还会检查<code>first</code>方法与<code>last</code>方法返回的键值对是否表示bucket，如果是bucket，则将value置为nil返回。<code>first</code>与<code>last</code>的实现如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// first moves the cursor to the first leaf element under the last page in the stack.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">Cursor</span><span class="p">)</span> <span class="nf">first</span><span class="p">()</span> <span class="p">{</span>
 	<span class="k">for</span> <span class="p">{</span>
@@ -1158,7 +1158,7 @@
 </code></pre></div><p><code>first</code>与<code>last</code>循环查找栈顶节点的第一个或最后一个孩子并将其压入栈中，直到栈顶节点为叶子节点。其实现方式也较为简单这里不再赘述。</p>
 <h4 id="222-nextprevnext">2.2.2 Next、Prev、next</h4>
 <p><code>Next</code>方法与<code>Prev</code>方法是将Cursor移动到当前键值对的前驱或后继键值对的方法。由于遍历<code>Bucket</code>的<code>ForEach</code>方法依赖<code>Next</code>，而原<code>Next</code>方法可能存在<a href="https://github.com/boltdb/bolt/issues/450" target="_blank" rel="noopener noreffer">issue#450</a>中的问题，因此其又封装了<code>next</code>函数，并通过循环跳过空叶子节点。而<code>Prev</code>则不存在这一问题，因此没有封装<code>prev</code>方法。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// Next moves the cursor to the next item in the bucket and returns its key and value.
 </span><span class="c1">// If the cursor is at the end of the bucket then a nil key and value are returned.
 </span><span class="c1">// The returned key and value are only valid for the life of the transaction.
@@ -1247,7 +1247,7 @@
 </ol>
 <h4 id="223-seekseeksearch">2.2.3 Seek、seek、search</h4>
 <p><code>Seek</code>方法是通过二分查找将Cursor移动到给定key的位置的方法，其实现如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// Seek moves the cursor to a given key and returns it.
 </span><span class="c1">// If the key does not exist then the next key is used. If no keys
 </span><span class="c1">// follow, a nil key is returned.
@@ -1269,7 +1269,7 @@
 <span class="p">}</span>
 
 </code></pre></div><p><code>Seek</code>方法内部通过<code>seek</code>移动Cursor，<code>seek</code>方法会把Cursor移动到大于等于给定key的位置，即key不存在时会移动到下一个key的位置。如果<code>seek</code>将Cursor移动到了某节点的所有内部元素之后，<code>Seek</code>方法会使其正确移动到后继键值对处。同样<code>Seek</code>也会将表示bucket的value置空返回。接下分析<code>seek</code>方法的实现。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// seek moves the cursor to a given key and returns it.
 </span><span class="c1">// If the key does not exist then the next key is used.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">Cursor</span><span class="p">)</span> <span class="nf">seek</span><span class="p">(</span><span class="nx">seek</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="p">(</span><span class="nx">key</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">value</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">flags</span> <span class="kt">uint32</span><span class="p">)</span> <span class="p">{</span>
@@ -1290,7 +1290,7 @@
 <span class="p">}</span>
 
 </code></pre></div><p><code>seek</code>方法首先将<code>stack</code>置空，然后从调用<code>search</code>方法，从根节点开始二分查找并移动Cursor，最后判断是否找到并返回结果。<code>search</code>方法是递归查找key并移动Cursor的方法，其实现如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// search recursively performs a binary search against a given page/node until it finds a given key.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">c</span> <span class="o">*</span><span class="nx">Cursor</span><span class="p">)</span> <span class="nf">search</span><span class="p">(</span><span class="nx">key</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">pgid</span> <span class="nx">pgid</span><span class="p">)</span> <span class="p">{</span>
 	<span class="nx">p</span><span class="p">,</span> <span class="nx">n</span> <span class="o">:=</span> <span class="nx">c</span><span class="p">.</span><span class="nx">bucket</span><span class="p">.</span><span class="nf">pageNode</span><span class="p">(</span><span class="nx">pgid</span><span class="p">)</span>
@@ -1413,7 +1413,7 @@
 </div>
 </article></div>
             </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div>
     </footer></div>

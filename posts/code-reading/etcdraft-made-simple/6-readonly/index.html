@@ -8,10 +8,10 @@
         <title>深入浅出etcd/raft —— 0x06 只读请求优化 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出etcd/raft —— 0x06 只读请求优化" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/6-readonly/" />
-<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/6-readonly/etcd-raft.jpg"/>
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/6-readonly/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/6-readonly/etcd-raft.jpg"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2021-01-01T21:10:17+08:00" />
 <meta property="article:modified_time" content="2021-01-01T21:10:20+08:00" />
+
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/6-readonly/etcd-raft.jpg"/>
 <meta name="twitter:title" content="深入浅出etcd/raft —— 0x06 只读请求优化"/>
@@ -190,7 +190,7 @@
 <h2 id="2-etcdraft中只读请求优化的实现">2. etcd/raft中只读请求优化的实现</h2>
 <h3 id="21-etcdraft中readindex方法的使用">2.1 etcd/raft中ReadIndex方法的使用</h3>
 <p>在etcd/raft中，使用<strong>ReadIndex</strong>还是<strong>Lease Read</strong>方法由通过<code>raft</code>的配置<code>Config</code>的<code>ReadOnlyOption</code>字段决定的：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 	<span class="c1">// ReadOnlyOption specifies how the read only request is processed.
 </span><span class="c1"></span>	<span class="c1">//
 </span><span class="c1"></span>	<span class="c1">// ReadOnlySafe guarantees the linearizability of the read only request by
@@ -205,7 +205,7 @@
 </span><span class="c1"></span>	<span class="nx">ReadOnlyOption</span> <span class="nx">ReadOnlyOption</span>
 
 </code></pre></div><p>该字段的取值有两种：<code>ReadOnlySafe</code>与<code>ReadOnlyLeaseBased</code>，分别对应<strong>ReadIndex</strong>方法与<strong>Lease Read</strong>方法：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="kd">const</span> <span class="p">(</span>
 	<span class="c1">// ReadOnlySafe guarantees the linearizability of the read only request by
 </span><span class="c1"></span>	<span class="c1">// communicating with the quorum. It is the default and suggested option.
@@ -219,7 +219,7 @@
 <span class="p">)</span>
 
 </code></pre></div><p>无论是<strong>ReadIndex</strong>方法还是<strong>Lease Read</strong>方法，都需要获取<em>read index</em>。<code>Node</code>的<code>ReadIndex</code>方法就是用来获取<em>read index</em>的方法：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">	<span class="c1">// node.go
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">	<span class="c1">// node.go
 </span><span class="c1"></span>	<span class="c1">// type Node interface
 </span><span class="c1"></span>
 	<span class="c1">// ReadIndex request a read state. The read state will be set in the ready.
@@ -229,7 +229,7 @@
 </span><span class="c1"></span>	<span class="nf">ReadIndex</span><span class="p">(</span><span class="nx">ctx</span> <span class="nx">context</span><span class="p">.</span><span class="nx">Context</span><span class="p">,</span> <span class="nx">rctx</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="kt">error</span>
 
 </code></pre></div><p>当etcd/raft模块的调用者需要获取<em>read index</em>时，需要调用<code>ReadIndex</code>方法。<code>ReadIndex</code>方法不会直接返回<em>read index</em>，而是会在后续的<code>Ready</code>结构体的<code>ReadStates</code>字段中返回多次<code>ReadIndex</code>调用对应的<code>ReadState</code>。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 	<span class="c1">// node.go
 </span><span class="c1"></span>	<span class="c1">// type Ready struct
 </span><span class="c1"></span>
@@ -239,7 +239,7 @@
 </span><span class="c1"></span>	<span class="c1">// The returned is only valid for the request that requested to read.
 </span><span class="c1"></span>	<span class="nx">ReadStates</span> <span class="p">[]</span><span class="nx">ReadState</span>
 
-</code></pre></div><div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+</code></pre></div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// ReadState provides state for read only query.
 </span><span class="c1">// It&#39;s caller&#39;s responsibility to call ReadIndex first before getting
 </span><span class="c1">// this state from ready, it&#39;s also caller&#39;s duty to differentiate if this
@@ -255,7 +255,7 @@
 <h3 id="22-etcdraft中获取read-index的实现">2.2 etcd/raft中获取read index的实现</h3>
 <h4 id="221-readonly结构体">2.2.1 readOnly结构体</h4>
 <p>在分析etcd/raft中获取<em>read index</em>的实现使用了<code>raft</code>结构体中的两个字段：<code>readStates</code>与<code>readOnly</code>。<code>readStates</code>字段是已经获取的<em>read index</em>，etcd/raft返回的下一个<code>Ready</code>结构体的<code>ReadStates</code>字段会获取<code>readStates</code>字段中的全量数据并清空该字段。而<code>readOnly</code>字段就是一个<code>readOnly</code>结构体的指针。<code>readOnly</code>结构体是leader仅使用<strong>ReadIndex</strong>时，用来记录等待心跳确认的<em>read index</em>的结构体，其声明如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="kd">type</span> <span class="nx">readOnly</span> <span class="kd">struct</span> <span class="p">{</span>
 	<span class="nx">option</span>           <span class="nx">ReadOnlyOption</span>
 	<span class="nx">pendingReadIndex</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="o">*</span><span class="nx">readIndexStatus</span>
@@ -263,7 +263,7 @@
 <span class="p">}</span>
 
 </code></pre></div><p><code>readOnly</code>结构体的<code>option</code>字段记录了etcd/raft配置中实现<em>read index</em>的方法。<code>readIndexQueue</code>是多次调用<code>ReadIndex</code>方法时产生的<code>rctx</code>参数队列，其反映了<code>ReadIndex</code>的调用顺序。<code>pendingReadIndex</code>是<code>rctx</code>到其相应的状态<code>readIndexStatus</code>的映射。<code>readIndexStatus</code>结构体的<code>req</code>字段记录了该<code>rctx</code>对应的原消息（在发送该消息的响应时需要用到），<code>index</code>字段记录了待确认的<em>read index</em>的值，<code>ack</code>字段记录了已收到的确认该<em>read index</em>的心跳响应。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="kd">type</span> <span class="nx">readIndexStatus</span> <span class="kd">struct</span> <span class="p">{</span>
 	<span class="nx">req</span>   <span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span>
 	<span class="nx">index</span> <span class="kt">uint64</span>
@@ -279,32 +279,32 @@
 <table>
 <thead>
 <tr>
-<th align="center">方法<div style="width: 12em"></div></th>
-<th align="left">描述</th>
+<th style="text-align:center">方法<div style="width: 12em"></div></th>
+<th style="text-align:left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center"><code>addRequest(index uint64, m pb.Message)</code></td>
-<td align="left">在广播用来确认<em>read index</em>的心跳消息前，需要调用该方法将该<em>read index</em>加入待确认队列。</td>
+<td style="text-align:center"><code>addRequest(index uint64, m pb.Message)</code></td>
+<td style="text-align:left">在广播用来确认<em>read index</em>的心跳消息前，需要调用该方法将该<em>read index</em>加入待确认队列。</td>
 </tr>
 <tr>
-<td align="center"><code>recvAck(id uint64, context []byte) map[uint64]bool</code></td>
-<td align="left">当收到确认<em>read index</em>的心跳响应时，需要调用该方法更新该<em>read index</em>的确认状态，该方法会返回收到的确认心跳响应的发送者的id集合。</td>
+<td style="text-align:center"><code>recvAck(id uint64, context []byte) map[uint64]bool</code></td>
+<td style="text-align:left">当收到确认<em>read index</em>的心跳响应时，需要调用该方法更新该<em>read index</em>的确认状态，该方法会返回收到的确认心跳响应的发送者的id集合。</td>
 </tr>
 <tr>
-<td align="center"><code>advance(m pb.Message) []*readIndexStatus</code></td>
-<td align="left">当有<em>read index</em>得到了达到quorum数量节点的ack时，调用该方法返回相应的<code>ReadState</code>，并从待确认的队列中移除相应的<em>read index</em>及其状态。该方法支持批量与流水线操作，因为如果队列中靠后的<em>read index</em>被确认，则其之前的<em>read index</em>也可以确认，因此该方法会返回所有已确认的<code>ReadState</code>。</td>
+<td style="text-align:center"><code>advance(m pb.Message) []*readIndexStatus</code></td>
+<td style="text-align:left">当有<em>read index</em>得到了达到quorum数量节点的ack时，调用该方法返回相应的<code>ReadState</code>，并从待确认的队列中移除相应的<em>read index</em>及其状态。该方法支持批量与流水线操作，因为如果队列中靠后的<em>read index</em>被确认，则其之前的<em>read index</em>也可以确认，因此该方法会返回所有已确认的<code>ReadState</code>。</td>
 </tr>
 <tr>
-<td align="center"><code>lastPendingRequestCtx() string</code></td>
-<td align="left">该方法用来获取待确认的最后一条<em>read index</em>对应的<code>rctx</code>。在<em>heartbeat timeout</em>超时构造心跳消息时，其携带的<em>read index</em>标识为最后一条待确认的<em>read index</em>的标识，因为如果队列中靠后的<em>read index</em>被确认，则其之前的<em>read index</em>也可以确认，该方法是为支持批量与流水线操作而设计的。</td>
+<td style="text-align:center"><code>lastPendingRequestCtx() string</code></td>
+<td style="text-align:left">该方法用来获取待确认的最后一条<em>read index</em>对应的<code>rctx</code>。在<em>heartbeat timeout</em>超时构造心跳消息时，其携带的<em>read index</em>标识为最后一条待确认的<em>read index</em>的标识，因为如果队列中靠后的<em>read index</em>被确认，则其之前的<em>read index</em>也可以确认，该方法是为支持批量与流水线操作而设计的。</td>
 </tr>
 </tbody>
 </table>
 <h4 id="222-获取read-index流程与实现">2.2.2 获取read index流程与实现</h4>
 <p><code>Node</code>接口的<code>ReadIndex</code>方法会为Raft状态机应用一条<code>MsgReadIndex</code>消息。etcd/raft实现了<strong>Follower Read</strong>（<a href="#12-readindex" rel="">1.2节</a>介绍了<strong>Follower Read</strong>的简单实现），即follower需要将获取<em>read index</em>的请求转发给leader，leader确认自己是合法的leader后将<em>read index</em>返回给follower，然后follower根据其自己的<em>apply index</em>与<em>read index</em>确定什么时候可以执行只读请求。因此，如果应用<code>MsgReadIndex</code>消息的节点是follower，其会将该请求转发给leader：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 	<span class="c1">// stepFollower
 </span><span class="c1"></span>	<span class="c1">// ... ...
 </span><span class="c1"></span>
@@ -317,7 +317,7 @@
 		<span class="nx">r</span><span class="p">.</span><span class="nf">send</span><span class="p">(</span><span class="nx">m</span><span class="p">)</span>
 
 </code></pre></div><p>当leader处理<code>MsgReadIndex</code>请求时（可能来自本地节点，也可能来自follower），其会执行如下逻辑：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 	<span class="k">case</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">MsgReadIndex</span><span class="p">:</span>
 		<span class="c1">// only one voting member (the leader) in the cluster
 </span><span class="c1"></span>		<span class="k">if</span> <span class="nx">r</span><span class="p">.</span><span class="nx">prs</span><span class="p">.</span><span class="nf">IsSingleton</span><span class="p">()</span> <span class="p">{</span>
@@ -354,7 +354,7 @@
 <p>接着，leader需要判断当前的term是否提交过日志，这是为了解决<a href="#12-readindex" rel="">1.2节</a>中提到的新leader当选时<em>commit index</em>落后的问题。如果leader在当前term还没提交过消息，则其会忽略该<code>MsgReadIndex</code>消息。</p>
 <p>然后，leader会根据配置的获取<em>read index</em>的方法执行不同的逻辑。当使用<strong>Lease Read</strong>时，leader可以直接返回相应的<code>ReadState</code>，因为etcd/raft的<strong>Lease Read</strong>是通过<strong>Check Quorum</strong>实现的。即只要leader没有退位，说明其仍持有lease；而当leader无法为lease续约时，<strong>Check Quorum</strong>机制会让leader退位为follower，其也就不会通过<code>stepLeader</code>方法处理<code>MsgReadIndex</code>请求。</p>
 <p>当仅使用<strong>ReadIndex</strong>时，leader会将当前的<em>commit index</em>作为<em>read index</em>并通过<code>readOnly</code>的<code>addRequest</code>方法将其加入到待确认的队列中。然后leader节点自己先确认该<em>read index</em>，然后广播心跳等待其它节点确认该<em>read index</em>。leader在主动请求确认<em>read index</em>时，发送的心跳消息携带的<code>rctx</code>就是该<em>read index</em>相应的<code>rctx</code>；而当leader因<em>heartbeat timeout</em>超时而广播心跳消息时，携带的是待确认的最后一条<em>read index</em>相应的<code>rctx</code>，以批量确认所有待确认的<em>read index</em>。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// bcastHeartbeat sends RPC, without entries to all the peers.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">r</span> <span class="o">*</span><span class="nx">raft</span><span class="p">)</span> <span class="nf">bcastHeartbeat</span><span class="p">()</span> <span class="p">{</span>
 	<span class="nx">lastCtx</span> <span class="o">:=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">readOnly</span><span class="p">.</span><span class="nf">lastPendingRequestCtx</span><span class="p">()</span>
@@ -375,7 +375,7 @@
 <span class="p">}</span>
 
 </code></pre></div><p>follower在响应心跳消息时，会透传记录了<code>rctx</code>的<code>Context</code>字段，当leader收到心跳响应时，会根据该字段更新待确认的<em>read index</em>的状态：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 	<span class="c1">// stepLeader
 </span><span class="c1"></span>	<span class="c1">// ... ...
 </span><span class="c1"></span>
@@ -436,7 +436,7 @@
 </div>
 </article></div>
             </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div>
     </footer></div>

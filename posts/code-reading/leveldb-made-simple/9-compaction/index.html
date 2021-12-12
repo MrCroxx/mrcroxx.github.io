@@ -8,10 +8,10 @@
         <title>深入浅出LevelDB —— 09 Compaction - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 09 Compaction" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/9-compaction/" />
-<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/9-compaction/leveldb.jpg"/>
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/9-compaction/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/9-compaction/leveldb.jpg"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2021-03-11T14:16:25+08:00" />
 <meta property="article:modified_time" content="2021-03-15T23:26:52+08:00" />
+
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/9-compaction/leveldb.jpg"/>
 <meta name="twitter:title" content="深入浅出LevelDB —— 09 Compaction"/>
@@ -182,7 +182,7 @@
 <h3 id="21-后台线程">2.1 后台线程</h3>
 <p>为了防止Compaction执行时阻塞LevelDB的正常读写，LevelDB的所有Compaction都通过一个后台线程执行。LevelDB的后台线程的实现依赖系统环境，因此其接口定义在了<code>include/leveldb/env.h</code>中，在不同环境中的实现分别位于<code>util/env_windows.cc</code>与<code>env_posix.cc</code>中。本文只考虑其在POSIX环境下的实现。</p>
 <p>如果需要Compaction，LevelDB会通过如下代码调度后台线程：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="kt">void</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">MaybeScheduleCompaction</span><span class="p">()</span> <span class="p">{</span>
 
     <span class="c1">//... ...
@@ -196,7 +196,7 @@
 <span class="p">}</span>
 
 </code></pre></div><p>该方法调用了<code>include/leveldb/env.h</code>中定义的<code>Schedule</code>接口，我们先来看看其接口定义上的注释：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
   <span class="c1">// Arrange to run &#34;(*function)(arg)&#34; once in a background thread.
 </span><span class="c1"></span>  <span class="c1">//
 </span><span class="c1"></span>  <span class="c1">// &#34;function&#34; may run in an unspecified thread.  Multiple functions
@@ -207,7 +207,7 @@
 
 </code></pre></div><p>从该接口上的注释可以看出，该接口会安排后台线程执行一次传入的方法。且该接口既不保证后台线程仅单线程执行，也不传入的方法保序执行。</p>
 <p>下面我们来分析<code>Schedule</code>及其相关方法在POSIX环境下的实现。</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="kt">void</span> <span class="n">PosixEnv</span><span class="o">::</span><span class="n">Schedule</span><span class="p">(</span>
     <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">background_work_function</span><span class="p">)(</span><span class="kt">void</span><span class="o">*</span> <span class="n">background_work_arg</span><span class="p">),</span>
     <span class="kt">void</span><span class="o">*</span> <span class="n">background_work_arg</span><span class="p">)</span> <span class="p">{</span>
@@ -231,7 +231,7 @@
 
 </code></pre></div><p>该方法首先检测后台线程是否创建，如果没有创建创建后台线程。接下来会将任务放入后台线程的任务队列中，并通过信号量唤醒后台线程执行。创建后台线程与操作任务队列都需要通过锁来保护，因此该方法全程加锁。</p>
 <p>下面是后台线程的逻辑：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="c1">// ... ...
 </span><span class="c1"></span>
   <span class="k">static</span> <span class="kt">void</span> <span class="nf">BackgroundThreadEntryPoint</span><span class="p">(</span><span class="n">PosixEnv</span><span class="o">*</span> <span class="n">env</span><span class="p">)</span> <span class="p">{</span>
@@ -263,7 +263,7 @@
 <h3 id="22-compaction优先级">2.2 Compaction优先级</h3>
 <p>LevelDB中Compaction具有优先级，其顺序为：Minor Compaction &gt; Manual Compaction &gt; Size Compaction &gt; Seek Compaction。本节将根据源码来分析这一优先级的体现。</p>
 <p>无论是Minor Compaction还是Major Compaction，在设置了相应的参数后，都会通过<code>DBImpl::MaybeScheduleCompaction</code>方法来判断是否需要执行Compaction。该方法实现如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="kt">void</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">MaybeScheduleCompaction</span><span class="p">()</span> <span class="p">{</span>
   <span class="n">mutex_</span><span class="p">.</span><span class="n">AssertHeld</span><span class="p">();</span>
   <span class="k">if</span> <span class="p">(</span><span class="n">background_compaction_scheduled_</span><span class="p">)</span> <span class="p">{</span>
@@ -290,7 +290,7 @@
 <li>否则，通过<code>Schedule</code>方法开始新Compaction任务调度。</li>
 </ol>
 <p><code>MaybeScheduleCompaction</code>方法通过<code>imm_</code>是否为空判断是否需要Minor Compaction，通过<code>manual_compaction</code>判断是否需要Manual Compaction；而是否需要Size Compaction或Seek Compaction，则需要通过当前的VersionSet的<code>NeedsCompaction</code>方法来判断。该方法的实现如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
   <span class="c1">// Returns true iff some level needs a compaction.
 </span><span class="c1"></span>  <span class="kt">bool</span> <span class="nf">NeedsCompaction</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="n">Version</span><span class="o">*</span> <span class="n">v</span> <span class="o">=</span> <span class="n">current_</span><span class="p">;</span>
@@ -301,7 +301,7 @@
 <p>在了解LevelDB中Compaction整体的触发条件后，下面我们来分析每种Compaction具体的触发方式。</p>
 <h3 id="23-minor-compaction的触发">2.3 Minor Compaction的触发</h3>
 <p>Minor Compaction在MemTable大小超过限制时（默认为4MB）触发，LevelDB在写入变更前，首先会通过<code>DBImpl::MakeRoomForWrite</code>方法来在MemTable过大时将其转为Immutable MemTable，在该方法中，我们也能够找到尝试触发Compcation调度的调用。这里我们完整地看一下<code>DBImpl::MakeRoomForWrite</code>的实现：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="c1">// REQUIRES: mutex_ is held
 </span><span class="c1">// REQUIRES: this thread is currently at the front of the writer queue
 </span><span class="c1"></span><span class="n">Status</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">MakeRoomForWrite</span><span class="p">(</span><span class="kt">bool</span> <span class="n">force</span><span class="p">)</span> <span class="p">{</span>
@@ -381,7 +381,7 @@
 <h3 id="24-size-compaction的触发">2.4 Size Compaction的触发</h3>
 <p>Size Compaction在非level-0层是根据该层的总SSTable大小触发的，而在level-0层是根据该层SSTable数触发的。也就是说，只有发生了Compaction，才有可能触发Size Compaction。因为Compaction的执行会导致Version的更新，因此LevelDB在<code>VersionSet::LogAndApply</code>方法更新Version后，让其调用<code>VersionSet::Finalize</code>方法来计算每层SSTable是否需要Size Compaction，并选出最需要进行Size Compaction的层作为下次Size Compaction的目标。</p>
 <p><code>VersionSet::Finalize</code>方法实现如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="kt">void</span> <span class="n">VersionSet</span><span class="o">::</span><span class="n">Finalize</span><span class="p">(</span><span class="n">Version</span><span class="o">*</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
   <span class="c1">// Precomputed best level for next compaction
 </span><span class="c1"></span>  <span class="kt">int</span> <span class="n">best_level</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
@@ -426,7 +426,7 @@
 <li>对于非level-0，计算该层SSTable总大小与该层预设大小的比值作为score。level-1层的预设大小为10MB，之后每层依次*10。</li>
 </ol>
 <p>计算完score后，需要等待Size Compaction的触发。Size Compaction的触发发生在后台线程调用的<code>DBImpl::BackgroundCall</code>方法中。该方法在完成Compaction操作后，会再次调用<code>MaybeScheduleCompaction</code>方法，来触发因上次Compaction而需要的Size Compaction操作。</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="kt">void</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">BackgroundCall</span><span class="p">()</span> <span class="p">{</span>
   
   <span class="c1">// ... ...
@@ -497,7 +497,7 @@
     </div>
 <p>合并后，当LevelDB需要查找key <code>18</code>时，在level-k中便没有了覆盖key <code>18</code>的SSTable，因此会直接在level-(k+1)中找到该key所在的SSTable。这样便避免这次无效的seek。</p>
 <p>因为Seek Compcation的触发需要在SSTable上seek，因此我们从<code>DBImpl::Get</code>方法查找SSTable时开始分析。由于LevelDB的查找操作涉及到多层，笔者将在本系列的后续文章中详细介绍其流程，本文尽可能屏蔽目前不需要的细节。</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="n">Status</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">Get</span><span class="p">(</span><span class="k">const</span> <span class="n">ReadOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span>
                    <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">*</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
   
@@ -528,7 +528,7 @@
 <span class="p">}</span>
 
 </code></pre></div><p>当LevelDB查找key时，会记录一些统计信息。当在SSTable上发生查找时，会记录发生seek miss的 SSTable，这样会更新Version中其相应的FileMetaData中的<code>allowed_seeks</code>字段，并通过<code>MaybeScheduleCompaction</code>检查是否需要触发Seek Compaction。</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
   <span class="c1">// Lookup the value for key.  If found, store it in *val and
 </span><span class="c1"></span>  <span class="c1">// return OK.  Else return a non-OK status.  Fills *stats.
 </span><span class="c1"></span>  <span class="c1">// REQUIRES: lock is not held
@@ -631,7 +631,7 @@
 <li>该优化不能破坏LSM-Tree结构。</li>
 </ul>
 <p>因此计算Minor Compaction范围时需要且只需要确定其生成的SSTable所在的level。其通过<code>Version::PickLevelForMemTableOutput</code>方法实现：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="kt">int</span> <span class="n">Version</span><span class="o">::</span><span class="n">PickLevelForMemTableOutput</span><span class="p">(</span><span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">smallest_user_key</span><span class="p">,</span>
                                         <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">largest_user_key</span><span class="p">)</span> <span class="p">{</span>
   <span class="kt">int</span> <span class="n">level</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
@@ -677,7 +677,7 @@
 <p>由于三种Major Compaction的起始条件与目标都不同，其确定这三个参数的方式稍有不同。本节笔者将介绍并分析各种Major Compaction确定Compaction范围的方法与实现。</p>
 <h4 id="321-major-compaction的范围">3.2.1 Major Compaction的范围</h4>
 <p>LevelDB通过<code>Compaction</code>类（位于<code>db/version_set.h</code>）记录Major Compaction所需元数据：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="c1">// A Compaction encapsulates information about a compaction.
 </span><span class="c1"></span><span class="k">class</span> <span class="nc">Compaction</span> <span class="p">{</span>
  
@@ -722,7 +722,7 @@
 </ul>
 <h4 id="322-size-compaction与seek-compaction的范围">3.2.2 Size Compaction与Seek Compaction的范围</h4>
 <p>LevelDB在触发Size Compaction时，已知Compaction的起始层级i；而LevelDB在触发Seek Compaction时，已知Compaction的起始层级i和level-i层的输入SSTable。LevelDB通过<code>VersionSet::PickCompaction</code>方法来计算其它参数：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="n">Compaction</span><span class="o">*</span> <span class="n">VersionSet</span><span class="o">::</span><span class="n">PickCompaction</span><span class="p">()</span> <span class="p">{</span>
   <span class="n">Compaction</span><span class="o">*</span> <span class="n">c</span><span class="p">;</span>
   <span class="kt">int</span> <span class="n">level</span><span class="p">;</span>
@@ -807,7 +807,7 @@
 <p>为了避免这一问题，LevelDB在进行Major Compaction时，需要Compaction的范围。LevelDB中扩展Compaction输入范围的方法是<code>AddBoundaryInputs</code>，<code>SetupOtherInputs</code>中就是通过调用<code>AddBoundaryInputs</code>方法实现的输入扩展。</p>
 <p><code>AddBoundaryInputs</code>方法首先找到当前SSTable中最大的InternalKey记为<code>largest_key</code>，然后在这一level中查找满足其最小UserKey与<code>largest_key</code>相同且最小InternalKey大于<code>largest_key</code>的最小SSTable，将其加入到输入集中，并循环此过程，直到不再有新的SSTable被加入。<code>AddBoundaryInputs</code>方法依赖<code>FindLargestKey</code>与<code>FindSmallestBoundaryFile</code>方法实现了以上逻辑，这里不再赘述。</p>
 <p>在介绍了扩展<code>input</code>的原因与方法后，我们来分段分析<code>SetupOtherInputs</code>的实现：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="kt">void</span> <span class="n">VersionSet</span><span class="o">::</span><span class="n">SetupOtherInputs</span><span class="p">(</span><span class="n">Compaction</span><span class="o">*</span> <span class="n">c</span><span class="p">)</span> <span class="p">{</span>
   <span class="c1">// (1)
 </span><span class="c1"></span>  <span class="k">const</span> <span class="kt">int</span> <span class="n">level</span> <span class="o">=</span> <span class="n">c</span><span class="o">-&gt;</span><span class="n">level</span><span class="p">();</span>
@@ -844,7 +844,7 @@
     </figure></p>
 <p>图中<em>黄色</em>的SSTable是初次选取的input。如图的示例中，由于level-(i+1)层SSTable中的key较为分散，其input范围能够容纳level-i中更多的SSTable（即图中level-i层<em>蓝色</em>的SSTable）。显然，将这些SSTable加入到<code>input[0]</code>中，不需要扩展<code>input[1]</code>的范围。因此，LevelDB会将这部分SSTable一同合并，以减少未来需要的Compaction。</p>
 <p><code>SetupOtherInputs</code>的段(2)实现了这一逻辑：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
   <span class="c1">// (2)
 </span><span class="c1"></span>  <span class="c1">// Get entire range covered by compaction
 </span><span class="c1"></span>  <span class="n">InternalKey</span> <span class="n">all_start</span><span class="p">,</span> <span class="n">all_limit</span><span class="p">;</span>
@@ -884,7 +884,7 @@
 
 </code></pre></div><p>从段(2)可以看出，在再次扩展<code>input[0]</code>的范围时，除了需要保证不能引起<code>input[1]</code>的范围变化外，还需要扩展后的<code>input[0]</code>总的大小不超过扩展的限制（默认为25个<code>max_file_size</code>，即50MB）。</p>
 <p><code>SetupOtherInputs</code>其余部分的逻辑比较简单：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
   <span class="c1">// (3)
 </span><span class="c1"></span>  <span class="c1">// Compute the set of grandparent files that overlap this compaction
 </span><span class="c1"></span>  <span class="c1">// (parent == level+1; grandparent == level+2)
@@ -906,7 +906,7 @@
 <p>Manual Compaction通过LevelDB提供的接口<code>void CompactRange(const Slice* begin, const Slice* end)</code>触发，其所知Compaction的范围信息最少，只知道需要Compact的起始与终止key，甚至不知道发生Compaction的level。这也意味着，需要Compact的key范围，既可能在MemTable或Immutable Table中，也可能在不同level的SSTable中，甚至二者都有。因此，在Compact的时候需要考虑所有情形。</p>
 <p>LevelDB为了确保用户给出的key范围都能够被Compact，其首先强制触发Minor Compaction，然后按照给定的key范围进行Major Compaction。</p>
 <p>我们从<code>DB::CompactRange</code>的实现<code>DBImpl::CompactRange</code>开始分析：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="kt">void</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">CompactRange</span><span class="p">(</span><span class="k">const</span> <span class="n">Slice</span><span class="o">*</span> <span class="n">begin</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">*</span> <span class="n">end</span><span class="p">)</span> <span class="p">{</span>
   <span class="kt">int</span> <span class="n">max_level_with_files</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
   <span class="p">{</span>
@@ -926,7 +926,7 @@
 
 </code></pre></div><p><code>DBImpl::CompactRange</code>方法首先根据给定key范围与每个level是否有overlap，得到需要Compact的最高level，然后通过<code>TEST_CompactMemTable</code>方法强制触发并等待Minor Compaction完成（当前版本因MemTable与给定key范围没有overlap而跳过Minor Compaction）。随后遍历从0到需要Compact的最高level，并按需对该层进行Major Compaction。</p>
 <p>接下来我们来分析<code>TEST_CompactMemTable</code>与<code>TEST_CompactRange</code>的实现：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="n">Status</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">TEST_CompactMemTable</span><span class="p">()</span> <span class="p">{</span>
   <span class="c1">// nullptr batch means just wait for earlier writes to be done
 </span><span class="c1"></span>  <span class="n">Status</span> <span class="n">s</span> <span class="o">=</span> <span class="n">Write</span><span class="p">(</span><span class="n">WriteOptions</span><span class="p">(),</span> <span class="k">nullptr</span><span class="p">);</span>
@@ -944,7 +944,7 @@
 <span class="p">}</span>
 
 </code></pre></div><p><code>TEST_CompactMemTable</code>方法会通过一次“null write batch”来触发<code>force</code>参数为true的<code>MakeRoomForWrite</code>调用，<code>force</code>为true的调用会强制触发Minor Compaction（详见<a href="/posts/code-reading/leveldb-made-simple/8-compaction/#23-minor-compaction%e7%9a%84%e8%a7%a6%e5%8f%91" rel="">2.3 Minor Compaction的触发</a>）。随后该方法等待Minor Compaction完成后返回。</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="kt">void</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">TEST_CompactRange</span><span class="p">(</span><span class="kt">int</span> <span class="n">level</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">*</span> <span class="n">begin</span><span class="p">,</span>
                                <span class="k">const</span> <span class="n">Slice</span><span class="o">*</span> <span class="n">end</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">assert</span><span class="p">(</span><span class="n">level</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">);</span>
@@ -985,7 +985,7 @@
 <span class="p">}</span>
 
 </code></pre></div><p>该方法的工作也很简单，其生成了需要Compact的InternalKey范围，并配置了<code>manual_compaction_</code>字段，然后通过<code>MaybeScheduleCompaction</code>方法触发Manual Compaction，并等待期执行结束后返回。随后，Manual Compaction的执行交由后台线程来触发。后台线程在执行Manual Compaction时，会通过<code>VersionSet::CompactRange</code>方法计算其具体范围：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="n">Compaction</span><span class="o">*</span> <span class="n">VersionSet</span><span class="o">::</span><span class="n">CompactRange</span><span class="p">(</span><span class="kt">int</span> <span class="n">level</span><span class="p">,</span> <span class="k">const</span> <span class="n">InternalKey</span><span class="o">*</span> <span class="n">begin</span><span class="p">,</span>
                                      <span class="k">const</span> <span class="n">InternalKey</span><span class="o">*</span> <span class="n">end</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">FileMetaData</span><span class="o">*&gt;</span> <span class="n">inputs</span><span class="p">;</span>
@@ -1024,7 +1024,7 @@
 <p>从本节开始，笔者将介绍并分析LevelDB中Compaction执行的过程。</p>
 <p>LevelDB将Compaction任务放入后台线程的Compaction任务队列后，由后台线程调度执行。其执行Compaction的行为可分为执行Minor Compaciton与Major Compaction两种。在介绍这两种Compaction的执行方法前，我们先从后台线程执行Comapciton的入口方法开始，分析Compaction的启动过程。</p>
 <h3 id="41-后台线程compaction入口">4.1 后台线程Compaction入口</h3>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="kt">void</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">BGWork</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span> <span class="n">db</span><span class="p">)</span> <span class="p">{</span>
   <span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="n">DBImpl</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">db</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">BackgroundCall</span><span class="p">();</span>
 <span class="p">}</span>
@@ -1050,7 +1050,7 @@
 
 </code></pre></div><p><code>DBImpl::BGWork</code>方法是后台线程的执行入口，该方法直接调用了<code>DBImpl::BackgroundCall</code>方法。<code>DBImpl::BackgroundCall</code>方法通过<code>MutexLock</code>对该方法整体上锁，<code>MutexLock</code>在构造时会对传入的互斥锁上锁，析构时会对传入的互斥锁解锁，因此只需要实例化MutexLock即可在其声明周期内加锁。该方法会判断LevelDB此时既没有被关闭，也没有发生后台线程错误，然后调用<code>DBImpl::BackgroundCompaction</code>方法正式开始Compaction执行。最后，在本次Compaction执行结束后，会再次调用<code>MaybeScheduleCompaction</code>方法以免本次Compaction导致某一层文件过大超出限制（这也是Size Compaction的触发代码，上文曾介绍过这段代码）。</p>
 <p>接着我们来分析<code>DBImpl::BackgroundCompaction</code>的实现。由于该方法较长，我们继续分段分析：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="kt">void</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">BackgroundCompaction</span><span class="p">()</span> <span class="p">{</span>
   <span class="c1">// (1)
 </span><span class="c1"></span>  <span class="n">mutex_</span><span class="p">.</span><span class="n">AssertHeld</span><span class="p">();</span>
@@ -1065,7 +1065,7 @@
 <span class="p">}</span>
 
 </code></pre></div><p><code>BackgroundCompaction</code>首先通过断言的方式确保当前持有锁，然后按照优先级来执行Compaction。首先其判断<code>imm_</code>是否存在，如果存在则通过<code>DBImpl::CompactionMemTable</code>方法来执行Minor Comapction并返回。</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
   <span class="c1">// (2)
 </span><span class="c1"></span>  <span class="n">Compaction</span><span class="o">*</span> <span class="n">c</span><span class="p">;</span>
   <span class="kt">bool</span> <span class="n">is_manual</span> <span class="o">=</span> <span class="p">(</span><span class="n">manual_compaction_</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">);</span>
@@ -1087,7 +1087,7 @@
   <span class="p">}</span>
 
 </code></pre></div><p>接着，<code>BackgroundCompaction</code>方法计算Compaction的具体范围。这段代码我们在上一节中介绍过，这里不再赘述。</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
   <span class="c1">// (3)
 </span><span class="c1"></span>  <span class="n">Status</span> <span class="n">status</span><span class="p">;</span>
   <span class="k">if</span> <span class="p">(</span><span class="n">c</span> <span class="o">==</span> <span class="k">nullptr</span><span class="p">)</span> <span class="p">{</span>
@@ -1127,7 +1127,7 @@
 <li>否则，执行Compaction操作，依次调用<code>DoCompactionWork</code>、<code>CleanupCompaction</code>、<code>RemoveObsoleteFiles</code>。后文将详细分析每个方法的实现。</li>
 </ol>
 <p>该方法的步骤2会通过<code>Compaction::IsTrivialMove</code>方法来判断当前Comapction任务是否不需要合并或删除SSTable，而只需要将SSTable移到下一层。如果可以“trivial move”，则LevelDB只需要通过VersionEdit来修改Version中记录的每个level的文件编号即可，而不需要读写SSTable。<code>Compaction::IsTrivialMove</code>的实现如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="kt">bool</span> <span class="n">Compaction</span><span class="o">::</span><span class="n">IsTrivialMove</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
   <span class="k">const</span> <span class="n">VersionSet</span><span class="o">*</span> <span class="n">vset</span> <span class="o">=</span> <span class="n">input_version_</span><span class="o">-&gt;</span><span class="n">vset_</span><span class="p">;</span>
   <span class="c1">// Avoid a move if there is lots of overlapping grandparent data.
@@ -1146,7 +1146,7 @@
 <p>下面，笔者将分别介绍Minor Compaction与Major Comapction的执行。</p>
 <h3 id="42-minor-compaction">4.2 Minor Compaction</h3>
 <p>Minor Compaction主要通过<code>DBImpl::CompactionMemTable</code>方法实现：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="kt">void</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">CompactMemTable</span><span class="p">()</span> <span class="p">{</span>
   <span class="n">mutex_</span><span class="p">.</span><span class="n">AssertHeld</span><span class="p">();</span>
   <span class="n">assert</span><span class="p">(</span><span class="n">imm_</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">);</span>
@@ -1182,7 +1182,7 @@
 
 </code></pre></div><p><code>CompactionMemTable</code>方法首先调用<code>DBImpl::WriteLevel0Table</code>方法将Immutable MemTable转储为SSTable，由于该方法需要使用当前的Version信息，因此在调用前后增减了当前Version的引用计数以避免其被回收。接着，通过<code>VersionSet::LogAndApply</code>方法将增量的版本更新VersionEdit写入Manifest（其中prev log number已被弃用，不需要再关注）。如果上述操作都成功完成，则可以释放对Immutable MemTable的引用，并通过<code>RemoveObsoleteFiles</code>方法回收不再需要保留的文件（该方法放在后续的章节中介绍）。</p>
 <p>接下来我们分析其中转储Immutable MemTable的方法：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="n">Status</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">WriteLevel0Table</span><span class="p">(</span><span class="n">MemTable</span><span class="o">*</span> <span class="n">mem</span><span class="p">,</span> <span class="n">VersionEdit</span><span class="o">*</span> <span class="n">edit</span><span class="p">,</span>
                                 <span class="n">Version</span><span class="o">*</span> <span class="n">base</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">mutex_</span><span class="p">.</span><span class="n">AssertHeld</span><span class="p">();</span>
@@ -1230,7 +1230,7 @@
 </code></pre></div><p><code>WriteLevel0Table</code>方法虽然较长但其逻辑非常简单，其获取了需要转储的MemTable的迭代器，并传给<code>BuildTable</code>方法。<code>BuildTable</code>方法会通过<code>TableBuilder</code>来构造SSTable文件然后写入，这里不再赘述。这里值得我们注意的是，<code>WriteLevel0Table</code>方法在处理完构造SSTable时需要的数据（及引用计数）后，在真正通过<code>BuildTable</code>方法转储SSTable时释放了全局的锁。因为Minor Compaction是由后台线程完成的，这样做可以在保证线程安全的前提下，避免后台线程执行耗时的Minor Compaction操作时阻塞LevelDB正常的读写。</p>
 <h3 id="43-major-compaction">4.3 Major Compaction</h3>
 <p>Major Compaction主要通过<code>DBImpl::DoCompactionWork</code>方法实现，其流程较为复杂，这里仍采用分段介绍的方式分析。</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="n">Status</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">DoCompactionWork</span><span class="p">(</span><span class="n">CompactionState</span><span class="o">*</span> <span class="n">compact</span><span class="p">)</span> <span class="p">{</span>
   <span class="c1">// (1)
 </span><span class="c1"></span>  <span class="k">const</span> <span class="kt">uint64_t</span> <span class="n">start_micros</span> <span class="o">=</span> <span class="n">env_</span><span class="o">-&gt;</span><span class="n">NowMicros</span><span class="p">();</span>
@@ -1250,7 +1250,7 @@
 <span class="p">}</span>
 
 </code></pre></div><p>首先<code>DoCompactionWork</code>通过断言避免编码错误，同时做好日志，这里不再赘述。</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
   <span class="c1">// (2)
 </span><span class="c1"></span>  <span class="k">if</span> <span class="p">(</span><span class="n">snapshots_</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span> <span class="p">{</span>
     <span class="n">compact</span><span class="o">-&gt;</span><span class="n">smallest_snapshot</span> <span class="o">=</span> <span class="n">versions_</span><span class="o">-&gt;</span><span class="n">LastSequence</span><span class="p">();</span>
@@ -1283,7 +1283,7 @@
 <p>在解锁前，该方法准备了需要避免竟态的数据：需要保留的最大SequenceNumber（以实现Snapshot Read），并通过<code>MakeInputIterator</code>方法生成了所有参与Major Compaction的SSTable的全局迭代器Input Iterator（详见<a href="/posts/code-reading/leveldb-made-simple/8-iterator/" rel="">深入浅出LevelDB —— 08 Iterator</a>）。</p>
 <p>在完成Compaction并上锁后，该方法更新了统计量和状态，输出日志后返回。</p>
 <p>下面我们介绍的部分，几乎都是在解锁的情况下执行的，其不会阻塞LevelDB正常的读写操作。</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
   <span class="c1">// (3)
 </span><span class="c1"></span>  <span class="n">input</span><span class="o">-&gt;</span><span class="n">SeekToFirst</span><span class="p">();</span>
   <span class="n">Status</span> <span class="n">status</span><span class="p">;</span>
@@ -1326,7 +1326,7 @@
 <p>因为LevelDB限制了每个SSTable的大小，因此在Major Compaction期间，如果当前写入的SSTable过大，会将其拆分成多个SSTable写入，所以这里关闭的是最后一个SSTable。该方法主要通过SSTable的Builder的<code>Finish</code>方法完成对SSTable的写入，这里不再赘述，感兴趣的读者可以自行阅读。</p>
 <p>最后，这段代码更新了相关统计量。</p>
 <p>接下来我们来看LevelDB对每个key/value的处理：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
     <span class="c1">// (4)
 </span><span class="c1"></span>    <span class="c1">// Prioritize immutable compaction work
 </span><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="n">has_imm_</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">memory_order_relaxed</span><span class="p">))</span> <span class="p">{</span>
@@ -1387,7 +1387,7 @@
 <p>段(6)会判断当前key/value是否保留，如果保留则将<code>drop</code>置为true。其判断规则在下文介绍。</p>
 <p>段(7)用来将需要保留的key/value加入到当前SSTable中。因为在段(5)中当前写入的SSTable可能已因文件过大而被关闭，所以这里需要在SSTable被关闭时通过<code>OpenCompactionOutputFIle</code>打开一个新的SSTable并为其分配新的编号。</p>
 <p>最后我们来看段(6)中判断key/value是否需要保留的实现：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
     <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">ParseInternalKey</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">ikey</span><span class="p">))</span> <span class="p">{</span>
       <span class="c1">// Do not hide error keys
 </span><span class="c1"></span>      <span class="n">current_user_key</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span>
@@ -1470,7 +1470,7 @@
 </div>
 </article></div>
             </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div>
     </footer></div>

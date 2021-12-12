@@ -8,10 +8,10 @@
         <title>深入浅出boltdb —— 0x04 事务 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出boltdb —— 0x04 事务" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/4-transaction/" />
-<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/4-transaction/boltdb.jpg"/>
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/4-transaction/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/4-transaction/boltdb.jpg"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2021-01-26T13:30:24+08:00" />
 <meta property="article:modified_time" content="2021-02-05T21:21:25+08:00" />
+
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/boltdb-made-simple/4-transaction/boltdb.jpg"/>
 <meta name="twitter:title" content="深入浅出boltdb —— 0x04 事务"/>
@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/4-transaction\/boltdb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "boltdb, B\x2bTree","wordcount":  13331 ,
+                        }],"genre": "posts","keywords": "boltdb, B\u002bTree","wordcount":  13337 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/4-transaction\/","datePublished": "2021-01-26T13:30:24+08:00","dateModified": "2021-02-05T21:21:25+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,7 +110,7 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">深入浅出boltdb —— 0x04 事务</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAboltdb/"><i class="far fa-folder fa-fw"></i>深入浅出boltdb</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-26">2021-01-26</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 13331 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-26">2021-01-26</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 13337 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 27 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
@@ -223,36 +223,36 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 <table>
 <thead>
 <tr>
-<th align="center">隔离级别<br>（isolation level）<div style="width:12em"></div></th>
-<th align="center">脏读<br>（dirty reads）<div style="width:8em"></div></th>
-<th align="center">不可重复读<br>（non-repeatable reads）<div style="width:14em"></div></th>
-<th align="center">幻读<br>（phantom reads）<div style="width:10em"></div></th>
+<th style="text-align:center">隔离级别<br>（isolation level）<div style="width:12em"></div></th>
+<th style="text-align:center">脏读<br>（dirty reads）<div style="width:8em"></div></th>
+<th style="text-align:center">不可重复读<br>（non-repeatable reads）<div style="width:14em"></div></th>
+<th style="text-align:center">幻读<br>（phantom reads）<div style="width:10em"></div></th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center">未提交读<br>（read uncommitted）</td>
-<td align="center">⚠</td>
-<td align="center">⚠</td>
-<td align="center">⚠</td>
+<td style="text-align:center">未提交读<br>（read uncommitted）</td>
+<td style="text-align:center">⚠️</td>
+<td style="text-align:center">⚠️</td>
+<td style="text-align:center">⚠️</td>
 </tr>
 <tr>
-<td align="center">提交读<br>（read committed）</td>
-<td align="center"></td>
-<td align="center">⚠</td>
-<td align="center">⚠</td>
+<td style="text-align:center">提交读<br>（read committed）</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">⚠️</td>
+<td style="text-align:center">⚠️</td>
 </tr>
 <tr>
-<td align="center">可重复读<br>（repeatable reads）</td>
-<td align="center"></td>
-<td align="center"></td>
-<td align="center">⚠</td>
+<td style="text-align:center">可重复读<br>（repeatable reads）</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center">⚠️</td>
 </tr>
 <tr>
-<td align="center">序列化读<br>（serializable）</td>
-<td align="center"></td>
-<td align="center"></td>
-<td align="center"></td>
+<td style="text-align:center">序列化读<br>（serializable）</td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
 </tr>
 </tbody>
 </table>
@@ -271,46 +271,46 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 <table>
 <thead>
 <tr>
-<th align="center"><div style="width:6em"></div></th>
-<th align="center">Locks<div style="width:10em"></div></th>
-<th align="center">Latches<div style="width:10em"></div></th>
+<th style="text-align:center"><div style="width:6em"></div></th>
+<th style="text-align:center">Locks<div style="width:10em"></div></th>
+<th style="text-align:center">Latches<div style="width:10em"></div></th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center">Separate &hellip;</td>
-<td align="center">User transactions</td>
-<td align="center">Threads</td>
+<td style="text-align:center">Separate &hellip;</td>
+<td style="text-align:center">User transactions</td>
+<td style="text-align:center">Threads</td>
 </tr>
 <tr>
-<td align="center">Proetect &hellip;</td>
-<td align="center">Database contents</td>
-<td align="center">In-memory data structures</td>
+<td style="text-align:center">Proetect &hellip;</td>
+<td style="text-align:center">Database contents</td>
+<td style="text-align:center">In-memory data structures</td>
 </tr>
 <tr>
-<td align="center">During &hellip;</td>
-<td align="center">Entire transactions</td>
-<td align="center">Critical sections</td>
+<td style="text-align:center">During &hellip;</td>
+<td style="text-align:center">Entire transactions</td>
+<td style="text-align:center">Critical sections</td>
 </tr>
 <tr>
-<td align="center">Modes &hellip;</td>
-<td align="center">Shared, exclusive, update, intention, escrow, schema, etc.</td>
-<td align="center">Read, writes, (perhaps) update</td>
+<td style="text-align:center">Modes &hellip;</td>
+<td style="text-align:center">Shared, exclusive, update, intention, escrow, schema, etc.</td>
+<td style="text-align:center">Read, writes, (perhaps) update</td>
 </tr>
 <tr>
-<td align="center">Deadlock &hellip;</td>
-<td align="center">Detection &amp; resolution</td>
-<td align="center">Avoidance</td>
+<td style="text-align:center">Deadlock &hellip;</td>
+<td style="text-align:center">Detection &amp; resolution</td>
+<td style="text-align:center">Avoidance</td>
 </tr>
 <tr>
-<td align="center">&hellip; by &hellip;</td>
-<td align="center">Aanlysis of the waits-for graph, timeout, transaction abort, partial rollback, lock de-escalation</td>
-<td align="center">Coding discipline, &ldquo;lock leveling&rdquo;</td>
+<td style="text-align:center">&hellip; by &hellip;</td>
+<td style="text-align:center">Aanlysis of the waits-for graph, timeout, transaction abort, partial rollback, lock de-escalation</td>
+<td style="text-align:center">Coding discipline, &ldquo;lock leveling&rdquo;</td>
 </tr>
 <tr>
-<td align="center">Kept in &hellip;</td>
-<td align="center">Lock manager&rsquo;s hash table</td>
-<td align="center">Protected data structure</td>
+<td style="text-align:center">Kept in &hellip;</td>
+<td style="text-align:center">Lock manager&rsquo;s hash table</td>
+<td style="text-align:center">Protected data structure</td>
 </tr>
 </tbody>
 </table>
@@ -320,7 +320,7 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 <p>boltdb将事务封装成了<code>tx.go</code>中的<code>Tx</code>结构体。但只从<code>Tx</code>结构体分析boltdb中事务的封装与实现是不够的。因此，本节将先介绍<code>Tx</code>结构体的基本实现，然后按照事务的生命周期的顺序，介绍boltdb中<code>tx.go</code>与<code>db.go</code>中对事务的封装与实现。</p>
 <h3 id="21-tx结构体">2.1 Tx结构体</h3>
 <p><code>Tx</code>结构体的源码如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// txid represents the internal transaction identifier.
 </span><span class="c1"></span><span class="kd">type</span> <span class="nx">txid</span> <span class="kt">uint64</span>
 
@@ -354,46 +354,46 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 </code></pre></div><table>
 <thead>
 <tr>
-<th align="center">字段<div style="width:12em"></div></th>
-<th align="left">描述</th>
+<th style="text-align:center">字段<div style="width:12em"></div></th>
+<th style="text-align:left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center"><code>writable bool</code></td>
-<td align="left">true表示当前事务为读写事务，false表示当前事务为只读事务。</td>
+<td style="text-align:center"><code>writable bool</code></td>
+<td style="text-align:left">true表示当前事务为读写事务，false表示当前事务为只读事务。</td>
 </tr>
 <tr>
-<td align="center"><code>managed bool</code></td>
-<td align="left">标识当前事务是否为隐式事务，隐式事务由boltdb自动提交或回滚，用户不能主动提交或回滚。</td>
+<td style="text-align:center"><code>managed bool</code></td>
+<td style="text-align:left">标识当前事务是否为隐式事务，隐式事务由boltdb自动提交或回滚，用户不能主动提交或回滚。</td>
 </tr>
 <tr>
-<td align="center"><code>db *DB</code></td>
-<td align="left">创建该事务的数据库对象。</td>
+<td style="text-align:center"><code>db *DB</code></td>
+<td style="text-align:left">创建该事务的数据库对象。</td>
 </tr>
 <tr>
-<td align="center"><code>meta *meta</code></td>
-<td align="left">当前事务创建时的<code>meta</code>拷贝。</td>
+<td style="text-align:center"><code>meta *meta</code></td>
+<td style="text-align:left">当前事务创建时的<code>meta</code>拷贝。</td>
 </tr>
 <tr>
-<td align="center"><code>root Bucket</code></td>
-<td align="left">当前事务所见的root bucket的<code>Bucket</code>实例。</td>
+<td style="text-align:center"><code>root Bucket</code></td>
+<td style="text-align:left">当前事务所见的root bucket的<code>Bucket</code>实例。</td>
 </tr>
 <tr>
-<td align="center"><code>page map[pgid]*page</code></td>
-<td align="left">索引当前事务所使用的dirty page（page buffer）。</td>
+<td style="text-align:center"><code>page map[pgid]*page</code></td>
+<td style="text-align:left">索引当前事务所使用的dirty page（page buffer）。</td>
 </tr>
 <tr>
-<td align="center"><code>stats TxStats</code></td>
-<td align="left">统计变量。</td>
+<td style="text-align:center"><code>stats TxStats</code></td>
+<td style="text-align:left">统计变量。</td>
 </tr>
 <tr>
-<td align="center"><code>commitHandlers []func()</code></td>
-<td align="left">事务成功提交后需调用的回调函数列表。</td>
+<td style="text-align:center"><code>commitHandlers []func()</code></td>
+<td style="text-align:left">事务成功提交后需调用的回调函数列表。</td>
 </tr>
 <tr>
-<td align="center"><code>WriteFlag int</code></td>
-<td align="left"><code>WriteTo</code>方法reader打开文件时可配置的额外的flag。</td>
+<td style="text-align:center"><code>WriteFlag int</code></td>
+<td style="text-align:left"><code>WriteTo</code>方法reader打开文件时可配置的额外的flag。</td>
 </tr>
 </tbody>
 </table>
@@ -401,30 +401,30 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 <table>
 <thead>
 <tr>
-<th align="center">方法<div style="width:12em"></div></th>
-<th align="left">描述</th>
+<th style="text-align:center">方法<div style="width:12em"></div></th>
+<th style="text-align:left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center"><code>ID() int</code></td>
-<td align="left">返回当前事务id（<code>tx.meta.txid</code>）。</td>
+<td style="text-align:center"><code>ID() int</code></td>
+<td style="text-align:left">返回当前事务id（<code>tx.meta.txid</code>）。</td>
 </tr>
 <tr>
-<td align="center"><code>DB *DB</code></td>
-<td align="left">返回创建当前事务的数据库实例。</td>
+<td style="text-align:center"><code>DB *DB</code></td>
+<td style="text-align:left">返回创建当前事务的数据库实例。</td>
 </tr>
 <tr>
-<td align="center"><code>Size() int64</code></td>
-<td align="left">返回当前事务所见的数据库大小（非数据大小）。</td>
+<td style="text-align:center"><code>Size() int64</code></td>
+<td style="text-align:left">返回当前事务所见的数据库大小（非数据大小）。</td>
 </tr>
 <tr>
-<td align="center"><code>Writable() bool</code></td>
-<td align="left">返回当前事务事务可写。</td>
+<td style="text-align:center"><code>Writable() bool</code></td>
+<td style="text-align:left">返回当前事务事务可写。</td>
 </tr>
 <tr>
-<td align="center"><code>Stats() TxStats</code></td>
-<td align="left">返回当前事务的统计量。</td>
+<td style="text-align:center"><code>Stats() TxStats</code></td>
+<td style="text-align:left">返回当前事务的统计量。</td>
 </tr>
 </tbody>
 </table>
@@ -432,34 +432,34 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 <table>
 <thead>
 <tr>
-<th align="center">方法<div style="width:12em"></div></th>
-<th align="left">描述</th>
+<th style="text-align:center">方法<div style="width:12em"></div></th>
+<th style="text-align:left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center"><code>Cursor() *Cursor</code></td>
-<td align="left"><code>tx.root.Cursor()</code>。从当前事务获取root bucket的<code>Cursor</code>。由于root bucket中只保存子bucket，因此其返回的所有value都是nil。</td>
+<td style="text-align:center"><code>Cursor() *Cursor</code></td>
+<td style="text-align:left"><code>tx.root.Cursor()</code>。从当前事务获取root bucket的<code>Cursor</code>。由于root bucket中只保存子bucket，因此其返回的所有value都是nil。</td>
 </tr>
 <tr>
-<td align="center"><code>Bucket(name []byte) *Bucket</code></td>
-<td align="left"><code>tx.root.Bucket(name)</code>。获取root bucket的子bucket。</td>
+<td style="text-align:center"><code>Bucket(name []byte) *Bucket</code></td>
+<td style="text-align:left"><code>tx.root.Bucket(name)</code>。获取root bucket的子bucket。</td>
 </tr>
 <tr>
-<td align="center"><code>CreateBucket(name []byte) (*Bucket, error)</code></td>
-<td align="left"><code>tx.root.CreateBucket(name)</code></td>
+<td style="text-align:center"><code>CreateBucket(name []byte) (*Bucket, error)</code></td>
+<td style="text-align:left"><code>tx.root.CreateBucket(name)</code></td>
 </tr>
 <tr>
-<td align="center"><code>CreateBucketIfNotExists(name []byte) (*Bucket, error)</code></td>
-<td align="left"><code>tx.root.CreateBucketIfNotExists(name)</code>。如果root bucket的子bucket未创建，则创建子bucket并返回实例；否则直接返回其实例。</td>
+<td style="text-align:center"><code>CreateBucketIfNotExists(name []byte) (*Bucket, error)</code></td>
+<td style="text-align:left"><code>tx.root.CreateBucketIfNotExists(name)</code>。如果root bucket的子bucket未创建，则创建子bucket并返回实例；否则直接返回其实例。</td>
 </tr>
 <tr>
-<td align="center"><code>DeleteBucket(name []byte) error</code></td>
-<td align="left"><code>tx.root.DeleteBucket(name)</code>。删除root bucket的子bucket。</td>
+<td style="text-align:center"><code>DeleteBucket(name []byte) error</code></td>
+<td style="text-align:left"><code>tx.root.DeleteBucket(name)</code>。删除root bucket的子bucket。</td>
 </tr>
 <tr>
-<td align="center"><code>ForEach(fn func(name []byte, b *Bucket) error) error</code></td>
-<td align="left">遍历root bucket的所有子bucket并执行给定闭包。</td>
+<td style="text-align:center"><code>ForEach(fn func(name []byte, b *Bucket) error) error</code></td>
+<td style="text-align:left">遍历root bucket的所有子bucket并执行给定闭包。</td>
 </tr>
 </tbody>
 </table>
@@ -469,22 +469,22 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 <table>
 <thead>
 <tr>
-<th align="center">字段<div style="width:10em"></div></th>
-<th align="left">描述</th>
+<th style="text-align:center">字段<div style="width:10em"></div></th>
+<th style="text-align:left">描述</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center"><code>rwlock sync.Mutex</code></td>
-<td align="left">用来隔离可写事务的互斥锁（注意，不是读写锁）。</td>
+<td style="text-align:center"><code>rwlock sync.Mutex</code></td>
+<td style="text-align:left">用来隔离可写事务的互斥锁（注意，不是读写锁）。</td>
 </tr>
 <tr>
-<td align="center"><code>metalock sync.Mutex</code></td>
-<td align="left">用来保护元数据访问的互斥锁。</td>
+<td style="text-align:center"><code>metalock sync.Mutex</code></td>
+<td style="text-align:left">用来保护元数据访问的互斥锁。</td>
 </tr>
 <tr>
-<td align="center"><code>mmaplock sync.RWMutex</code></td>
-<td align="left">用来保护mmap操作的读写锁。</td>
+<td style="text-align:center"><code>mmaplock sync.RWMutex</code></td>
+<td style="text-align:left">用来保护mmap操作的读写锁。</td>
 </tr>
 </tbody>
 </table>
@@ -494,7 +494,7 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 <h4 id="221-事务开始">2.2.1 事务开始</h4>
 <p>boltdb的用户可以通过<code>DB</code>的<code>Begin</code>方法启动一个事务，通过<code>Begin</code>方法启动的事务需要用户自己控制其提交或回滚（用户还可以通过<code>Update</code>或<code>View</code>方法启动隐式事务，但二者都是对<code>Begin</code>的封装，因此放在最后介绍）。</p>
 <p><code>Begin</code>方法的实现如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// Begin starts a new transaction.
 </span><span class="c1">// Multiple read-only transactions can be used concurrently but only one
 </span><span class="c1">// write transaction can be used at a time. Starting multiple write transactions
@@ -521,7 +521,7 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 
 </code></pre></div><p><code>Begin</code>方法会根据事务是否可写，调用<code>beginRWTx</code>方法或<code>beginTx</code>方法。</p>
 <p>接下来首先分析启动只读事务<code>beginTx</code>方法的实现：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="kd">func</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="nf">beginTx</span><span class="p">()</span> <span class="p">(</span><span class="o">*</span><span class="nx">Tx</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
 	<span class="c1">// Lock the meta pages while we initialize the transaction. We obtain
 </span><span class="c1"></span>	<span class="c1">// the meta lock before the mmap lock because that&#39;s the order that the
@@ -570,7 +570,7 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 <li>更新统计量，返回事务对象<code>Tx</code>。</li>
 </ol>
 <p><code>beginRWTx</code>方法实现与之相似：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="kd">func</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="nf">beginRWTx</span><span class="p">()</span> <span class="p">(</span><span class="o">*</span><span class="nx">Tx</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
 	<span class="c1">// If the database was opened with Options.ReadOnly, return an error.
 </span><span class="c1"></span>	<span class="k">if</span> <span class="nx">db</span><span class="p">.</span><span class="nx">readOnly</span> <span class="p">{</span>
@@ -621,7 +621,7 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 </ol>
 <p>boltdb释放不再使用的shadow page的方法是：找到当前还在执行的读写事务中最小的<code>txid</code>，记为<code>minid</code>。显然，在该<code>minid</code>之前的读写事务产生的shadow page不再会被读取，此时，通过<code>freelist</code>的<code>release</code>方法释放<code>txid</code>不超过<code>minid-1</code>的事务产生的shadow page。</p>
 <p>接下来分析初始化<code>Tx</code>对象时调用的<code>init</code>方法：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// init initializes the transaction.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">tx</span> <span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="nf">init</span><span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="p">{</span>
 	<span class="nx">tx</span><span class="p">.</span><span class="nx">db</span> <span class="p">=</span> <span class="nx">db</span>
@@ -650,7 +650,7 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 <p>本节将介绍事务提交的实现。</p>
 <h5 id="2221-commit方法">2.2.2.1 Commit方法</h5>
 <p>事务提交方法<code>Commit</code>与注册成功提交回调的方法<code>OnCommit</code>的实现如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// OnCommit adds a handler function to be executed after the transaction successfully commits.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">tx</span> <span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="nf">OnCommit</span><span class="p">(</span><span class="nx">fn</span> <span class="kd">func</span><span class="p">())</span> <span class="p">{</span>
 	<span class="nx">tx</span><span class="p">.</span><span class="nx">commitHandlers</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">tx</span><span class="p">.</span><span class="nx">commitHandlers</span><span class="p">,</span> <span class="nx">fn</span><span class="p">)</span>
@@ -771,7 +771,7 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 <h5 id="2222-grow方法">2.2.2.2 grow方法</h5>
 <p>第5步中的<code>grow</code>方法，是用来增长底层数据库文件大小的方法。在本系列的前文<a href="/posts/code-reading/boltdb-made-simple/1-storage-cache/" rel="">深入浅出boltdb —— 0x01 存储与缓存</a>中，笔者描述boltdb的mmap增长逻辑时埋下了一个伏笔：boltdb的mmap的增长策略是从32KB开始，每次倍增，在达到1GB后每次增长1GB；但是boltdb并不会在mmap的同时修改底层数据库文件大小。这样的问题是：当访问超出了文件大小的mmap空间时，会引起<code>SIGBUS</code>异常。为了避免访问越界，同时减少不必要的底层数据库文件增长，boltdb采用了在事务提交时按需增长的策略。</p>
 <p>boltdb的实现方式是：在为事务分配完所需的页之后、在写入脏页前，先计算其使用了的空间大小（包括freelist中的页），即<code>int(tx.meta.pgid+1) * tx.db.pageSize</code>。之后调用<code>DB</code>的<code>grow</code>方法来按需增大底层数据库文件大小。其实现如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// grow grows the size of the database to the given sz.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="nf">grow</span><span class="p">(</span><span class="nx">sz</span> <span class="kt">int</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
 	<span class="c1">// Ignore if the new size is less than available file size.
@@ -807,7 +807,7 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 </code></pre></div><p><code>grow</code>方法会判断传入的所需文件大小，如果不需要增长底层文件大小则直接返回。同时，<code>grow</code>方法会检查当前mmap大小是否超过了门限<code>AllocSize</code>，在mmap大小达到该门限之前<code>grow</code>方法会按需增长数据库文件大小，在达到该门限后每次让数据库文件增大<code>AllocSize</code>。随后，<code>grow</code>方法会根据配置与系统来增长底层文件大小。其中需要注意两点：Windows支持mmap时自动扩展文件大小，而Linux不支持；ext3/ext4文件系统需要通过<code>fsync</code>方法强制同步元数据。这里笔者给出与<code>grow</code>相关的几个主要记录，以便读者参考：<a href="https://github.com/boltdb/bolt/issues/284" target="_blank" rel="noopener noreffer">issue#284</a>、<a href="https://github.com/boltdb/bolt/pull/286" target="_blank" rel="noopener noreffer">pull#286</a>、<a href="https://github.com/boltdb/bolt/pull/453" target="_blank" rel="noopener noreffer">pull#453</a>。</p>
 <h5 id="2223-writewritemeta">2.2.2.3 write、writeMeta</h5>
 <p><code>Tx</code>的<code>write</code>方法是将脏页写入到底层数据库文件的方法，其通过pwrite与fdatasync系统调用保证数据安全地写入磁盘。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// write writes any dirty pages to disk.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">tx</span> <span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="nf">write</span><span class="p">()</span> <span class="kt">error</span> <span class="p">{</span>
 	<span class="c1">// Sort pages by id.
@@ -883,7 +883,7 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 
 </code></pre></div><p>从源码可知，<code>write</code>方法会将<code>tx.pages</code>中记录的脏页，有序地写入到底层文件。其默认的写入方法为go的<code>os.File.WriteAt</code>方法，其内部通过pwrite系统调用实现，同时，每次写入大小不超过<code>maxAllocSize</code>。在写入后，如果数据库没有启用<code>NoSync</code>参数或<code>IgnoreNoSync</code>为真（该参数在OpenBSD系统上为真，原因详见该参数注释）时，会通过fdatasync系统调用确保数据安全地写入到磁盘。最后，该方法会把分配的单页大小的page buffer放回pagePool中（详见<a href="/posts/code-reading/boltdb-made-simple/1-storage-cache/#321-page-buffermemory-memory" rel="">《深入浅出boltdb —— 0x01 存储与缓存》3.2.1 page buffer（memory-&gt;memory）</a>）。</p>
 <p>而对于用来更新元数据的<code>writeMeta</code>方法也是如此：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// writeMeta writes the meta to the disk.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">tx</span> <span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="nf">writeMeta</span><span class="p">()</span> <span class="kt">error</span> <span class="p">{</span>
 	<span class="c1">// Create a temporary buffer for the meta page.
@@ -933,7 +933,7 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 </code></pre></div><p><code>writeMeta</code>方法同样通过pwrite+fdatasync的方式确保元数据被安全地写入到磁盘。同时，该方法会根据当前事务的<code>txid</code>来交替写入meta page 0 或 1。这样，即使在数据库写入meta页时挂掉，其重启时可以根据meta页的校验和切换到另一个数据完整的meta页。这样做也不会引起提交的事务数据丢失，因为如果还没写完meta页，那么该事务不会被认为是已提交的；另外，由于boltdb写入page时是copy-on-write的，旧meta页中指向的相应的页也都是有效的。</p>
 <h5 id="2224-check">2.2.2.4 Check</h5>
 <p>如果数据库处于严格模式<code>StrictMode</code>，则在事务提交的第7步中将调用<code>Check</code>方法对数据库进行完整性检查。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// Check performs several consistency checks on the database for this transaction.
 </span><span class="c1">// An error is returned if any inconsistency is found.
 </span><span class="c1">//
@@ -1029,7 +1029,7 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 <h4 id="223-事务回滚">2.2.3 事务回滚</h4>
 <p>boltdb的用户可以通过<code>Rollback</code>手动回滚事务，该方法会检测事务是否为隐式事务，如果是隐式事务则会返回错误（boltdb在回滚隐式事务前会将其<code>managed</code>字段置为false以避免返回错误）。<code>Rollback</code>方法会调用<code>rollback</code>方法进入回滚逻辑。另外，在事务提交时，发生部分错误时会直接调用<code>rollback</code>方法回滚事务。</p>
 <p><code>Rollback</code>方法与<code>rollback</code>方法的实现如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// Rollback closes the transaction and ignores all previous updates. Read-only
 </span><span class="c1">// transactions must be rolled back and not committed.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">tx</span> <span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="nf">Rollback</span><span class="p">()</span> <span class="kt">error</span> <span class="p">{</span>
@@ -1055,7 +1055,7 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 </code></pre></div><p><code>rollback</code>中的逻辑非常简单，对于只读事务只需要调用<code>close</code>方法关闭事务即可；而对于读写事务，首先要通过<code>freelist</code>的<code>rollback</code>方法，删除当前事务的<code>penging</code>列表中记录的页，因为这些页会被复用而不需要释放。另外，其还需要调用<code>freelist</code>的<code>reload</code>方法，其目的是将当前事务分配的页重新加入到<code>freelist</code>中；否则，这些页会无法引用，导致完整性检查失败。</p>
 <h4 id="224-事务关闭">2.2.4 事务关闭</h4>
 <p>无论是事务提交还是事务关闭，最后都需要调用<code>close</code>方法关闭事务。<code>close</code>方法的实现如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="kd">func</span> <span class="p">(</span><span class="nx">tx</span> <span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="nb">close</span><span class="p">()</span> <span class="p">{</span>
 	<span class="k">if</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">db</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
 		<span class="k">return</span>
@@ -1114,7 +1114,7 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 <p>boltdb除了为用户提供了<code>Begin</code>方法来显式地启动读写事务或只读事务，其还提供一些内置的封装好的隐式事务方法，如<code>Update</code>、<code>View</code>与<code>Batch</code>。当用户只需要操作数据库而不需要关心何时提交或回滚时，可以使用这些方法。</p>
 <h4 id="231-隐式读写事务与隐式只读事务">2.3.1 隐式读写事务与隐式只读事务</h4>
 <p><code>Update</code>与<code>View</code>分别是通过读写隐式事务与只读隐式事务操作数据库的方法。二者实现如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// Update executes a function within the context of a read-write managed transaction.
 </span><span class="c1">// If no error is returned from the function then the transaction is committed.
 </span><span class="c1">// If an error is returned then the entire transaction is rolled back.
@@ -1188,7 +1188,7 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 <h4 id="232-批处理隐式读写事务">2.3.2 批处理隐式读写事务</h4>
 <p>每个<code>Update</code>操作都要等待磁盘I/O完成才能执行下一个<code>Update</code>操作，虽然这保证了事务特性，但是性能较差。boltdb还为用户提供了一个能够将并发的多个读写事务合并为一次事务的方法——<code>Batch</code>。虽然通过<code>Batch</code>能够减少并发读写事务等待磁盘I/O的开销，但是其对事务中的操作有一定要求：<code>Batch</code>中的事务可能被重试若干次（即使某个事务正常，也可能被重试，笔者会在后文分析其原因），因此这要求通过<code>Batch</code>执行的操作必须是幂等（idempotent）的，且只有调用者调用的<code>Batch</code>方法成功返回后，其变更才保证被永久写入到存储。boltdb中的<code>Batch</code>分批操作对用户使透明的，用户只需要像调用<code>Update</code>一样调用<code>Batch</code>，boltdb就会自动将其分批。</p>
 <p><code>Batch</code>方法使用到了<code>batch</code>结构体：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="kd">type</span> <span class="nx">batch</span> <span class="kd">struct</span> <span class="p">{</span>
 	<span class="nx">db</span>    <span class="o">*</span><span class="nx">DB</span>
 	<span class="nx">timer</span> <span class="o">*</span><span class="nx">time</span><span class="p">.</span><span class="nx">Timer</span>
@@ -1204,7 +1204,7 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 </code></pre></div><p><code>batch</code>结构体的<code>calls</code>字段记录了每批读写事务的方法闭包与错误返回信道。记录错误返回信道的作用是为了将每个事务的错误返回给相应地调用者。</p>
 <p>数据库结构体<code>db</code>的实例的<code>batch</code>字段是指向当前正在等待积累的<code>batch</code>指针，当一批<code>batch</code>执行时，其会将该字段置为nil，下一次调用<code>Batch</code>时会创建新实例。</p>
 <p><code>Batch</code>方法的实现如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// Batch calls fn as part of a batch. It behaves similar to Update,
 </span><span class="c1">// except:
 </span><span class="c1">//
@@ -1249,7 +1249,7 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 
 </code></pre></div><p>在<code>Batch</code>方法中，其通过互斥锁<code>batchMu</code>保护了对<code>db</code>实例的<code>batch</code>字段的访问。如果<code>batch</code>为空或者已满时，创建新的<code>batch</code>实例，并为其注册定时器；如果该存在<code>batch</code>，则将当前方法与为其创建的错误信道加入到<code>batch</code>对象的<code>calls</code>字段中；如果此时<code>batch</code>已满，则立即触发其运行。在将当前事务加入到<code>batch</code>的列表中后，<code>Batch</code>方法会等待当前事务的错误信道的信号；如果从该信道收到的是<code>trySolo</code>错误，则通过<code>Update</code>方法重试该事务，返回结果。</p>
 <p>没有满的<code>batch</code>会在定时器超时时触发，其<code>start sync.Once</code>字段确保每个<code>batch</code>只会被触发一次。<code>batch</code>触发时运行的相关代码如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// trigger runs the batch if it hasn&#39;t already been run.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">b</span> <span class="o">*</span><span class="nx">batch</span><span class="p">)</span> <span class="nf">trigger</span><span class="p">()</span> <span class="p">{</span>
 	<span class="nx">b</span><span class="p">.</span><span class="nx">start</span><span class="p">.</span><span class="nf">Do</span><span class="p">(</span><span class="nx">b</span><span class="p">.</span><span class="nx">run</span><span class="p">)</span>
@@ -1354,7 +1354,7 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 </div>
 </article></div>
             </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div>
     </footer></div>

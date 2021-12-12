@@ -8,10 +8,10 @@
         <title>深入浅出LevelDB —— 04 MemTable - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 04 MemTable" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/4-memtable/" />
-<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/4-memtable/leveldb.jpg"/>
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/4-memtable/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/4-memtable/leveldb.jpg"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2021-03-05T20:03:13+08:00" />
 <meta property="article:modified_time" content="2021-03-06T16:23:30+08:00" />
+
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/4-memtable/leveldb.jpg"/>
 <meta name="twitter:title" content="深入浅出LevelDB —— 04 MemTable"/>
@@ -156,7 +156,7 @@
 <p><code>Arena</code>是LevelDB的内存分配器，Arena会按需以“块”为单位申请内存，每个块是一个连续的内存空间。SkipList通过Arena分配内存可以避免其链表节点的内存在内存堆中过于分散，以便利用缓存局部性。</p>
 <p>Arena在其生命周期中不会释放已获取的内存。此外，向Arena申请内存的数据结构也不会在Arena的生命周期中归还其占用的内存，这与数据结构的使用场景及使用相关。Arena的生命周期是与MemTable绑定的，每个MemTable都有自己的Arena。当MemTable销毁时，会将作为其字段的arena_一并销毁。</p>
 <p>Arena对外提供了以下方法：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="k">class</span> <span class="nc">Arena</span> <span class="p">{</span>
  <span class="k">public</span><span class="o">:</span>
   <span class="n">Arena</span><span class="p">();</span>
@@ -183,7 +183,7 @@
 <span class="p">}</span>
 
 </code></pre></div><p>Arena对外的分配方法有两种，区别在于是否按照机器位数对齐。Arena内部主要通过4个字段实现：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="k">class</span> <span class="nc">Arena</span> <span class="p">{</span>
 
   <span class="c1">// ... ...
@@ -208,7 +208,7 @@
 
 </code></pre></div><p><code>std::vector&lt;char*&gt; blocks_</code>字段按block来保存已申请的内存空间，<code>char* alloc_ptr_</code>指向当前块中还未分配的内存地址，<code>size_t alloc_bytes_remaining_</code>记录了当前块中剩余的未分配空间大小，<code>std::atomic&lt;size_t&gt; memory_usage_</code>记录了Arena获取的总内存大小（包括了每个block的header大小）。注意，这里“当前块”并非Arena创建的最后一个块，因为Arena为了避免浪费，会为较大的请求分配单独的块（详见下文），这里的“当前块”是指除了这些单独分配的块外获得的最后一个块。</p>
 <p>当LevelDB通过<code>Allocate</code>方法向Arena请求内存时，Arena首先会检查当前块的剩余空间，如果当前块剩余空间能够满足分配需求，则直接将剩余空间分配给调用者，并调整<code>alloc_ptr</code>与<code>alloc_bytes_remaining</code>：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="kr">inline</span> <span class="kt">char</span><span class="o">*</span> <span class="n">Arena</span><span class="o">::</span><span class="n">Allocate</span><span class="p">(</span><span class="n">size_t</span> <span class="n">bytes</span><span class="p">)</span> <span class="p">{</span>
   <span class="c1">// The semantics of what to return are a bit messy if we allow
 </span><span class="c1"></span>  <span class="c1">// 0-byte allocations, so we disallow them here (we don&#39;t need
@@ -224,7 +224,7 @@
 <span class="p">}</span>
 
 </code></pre></div><p>如果当前块剩余空间不足，Arena会调用内部的<code>AllocateFallback方法</code>：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="kt">char</span><span class="o">*</span> <span class="n">Arena</span><span class="o">::</span><span class="n">AllocateFallback</span><span class="p">(</span><span class="n">size_t</span> <span class="n">bytes</span><span class="p">)</span> <span class="p">{</span>
   <span class="k">if</span> <span class="p">(</span><span class="n">bytes</span> <span class="o">&gt;</span> <span class="n">kBlockSize</span> <span class="o">/</span> <span class="mi">4</span><span class="p">)</span> <span class="p">{</span>
     <span class="c1">// Object is more than a quarter of our block size.  Allocate it separately
@@ -245,7 +245,7 @@
 
 </code></pre></div><p><code>AllocateFallback</code>会判断需要分配的大小，如果需要分配的大小超过了默认块大小的$\frac{1}{4}$，为了避免浪费当前块的剩余空间，Arena会为其单独分配一个大小等于需求的块，此时不需要调整<code>alloc_ptr</code>与<code>alloc_bytes_remaining</code>字段，这样做的另一个好处是这一逻辑也可以用于分配需求大于默认块大小的空间；如果需要分配的大小没有超过默认块大小的$\frac{1}{4}$，此时不再使用当前块的剩余空间浪费也很小，因此直接申请一个默认大小的块，并从新块分配空间，同时调整<code>alloc_ptr</code>与<code>alloc_bytes_remaining</code>字段。</p>
 <p><code>AllocateNewBlock</code>会通过<code>new</code>关键字创建连续的内存块，并将获得的内存块保存到<code>blocks_</code>中，同时更新<code>memory_usage_</code>字段：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="kt">char</span><span class="o">*</span> <span class="n">Arena</span><span class="o">::</span><span class="n">AllocateNewBlock</span><span class="p">(</span><span class="n">size_t</span> <span class="n">block_bytes</span><span class="p">)</span> <span class="p">{</span>
   <span class="kt">char</span><span class="o">*</span> <span class="n">result</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">char</span><span class="p">[</span><span class="n">block_bytes</span><span class="p">];</span>
   <span class="n">blocks_</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">result</span><span class="p">);</span>
@@ -261,7 +261,7 @@
 <p>LevelDB中的SkipList只插入，不修改或删除，MemTable的修改或删除是通过插入有响应标识或序号的key实现的。</p>
 <p>SkipList通过template可以实现自定义Key类型与Key的比较方式。自定义<code>Comparator</code>只需要实现<code>include/comparator.h</code>中的虚类<code>Comparator</code>即可。</p>
 <p><code>leveldb::SkipList</code>及其迭代器<code>leveldb::SkipList::Iterator</code>的声明如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Key</span><span class="p">,</span> <span class="k">class</span> <span class="nc">Comparator</span><span class="o">&gt;</span>
 <span class="k">class</span> <span class="nc">SkipList</span> <span class="p">{</span>
  <span class="k">private</span><span class="o">:</span>
@@ -367,7 +367,7 @@
 
 </code></pre></div><p>SkipList的节点由<code>leveldb::SkipList::Node</code>类实现，<code>Node</code>的内存是在堆中分配的，其通过Arena分配器分配。有</p>
 <p><code>Node</code>的实现如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="c1">// Implementation details follow
 </span><span class="c1"></span><span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Key</span><span class="p">,</span> <span class="k">class</span> <span class="nc">Comparator</span><span class="o">&gt;</span>
 <span class="k">struct</span> <span class="nc">SkipList</span><span class="o">&lt;</span><span class="n">Key</span><span class="p">,</span> <span class="n">Comparator</span><span class="o">&gt;::</span><span class="n">Node</span> <span class="p">{</span>
@@ -431,7 +431,7 @@
 <h3 id="31-memtable概览">3.1 MemTable概览</h3>
 <p>Memtable对SkipList进行了封装，SkipList只能提供key的插入与查找，而Memtable并对外提供了key/value的增删改查操作。MemTable还提供了正向迭代器与反向迭代器，让使用者能够更细粒度地访问MemTable中的数据。</p>
 <p>MemTable的声明如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="k">class</span> <span class="nc">InternalKeyComparator</span><span class="p">;</span>
 <span class="k">class</span> <span class="nc">MemTableIterator</span><span class="p">;</span>
 
@@ -535,7 +535,7 @@
 </ol>
 <p>通过<code>InternalKeyComparator</code>，SkipList可以保证对于同一key（UserKey），新的操作永远在旧的操作的前面。因此，只要找到key（UserKey）在SkipList中第一次出现的位置，即可保证得到的是该key最新的版本。</p>
 <p>在分析MemTable如何实现查找key（UserKey）前，我们先来看一下MemTable实现增/删/查操作的实现：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="kt">void</span> <span class="n">MemTable</span><span class="o">::</span><span class="n">Add</span><span class="p">(</span><span class="n">SequenceNumber</span> <span class="n">s</span><span class="p">,</span> <span class="n">ValueType</span> <span class="n">type</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span>
                    <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
   <span class="c1">// Format of an entry is concatenation of:
@@ -565,7 +565,7 @@
 <p>而对于查找操作，由于在查找时MemTable无法得知需要查找的key（UserKey）最新的SequenceNumber或ValueType，因此在查找时，无法构造出恰好与SkipList中的InternalKey相等的查找键。但这并不影响MemTable查找UserKey的“当前”版本（<em>注：由于LevelDB实现了MVCC，这里的“当前”版本只对该操作可见的最新版本，下文同理</em>），根据InternalKey的排序顺序，只要构造出的查找键的UserKey与需要查找的UserKey相同，且SequenceNumber大于等于该UserKey当前SequenceNumber，MemTable即可根据查找键找到待查找的UserKey的最新版本可能出现的位置。然后判断该位置上的UserKey是否与我们要查找的UserKey相同，如果相同则说明我们找到了该UserKey的最新版本，如果不同则说明MemTable没有该UserKey的记录。</p>
 <p>为了便于生成查找键，LevelDB定义了<code>levelDB::LookupKey</code>，其结构相当于InternalKey Size与InternalKey部分连接在一起，其中SequenceNumber部分为构造时的SequenceNumber，ValueType为1。在查找时，只需要传入UserKey及“当前”的SequenceNumber，即可构造出在SkipList中位于我们要查找的UserKey的最新版本可能出现的位置处的LookupKey。</p>
 <p>MemTable中查找操作的实现如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="kt">bool</span> <span class="n">MemTable</span><span class="o">::</span><span class="n">Get</span><span class="p">(</span><span class="k">const</span> <span class="n">LookupKey</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">*</span> <span class="n">value</span><span class="p">,</span> <span class="n">Status</span><span class="o">*</span> <span class="n">s</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">Slice</span> <span class="n">memkey</span> <span class="o">=</span> <span class="n">key</span><span class="p">.</span><span class="n">memtable_key</span><span class="p">();</span>
   <span class="n">Table</span><span class="o">::</span><span class="n">Iterator</span> <span class="n">iter</span><span class="p">(</span><span class="o">&amp;</span><span class="n">table_</span><span class="p">);</span>
@@ -643,7 +643,7 @@
 </div>
 </article></div>
             </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div>
     </footer></div>

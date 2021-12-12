@@ -8,10 +8,10 @@
         <title>深入浅出LevelDB —— 03 Log - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出LevelDB —— 03 Log" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/3-log/" />
-<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/3-log/leveldb.jpg"/>
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/3-log/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/3-log/leveldb.jpg"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2021-03-05T12:43:16+08:00" />
 <meta property="article:modified_time" content="2021-03-05T12:43:19+08:00" />
+
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/leveldb-made-simple/3-log/leveldb.jpg"/>
 <meta name="twitter:title" content="深入浅出LevelDB —— 03 Log"/>
@@ -207,7 +207,7 @@
 <p>在介绍LevelDB中Log的Writer与Reader前，我们首先看一下LevelDB中对Log文件的抽象。LevelDB对Log文件的抽象有<code>WritableFile</code>和<code>SequentialFile</code>，分别对应顺序写入与顺序读取的文件。</p>
 <p><code>WritableFile</code>与<code>SequentialFile</code>是抽象类，定义在<code>include/leveldb/env/h</code>中。<code>env.h</code>中声明了很多与环境无关的抽象，让使用者不需要关心这些类在不同操作系统环境下的具体实现，而这些抽象的实现在<code>util/env_*.*</code>中，对应不同环境下的实现。</p>
 <p><code>WritableFile</code>与<code>SequentialFile</code>的声明如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="c1">// A file abstraction for sequential writing.  The implementation
 </span><span class="c1">// must provide buffering since callers may append small fragments
 </span><span class="c1">// at a time to the file.
@@ -259,7 +259,7 @@
 </code></pre></div><h3 id="22-writer与reader">2.2 Writer与Reader</h3>
 <p>相关文件：<code>db/log_writer.h</code>、<code>db/log_writer.cc</code>、<code>db/log_reader.h</code>、<code>db/log_reader.cc</code>。</p>
 <p><code>leveldb::log::Writer</code>是用来写入Log文件的类，其除了构造方法外只对外提供了一个追加记录的方法<code>AddRecord</code>，内部通过<code>EmitPhysicalRecord</code>方法用来将记录写入存储；<code>leveldb::log::Reader</code>是用来读取Log文件的类，其对外提供了<code>ReadRecord</code>方法，该方法会读取下一条记录，并将参数<code>result</code>与<code>scratch</code>指向下一条记录，内部方法<code>ReadPhysicalRecord</code>会通过<code>unistd.h</code>的<code>read</code>方法，读取文件的下一个块（32KB）到内部buffer（<code>backing_store_</code>），以减少I/O次数。</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="k">class</span> <span class="nc">Writer</span> <span class="p">{</span>
  <span class="k">public</span><span class="o">:</span>
   <span class="c1">// Create a writer that will append data to &#34;*dest&#34;.
@@ -362,7 +362,7 @@
 <h3 id="23-wal数据同步">2.3 WAL数据同步</h3>
 <p>Log（或Write-Ahead Log，WAL）的意义在于保证机器故障时数据不会因为内存掉电而丢失，只有record被执行前，被完全同步到稳定存储后，才能保证掉电后数据的完整性。然而，如果每条记录都要等待同步写入，其开销很高。</p>
 <p>LevelDB提供了是否开启同步的选项<code>WriteOptions</code>，其定义在<code>include/leveldb/options.h</code>中：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="c1">// Options that control write operations
 </span><span class="c1"></span><span class="k">struct</span> <span class="nc">LEVELDB_EXPORT</span> <span class="n">WriteOptions</span> <span class="p">{</span>
   <span class="n">WriteOptions</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
@@ -387,7 +387,7 @@
 </code></pre></div><p>如果在配置LevelDB时，将<code>WriteOptions</code>的<code>sync</code>字段置为<code>true</code>，LevelDB在写入WAL时会根据环境架构，通过适当的方式等待数据完全被写入到稳定存储。</p>
 <p>接下来我们以支持POSIX的系统为例，分析LevelDB中WAL的同步写入过程。</p>
 <p><code>leveldb::log::Writer</code>的<code>EmitPhysicalRecord</code>方法是将Record写入到WAL中的方法：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="n">Status</span> <span class="n">Writer</span><span class="o">::</span><span class="n">EmitPhysicalRecord</span><span class="p">(</span><span class="n">RecordType</span> <span class="n">t</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">ptr</span><span class="p">,</span>
                                   <span class="n">size_t</span> <span class="n">length</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">assert</span><span class="p">(</span><span class="n">length</span> <span class="o">&lt;=</span> <span class="mh">0xffff</span><span class="p">);</span>  <span class="c1">// Must fit in two bytes
@@ -418,7 +418,7 @@
 
 </code></pre></div><p>从其源码中可以看出，该方法通过<code>Flush</code>方法将用户态buffer中写入的内容刷入内核态buffer后便会返回，后续写入通过操作系统实现。如果掉电时，操作系统还没有将数据写入到稳定存储，数据仍会丢失。为了确保内核缓冲区中的数据会被写入到稳定存储，需要通过系统调用实现，在POSIX系统下常用的系统调用有<code>fsync</code>、<code>fdatasync</code>、<code>msync</code>等。</p>
 <p><code>leveldb::log::Writer</code>的<code>AppendRecord</code>方法最终是通过<code>EmitPhysicalRecord</code>实现的，因此我们追溯到LevelDB调用<code>AppendRecord</code>的位置，其位于<code>db/db_impl.cc</code>中<code>DBImpl::Write</code>方法的实现中：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
 <span class="c1">// ... ...
 </span><span class="c1"></span>
 <span class="n">status</span> <span class="o">=</span> <span class="n">log_</span><span class="o">-&gt;</span><span class="n">AddRecord</span><span class="p">(</span><span class="n">WriteBatchInternal</span><span class="o">::</span><span class="n">Contents</span><span class="p">(</span><span class="n">write_batch</span><span class="p">));</span>
@@ -437,7 +437,7 @@
 <span class="c1">// ... ...
 </span><span class="c1"></span>
 </code></pre></div><p>如果开启了<code>WriteOptions.sync</code>选项，LevelDB此处会在调用<code>AppendRecord</code>后调用<code>WritableFile</code>的<code>Sync</code>方法以保证数据被同步到了稳定存储中。在POSIX环境下，<code>WritableFile</code>的<code>Sync</code>方法实现最终会落到<code>SyncFd</code>方法中，该方法位于<code>util/env_posix.cc</code>文件中：</p>
-<div class="highlight"><pre class="chroma"><code class="language-cpp" data-lang="cpp">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
   <span class="c1">// Ensures that all the caches associated with the given file descriptor&#39;s
 </span><span class="c1"></span>  <span class="c1">// data are flushed all the way to durable media, and can withstand power
 </span><span class="c1"></span>  <span class="c1">// failures.
@@ -499,7 +499,7 @@
 </div>
 </article></div>
             </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div>
     </footer></div>

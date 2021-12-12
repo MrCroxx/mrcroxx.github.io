@@ -8,10 +8,10 @@
         <title>《In Search of an Understandable Consensus Algorithm (Extended Version)》论文翻译 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《In Search of an Understandable Consensus Algorithm (Extended Version)》论文翻译" />
 <meta property="og:description" content="本篇文章是对论文In Search of an Understandable Consensus Algorithm (Extended Version)的原创翻译，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/raft-extended/" />
-<meta property="og:image" content="https://mrcroxx.github.io/posts/paper-reading/raft-extended/paper-reading.jpg"/>
+<meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/raft-extended/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/paper-reading/raft-extended/paper-reading.jpg"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2020-09-27T19:26:30+08:00" />
 <meta property="article:modified_time" content="2020-10-01T13:53:47+08:00" />
+
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/paper-reading/raft-extended/paper-reading.jpg"/>
 <meta name="twitter:title" content="《In Search of an Understandable Consensus Algorithm (Extended Version)》论文翻译"/>
@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/raft-extended\/paper-reading.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "Raft, Translation","wordcount":  33624 ,
+                        }],"genre": "posts","keywords": "Raft, Translation","wordcount":  33618 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/raft-extended\/","datePublished": "2020-09-27T19:26:30+08:00","dateModified": "2020-10-01T13:53:47+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,7 +110,7 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">《In Search of an Understandable Consensus Algorithm (Extended Version)》论文翻译</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-27">2020-09-27</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 33624 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-27">2020-09-27</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 33618 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 68 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
@@ -193,7 +193,7 @@
 <p>我们认为，无论为了教育目的还是作为实现的基础，Raft都比Paxos和其它共识算法更优秀；Raft的描述足够完整，能够满足使用系统的需求；Raft有很多开源实现并已经被一些公司使用；Raft的安全性性质已经被形式化定义并证明；Raft的效率与其它算法相似。</p>
 <p>本文的剩余部分介绍了多副本状态机问题（<a href="#2-%e5%a4%9a%e5%89%af%e6%9c%ac%e7%8a%b6%e6%80%81%e6%9c%ba" rel="">第二章</a>），讨论了Paxos的优势与劣势（<a href="#3-paxos%e6%9c%89%e4%bb%80%e4%b9%88%e9%97%ae%e9%a2%98" rel="">第三章</a>），描述了我们为了可理解性使用的通用方法（<a href="#4-%e4%b8%ba%e5%8f%af%e7%90%86%e8%a7%a3%e6%80%a7%e5%81%9a%e5%87%ba%e7%9a%84%e8%ae%be%e8%ae%a1" rel="">第四章</a>），给出了Raft共识算法（<a href="#5-raft%e5%85%b1%e8%af%86%e7%ae%97%e6%b3%95" rel="">第5~8章</a>），评估了Raft（<a href="#9-%e5%ae%9e%e7%8e%b0%e5%92%8c%e8%af%84%e4%bc%b0" rel="">第九章</a>），并讨论了相关工作（<a href="#10-%e7%9b%b8%e5%85%b3%e5%b7%a5%e4%bd%9c" rel="">第十章</a>）。</p>
 <h2 id="2-多副本状态机">2. 多副本状态机</h2>
-<p>共识算法通常在*多副本状态机问题（replicated state machine problem）*<sup>[37]</sup>的上下文中出现。通过这种方法，在一系列服务器上的状态机会计算相同状态的相同副本，且即使在一些服务器宕机是也可以继续操作。多副本状态机被用来解决分布式系统中各式各样的容错问题。例如，有单集群leader的大型系统（如GFS<sup>[8]</sup>、HDFS<sup>[38]</sup>、和RAMCloud<sup>[33]</sup>）通常使用独立的多副本状态机来管理领导选举并存储必须能在leader崩溃时幸存的配置信息。多副本状态机的例子还包括Chubby<sup>[2]</sup>和ZooKeeper<sup>[11]</sup>。</p>
+<p>共识算法通常在<em>多副本状态机问题（replicated state machine problem）</em><sup>[37]</sup>的上下文中出现。通过这种方法，在一系列服务器上的状态机会计算相同状态的相同副本，且即使在一些服务器宕机是也可以继续操作。多副本状态机被用来解决分布式系统中各式各样的容错问题。例如，有单集群leader的大型系统（如GFS<sup>[8]</sup>、HDFS<sup>[38]</sup>、和RAMCloud<sup>[33]</sup>）通常使用独立的多副本状态机来管理领导选举并存储必须能在leader崩溃时幸存的配置信息。多副本状态机的例子还包括Chubby<sup>[2]</sup>和ZooKeeper<sup>[11]</sup>。</p>
 <p>多副本状态机通常使用多副本日志实现，如<strong>图1</strong>所示。每个服务器存储一个包含一系列指令的日志，状态机会按照顺序执行日志。每个日志包含相同顺序的相同指令，因此每个状态机会处理相同的指令序列。因为状态机是确定的，每个状态机都会计算出相同的状态并得出相同的输出序列。</p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/raft-extended/figure-1.png" title="图1 多副本状态机架构。共识算法管理由来自不同客户端的状态及指令组成的多副本日志。状态机按照日志处理相同的指令序列，因此它们会产生相同的输出。" data-thumbnail="/posts/paper-reading/raft-extended/figure-1.png" data-sub-html="<h2>图1 多副本状态机架构。共识算法管理由来自不同客户端的状态及指令组成的多副本日志。状态机按照日志处理相同的指令序列，因此它们会产生相同的输出。</h2><p>图1 多副本状态机架构。共识算法管理由来自不同客户端的状态及指令组成的多副本日志。状态机按照日志处理相同的指令序列，因此它们会产生相同的输出。</p>">
         <img
@@ -460,7 +460,7 @@
     </a><figcaption class="image-caption">图11 配置变更的时间线。虚线表示已被创建但还没被提交的配置条目，实现表示最新的已被提交的配置条目。leader首先在它的日志中创建了配置条目$C_{old,new}$，并将其提交到了$C_{old,new}$中（$C_{old}$中的大多数和$C_{new}$中的大多数）。然后它创建$C_{new}$条目并将其提交到$C_{new}$的大多数。不存在$C_{old}$和$C_{new}$能独立作出决策的时间。</figcaption>
     </figure></p>
 <p>集群配置的存储和通信使用了多副本日志中的特殊条目。<strong>图11</strong>阐释了配置变更的过程。当leader收到将配置从$C_{old}$变更为$C_{new}$的请求时，它会将该配置的联合共识（图中的$C_{old,new}$）作为一个日志条目存储，并将该条目使用之前描述的机制复制。一旦某个服务器将新配置的条目加入到了它的日志中，它会在所有之后的决策中应用该配置（服务器总是使用它的日志中的最新的配置，无论该条目是否被提交了）。这意味着leader会使用$C_{old,new}$的规则来决定什么时候$C_{old,new}$的日志条目被提交。如果leader崩溃，新的leader可能在$C_{old}$或$C_{old,new}$下被选举出，这取决于赢得选举的candidate有没有收到$C_{old,new}$。这期间的任何情况下，$C_{new}$都不能单独做决策。</p>
-<p>一旦$C_{old,new}$已经被提交，无论$C_{old}$还是$C_{new}$都不能在没有对方认同的情况下做决策，而“领导完整性特性”确保了只有$C_{old,new}$的日志条目的服务器才可能被选举为leader。现在leader可以安全地创建描述$C_{new}$的日志条目并将其复制到集群中。第二次也是一样，配置一被服务器看到就会生效。当新的配置已在$C_{new}$的规则下被提交时，旧的配置就无关紧要了，且不在新配置下的服务器可以被关机。如**图11**所示，在任何时间$C_{old}$和$C_{new}$都不能单独做决策，这确保了安全性。</p>
+<p>一旦$C_{old,new}$已经被提交，无论$C_{old}$还是$C_{new}$都不能在没有对方认同的情况下做决策，而“领导完整性特性”确保了只有$C_{old,new}$的日志条目的服务器才可能被选举为leader。现在leader可以安全地创建描述$C_{new}$的日志条目并将其复制到集群中。第二次也是一样，配置一被服务器看到就会生效。当新的配置已在$C_{new}$的规则下被提交时，旧的配置就无关紧要了，且不在新配置下的服务器可以被关机。如<strong>图11</strong>所示，在任何时间$C_{old}$和$C_{new}$都不能单独做决策，这确保了安全性。</p>
 <p>重配置有另外三个问题待解决。第一个问题是，新的服务器最初可能没有存储任何日志条目。如果它们在这种状态下加入集群，它可能需要很长时间来追赶，这段时间内它可能不能提交新的日志条目。为了避免可用性有间隔，Raft在配置变更前引入了一个额外的阶段，在这一阶段中，新的服务器作为不投票的成员加入集群（leader会将日志条目复制给它们，但它们不在关于“大多数”的考虑范围内）。一旦新服务器追赶上了集群中其余的服务器，重配置可按之前描述的那样继续。</p>
 <p>第二个问题是，集群的leader可能不是新的配置的一部分。在这种情况下，一旦leader提交了$C_{new}$的日志条目，它就会下台（返回为follower状态）。这意味着，在一段时间内（当leader提交$C_{new}$时），leader会管理不包括它自己在内的集群。它将日志复制到不包括自己在内的大多数中。leader在$C_{new}$被提交时发生切换，因为这是新配置可以单独操作的第一个时间点（它将总是可以从$C_{new}$中选择一个新leader）。在这个时间点之前，可能处于只有$C_{old}$中的服务器才能被选举为leader的情况下。</p>
 <p>第三个问题是，被移除的服务器（那些不在$C_{new}$中的服务器）可能会扰乱集群。这些服务器将不会收到心跳，所以它们会超时并开始新的选举。接着，他们会使用新的term号发送RequestVote RPC，这会导致当前的leader转换成follower状态。最终，新的leader会被选举出来，但是被移除的服务器将再次超时，这一过程会重复，这会导致很弱的可用性。</p>
@@ -612,18 +612,18 @@
 <p>[20] LAMPSON, B. W. How to build a highly available system using consensus. In Distributed Algorithms, O. Baboaglu and K. Marzullo, Eds. Springer-Verlag, 1996, pp. 1–17.</p>
 <p>[21] LAMPSON, B. W. The ABCD’s of Paxos. In Proc. PODC’01, ACM Symposium on Principles of Distributed Computing (2001), ACM, pp. 13–13.</p>
 <p>[22] LISKOV, B., AND COWLING, J. Viewstamped replication revisited. Tech. Rep. MIT-CSAIL-TR-2012-021, MIT, July 2012.</p>
-<p>[23] LogCabin source code. <a href="http://github.com/">http://github.com/</a> logcabin/logcabin.</p>
+<p>[23] LogCabin source code. <a href="http://github.com/" target="_blank" rel="noopener noreffer">http://github.com/</a> logcabin/logcabin.</p>
 <p>[24] LORCH, J. R., ADYA, A., BOLOSKY, W. J., CHAIKEN, R., DOUCEUR, J. R., AND HOWELL, J. The SMART way to migrate replicated stateful services. In Proc. EuroSys’06, ACM SIGOPS/EuroSys European Conference on Computer Systems (2006), ACM, pp. 103–115.</p>
 <p>[25] MAO, Y., JUNQUEIRA, F. P., AND MARZULLO, K. Mencius: building efficient replicated state machines for WANs. In Proc. OSDI’08, USENIX Conference on Operating Systems Design and Implementation (2008), USENIX, pp. 369–384.</p>
-<p>[26] MAZIERES ` , D. Paxos made practical. <a href="http://www.scs.stanford.edu/">http://www.scs.stanford.edu/</a>˜dm/home/papers/paxos.pdf, Jan. 2007.</p>
+<p>[26] MAZIERES ` , D. Paxos made practical. <a href="http://www.scs.stanford.edu/" target="_blank" rel="noopener noreffer">http://www.scs.stanford.edu/</a>˜dm/home/papers/paxos.pdf, Jan. 2007.</p>
 <p>[27] MORARU, I., ANDERSEN, D. G., AND KAMINSKY, M. There is more consensus in egalitarian parliaments. In Proc. SOSP’13, ACM Symposium on Operating System Principles (2013), ACM.</p>
-<p>[28] Raft user study. <a href="http://ramcloud.stanford.edu/">http://ramcloud.stanford.edu/</a>˜ongaro/userstudy/.</p>
+<p>[28] Raft user study. <a href="http://ramcloud.stanford.edu/" target="_blank" rel="noopener noreffer">http://ramcloud.stanford.edu/</a>˜ongaro/userstudy/.</p>
 <p>[29] OKI, B. M., AND LISKOV, B. H. Viewstamped replication: A new primary copy method to support highly-available distributed systems. In Proc. PODC’88, ACM Symposium on Principles of Distributed Computing(1988), ACM, pp. 8–17.</p>
 <p>[30] O’NEIL, P., CHENG, E., GAWLICK, D., AND ONEIL, E. The log-structured merge-tree (LSM-tree). Acta Informatica 33, 4 (1996), 351–385.</p>
-<p>[31] ONGARO, D. Consensus: Bridging Theory and Practice. PhD thesis, Stanford University, 2014 (work in progress). <a href="http://ramcloud.stanford.edu/">http://ramcloud.stanford.edu/</a>˜ongaro/thesis.pdf.</p>
+<p>[31] ONGARO, D. Consensus: Bridging Theory and Practice. PhD thesis, Stanford University, 2014 (work in progress). <a href="http://ramcloud.stanford.edu/" target="_blank" rel="noopener noreffer">http://ramcloud.stanford.edu/</a>˜ongaro/thesis.pdf.</p>
 <p>[32] ONGARO, D., AND OUSTERHOUT, J. In search of an understandable consensus algorithm. In Proc ATC’14, USENIX Annual Technical Conference (2014), USENIX.</p>
 <p>[33] OUSTERHOUT, J., AGRAWAL, P., ERICKSON, D., KOZYRAKIS, C., LEVERICH, J., MAZIERES ` , D., MITRA, S., NARAYANAN, A., ONGARO, D., PARULKAR, G., ROSENBLUM, M., RUMBLE, S. M., STRATMANN, E., AND STUTSMAN, R. The case for RAMCloud. Communications of the ACM 54 (July 2011), 121–130.</p>
-<p>[34] Raft consensus algorithm website. <a href="http://raftconsensus.github.io">http://raftconsensus.github.io</a>.</p>
+<p>[34] Raft consensus algorithm website. <a href="http://raftconsensus.github.io" target="_blank" rel="noopener noreffer">http://raftconsensus.github.io</a>.</p>
 <p>[35] REED, B. Personal communications, May 17, 2013.</p>
 <p>[36] ROSENBLUM, M., AND OUSTERHOUT, J. K. The design and implementation of a log-structured file system. ACM Trans. Comput. Syst. 10 (February 1992), 26–52.</p>
 <p>[37] SCHNEIDER, F. B. Implementing fault-tolerant services using the state machine approach: a tutorial. ACM Computing Surveys 22, 4 (Dec. 1990), 299–319.</p>
@@ -657,7 +657,7 @@
 </div>
 </article></div>
             </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div>
     </footer></div>

@@ -8,10 +8,10 @@
         <title>《Paxos Made Live - An Engineering Perspective》论文翻译 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《Paxos Made Live - An Engineering Perspective》论文翻译" />
 <meta property="og:description" content="本篇文章是对论文Paxos Made Live - An Engineering Perspective的原创翻译，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/paxos-made-live/" />
-<meta property="og:image" content="https://mrcroxx.github.io/posts/paper-reading/paxos-made-live/paper-reading.jpg"/>
+<meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/paxos-made-live/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/paper-reading/paxos-made-live/paper-reading.jpg"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2020-09-24T11:42:43+08:00" />
 <meta property="article:modified_time" content="2020-09-27T17:18:01+08:00" />
+
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/paper-reading/paxos-made-live/paper-reading.jpg"/>
 <meta name="twitter:title" content="《Paxos Made Live - An Engineering Perspective》论文翻译"/>
@@ -33,7 +33,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/paxos-made-live\/paper-reading.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "Paxos, Translation","wordcount":  18637 ,
+                        }],"genre": "posts","keywords": "Paxos, Translation","wordcount":  18635 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/paxos-made-live\/","datePublished": "2020-09-24T11:42:43+08:00","dateModified": "2020-09-27T17:18:01+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -110,7 +110,7 @@
             <div class="toc-content" id="toc-content-auto"></div>
         </div><article class="page single"><h1 class="single-title animated flipInX">《Paxos Made Live - An Engineering Perspective》论文翻译</h1><div class="post-meta">
             <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-24">2020-09-24</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 18637 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-24">2020-09-24</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 18635 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 38 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
@@ -266,7 +266,7 @@
 </blockquote>
 <h3 id="52-master租约">5.2 master租约</h3>
 <p>当使用基本Paxos算法来实现多副本数据结构时，对数据结构的读取需要执行一个Paxos实例。这会串行化与更新相关的读取操作，并确保读取的内容是当前状态。另外，读操作不能由master的数据结构副本提供，因为有可能其它副本已经选举了另一个master，修改了数据结构，且没有通知旧的master。在这种情况下，由master提供的读操作有返回陈旧数据的风险。因为读操作通常在所有操作中占很大比例，所以通过Paxos的串行读取开销很高。</p>
-<p>其解决方案是实现带有以下语义的*master 租约（master leases）*<sup>[5]</sup>：一旦master持有租约，它将确保其它副本不能成功地向Paxos提交值。因此，持有租约的master的本地数据结构有最新的信息，其可被用作直接通过本地提供读操作。通过让master在租约过期前试图刷新租约，我们可以确保master在大部分时间都持有租约。在我们的系统中，master可以一次性保持租约长达几天。</p>
+<p>其解决方案是实现带有以下语义的<em>master 租约（master leases）</em><sup>[5]</sup>：一旦master持有租约，它将确保其它副本不能成功地向Paxos提交值。因此，持有租约的master的本地数据结构有最新的信息，其可被用作直接通过本地提供读操作。通过让master在租约过期前试图刷新租约，我们可以确保master在大部分时间都持有租约。在我们的系统中，master可以一次性保持租约长达几天。</p>
 <p>在我们的实现中，所有副本隐式地向之前的Paxos实例的master颁发租约，并在租约期间拒绝处理来自任何其他副本的Paxos消息。master会维护比副本更短的租约超时时间——这可以避免系统时钟漂移。master定期向Paxos提交一个虚拟的心跳值以刷新租约。</p>
 <p>当存在间歇性网络中断时，Multi-Paxos优化有如下稳定性问题。当master的连接临时中断时，Paxos会选举一个新的master。新的master会维护一个跨Paxos实例的固定的序列号。同时，当连接中断的旧master试图运行Paxos算法时，如果它成功地连接到另一个副本时，它会增大它的序列号。当旧master重新连接时，它可能有比新的master更高的序列号，且有可能取到新的master。稍后它可能再次失去连接，重复这个循环。</p>
 <p>这样的行为是不可取的，因为Chubby的master变化会对其部分用户有负面影响。另外，这种行为在连接情况较差的网络中可能会更糟，变为master反复快速变更。在我们的实现中，master会通过一轮Paxos算法（包括发送propsoer消息<sup>注4</sup>）周期性地增大自己的序列号。在大多数情况下，通过以正确的频率增大序列号可以避免这种master频繁变更的情况。</p>
@@ -485,7 +485,7 @@
 </div>
 </article></div>
             </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div>
     </footer></div>

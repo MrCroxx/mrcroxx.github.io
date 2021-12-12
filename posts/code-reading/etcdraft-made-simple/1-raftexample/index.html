@@ -8,10 +8,10 @@
         <title>深入浅出etcd/raft —— 0x01 raftexample - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="深入浅出etcd/raft —— 0x01 raftexample" />
 <meta property="og:description" content="本文为原创文章，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/1-raftexample/" />
-<meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/1-raftexample/etcd-raft.jpg"/>
+<meta property="og:url" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/1-raftexample/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/1-raftexample/etcd-raft.jpg"/><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2020-12-10T22:04:04+08:00" />
 <meta property="article:modified_time" content="2020-12-14T12:48:52+08:00" />
+
 <meta name="twitter:card" content="summary_large_image"/>
 <meta name="twitter:image" content="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/1-raftexample/etcd-raft.jpg"/>
 <meta name="twitter:title" content="深入浅出etcd/raft —— 0x01 raftexample"/>
@@ -185,7 +185,7 @@
 <p>接下来，我们自下而上地学习raftexample的实现。</p>
 <h2 id="2-httpapi">2. httpapi</h2>
 <p><code>httpapi.go</code>是REST服务器的实现。这并不是我们关注的重点。我们需要关注的只是其通过<code>kvstore</code>中的哪些方法来提供服务。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">h</span> <span class="o">*</span><span class="nx">httpKVAPI</span><span class="p">)</span> <span class="nf">ServeHTTP</span><span class="p">(</span><span class="nx">w</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span> <span class="p">{</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">h</span> <span class="o">*</span><span class="nx">httpKVAPI</span><span class="p">)</span> <span class="nf">ServeHTTP</span><span class="p">(</span><span class="nx">w</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span> <span class="p">{</span>
 	<span class="c1">//... ...
 </span><span class="c1"></span>	<span class="k">switch</span> <span class="p">{</span>
 	<span class="k">case</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Method</span> <span class="o">==</span> <span class="s">&#34;PUT&#34;</span><span class="p">:</span>
@@ -255,7 +255,7 @@
 <h2 id="3-kvstore">3. kvstore</h2>
 <p><code>kvstore</code>是连接raft服务器与REST服务器的桥梁，是实现键值存储功能的重要组件，但是其实现很简单。接下来，我们来看看<code>kvstore.go</code>中的实现。</p>
 <p><code>kvstore.go</code>中<code>kvstore</code>结构体非常简单，其只有4个字段。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// a key-value store backed by raft
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="c1">// a key-value store backed by raft
 </span><span class="c1"></span><span class="kd">type</span> <span class="nx">kvstore</span> <span class="kd">struct</span> <span class="p">{</span>
 	<span class="nx">proposeC</span>    <span class="kd">chan</span><span class="o">&lt;-</span> <span class="kt">string</span> <span class="c1">// channel for proposing updates
 </span><span class="c1"></span>	<span class="nx">mu</span>          <span class="nx">sync</span><span class="p">.</span><span class="nx">RWMutex</span>
@@ -264,7 +264,7 @@
 <span class="p">}</span>
 </code></pre></div><p>其中，<code>proposeC</code>信道我们将在之后讲解。除此之外，该结构体中只有一个读写锁<code>mu</code>、一个由map实现的键值存储<code>kvStore</code>，和一个etcd提供的默认快照管理模块实现的指针<code>snapshotter</code>。</p>
 <p>目前，从<code>kvstore</code>中，我们看不到多少有用的信息。接下来，我们关注一下创建kv存储的函数。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">newKVStore</span><span class="p">(</span><span class="nx">snapshotter</span> <span class="o">*</span><span class="nx">snap</span><span class="p">.</span><span class="nx">Snapshotter</span><span class="p">,</span> <span class="nx">proposeC</span> <span class="kd">chan</span><span class="o">&lt;-</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">commitC</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="o">*</span><span class="kt">string</span><span class="p">,</span> <span class="nx">errorC</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="kt">error</span><span class="p">)</span> <span class="o">*</span><span class="nx">kvstore</span> <span class="p">{</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">newKVStore</span><span class="p">(</span><span class="nx">snapshotter</span> <span class="o">*</span><span class="nx">snap</span><span class="p">.</span><span class="nx">Snapshotter</span><span class="p">,</span> <span class="nx">proposeC</span> <span class="kd">chan</span><span class="o">&lt;-</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">commitC</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="o">*</span><span class="kt">string</span><span class="p">,</span> <span class="nx">errorC</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="kt">error</span><span class="p">)</span> <span class="o">*</span><span class="nx">kvstore</span> <span class="p">{</span>
 	<span class="nx">s</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">kvstore</span><span class="p">{</span><span class="nx">proposeC</span><span class="p">:</span> <span class="nx">proposeC</span><span class="p">,</span> <span class="nx">kvStore</span><span class="p">:</span> <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="p">),</span> <span class="nx">snapshotter</span><span class="p">:</span> <span class="nx">snapshotter</span><span class="p">}</span>
 	<span class="c1">// replay log into key-value map
 </span><span class="c1"></span>	<span class="nx">s</span><span class="p">.</span><span class="nf">readCommits</span><span class="p">(</span><span class="nx">commitC</span><span class="p">,</span> <span class="nx">errorC</span><span class="p">)</span>
@@ -275,7 +275,7 @@
 </code></pre></div><p><code>newKVStore</code>函数的参数除了<code>snapshotter</code>外，<code>proposeC</code>、<code>commitC</code>、<code>errorC</code>均为信道。其中<code>propseC</code>为输入信道，<code>commitC</code>和<code>errorC</code>为输出信道。我们可以推断出，<code>kvstore</code>会通过<code>proposeC</code>与raft模块交互，并通过<code>commitC</code>与<code>errorC</code>接收来自raft模块的消息。（可以在<code>main.go</code>中证实，这里不再赘述。）这种方式在etcd的实现中随处可见，因此对于go语言和channel不是很熟悉的小伙伴建议预先学习一下相关概念与使用方法。（当熟悉了这种设计后，便会发现go语言并发编程的魅力所在。）</p>
 <p><code>newKVStore</code>中的逻辑也非常简单，将传入的参数写入<code>kvstore</code>结构体相应的字段中。然后先调用一次<code>kvstore</code>的<code>readCommits</code>方法，等待raft模块重放日志完成的信号；然后启动一个goroutine来循环处理来自raft模块发送过来的消息。</p>
 <p><code>readCommits</code>方法稍有些复杂，我们先来看看其它较为简单的部分。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">kvstore</span><span class="p">)</span> <span class="nf">Lookup</span><span class="p">(</span><span class="nx">key</span> <span class="kt">string</span><span class="p">)</span> <span class="p">(</span><span class="kt">string</span><span class="p">,</span> <span class="kt">bool</span><span class="p">)</span> <span class="p">{</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">kvstore</span><span class="p">)</span> <span class="nf">Lookup</span><span class="p">(</span><span class="nx">key</span> <span class="kt">string</span><span class="p">)</span> <span class="p">(</span><span class="kt">string</span><span class="p">,</span> <span class="kt">bool</span><span class="p">)</span> <span class="p">{</span>
 	<span class="nx">s</span><span class="p">.</span><span class="nx">mu</span><span class="p">.</span><span class="nf">RLock</span><span class="p">()</span>
 	<span class="k">defer</span> <span class="nx">s</span><span class="p">.</span><span class="nx">mu</span><span class="p">.</span><span class="nf">RUnlock</span><span class="p">()</span>
 	<span class="nx">v</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">kvStore</span><span class="p">[</span><span class="nx">key</span><span class="p">]</span>
@@ -307,7 +307,7 @@
 	<span class="k">return</span> <span class="kc">nil</span>
 <span class="p">}</span>
 </code></pre></div><p><code>Lookup</code>方法会通过读锁来访问其用来记录键值的map，防止查找时数据被修改返回错误的结果。<code>Propose</code>方法将要更新的键值对编码为string，并传入<code>proposeC</code>信道，交给raft模块处理。<code>getSnapshot</code>和<code>recoverFromSnapshot</code>方法分别将记录键值的map序列化与反序列化，并加锁防止争用。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">kvstore</span><span class="p">)</span> <span class="nf">readCommits</span><span class="p">(</span><span class="nx">commitC</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="o">*</span><span class="kt">string</span><span class="p">,</span> <span class="nx">errorC</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">kvstore</span><span class="p">)</span> <span class="nf">readCommits</span><span class="p">(</span><span class="nx">commitC</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="o">*</span><span class="kt">string</span><span class="p">,</span> <span class="nx">errorC</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
 	<span class="k">for</span> <span class="nx">data</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">commitC</span> <span class="p">{</span>
 		<span class="k">if</span> <span class="nx">data</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
 			<span class="c1">// done replaying log; new data incoming
@@ -358,7 +358,7 @@
 <p>raft服务器的实现在<code>raft.go</code>中，其对etcd/raft提供的接口进行了一层封装，以便于<code>kvstore</code>使用。</p>
 <h3 id="41-raftnode结构体">4.1 raftNode结构体</h3>
 <p>在raftexample中，raft服务器被封装成了一个<code>raftNode</code>结构体。我们先来看看该结构体中的字段内容。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// A key-value stream backed by raft
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="c1">// A key-value stream backed by raft
 </span><span class="c1"></span><span class="kd">type</span> <span class="nx">raftNode</span> <span class="kd">struct</span> <span class="p">{</span>
 	<span class="nx">proposeC</span>    <span class="o">&lt;-</span><span class="kd">chan</span> <span class="kt">string</span>            <span class="c1">// proposed messages (k,v)
 </span><span class="c1"></span>	<span class="nx">confChangeC</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="nx">raftpb</span><span class="p">.</span><span class="nx">ConfChange</span> <span class="c1">// proposed cluster config changes
@@ -545,7 +545,7 @@
 <h3 id="42-go语言中将struct信道用作信号的tips">4.2 go语言中将struct{}信道用作信号的tips</h3>
 <p>这里为那些对go语言并发编程或channel使用不熟悉的读者简单介绍一下这种信号设计的使用方式。</p>
 <p>首先，我们需要了解的是，在go语言中，无缓冲信道的读写是阻塞的。只有当在不同goroutine的生产者和消费者分别通过信道写入和读取时，它们所在的goroutine才能继续执行：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="nx">c</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="kt">int</span><span class="p">)</span>
 
 <span class="k">go</span> <span class="kd">func</span><span class="p">(){</span>
@@ -557,10 +557,10 @@
 </span><span class="c1"></span><span class="p">}</span>
 
 </code></pre></div><p>然而，在读取被关闭的信道时，该信道会立即返回空值（如果采用两个变量接收信道的值，第二个布尔变量的值为false）。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nb">close</span><span class="p">(</span><span class="nx">c</span><span class="p">)</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="nb">close</span><span class="p">(</span><span class="nx">c</span><span class="p">)</span>
 <span class="nx">msg</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="o">&lt;-</span> <span class="nx">c</span> <span class="c1">// return immediately, msg is a empty value, ok is false
 </span></code></pre></div><p>假设我们需要循环等待来自一个或多个无缓冲信道的消息，且需要在想要关闭程序时能够退出循环。如果我们通过基于一个标识符的方式判断是否需要退出循环，我们需要这样编写代码：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// flag : false -&gt; break loop
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="c1">// flag : false -&gt; break loop
 </span><span class="c1"></span>
 <span class="k">for</span> <span class="p">{</span>
   <span class="k">if</span> <span class="p">!</span><span class="nx">flag</span> <span class="p">{</span>
@@ -575,7 +575,7 @@
 <span class="p">}</span>
 </code></pre></div><p>这种写法实际上是有问题的。在每次循环中，当if判断后会执行select，此时当前goroutine会阻塞，直到有一个信道可以操作。假如在当前goroutine进入select时将flag置为了false，此时，该goroutine无法立刻检测到flag的变化，因此需要等到下一次循环后才能退出循环。</p>
 <p>显然，这不是我们想要的行为。我们希望当我们想要关闭时，如果该goroutine正阻塞在select中时，能够立即退出。此时，我们只需要通过一个<code>chan struct{}</code>信道来表示该信号接收器。上面这段代码可以改写为：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// doneC : chan struct{}
 </span><span class="c1"></span>
 <span class="k">for</span> <span class="p">{</span>
@@ -592,7 +592,7 @@
 <p>在<code>raft.go</code>中和etcd中，都有很多这种传递信号的方式。这一方式的另一个好处是，只要关闭一次信道，所有等待该信号的select语句都会进入该信号对应的分支。我们会在后文的例子中看到将<code>chan struct{}</code>信道作为信号使用的例子。</p>
 <h3 id="43-raftnode的创建与启动">4.3 raftNode的创建与启动</h3>
 <p>在创建raftNode时，需要提供节点<code>id</code>、对等节点url<code>peers</code>、是否是要加入已存在的集群<code>join</code>、获取快照的函数签名<code>getSnapshot</code>、提议信道<code>proposeC</code>、配置变更提议信道<code>confChangeC</code>这些参数。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// newRaftNode initiates a raft instance and returns a committed log entry
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="c1">// newRaftNode initiates a raft instance and returns a committed log entry
 </span><span class="c1">// channel and error channel. Proposals for log updates are sent over the
 </span><span class="c1">// provided the proposal channel. All log entries are replayed over the
 </span><span class="c1">// commit channel, followed by a nil message (to indicate the channel is
@@ -627,7 +627,7 @@
 <span class="p">}</span>
 </code></pre></div><p>在<code>newRaftNode</code>函数中，仅初始化了<code>raftNode</code>的部分参数，其余的参数会在重放预写日志后配置。随后，该函数启动了一个协程，该协程调用了<code>raftNode</code>的<code>startRaft()</code>方法来启动raft节点。当前函数会将raft模块用来通知已提交的提议的信道、报错信道、和快照管理器加载完成信号的信道返回给调用者。</p>
 <p>接下来，我们跟随该方法进入<code>raftNode.startRaft()</code>方法中。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">rc</span> <span class="o">*</span><span class="nx">raftNode</span><span class="p">)</span> <span class="nf">startRaft</span><span class="p">()</span> <span class="p">{</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">rc</span> <span class="o">*</span><span class="nx">raftNode</span><span class="p">)</span> <span class="nf">startRaft</span><span class="p">()</span> <span class="p">{</span>
 	<span class="k">if</span> <span class="p">!</span><span class="nx">fileutil</span><span class="p">.</span><span class="nf">Exist</span><span class="p">(</span><span class="nx">rc</span><span class="p">.</span><span class="nx">snapdir</span><span class="p">)</span> <span class="p">{</span>
 		<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">os</span><span class="p">.</span><span class="nf">Mkdir</span><span class="p">(</span><span class="nx">rc</span><span class="p">.</span><span class="nx">snapdir</span><span class="p">,</span> <span class="mo">0750</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
 			<span class="nx">log</span><span class="p">.</span><span class="nf">Fatalf</span><span class="p">(</span><span class="s">&#34;raftexample: cannot create dir for snapshot (%v)&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
@@ -690,7 +690,7 @@
 <p>在<code>node</code>创建完成后，程序配置并开启了通信模块，开始与集群中的其它raft节点通信。</p>
 <p>在一切接续后，程序启动了两个goroutine，分别是<code>raftNode.serveRaft()</code>和<code>raftNode.serveChannels()</code>。其中<code>raftNode.serveRaft()</code>用来监听来自其它raft节点的消息，消息的处理主要在<code>Transport</code>接口的实现中编写，因此在这里不对其进行详细的分析，感兴趣的读者可以自行参考源码中的实现；<code>raftNode.serveChannels()</code>用来处理<code>raftNode</code>中各种信道，后文会对其进行详细分析。</p>
 <p>下面，我们先来分析一下重放预写日志的逻辑。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// replayWAL replays WAL entries into the raft instance.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">rc</span> <span class="o">*</span><span class="nx">raftNode</span><span class="p">)</span> <span class="nf">replayWAL</span><span class="p">()</span> <span class="o">*</span><span class="nx">wal</span><span class="p">.</span><span class="nx">WAL</span> <span class="p">{</span>
 	<span class="nx">log</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;replaying WAL of member %d&#34;</span><span class="p">,</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">id</span><span class="p">)</span>
@@ -723,7 +723,7 @@
 <p><code>raftNode.serveChannels()</code>是raft服务器用来处理各种信道的输入输出的方法，也是与etcd/raft模块中<code>Node</code>接口的实现交互的方法。</p>
 <p><code>serverChannels()</code>方法可以分为两个部分，该方法本身会循环处理raft有关的逻辑，如处理定时器信号驱动<code>Node</code>、处理<code>Node</code>传入的<code>Ready</code>结构体、处理通信模块报告的错误或停止信号灯等；该方法还启动了一个goroutine，该goroutine中循环处理来自<code>proposeC</code>和<code>confChangeC</code>两个信道的消息。</p>
 <p>在这两部分开始前，该方法先做了一些初始化。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="kd">func</span> <span class="p">(</span><span class="nx">rc</span> <span class="o">*</span><span class="nx">raftNode</span><span class="p">)</span> <span class="nf">serveChannels</span><span class="p">()</span> <span class="p">{</span>
 	<span class="nx">snap</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">raftStorage</span><span class="p">.</span><span class="nf">Snapshot</span><span class="p">()</span>
 	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
@@ -743,7 +743,7 @@
 <span class="p">}</span>
 </code></pre></div><p>首先，该方法从当前的快照的元数据设置<code>raftNode</code>的相关字段，并设置一个每100毫秒产生一个信号的循环定时器。<code>serveChannels</code>的循环会根据这个信号调用<code>Node</code>接口的<code>Tick()</code>方法，驱动<code>Node</code>执行。</p>
 <p>接下来，我们先来看<code>serveChannels</code>中启动的用来处理来自<code>proposeC</code>和<code>confChangeC</code>两个信道的消息的goroutine。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">rc</span> <span class="o">*</span><span class="nx">raftNode</span><span class="p">)</span> <span class="nf">serveChannels</span><span class="p">()</span> <span class="p">{</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">rc</span> <span class="o">*</span><span class="nx">raftNode</span><span class="p">)</span> <span class="nf">serveChannels</span><span class="p">()</span> <span class="p">{</span>
 
 	<span class="c1">// ... ...
 </span><span class="c1"></span>
@@ -780,7 +780,7 @@
 <span class="p">}</span>
 </code></pre></div><p>这部分逻辑很简单。因为在循环中，如果<code>proposeC</code>或<code>confChangeC</code>中的一个被关闭，程序会将其置为<code>nil</code>，所以只有二者均不是<code>nil</code>时才执行循环。每次循环会通过select选取一个有消息传入的信道，通过<code>Node</code>接口提交给raft服务器。当循环结束后，关闭<code>stopc</code>信道，即发送关闭信号。这种方式在<a href="#42-go%e8%af%ad%e8%a8%80%e4%b8%ad%e5%b0%86struct%e4%bf%a1%e9%81%93%e7%94%a8%e4%bd%9c%e4%bf%a1%e5%8f%b7%e7%9a%84tips" rel="">4.2-go语言中将struct{}信道用作信号的tips</a>中介绍过。</p>
 <p><code>serveChannels</code>中的循环是与<code>Node</code>接口交互的重要逻辑。</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">rc</span> <span class="o">*</span><span class="nx">raftNode</span><span class="p">)</span> <span class="nf">serveChannels</span><span class="p">()</span> <span class="p">{</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">rc</span> <span class="o">*</span><span class="nx">raftNode</span><span class="p">)</span> <span class="nf">serveChannels</span><span class="p">()</span> <span class="p">{</span>
 
 	<span class="c1">// ... ...
 </span><span class="c1"></span>
@@ -828,7 +828,7 @@
 <li>用来表示停止信号的信道，当该信道被关闭时，阻塞的逻辑会从该分支运行，关闭节点。</li>
 </ol>
 <p>其中，<code>Node.Ready()</code>返回的信道逻辑最为复杂。因为其需要处理raft状态机传入的各种数据，并交付给相应的模块处理。etcd/raft的<code>Ready</code>结构体中包含如下数据：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// Ready encapsulates the entries and messages that are ready to read,
 </span><span class="c1">// be saved to stable storage, committed or sent to other peers.
 </span><span class="c1">// All fields in Ready are read-only.
@@ -925,7 +925,7 @@
 </ol>
 <p>虽然看上去步骤较多，但是处理逻辑都很简单。这里我们仅看一下第5步的逻辑。</p>
 <p>在第5步中，首先通过<code>entriesToApply</code>方法，从<code>Ready</code>结构体的<code>Entries</code>字段中找到还没有应用到本地状态机中的日志起点即后续日志条目。然后通过<code>publishEntries</code>方法发布这些日志条目。<code>publishEntries</code>方法实现方式如下：</p>
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
 <span class="c1">// publishEntries writes committed log entries to commit channel and returns
 </span><span class="c1">// whether all entries could be published.
 </span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">rc</span> <span class="o">*</span><span class="nx">raftNode</span><span class="p">)</span> <span class="nf">publishEntries</span><span class="p">(</span><span class="nx">ents</span> <span class="p">[]</span><span class="nx">raftpb</span><span class="p">.</span><span class="nx">Entry</span><span class="p">)</span> <span class="kt">bool</span> <span class="p">{</span>
@@ -1015,7 +1015,7 @@
 </div>
 </article></div>
             </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.68.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div>
     </footer></div>
