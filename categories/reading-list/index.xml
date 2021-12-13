@@ -1,0 +1,15 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>Reading List - 分类 - 叉鸽 MrCroxx 的博客</title>
+        <link>https://mrcroxx.github.io/categories/reading-list/</link>
+        <description>Reading List - 分类 - 叉鸽 MrCroxx 的博客</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>mrcroxx@outlook.com (叉鸽)</managingEditor>
+            <webMaster>mrcroxx@outlook.com (叉鸽)</webMaster><lastBuildDate>Sat, 30 Oct 2021 18:00:00 &#43;0800</lastBuildDate><atom:link href="https://mrcroxx.github.io/categories/reading-list/" rel="self" type="application/rss+xml" /><item>
+    <title>Reading List</title>
+    <link>https://mrcroxx.github.io/posts/reading-list/</link>
+    <pubDate>Sat, 30 Oct 2021 18:00:00 &#43;0800</pubDate><author>
+        <name>作者</name>
+    </author><guid>https://mrcroxx.github.io/posts/reading-list/</guid>
+    <description><![CDATA[<p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>]]></description>
+</item></channel>
+</rss>

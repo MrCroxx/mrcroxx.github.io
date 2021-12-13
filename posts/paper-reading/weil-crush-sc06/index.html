@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="robots" content="noodp" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
-        <title>《CRUSH: Controlled, Scalable, Decentralized Placement of Replicated Data》论文翻译 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《CRUSH: Controlled, Scalable, Decentralized Placement of Replicated Data》论文翻译" />
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noodp" />
+    <title class="pjax-title">《CRUSH: Controlled, Scalable, Decentralized Placement of Replicated Data》论文翻译 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《CRUSH: Controlled, Scalable, Decentralized Placement of Replicated Data》论文翻译" />
 <meta property="og:description" content="本篇文章是对论文CRUSH: Controlled, Scalable, Decentralized Placement of Replicated Data的原创翻译，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/weil-crush-sc06/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/paper-reading/weil-crush-sc06/paper-reading.jpg"/><meta property="article:section" content="posts" />
@@ -17,9 +17,13 @@
 <meta name="twitter:title" content="《CRUSH: Controlled, Scalable, Decentralized Placement of Replicated Data》论文翻译"/>
 <meta name="twitter:description" content="本篇文章是对论文CRUSH: Controlled, Scalable, Decentralized Placement of Replicated Data的原创翻译，转载请严格遵守CC BY-NC-SA协议。"/>
 <meta name="application-name" content="叉鸽 MrCroxx 的博客">
-<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客">
+
+<meta name="theme-color" content="#f8f8f8"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/paper-reading/weil-crush-sc06/" /><link rel="prev" href="https://mrcroxx.github.io/posts/paper-reading/raft-extended/" /><link rel="next" href="https://mrcroxx.github.io/posts/paper-reading/wu-vldb2017/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="canonical" href="https://mrcroxx.github.io/posts/paper-reading/weil-crush-sc06/" /><link rel="prev" href="https://mrcroxx.github.io/posts/paper-reading/raft-extended/" /><link rel="next" href="https://mrcroxx.github.io/posts/paper-reading/wu-vldb2017/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/fontawesome-free/all.min.css">
+    <noscript><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/animate/animate.min.css">
+    <noscript><link rel="stylesheet" href="/lib/animate/animate.min.css"></noscript><script type="application/ld+json">
     {
         "@context": "http://schema.org",
         "@type": "BlogPosting",
@@ -42,36 +46,43 @@
             },"description": ""
     }
     </script></head>
-    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : '' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
 
-        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+<body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">
+        function setTheme(theme) {document.body.setAttribute('theme', theme);}
+        function saveTheme(theme) {window.localStorage && localStorage.setItem('theme', theme);}
+        function getMeta(metaName) {const metas = document.getElementsByTagName('meta'); for (let i = 0; i < metas.length; i++) if (metas[i].getAttribute('name') === metaName) return metas[i]; return '';}
+        if (window.localStorage && localStorage.getItem('theme')) {let theme = localStorage.getItem('theme');theme === 'light' || theme === 'dark' || theme === 'black' ? setTheme(theme) : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? setTheme('dark') : setTheme('light')); } else { if ('' === 'light' || '' === 'dark' || '' === 'black') setTheme(''), saveTheme(''); else saveTheme('auto'), window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? setTheme('dark') : setTheme('light');}
+        let metaColors = {'light': '#f8f8f8','dark': '#252627','black': '#000000'}
+        getMeta('theme-color').content = metaColors[document.body.getAttribute('theme')];
+    </script>
+    <div id="back-to-top"></div>
+    <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
     <div class="header-wrapper">
         <div class="header-title">
-            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-1" class="typeit"></span></a>
+            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="desktop-header-typeit" class="typeit"></span></a>
         </div>
         <div class="menu">
-            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/posts/about-me"> 关于我 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
                         <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
-                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                        <a href="#" onclick="return false;" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
                             <i class="fas fa-search fa-fw"></i>
                         </a>
-                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                        <a href="#" onclick="return false;" class="search-button search-clear" id="search-clear-desktop" title="清空">
                             <i class="fas fa-times-circle fa-fw"></i>
                         </a>
                         <span class="search-button search-loading" id="search-loading-desktop">
                             <i class="fas fa-spinner fa-fw fa-spin"></i>
                         </span>
-                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    </span><a href="#" onclick="return false;" class="menu-item theme-switch" title="切换主题">
                     <i class="fas fa-adjust fa-fw"></i>
-                </a>
-            </div>
+                </a></div>
         </div>
     </div>
 </header><header class="mobile" id="header-mobile">
     <div class="header-container">
         <div class="header-wrapper">
             <div class="header-title">
-                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-2" class="typeit"></span></a>
+                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="mobile-header-typeit" class="typeit"></span></a>
             </div>
             <div class="menu-toggle" id="menu-toggle-mobile">
                 <span></span><span></span><span></span>
@@ -80,20 +91,20 @@
         <div class="menu" id="menu-mobile"><div class="search-wrapper">
                     <div class="search mobile" id="search-mobile">
                         <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
-                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                        <a href="#" onclick="return false;" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
                             <i class="fas fa-search fa-fw"></i>
                         </a>
-                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                        <a href="#" onclick="return false;" class="search-button search-clear" id="search-clear-mobile" title="清空">
                             <i class="fas fa-times-circle fa-fw"></i>
                         </a>
                         <span class="search-button search-loading" id="search-loading-mobile">
                             <i class="fas fa-spinner fa-fw fa-spin"></i>
                         </span>
                     </div>
-                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                    <a href="#" onclick="return false;" class="search-cancel" id="search-cancel-mobile">
                         取消
                     </a>
-                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/posts/about-me" title="">关于我</a><a href="#" onclick="return false;" class="menu-item theme-switch" title="切换主题">
                 <i class="fas fa-adjust fa-fw"></i>
             </a></div>
     </div>
@@ -105,21 +116,23 @@
     <div id="search-dropdown-mobile"></div>
 </div>
 <main class="main">
-                <div class="container"><div class="toc" id="toc-auto">
-            <h2 class="toc-title">目录</h2>
-            <div class="toc-content" id="toc-content-auto"></div>
-        </div><article class="page single"><h1 class="single-title animated flipInX">《CRUSH: Controlled, Scalable, Decentralized Placement of Replicated Data》论文翻译</h1><div class="post-meta">
-            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-10-01">2020-10-01</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 20000 字&nbsp;
+            <div class="container"><div class="toc" id="toc-auto">
+        <h2 class="toc-title">目录</h2>
+        <div class="toc-content" id="toc-content-auto"></div>
+    </div><script>document.getElementsByTagName("main")[0].setAttribute("pageStyle", "normal")</script><script>document.getElementsByTagName("main")[0].setAttribute("autoTOC", "true")</script><article class="page single"><h1 class="single-title animate__animated animate__flipInX">《CRUSH: Controlled, Scalable, Decentralized Placement of Replicated Data》论文翻译</h1><div class="post-meta">
+            <div class="post-meta-line">
+                <span class="post-author"><i class="author fas fa-user-circle fa-fw"></i><a href="about" title="Author" rel=" author" class="author">叉鸽</a>
+                </span>&nbsp;<span class="post-category">收录于 </span>&nbsp;<span class="post-category">类别 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-10-01">2020-10-01</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2020-10-08">2020-10-08</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 20000 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 40 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
-        src="/svg/loading.min.svg"
         data-src="/posts/paper-reading/weil-crush-sc06/paper-reading.jpg"
         data-srcset="/posts/paper-reading/weil-crush-sc06/paper-reading.jpg, /posts/paper-reading/weil-crush-sc06/paper-reading.jpg 1.5x, /posts/paper-reading/weil-crush-sc06/paper-reading.jpg 2x"
         data-sizes="auto"
         alt="/posts/paper-reading/weil-crush-sc06/paper-reading.jpg"
-        title="/posts/paper-reading/weil-crush-sc06/paper-reading.jpg" /></div><div class="details toc" id="toc-static"  kept="">
+        title="/posts/paper-reading/weil-crush-sc06/paper-reading.jpg" height="360" width="1200"
+    /></div><div class="details toc" id="toc-static"  kept="">
                 <div class="details-summary toc-title">
                     <span>目录</span>
                     <span><i class="details-icon fas fa-angle-right"></i></span>
@@ -207,33 +220,33 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/weil-crush-sc06/algorithm-1.png" title="算法1 CRUSH中对象$x$的放置" data-thumbnail="/posts/paper-reading/weil-crush-sc06/algorithm-1.png" data-sub-html="<h2>算法1 CRUSH中对象$x$的放置</h2><p>算法1 CRUSH中对象$x$的放置</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="algorithm-1.png"
             data-srcset="/posts/paper-reading/weil-crush-sc06/algorithm-1.png, algorithm-1.png 1.5x, /posts/paper-reading/weil-crush-sc06/algorithm-1.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/weil-crush-sc06/algorithm-1.png" />
+            alt="/posts/paper-reading/weil-crush-sc06/algorithm-1.png"
+        />
     </a><figcaption class="image-caption">算法1 CRUSH中对象$x$的放置</figcaption>
     </figure></p>
 <p>每条规则由一系列应用到层次结构中的简单操作组成，如<strong>算法1</strong>中的伪代码表示的那样。CRUSH函数的整型输入$x$通常是对象名或其它的标识符，如一组副本被放在同一个device上的对象的标识符。$take(a)$操作会在存储层次结构中选取一个item（通常是一个bucket），并将其分配给向量$\overrightarrow{i}$，作为后续操作的输入。$select(n,t)$操作遍历每个元素$i$（$i \in \overrightarrow{i}$），并在以该点为根的子树中选取$n$个类型为$t$的不同的item。device的类型已知且固定，且系统中的每个bucket都有一个类型字段，以用来区分不同类型的bucket（例如，用来表示“row”的bucket和用来表示“cabinet”的bucket）。对于每个$i$（$i \in \overrightarrow{i}$），$select(n,t)$调用会遍历item$r$（$ r \in 1,&hellip;,n $），并递归下降地处理中间的任何bucket，然后在每个bucket中通过函数$c(r,x)$（在<a href="#34-bucket%e7%b1%bb%e5%9e%8b" rel="">章节3.4</a>中为每类bucket定义的）伪随机地选取一个其中的item，直到它找到一个类型为请求的类型$t$的item。其产生的$n| \overrightarrow{i} |$个不同的item会被放回到输入$ \overrightarrow{i} $中，它们或作为后续$select(n,t)$的输入，或通过$emit$操作被移动到结果向量中。</p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/weil-crush-sc06/table-1.png" title="表1 在同一列但不同的3个cabinet上分布3份副本的简单规则。" data-thumbnail="/posts/paper-reading/weil-crush-sc06/table-1.png" data-sub-html="<h2>表1 在同一列但不同的3个cabinet上分布3份副本的简单规则。</h2><p>表1 在同一列但不同的3个cabinet上分布3份副本的简单规则。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="table-1.png"
             data-srcset="/posts/paper-reading/weil-crush-sc06/table-1.png, table-1.png 1.5x, /posts/paper-reading/weil-crush-sc06/table-1.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/weil-crush-sc06/table-1.png" />
+            alt="/posts/paper-reading/weil-crush-sc06/table-1.png"
+        />
     </a><figcaption class="image-caption">表1 在同一列但不同的3个cabinet上分布3份副本的简单规则。</figcaption>
     </figure></p>
 <p>例如，<strong>表1</strong>中定义的规则从<strong>图1</strong>中的层次结构的根开始。第一个$select(1,row)$选取了一个类型为“row”的bucket（其选取了row2）。随后的$select(3,cabinet)$在之前选取的row2内选择了3个不同的cabinet（cab21、cab23、cab24），最后，每个$select(1,disk)$遍历其输入向量中的3个cabinet bucket之一，并选择其下的1个disk。最终结果是分散在3个cabinet中的3个disk，但是都在同一个row中。因此，这种方法让副本能跨副本分布且对容器类型（例如，row、cabinet、shelf）进行约束，这一性质兼顾了可靠性和性能。规则由多个$take$、$emit$块组成，允许从不同的存储池中显式地提取目标存储，就像远程副本场景期望的那样（副本被存储在一个远程站点中）或分层设施场景期望的那样（例如，有快速近线存储和较慢但容量更大的存储阵列）。</p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/weil-crush-sc06/figure-1.png" title="图1 一个由磁盘（disk）、磁盘柜（shelf of disk）、cabinet（cabinet）、行（row）组成的4层集群映射的局部视图。粗线条表示放置规则中每个$select$操作选取的item和&lt;strong&gt;表1&lt;/strong&gt;中假设的映射。" data-thumbnail="/posts/paper-reading/weil-crush-sc06/figure-1.png" data-sub-html="<h2>图1 一个由磁盘（disk）、磁盘柜（shelf of disk）、cabinet（cabinet）、行（row）组成的4层集群映射的局部视图。粗线条表示放置规则中每个$select$操作选取的item和表1中假设的映射。</h2><p>图1 一个由磁盘（disk）、磁盘柜（shelf of disk）、cabinet（cabinet）、行（row）组成的4层集群映射的局部视图。粗线条表示放置规则中每个$select$操作选取的item和&lt;strong&gt;表1&lt;/strong&gt;中假设的映射。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-1.png"
             data-srcset="/posts/paper-reading/weil-crush-sc06/figure-1.png, figure-1.png 1.5x, /posts/paper-reading/weil-crush-sc06/figure-1.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/weil-crush-sc06/figure-1.png" />
+            alt="/posts/paper-reading/weil-crush-sc06/figure-1.png"
+        />
     </a><figcaption class="image-caption">图1 一个由磁盘（disk）、磁盘柜（shelf of disk）、cabinet（cabinet）、行（row）组成的4层集群映射的局部视图。粗线条表示放置规则中每个$select$操作选取的item和表1中假设的映射。</figcaption>
     </figure></p>
 <h4 id="321-碰撞故障与过载">3.2.1 碰撞、故障与过载</h4>
@@ -243,11 +256,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/weil-crush-sc06/figure-2.png" title="图2 $select(6,disk)$中当device $r=2(b)$被拒绝时的重选取行为，方框中包含CRUSH的输出$\overrightarrow{R}$，表示按排名编号的$n=6$个device。左图展示了“前n个”方法，其已有设备排名$(c,d,e,f)$可能改变。右图中，每个排名都有一个概率独立的潜在目标序列；图中$f_r = 1$且$ r &#39; = r &#43; f_r n = 8 $（device h）。" data-thumbnail="/posts/paper-reading/weil-crush-sc06/figure-2.png" data-sub-html="<h2>图2 $select(6,disk)$中当device $r=2(b)$被拒绝时的重选取行为，方框中包含CRUSH的输出$\overrightarrow{R}$，表示按排名编号的$n=6$个device。左图展示了“前n个”方法，其已有设备排名$(c,d,e,f)$可能改变。右图中，每个排名都有一个概率独立的潜在目标序列；图中$f_r = 1$且$ r &#39; = r &#43; f_r n = 8 $（device h）。</h2><p>图2 $select(6,disk)$中当device $r=2(b)$被拒绝时的重选取行为，方框中包含CRUSH的输出$\overrightarrow{R}$，表示按排名编号的$n=6$个device。左图展示了“前n个”方法，其已有设备排名$(c,d,e,f)$可能改变。右图中，每个排名都有一个概率独立的潜在目标序列；图中$f_r = 1$且$ r &#39; = r &#43; f_r n = 8 $（device h）。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-2.png"
             data-srcset="/posts/paper-reading/weil-crush-sc06/figure-2.png, figure-2.png 1.5x, /posts/paper-reading/weil-crush-sc06/figure-2.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/weil-crush-sc06/figure-2.png" />
+            alt="/posts/paper-reading/weil-crush-sc06/figure-2.png"
+        />
     </a><figcaption class="image-caption">图2 $select(6,disk)$中当device $r=2(b)$被拒绝时的重选取行为，方框中包含CRUSH的输出$\overrightarrow{R}$，表示按排名编号的$n=6$个device。左图展示了“前n个”方法，其已有设备排名$(c,d,e,f)$可能改变。右图中，每个排名都有一个概率独立的潜在目标序列；图中$f_r = 1$且$ r ' = r + f_r n = 8 $（device h）。</figcaption>
     </figure></p>
 <h3 id="33-映射变更和数据移动">3.3 映射变更和数据移动</h3>
@@ -256,11 +269,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/weil-crush-sc06/figure-3.png" title="图3 因节点增加或移除和随后的权重变化导致的数据在二分结构上的移动。" data-thumbnail="/posts/paper-reading/weil-crush-sc06/figure-3.png" data-sub-html="<h2>图3 因节点增加或移除和随后的权重变化导致的数据在二分结构上的移动。</h2><p>图3 因节点增加或移除和随后的权重变化导致的数据在二分结构上的移动。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-3.png"
             data-srcset="/posts/paper-reading/weil-crush-sc06/figure-3.png, figure-3.png 1.5x, /posts/paper-reading/weil-crush-sc06/figure-3.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/weil-crush-sc06/figure-3.png" />
+            alt="/posts/paper-reading/weil-crush-sc06/figure-3.png"
+        />
     </a><figcaption class="image-caption">图3 因节点增加或移除和随后的权重变化导致的数据在二分结构上的移动。</figcaption>
     </figure></p>
 <p>层次结构上的总数据移动量的下界为$ \frac{ \Delta w}{W} $，这是将驻留在权重为$ \Delta w$的新增device上的数据比例。数据移动量随着层次结构的高度$h$增长，其具有保守（conservative）的渐近上限$ h \frac{ \Delta w}{W} $。当$ \Delta w $比$W$小得多时，数据迁移的总量趋近于上界，因为在递归的每一步中移动到子树的数据对象被映射到权值相对小的item上的可能性很小。</p>
@@ -269,11 +282,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/weil-crush-sc06/table-2.png" title="表2 不同类型的bucket的item被添加到bucket或从bucket移除时映射速度和数据重组织效率的总结。" data-thumbnail="/posts/paper-reading/weil-crush-sc06/table-2.png" data-sub-html="<h2>表2 不同类型的bucket的item被添加到bucket或从bucket移除时映射速度和数据重组织效率的总结。</h2><p>表2 不同类型的bucket的item被添加到bucket或从bucket移除时映射速度和数据重组织效率的总结。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="table-2.png"
             data-srcset="/posts/paper-reading/weil-crush-sc06/table-2.png, table-2.png 1.5x, /posts/paper-reading/weil-crush-sc06/table-2.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/weil-crush-sc06/table-2.png" />
+            alt="/posts/paper-reading/weil-crush-sc06/table-2.png"
+        />
     </a><figcaption class="image-caption">表2 不同类型的bucket的item被添加到bucket或从bucket移除时映射速度和数据重组织效率的总结。</figcaption>
     </figure></p>
 <h4 id="341-uniform-bucket">3.4.1 uniform bucket</h4>
@@ -293,11 +306,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/weil-crush-sc06/figure-4.png" title="图4 tree bucket的二叉树使用的节点标签策略。" data-thumbnail="/posts/paper-reading/weil-crush-sc06/figure-4.png" data-sub-html="<h2>图4 tree bucket的二叉树使用的节点标签策略。</h2><p>图4 tree bucket的二叉树使用的节点标签策略。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-4.png"
             data-srcset="/posts/paper-reading/weil-crush-sc06/figure-4.png, figure-4.png 1.5x, /posts/paper-reading/weil-crush-sc06/figure-4.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/weil-crush-sc06/figure-4.png" />
+            alt="/posts/paper-reading/weil-crush-sc06/figure-4.png"
+        />
     </a><figcaption class="image-caption">图4 tree bucket的二叉树使用的节点标签策略。</figcaption>
     </figure></p>
 <h4 id="344-straw-bucket">3.4.4 straw bucket</h4>
@@ -325,22 +338,22 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/weil-crush-sc06/figure-5.png" title="图5 CRUSH集群架构在4层架构的第2层中增加或移除device后的重组织效率与RUSH&lt;sub&gt;P&lt;/sub&gt;和RUSH&lt;sub&gt;T&lt;/sub&gt;的对比。1是最优的。" data-thumbnail="/posts/paper-reading/weil-crush-sc06/figure-5.png" data-sub-html="<h2>图5 CRUSH集群架构在4层架构的第2层中增加或移除device后的重组织效率与RUSH&lt;sub&gt;P&lt;/sub&gt;和RUSH&lt;sub&gt;T&lt;/sub&gt;的对比。1是最优的。</h2><p>图5 CRUSH集群架构在4层架构的第2层中增加或移除device后的重组织效率与RUSH&lt;sub&gt;P&lt;/sub&gt;和RUSH&lt;sub&gt;T&lt;/sub&gt;的对比。1是最优的。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-5.png"
             data-srcset="/posts/paper-reading/weil-crush-sc06/figure-5.png, figure-5.png 1.5x, /posts/paper-reading/weil-crush-sc06/figure-5.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/weil-crush-sc06/figure-5.png" />
+            alt="/posts/paper-reading/weil-crush-sc06/figure-5.png"
+        />
     </a><figcaption class="image-caption">图5 CRUSH集群架构在4层架构的第2层中增加或移除device后的重组织效率与RUSH<sub>P</sub>和RUSH<sub>T</sub>的对比。1是最优的。</figcaption>
     </figure></p>
 <p><strong>图5</strong>以移动因子$ m_{actual} / m_{optimal} $的性质展示了相对的重组织效率，其中1表示最优的对象数，越大的值意味着需要越多的移动。X轴是增加或移除的OSD的双，Y轴是移动因子的对数。在所有的情况下，更大的权重变换（与整个系统相比）会导致更高效的重组织。RUSH<sub>P</sub>（单个大型list bucket）在极端情况下遥遥领先，即添加存储带来的移动最少（最优），而移除存储带来的移动最多（此时会有严重的性能下降，见<a href="#43-%e7%ae%97%e6%b3%95%e6%80%a7%e8%83%bd" rel="">章节4.3</a>）。CRUSH中由list bucket（仅在只有存储添加的情况）或straw bucket组成的多层结构有次少的数据移动。使用tree bucket的CRUSH的效率稍微低一下，但是比朴素的RUSH<sub>T</sub>好了几乎25%（由每个tree bucket中的9个item带来的轻微的的不均衡导致）。而正如预期的那样（见<a href="#33-%e6%98%a0%e5%b0%84%e5%8f%98%e6%9b%b4%e5%92%8c%e6%95%b0%e6%8d%ae%e7%a7%bb%e5%8a%a8" rel="">章节3.3</a>），在由list bucket构建的CRUSH结构中移除存储的效率很差。</p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/weil-crush-sc06/figure-6.png" title="图6 在不同类型的bucket中添加或移除item后的重组织效率。1是最优的。尽管从list bucket的尾部移除item时会导致最坏的情况，straw bucket和list bucket通常仍是最佳选择。tree bucket的性能受bucket大小的对数限制。" data-thumbnail="/posts/paper-reading/weil-crush-sc06/figure-6.png" data-sub-html="<h2>图6 在不同类型的bucket中添加或移除item后的重组织效率。1是最优的。尽管从list bucket的尾部移除item时会导致最坏的情况，straw bucket和list bucket通常仍是最佳选择。tree bucket的性能受bucket大小的对数限制。</h2><p>图6 在不同类型的bucket中添加或移除item后的重组织效率。1是最优的。尽管从list bucket的尾部移除item时会导致最坏的情况，straw bucket和list bucket通常仍是最佳选择。tree bucket的性能受bucket大小的对数限制。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-6.png"
             data-srcset="/posts/paper-reading/weil-crush-sc06/figure-6.png, figure-6.png 1.5x, /posts/paper-reading/weil-crush-sc06/figure-6.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/weil-crush-sc06/figure-6.png" />
+            alt="/posts/paper-reading/weil-crush-sc06/figure-6.png"
+        />
     </a><figcaption class="image-caption">图6 在不同类型的bucket中添加或移除item后的重组织效率。1是最优的。尽管从list bucket的尾部移除item时会导致最坏的情况，straw bucket和list bucket通常仍是最佳选择。tree bucket的性能受bucket大小的对数限制。</figcaption>
     </figure></p>
 <p><strong>图6</strong>展示了在向不同类型的bucekt添加或移除内部item时的重组织效率。tree bucket变更的移动因子受二叉树的深度$ \log n $限制。向straw bucket和list bucket添加item几乎是最右的。uniform bucket的变更会导致整体数据的重调配。对链表尾部处的修改（例如移除最老的device）几乎会造成与bucket大小所占的比例相似的数据移动。尽管受这些限制，在整个存储结构中很少移除device时且要减小扩展带来的性能影响时，list bucket可能是合适的。结合了uniform bucket、list bucket、tree bucket和straw bucket的融合方法能在大多数常见的重组织场景下减小数据移动量，且仍能够维护良好的映射性能。</p>
@@ -349,22 +362,22 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/weil-crush-sc06/figure-7.png" title="图7 随着层次结构大小变化，CRUSH和RUSH&lt;sub&gt;T&lt;/sub&gt;的计算时间按对数变化，而RUSH&lt;sub&gt;P&lt;/sub&gt;线性变化。" data-thumbnail="/posts/paper-reading/weil-crush-sc06/figure-7.png" data-sub-html="<h2>图7 随着层次结构大小变化，CRUSH和RUSH&lt;sub&gt;T&lt;/sub&gt;的计算时间按对数变化，而RUSH&lt;sub&gt;P&lt;/sub&gt;线性变化。</h2><p>图7 随着层次结构大小变化，CRUSH和RUSH&lt;sub&gt;T&lt;/sub&gt;的计算时间按对数变化，而RUSH&lt;sub&gt;P&lt;/sub&gt;线性变化。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-7.png"
             data-srcset="/posts/paper-reading/weil-crush-sc06/figure-7.png, figure-7.png 1.5x, /posts/paper-reading/weil-crush-sc06/figure-7.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/weil-crush-sc06/figure-7.png" />
+            alt="/posts/paper-reading/weil-crush-sc06/figure-7.png"
+        />
     </a><figcaption class="image-caption">图7 随着层次结构大小变化，CRUSH和RUSH<sub>T</sub>的计算时间按对数变化，而RUSH<sub>P</sub>线性变化。</figcaption>
     </figure></p>
 <p>CRUSH的效率取决于存储结构的深度和其bucket的类型。<strong>图8</strong>比较了$c(r,x)$从每种类型的bucket中选取一个副本的时间（Y轴）作为bucket大小（X轴）的函数。在上层中，CRUSH按$O( \log n )$变化（即随结构深度线性变化），其每个bucket在不超过固定的最大大小下可能是$O(n)$的（list bucket和straw bucket线性变化）。不同的bucket类型在何时何处使用应取决于期望的新增、移除、权重修改的数量。list bucket提供了比straw bucket稍好一点的性能，然而在移除时可能导致过多的数据重调配。tree bucket在计算和重组织开销很客观的非常大或经常被修改的bucket中是一种很好的选择。</p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/weil-crush-sc06/figure-8.png" title="图8 将副本映射到每个CRUSH bucket时下层速度与bucket大小的关系。uniform bucket需要常数时间，tree bucket需要对数时间，list bucket和straw bucket需要线性时间。" data-thumbnail="/posts/paper-reading/weil-crush-sc06/figure-8.png" data-sub-html="<h2>图8 将副本映射到每个CRUSH bucket时下层速度与bucket大小的关系。uniform bucket需要常数时间，tree bucket需要对数时间，list bucket和straw bucket需要线性时间。</h2><p>图8 将副本映射到每个CRUSH bucket时下层速度与bucket大小的关系。uniform bucket需要常数时间，tree bucket需要对数时间，list bucket和straw bucket需要线性时间。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-8.png"
             data-srcset="/posts/paper-reading/weil-crush-sc06/figure-8.png, figure-8.png 1.5x, /posts/paper-reading/weil-crush-sc06/figure-8.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/weil-crush-sc06/figure-8.png" />
+            alt="/posts/paper-reading/weil-crush-sc06/figure-8.png"
+        />
     </a><figcaption class="image-caption">图8 将副本映射到每个CRUSH bucket时下层速度与bucket大小的关系。uniform bucket需要常数时间，tree bucket需要对数时间，list bucket和straw bucket需要线性时间。</figcaption>
     </figure></p>
 <p>无论是执行时间还是结果的质量，CRUSH性能的核心来自于对整型哈希函数的使用。伪随机值是通过基于Jenkin的32位哈希混合[Jenkins 1997]的多输入整型哈希函数计算的。在目前的形式中，CRUSH映射函数的45%的时间都花费在了哈希值计算上，因此哈希是整体性能和分布质量的关键，它也是优化的重要目标。</p>
@@ -451,7 +464,9 @@
 <p>XIN, Q., MILLER, E. L., AND SCHWARZ, T. J. E. 2004. Evaluation of distributed recovery in large-scale storage systems. In Proceedings of the 13th IEEE International Symposium on High Performance Distributed Computing (HPDC), 172–181.</p>
 </li>
 </ul>
-</div></div><div class="post-footer" id="post-footer">
+</div></div>
+
+        <div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
@@ -478,16 +493,22 @@
             <a href="/posts/paper-reading/wu-vldb2017/" class="next" rel="next" title="《An Empirical Evaluation of In-Memory Multi-Version Concurrency Control》论文翻译">《An Empirical Evaluation of In-Memory Multi-Version Concurrency Control》论文翻译<i class="fas fa-angle-right fa-fw"></i></a></div>
 </div>
 </article></div>
-            </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
-                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
-        </div>
-    </footer></div>
+        </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank" rel="noopener noreferrer">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        </div></footer></div>
 
-        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
-                <i class="fas fa-arrow-up fa-fw"></i>
-            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
-                <i class="fas fa-comment fa-fw"></i>
-            </a>
-        </div><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"><link rel="stylesheet" href="/lib/katex/katex.min.css"><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"><script type="text/javascript" src="/lib/smooth-scroll/smooth-scroll.min.js"></script><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"id-1":"叉鸽 | MrCroxx","id-2":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"id-1":["id-1"],"id-2":["id-2"]},"duration":null,"speed":null}};</script><script type="text/javascript" src="/js/theme.min.js"></script></body>
+    <div id="fixed-buttons"><a href="#back-to-top" id="back-to-top-button" class="fixed-button" title="回到顶部">
+            <i class="fas fa-arrow-up fa-fw"></i>
+        </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+            <i class="fas fa-comment fa-fw"></i>
+        </a>
+    </div><div class="assets"><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/topbar/topbar.min.js"></script><script type="text/javascript" src="/lib/pjax/pjax.min.js"></script><script type="text/javascript" src="/js/theme.min.js"></script></div>
+
+<div class="pjax-assets"><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"desktop-header-typeit":"叉鸽 | MrCroxx","mobile-header-typeit":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"desktop-header-typeit":["desktop-header-typeit"],"mobile-header-typeit":["mobile-header-typeit"]},"duration":null,"speed":null}};</script><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/lightgallery/lightgallery.min.css">
+    <noscript><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/katex/katex.min.css">
+    <noscript><link rel="stylesheet" href="/lib/katex/katex.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/katex/copy-tex.min.css">
+    <noscript><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"></noscript></div>
+</body>
+
 </html>

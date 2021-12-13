@@ -7,9 +7,9 @@
             <webMaster>mrcroxx@outlook.com (叉鸽)</webMaster><lastBuildDate>Sat, 08 Aug 2020 12:21:45 &#43;0800</lastBuildDate><atom:link href="https://mrcroxx.github.io/tags/mapreduce/" rel="self" type="application/rss+xml" /><item>
     <title>《MapReduce: Simplified Data Processing on Large Clusters》论文翻译（MapReduce-OSDI04）</title>
     <link>https://mrcroxx.github.io/posts/paper-reading/mapreduce-osdi04/</link>
-    <pubDate>Sat, 08 Aug 2020 12:21:45 &#43;0800</pubDate>
-    <author>作者</author>
-    <guid>https://mrcroxx.github.io/posts/paper-reading/mapreduce-osdi04/</guid>
+    <pubDate>Sat, 08 Aug 2020 12:21:45 &#43;0800</pubDate><author>
+        <name>作者</name>
+    </author><guid>https://mrcroxx.github.io/posts/paper-reading/mapreduce-osdi04/</guid>
     <description><![CDATA[<p><em>本篇文章是对论文<a href="https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/mapreduce-osdi04.pdf" target="_blank" rel="noopener noreffer">MapReduce-OSDI04</a>的原创翻译，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>]]></description>
 </item></channel>
 </rss>

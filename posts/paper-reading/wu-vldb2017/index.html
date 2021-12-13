@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="robots" content="noodp" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
-        <title>《An Empirical Evaluation of In-Memory Multi-Version Concurrency Control》论文翻译 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《An Empirical Evaluation of In-Memory Multi-Version Concurrency Control》论文翻译" />
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noodp" />
+    <title class="pjax-title">《An Empirical Evaluation of In-Memory Multi-Version Concurrency Control》论文翻译 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《An Empirical Evaluation of In-Memory Multi-Version Concurrency Control》论文翻译" />
 <meta property="og:description" content="本篇文章是对论文An Empirical Evaluation of In-Memory Multi-Version Concurrency Control的原创翻译，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/wu-vldb2017/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/paper-reading/wu-vldb2017/paper-reading.jpg"/><meta property="article:section" content="posts" />
@@ -17,9 +17,13 @@
 <meta name="twitter:title" content="《An Empirical Evaluation of In-Memory Multi-Version Concurrency Control》论文翻译"/>
 <meta name="twitter:description" content="本篇文章是对论文An Empirical Evaluation of In-Memory Multi-Version Concurrency Control的原创翻译，转载请严格遵守CC BY-NC-SA协议。"/>
 <meta name="application-name" content="叉鸽 MrCroxx 的博客">
-<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客">
+
+<meta name="theme-color" content="#f8f8f8"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/paper-reading/wu-vldb2017/" /><link rel="prev" href="https://mrcroxx.github.io/posts/paper-reading/weil-crush-sc06/" /><link rel="next" href="https://mrcroxx.github.io/posts/paper-reading/spanner-osdi2012/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="canonical" href="https://mrcroxx.github.io/posts/paper-reading/wu-vldb2017/" /><link rel="prev" href="https://mrcroxx.github.io/posts/paper-reading/weil-crush-sc06/" /><link rel="next" href="https://mrcroxx.github.io/posts/paper-reading/spanner-osdi2012/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/fontawesome-free/all.min.css">
+    <noscript><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/animate/animate.min.css">
+    <noscript><link rel="stylesheet" href="/lib/animate/animate.min.css"></noscript><script type="application/ld+json">
     {
         "@context": "http://schema.org",
         "@type": "BlogPosting",
@@ -42,36 +46,43 @@
             },"description": ""
     }
     </script></head>
-    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : '' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
 
-        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+<body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">
+        function setTheme(theme) {document.body.setAttribute('theme', theme);}
+        function saveTheme(theme) {window.localStorage && localStorage.setItem('theme', theme);}
+        function getMeta(metaName) {const metas = document.getElementsByTagName('meta'); for (let i = 0; i < metas.length; i++) if (metas[i].getAttribute('name') === metaName) return metas[i]; return '';}
+        if (window.localStorage && localStorage.getItem('theme')) {let theme = localStorage.getItem('theme');theme === 'light' || theme === 'dark' || theme === 'black' ? setTheme(theme) : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? setTheme('dark') : setTheme('light')); } else { if ('' === 'light' || '' === 'dark' || '' === 'black') setTheme(''), saveTheme(''); else saveTheme('auto'), window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? setTheme('dark') : setTheme('light');}
+        let metaColors = {'light': '#f8f8f8','dark': '#252627','black': '#000000'}
+        getMeta('theme-color').content = metaColors[document.body.getAttribute('theme')];
+    </script>
+    <div id="back-to-top"></div>
+    <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
     <div class="header-wrapper">
         <div class="header-title">
-            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-1" class="typeit"></span></a>
+            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="desktop-header-typeit" class="typeit"></span></a>
         </div>
         <div class="menu">
-            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/posts/about-me"> 关于我 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
                         <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
-                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                        <a href="#" onclick="return false;" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
                             <i class="fas fa-search fa-fw"></i>
                         </a>
-                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                        <a href="#" onclick="return false;" class="search-button search-clear" id="search-clear-desktop" title="清空">
                             <i class="fas fa-times-circle fa-fw"></i>
                         </a>
                         <span class="search-button search-loading" id="search-loading-desktop">
                             <i class="fas fa-spinner fa-fw fa-spin"></i>
                         </span>
-                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    </span><a href="#" onclick="return false;" class="menu-item theme-switch" title="切换主题">
                     <i class="fas fa-adjust fa-fw"></i>
-                </a>
-            </div>
+                </a></div>
         </div>
     </div>
 </header><header class="mobile" id="header-mobile">
     <div class="header-container">
         <div class="header-wrapper">
             <div class="header-title">
-                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-2" class="typeit"></span></a>
+                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="mobile-header-typeit" class="typeit"></span></a>
             </div>
             <div class="menu-toggle" id="menu-toggle-mobile">
                 <span></span><span></span><span></span>
@@ -80,20 +91,20 @@
         <div class="menu" id="menu-mobile"><div class="search-wrapper">
                     <div class="search mobile" id="search-mobile">
                         <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
-                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                        <a href="#" onclick="return false;" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
                             <i class="fas fa-search fa-fw"></i>
                         </a>
-                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                        <a href="#" onclick="return false;" class="search-button search-clear" id="search-clear-mobile" title="清空">
                             <i class="fas fa-times-circle fa-fw"></i>
                         </a>
                         <span class="search-button search-loading" id="search-loading-mobile">
                             <i class="fas fa-spinner fa-fw fa-spin"></i>
                         </span>
                     </div>
-                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                    <a href="#" onclick="return false;" class="search-cancel" id="search-cancel-mobile">
                         取消
                     </a>
-                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/posts/about-me" title="">关于我</a><a href="#" onclick="return false;" class="menu-item theme-switch" title="切换主题">
                 <i class="fas fa-adjust fa-fw"></i>
             </a></div>
     </div>
@@ -105,21 +116,23 @@
     <div id="search-dropdown-mobile"></div>
 </div>
 <main class="main">
-                <div class="container"><div class="toc" id="toc-auto">
-            <h2 class="toc-title">目录</h2>
-            <div class="toc-content" id="toc-content-auto"></div>
-        </div><article class="page single"><h1 class="single-title animated flipInX">《An Empirical Evaluation of In-Memory Multi-Version Concurrency Control》论文翻译</h1><div class="post-meta">
-            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-10-08">2020-10-08</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 28112 字&nbsp;
+            <div class="container"><div class="toc" id="toc-auto">
+        <h2 class="toc-title">目录</h2>
+        <div class="toc-content" id="toc-content-auto"></div>
+    </div><script>document.getElementsByTagName("main")[0].setAttribute("pageStyle", "normal")</script><script>document.getElementsByTagName("main")[0].setAttribute("autoTOC", "true")</script><article class="page single"><h1 class="single-title animate__animated animate__flipInX">《An Empirical Evaluation of In-Memory Multi-Version Concurrency Control》论文翻译</h1><div class="post-meta">
+            <div class="post-meta-line">
+                <span class="post-author"><i class="author fas fa-user-circle fa-fw"></i><a href="about" title="Author" rel=" author" class="author">叉鸽</a>
+                </span>&nbsp;<span class="post-category">收录于 </span>&nbsp;<span class="post-category">类别 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-10-08">2020-10-08</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2020-10-12">2020-10-12</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 28112 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 57 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
-        src="/svg/loading.min.svg"
         data-src="/posts/paper-reading/wu-vldb2017/paper-reading.jpg"
         data-srcset="/posts/paper-reading/wu-vldb2017/paper-reading.jpg, /posts/paper-reading/wu-vldb2017/paper-reading.jpg 1.5x, /posts/paper-reading/wu-vldb2017/paper-reading.jpg 2x"
         data-sizes="auto"
         alt="/posts/paper-reading/wu-vldb2017/paper-reading.jpg"
-        title="/posts/paper-reading/wu-vldb2017/paper-reading.jpg" /></div><div class="details toc" id="toc-static"  kept="">
+        title="/posts/paper-reading/wu-vldb2017/paper-reading.jpg" height="360" width="1200"
+    /></div><div class="details toc" id="toc-static"  kept="">
                 <div class="details-summary toc-title">
                     <span>目录</span>
                     <span><i class="details-icon fas fa-angle-right"></i></span>
@@ -205,11 +218,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/table-1.png" title="表1 对商业和研究用MVCC DBMS中的设计决策的总结。每个系统的“Year”（Oracle除外）是它首次发布或宣布的时间。对于Oracle，“Year”是其首次包含了MVCC的年份。除了Oracle、MySQL和Postgres外，所有的系统都宣称它们的数据库的主要存储位置是内存。" data-thumbnail="/posts/paper-reading/wu-vldb2017/table-1.png" data-sub-html="<h2>表1 对商业和研究用MVCC DBMS中的设计决策的总结。每个系统的“Year”（Oracle除外）是它首次发布或宣布的时间。对于Oracle，“Year”是其首次包含了MVCC的年份。除了Oracle、MySQL和Postgres外，所有的系统都宣称它们的数据库的主要存储位置是内存。</h2><p>表1 对商业和研究用MVCC DBMS中的设计决策的总结。每个系统的“Year”（Oracle除外）是它首次发布或宣布的时间。对于Oracle，“Year”是其首次包含了MVCC的年份。除了Oracle、MySQL和Postgres外，所有的系统都宣称它们的数据库的主要存储位置是内存。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="table-1.png"
             data-srcset="/posts/paper-reading/wu-vldb2017/table-1.png, table-1.png 1.5x, /posts/paper-reading/wu-vldb2017/table-1.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/wu-vldb2017/table-1.png" />
+            alt="/posts/paper-reading/wu-vldb2017/table-1.png"
+        />
     </a><figcaption class="image-caption">表1 对商业和研究用MVCC DBMS中的设计决策的总结。每个系统的“Year”（Oracle除外）是它首次发布或宣布的时间。对于Oracle，“Year”是其首次包含了MVCC的年份。除了Oracle、MySQL和Postgres外，所有的系统都宣称它们的数据库的主要存储位置是内存。</figcaption>
     </figure></p>
 <p>在接下来的章节中，我们将讨论这些设计决策实现上的问题和性能权衡点。接着我们在<a href="#7-%e5%ae%9e%e9%aa%8c%e5%88%86%e6%9e%90" rel="">第7章</a>对它们进行了全面的评估。我们注意到，本文中仅考虑了串行事务执行。尽管日志和恢复是DBMS架构中很重要方面，但是我们的研究中并没有包括它们，因为它们与单版本系统中的没什么不同，且内存式DBMS日志已经在别处被研究过了<sup>[39, 49]</sup>。</p>
@@ -220,11 +233,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/figure-1.png" title="图1 元组格式——元组的一个物理版本的基本布局。" data-thumbnail="/posts/paper-reading/wu-vldb2017/figure-1.png" data-sub-html="<h2>图1 元组格式——元组的一个物理版本的基本布局。</h2><p>图1 元组格式——元组的一个物理版本的基本布局。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-1.png"
             data-srcset="/posts/paper-reading/wu-vldb2017/figure-1.png, figure-1.png 1.5x, /posts/paper-reading/wu-vldb2017/figure-1.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/wu-vldb2017/figure-1.png" />
+            alt="/posts/paper-reading/wu-vldb2017/figure-1.png"
+        />
     </a><figcaption class="image-caption">图1 元组格式——元组的一个物理版本的基本布局。</figcaption>
     </figure></p>
 <h2 id="3-并发控制协议">3. 并发控制协议</h2>
@@ -236,11 +249,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/figure-2.png" title="图2 并发控制协议——协议如何处理先执行READ然后执行UPDATE的事务的示例。" data-thumbnail="/posts/paper-reading/wu-vldb2017/figure-2.png" data-sub-html="<h2>图2 并发控制协议——协议如何处理先执行READ然后执行UPDATE的事务的示例。</h2><p>图2 并发控制协议——协议如何处理先执行READ然后执行UPDATE的事务的示例。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-2.png"
             data-srcset="/posts/paper-reading/wu-vldb2017/figure-2.png, figure-2.png 1.5x, /posts/paper-reading/wu-vldb2017/figure-2.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/wu-vldb2017/figure-2.png" />
+            alt="/posts/paper-reading/wu-vldb2017/figure-2.png"
+        />
     </a><figcaption class="image-caption">图2 并发控制协议——协议如何处理先执行READ然后执行UPDATE的事务的示例。</figcaption>
     </figure></p>
 <p>通过MVTO，事务总能更新元组的最新版本。如果（1）没有持有$B_x$的写入锁的活动的事务，且（2）$ T_{id} $的值比$B_x$的<code>read-ts</code>字段大，事务$T$会创建一个新版本$ B_{x+1} $。如果这些条件被满足，那么DBMS会创建一个新版本$ B_{x+1} $并将其<code>txn-id</code>置为$ T_{id} $。当$T$提交时，DBMS会分别将$ B_{x+1} $的<code>begin-ts</code>和<code>end-ts</code>字段置为$ T_{id} $和INF，并将$B_x$的<code>end-ts</code>字段置为$ T_{id} $。</p>
@@ -273,11 +286,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/figure-3.png" title="图3 版本存储——该图概括了在MVCC DBMS中这些策略如何组织不同诗句结构中的版本与它们的指针如何创建版本链。注意仅追加方案的两个变体的版本链顺序有所不同。" data-thumbnail="/posts/paper-reading/wu-vldb2017/figure-3.png" data-sub-html="<h2>图3 版本存储——该图概括了在MVCC DBMS中这些策略如何组织不同诗句结构中的版本与它们的指针如何创建版本链。注意仅追加方案的两个变体的版本链顺序有所不同。</h2><p>图3 版本存储——该图概括了在MVCC DBMS中这些策略如何组织不同诗句结构中的版本与它们的指针如何创建版本链。注意仅追加方案的两个变体的版本链顺序有所不同。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-3.png"
             data-srcset="/posts/paper-reading/wu-vldb2017/figure-3.png, figure-3.png 1.5x, /posts/paper-reading/wu-vldb2017/figure-3.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/wu-vldb2017/figure-3.png" />
+            alt="/posts/paper-reading/wu-vldb2017/figure-3.png"
+        />
     </a><figcaption class="image-caption">图3 版本存储——该图概括了在MVCC DBMS中这些策略如何组织不同诗句结构中的版本与它们的指针如何创建版本链。注意仅追加方案的两个变体的版本链顺序有所不同。</figcaption>
     </figure></p>
 <h3 id="42-时间旅行存储time-travel-storage">4.2 时间旅行存储（Time-Travel Storage）</h3>
@@ -304,11 +317,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/figure-4.png" title="图4 垃圾回收——检查数据库中过期版本方式的总览元组级GC死奥妙表的版本链，而事务级GC使用事务的写集合。" data-thumbnail="/posts/paper-reading/wu-vldb2017/figure-4.png" data-sub-html="<h2>图4 垃圾回收——检查数据库中过期版本方式的总览元组级GC死奥妙表的版本链，而事务级GC使用事务的写集合。</h2><p>图4 垃圾回收——检查数据库中过期版本方式的总览元组级GC死奥妙表的版本链，而事务级GC使用事务的写集合。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-4.png"
             data-srcset="/posts/paper-reading/wu-vldb2017/figure-4.png, figure-4.png 1.5x, /posts/paper-reading/wu-vldb2017/figure-4.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/wu-vldb2017/figure-4.png" />
+            alt="/posts/paper-reading/wu-vldb2017/figure-4.png"
+        />
     </a><figcaption class="image-caption">图4 垃圾回收——检查数据库中过期版本方式的总览元组级GC死奥妙表的版本链，而事务级GC使用事务的写集合。</figcaption>
     </figure></p>
 <h3 id="53-探讨">5.3 探讨</h3>
@@ -320,11 +333,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/figure-5.png" title="图5 索引管理——MVCC中两种将键映射到元组的方式中，一种使用了指向版本链链头的非间接层的逻辑指针，一种使用而来指向一个确切版本的物理指针。" data-thumbnail="/posts/paper-reading/wu-vldb2017/figure-5.png" data-sub-html="<h2>图5 索引管理——MVCC中两种将键映射到元组的方式中，一种使用了指向版本链链头的非间接层的逻辑指针，一种使用而来指向一个确切版本的物理指针。</h2><p>图5 索引管理——MVCC中两种将键映射到元组的方式中，一种使用了指向版本链链头的非间接层的逻辑指针，一种使用而来指向一个确切版本的物理指针。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-5.png"
             data-srcset="/posts/paper-reading/wu-vldb2017/figure-5.png, figure-5.png 1.5x, /posts/paper-reading/wu-vldb2017/figure-5.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/wu-vldb2017/figure-5.png" />
+            alt="/posts/paper-reading/wu-vldb2017/figure-5.png"
+        />
     </a><figcaption class="image-caption">图5 索引管理——MVCC中两种将键映射到元组的方式中，一种使用了指向版本链链头的非间接层的逻辑指针，一种使用而来指向一个确切版本的物理指针。</figcaption>
     </figure></p>
 <h3 id="61-逻辑指针">6.1 逻辑指针</h3>
@@ -351,11 +364,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/figure-6.png" title="图6 伸缩性瓶颈——使用了每个事务的操作数不同的只读YCSB负载的并发控制协议吞吐量的比较。" data-thumbnail="/posts/paper-reading/wu-vldb2017/figure-6.png" data-sub-html="<h2>图6 伸缩性瓶颈——使用了每个事务的操作数不同的只读YCSB负载的并发控制协议吞吐量的比较</h2><p>图6 伸缩性瓶颈——使用了每个事务的操作数不同的只读YCSB负载的并发控制协议吞吐量的比较。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-6.png"
             data-srcset="/posts/paper-reading/wu-vldb2017/figure-6.png, figure-6.png 1.5x, /posts/paper-reading/wu-vldb2017/figure-6.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/wu-vldb2017/figure-6.png" />
+            alt="/posts/paper-reading/wu-vldb2017/figure-6.png"
+        />
     </a><figcaption class="image-caption">图6 伸缩性瓶颈——使用了每个事务的操作数不同的只读YCSB负载的并发控制协议吞吐量的比较</figcaption>
     </figure></p>
 <p>短事务负载导致了<strong>图6a</strong>中展示的结果，所有的协议几乎都能线性地伸缩到24线程。所有的这些协议的主要瓶颈是缓存一致性（coherence）流量，这些流量来自于更新内存管理器的计数器和在事务提交时检查冲突的流量（尽管事务中没有写入）。SI+SSN性能低的原因在于，它为了追踪事务维护了一个中央哈希表。通过预分配与复用事务上下文结构<sup>[24]</sup>的方式可以移除该瓶颈。当我们把事务长度增加到100个操作时，如<strong>图6b</strong>所示，协议的吞吐量减小了高达30倍，但是能够线性地伸缩到40线程。这符合预期，因为执行的事务变少时，对DBMS中心数据结构的争用就减少了。</p>
@@ -363,11 +376,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/figure-7.png" title="图7 事务争用——在YCSB负载的不同种负载（争用）混合下的并发控制协议（40线程）的对比。每个事务包含10个操作。" data-thumbnail="/posts/paper-reading/wu-vldb2017/figure-7.png" data-sub-html="<h2>图7 事务争用——在YCSB负载的不同种负载（争用）混合下的并发控制协议（40线程）的对比。每个事务包含10个操作。</h2><p>图7 事务争用——在YCSB负载的不同种负载（争用）混合下的并发控制协议（40线程）的对比。每个事务包含10个操作。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-7.png"
             data-srcset="/posts/paper-reading/wu-vldb2017/figure-7.png, figure-7.png 1.5x, /posts/paper-reading/wu-vldb2017/figure-7.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/wu-vldb2017/figure-7.png" />
+            alt="/posts/paper-reading/wu-vldb2017/figure-7.png"
+        />
     </a><figcaption class="image-caption">图7 事务争用——在YCSB负载的不同种负载（争用）混合下的并发控制协议（40线程）的对比。每个事务包含10个操作。</figcaption>
     </figure></p>
 <p><strong>图7a</strong>展示了读取敏感型负载下的DBMS吞吐量。当$ \theta $小于0.7时，我们可以看到所有的协议的吞吐量相似。当超过该争用级别时，MVOCC的性能减小达50%。这是因为MVOCC直到事务已经执行了其操作时，才能发现事务会因冲突而被打断。多版本策略在这一情况下没有优势。如<strong>图7b</strong>所示，尽管在争用增加时，我们在更新敏感负载的结果中能看到相同的性能下降，但是除了MV2PL之外，这些协议都没有太大的区别。除了MV2PL之外的这些协议除了“写入-写入”冲突的方法相似，同样，多版本策略对于减少这类冲突没有帮助。</p>
@@ -376,22 +389,22 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/figure-8.png" title="图8 异构负载（不预先声明只读）——在YCSB（$ \theta = 0.8 $）下的并发控制协议的比较。读写部分在20个线程中执行了更新敏感型的混合负载，而处理只读负载的线程数是变化的。" data-thumbnail="/posts/paper-reading/wu-vldb2017/figure-8.png" data-sub-html="<h2>图8 异构负载（不预先声明只读）——在YCSB（$ \theta = 0.8 $）下的并发控制协议的比较。读写部分在20个线程中执行了更新敏感型的混合负载，而处理只读负载的线程数是变化的。</h2><p>图8 异构负载（不预先声明只读）——在YCSB（$ \theta = 0.8 $）下的并发控制协议的比较。读写部分在20个线程中执行了更新敏感型的混合负载，而处理只读负载的线程数是变化的。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-8.png"
             data-srcset="/posts/paper-reading/wu-vldb2017/figure-8.png, figure-8.png 1.5x, /posts/paper-reading/wu-vldb2017/figure-8.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/wu-vldb2017/figure-8.png" />
+            alt="/posts/paper-reading/wu-vldb2017/figure-8.png"
+        />
     </a><figcaption class="image-caption">图8 异构负载（不预先声明只读）——在YCSB（$ \theta = 0.8 $）下的并发控制协议的比较。读写部分在20个线程中执行了更新敏感型的混合负载，而处理只读负载的线程数是变化的。</figcaption>
     </figure></p>
 <p>在程序不预先声明只读查询时，有很多有趣的趋势。第一，随着只读线程数增加，MVTO和MV2PL协议中读写事务的吞吐量下降（如<strong>图8a</strong>所示），而只读事务的吞吐量上升（如<strong>图8b</strong>所示）。这是因为这些协议平等地对待读取和写入。因为任何读取或写入一个元组的事务会阻塞其它访问同一个元组的事务，只读查询数量的增加导致了读写事务被打断的概率更高。因为这些冲突，MV2PL在只读线程增加到20时仅完成了少量的事务。第二，尽管随着只读线程数增加，MVOCC协议在读写部分达到了稳定的性能，但是它们在只读部分的性能分别比MVTO低了2倍和28倍。因为MVOCC没有读取锁，这导致只读队列长时间不会被执行（译注：原文为“starvation”）。第三，SI+SSN读写事务性能高出很多。这是因为它减少了DBMS因精确的一致性验证打断事务的概率。</p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/figure-9.png" title="图9 异构负载（预先声明只读）——在YCSB（$ \theta = 0.8 $）下的并发控制协议对比。读写部分在20个线程上执行了更新敏感型混合负载，而只读取敏感型负载部分的线程数不同。" data-thumbnail="/posts/paper-reading/wu-vldb2017/figure-9.png" data-sub-html="<h2>图9 异构负载（预先声明只读）——在YCSB（$ \theta = 0.8 $）下的并发控制协议对比。读写部分在20个线程上执行了更新敏感型混合负载，而只读取敏感型负载部分的线程数不同。</h2><p>图9 异构负载（预先声明只读）——在YCSB（$ \theta = 0.8 $）下的并发控制协议对比。读写部分在20个线程上执行了更新敏感型混合负载，而只读取敏感型负载部分的线程数不同。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-9.png"
             data-srcset="/posts/paper-reading/wu-vldb2017/figure-9.png, figure-9.png 1.5x, /posts/paper-reading/wu-vldb2017/figure-9.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/wu-vldb2017/figure-9.png" />
+            alt="/posts/paper-reading/wu-vldb2017/figure-9.png"
+        />
     </a><figcaption class="image-caption">图9 异构负载（预先声明只读）——在YCSB（$ \theta = 0.8 $）下的并发控制协议对比。读写部分在20个线程上执行了更新敏感型混合负载，而只读取敏感型负载部分的线程数不同。</figcaption>
     </figure></p>
 <p><strong>图9</strong>中的结果显示，当负载预先声明了只读部分时，各种协议的表现不同。第一，如<strong>图9b</strong>所示，他们的只读吞吐量相同，因为DBMS在执行这些查询的时候不会检查冲突。且如<strong>图9a</strong>所示，当只读查询与读写事务隔离时，它们对读写事务的吞吐量很稳定，因此执行这些只读事务不会增加数据争用。SI+SSN的表现再次成为了最好的，因为它减少了打断的概率，它比NV2PL和MVTO快了1.6倍。而MVOCC的性能最差，因为它因验证失败的打断率最高。</p>
@@ -399,11 +412,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/figure-10.png" title="图10 TPC-C——在TPC-C负载下的不同并发控制协议的吞吐量和打断率对比。" data-thumbnail="/posts/paper-reading/wu-vldb2017/figure-10.png" data-sub-html="<h2>图10 TPC-C——在TPC-C负载下的不同并发控制协议的吞吐量和打断率对比。</h2><p>图10 TPC-C——在TPC-C负载下的不同并发控制协议的吞吐量和打断率对比。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-10.png"
             data-srcset="/posts/paper-reading/wu-vldb2017/figure-10.png, figure-10.png 1.5x, /posts/paper-reading/wu-vldb2017/figure-10.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/wu-vldb2017/figure-10.png" />
+            alt="/posts/paper-reading/wu-vldb2017/figure-10.png"
+        />
     </a><figcaption class="image-caption">图10 TPC-C——在TPC-C负载下的不同并发控制协议的吞吐量和打断率对比。</figcaption>
     </figure></p>
 <p>如<strong>图10a</strong>所示，与其它协议相比，MVTO的性能高出了了45%~120%。SI+SSN生成的吞吐量比其它的协议都高，因为它需要检测反依赖，而不是通过类似OCC的一致性检查盲目地打断。MVOCC造成了计算的浪费，因为它近在验证阶段检测冲突。在<strong>图10b</strong>中，更有趣的是，不同的协议打断的事务也不同。MVOCC更有可能打断NewOrder事务，而在MV2PL中，Payment被打断的概率比NewOrder高出了6.8倍。这两种事务访问同一张表，同样，乐观的协议仅在NewOrder事务的验证阶段检测读取冲突。SI+SSN因为有反依赖追踪，所以它的打断率低；而在MVTO中，因为分配给每个事务的时间戳直接决定了它们的顺序，所以它能够避免错误的打断。</p>
@@ -413,11 +426,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/figure-11.png" title="图11 非内联属性——对在YCSB负载下如何在仅追加存储策略中保存非内联属性的评估，其中有40个DBMS线程，元组中的属性的数量不同。" data-thumbnail="/posts/paper-reading/wu-vldb2017/figure-11.png" data-sub-html="<h2>图11 非内联属性——对在YCSB负载下如何在仅追加存储策略中保存非内联属性的评估，其中有40个DBMS线程，元组中的属性的数量不同。</h2><p>图11 非内联属性——对在YCSB负载下如何在仅追加存储策略中保存非内联属性的评估，其中有40个DBMS线程，元组中的属性的数量不同。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-11.png"
             data-srcset="/posts/paper-reading/wu-vldb2017/figure-11.png, figure-11.png 1.5x, /posts/paper-reading/wu-vldb2017/figure-11.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/wu-vldb2017/figure-11.png" />
+            alt="/posts/paper-reading/wu-vldb2017/figure-11.png"
+        />
     </a><figcaption class="image-caption">图11 非内联属性——对在YCSB负载下如何在仅追加存储策略中保存非内联属性的评估，其中有40个DBMS线程，元组中的属性的数量不同。</figcaption>
     </figure></p>
 <p><strong>图11</strong>表明，为没被修改的非内联属性维护引用计数器总是会有更好的性能。在读取敏感型负载下，当有这些计数器的非内联属性的个数增加到50个的时候，DBMS的吞吐量比常规的“完整元组拷贝（full-tuple-copy）”策略高出了多达40%。这是因为DBMS避免了更新操作中的冗余数据拷贝。这一差异在更新敏感型负载下更为突出，其性能差异超过了100%，如<strong>图11b</strong>所示。</p>
@@ -425,11 +438,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/figure-12.png" title="图12 版本链顺序——对仅追加存储策略下不同版本链顺序的评估，其使用了YCSB负载，使用了40个DBMS线程，并使用不同的争用等级。" data-thumbnail="/posts/paper-reading/wu-vldb2017/figure-12.png" data-sub-html="<h2>图12 版本链顺序——对仅追加存储策略下不同版本链顺序的评估，其使用了YCSB负载，使用了40个DBMS线程，并使用不同的争用等级。</h2><p>图12 版本链顺序——对仅追加存储策略下不同版本链顺序的评估，其使用了YCSB负载，使用了40个DBMS线程，并使用不同的争用等级。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-12.png"
             data-srcset="/posts/paper-reading/wu-vldb2017/figure-12.png, figure-12.png 1.5x, /posts/paper-reading/wu-vldb2017/figure-12.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/wu-vldb2017/figure-12.png" />
+            alt="/posts/paper-reading/wu-vldb2017/figure-12.png"
+        />
     </a><figcaption class="image-caption">图12 版本链顺序——对仅追加存储策略下不同版本链顺序的评估，其使用了YCSB负载，使用了40个DBMS线程，并使用不同的争用等级。</figcaption>
     </figure></p>
 <p>如<strong>图12</strong>所示，在两种负载下，N2O顺序的性能总是比O2N的好。尽管DBMS会为每个新版本更新索引的指针，但是这与O2N遍历更长的链的开销相比相形见绌。版本链长度的增加意味着事务需要执行更长时间，从而增大了一个事务与另一个事务冲突的可能性。这种现象在最高的争用级别下（$ \theta = 0.9 $）更为明显，其中N2O顺序的性能达到了2.4~3.4倍。</p>
@@ -437,11 +450,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/figure-13.png" title="图13 事务占用——对在YCSB负载下（$ \theta = 0.2 $）的不同版本存储策略的评估，其使用了40个DBMS线程，每个事务中更新操作的比例不同。" data-thumbnail="/posts/paper-reading/wu-vldb2017/figure-13.png" data-sub-html="<h2>图13 事务占用——对在YCSB负载下（$ \theta = 0.2 $）的不同版本存储策略的评估，其使用了40个DBMS线程，每个事务中更新操作的比例不同。</h2><p>图13 事务占用——对在YCSB负载下（$ \theta = 0.2 $）的不同版本存储策略的评估，其使用了40个DBMS线程，每个事务中更新操作的比例不同。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-13.png"
             data-srcset="/posts/paper-reading/wu-vldb2017/figure-13.png, figure-13.png 1.5x, /posts/paper-reading/wu-vldb2017/figure-13.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/wu-vldb2017/figure-13.png" />
+            alt="/posts/paper-reading/wu-vldb2017/figure-13.png"
+        />
     </a><figcaption class="image-caption">图13 事务占用——对在YCSB负载下（$ \theta = 0.2 $）的不同版本存储策略的评估，其使用了40个DBMS线程，每个事务中更新操作的比例不同。</figcaption>
     </figure></p>
 <p>如<strong>图13a</strong>所示，在表有10个属性时，仅追加策略和增量策略的性能相似。同样，仅追加策略和时间旅行策略的吞吐量几乎相同。<strong>图13b</strong>的结果表明，当表有100个属性时，查分策略的性能达到了仅追加策略和时间旅行策略的2倍，因为它使用的内存更少。</p>
@@ -449,32 +462,32 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/figure-14.png" title="图14 属性修改——对在YCSB负载下（$ \theta = 0.2 $）的不同版本存储策略的评估，其使用了40个DBMS线程，每个更新操作中修改的元组的属性数不同。" data-thumbnail="/posts/paper-reading/wu-vldb2017/figure-14.png" data-sub-html="<h2>图14 属性修改——对在YCSB负载下（$ \theta = 0.2 $）的不同版本存储策略的评估，其使用了40个DBMS线程，每个更新操作中修改的元组的属性数不同。</h2><p>图14 属性修改——对在YCSB负载下（$ \theta = 0.2 $）的不同版本存储策略的评估，其使用了40个DBMS线程，每个更新操作中修改的元组的属性数不同。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-14.png"
             data-srcset="/posts/paper-reading/wu-vldb2017/figure-14.png, figure-14.png 1.5x, /posts/paper-reading/wu-vldb2017/figure-14.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/wu-vldb2017/figure-14.png" />
+            alt="/posts/paper-reading/wu-vldb2017/figure-14.png"
+        />
     </a><figcaption class="image-caption">图14 属性修改——对在YCSB负载下（$ \theta = 0.2 $）的不同版本存储策略的评估，其使用了40个DBMS线程，每个更新操作中修改的元组的属性数不同。</figcaption>
     </figure></p>
 <p>如<strong>图14</strong>所示，无论修改的属性数量如何，仅追加策略和时间旅行策略的性能都很稳定。正如预期的一样，当修改的属性的数量很少时，增量策略的性能最好，因为它对每个版本拷贝的数据更少。但是随着更新操作的范围扩大，它的性能就与其它的相同，因为每个增量数据拷贝的数据量相同。</p>
 <p><img
         class="lazyload"
-        src="/svg/loading.min.svg"
         data-src="figure-15.png"
         data-srcset="/posts/paper-reading/wu-vldb2017/figure-15.png, figure-15.png 1.5x, /posts/paper-reading/wu-vldb2017/figure-15.png 2x"
         data-sizes="auto"
         alt="/posts/paper-reading/wu-vldb2017/figure-15.png"
-        title="图15 属性访问——对在YCSB负载下（$ \theta = 0.2 $）的不同版本存储策略的评估，其使用了40个DBMS线程，每个更新操作中访问的元组的属性数不同。" /></p>
+        title="图15 属性访问——对在YCSB负载下（$ \theta = 0.2 $）的不同版本存储策略的评估，其使用了40个DBMS线程，每个更新操作中访问的元组的属性数不同。"
+    /></p>
 <p>为了测量属性修改对读取的影响如何，我们在每个操作中访问了不同数量的属性。如<strong>图15a</strong>所示，当更新操作仅修改一个（随机的）属性时，读取的属性数的增加大幅影响了增量策略。这是符合预期的，因为DBMS必须用更多的时间遍历版本链以搜索目标列。仅追加存储和时间旅行存的性能也会下降，因为内部的socket通信开销与每个读操作访问的总数据量成正比地增长。这与<strong>图15b</strong>中观察到的结果一致，其中，更新操作会修改元组的所有属性，每个读操作访问的属性的增加会导致所有存储策略的性能下降。</p>
 <p><strong>内存分配（Memory Allocation）：</strong> 接下来的实验评估了内存分配会如何影响版本策略的性能。我们在40个线程上使用了低争用因子（$ \theta = 0.2 $）的YCSB负载。每个事务执行10个操作，每个操作仅访问元组中的一个属性。我们改变了不同的内存空间的个数，并测量DBMS的吞吐量。DBMS每次按512KB大小扩展内存空间。</p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/figure-16.png" title="图16 内存分配——在YCSB负载下，对内存分配方式给不同版本存储策略的影响评估，其使用了40个DBMS线程，内存空间的数量不同。" data-thumbnail="/posts/paper-reading/wu-vldb2017/figure-16.png" data-sub-html="<h2>图16 内存分配——在YCSB负载下，对内存分配方式给不同版本存储策略的影响评估，其使用了40个DBMS线程，内存空间的数量不同。</h2><p>图16 内存分配——在YCSB负载下，对内存分配方式给不同版本存储策略的影响评估，其使用了40个DBMS线程，内存空间的数量不同。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-16.png"
             data-srcset="/posts/paper-reading/wu-vldb2017/figure-16.png, figure-16.png 1.5x, /posts/paper-reading/wu-vldb2017/figure-16.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/wu-vldb2017/figure-16.png" />
+            alt="/posts/paper-reading/wu-vldb2017/figure-16.png"
+        />
     </a><figcaption class="image-caption">图16 内存分配——在YCSB负载下，对内存分配方式给不同版本存储策略的影响评估，其使用了40个DBMS线程，内存空间的数量不同。</figcaption>
     </figure></p>
 <p>如<strong>图16</strong>所示，无论DBMS分配的内存空间数如何，增量存储策略的性能都很稳定。相反，随着内存空间的数量从1个增加到20个时，仅追加策略和时间旅行策略的吞吐量的吞吐量提高了1.6~4倍。这是因为增量存储仅拷贝元组中被修改的属性，其需要的内存总量有限。相反，另外两种存储策略会频繁获取新的槽来保存每个新增的元组版本的完整的拷贝，这增加的DBMS内存分配的开销。</p>
@@ -482,11 +495,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/figure-17.png" title="图17 TPC-C——在TPC-C benchmark下不同版本存储策略的吞吐量与延迟对比。" data-thumbnail="/posts/paper-reading/wu-vldb2017/figure-17.png" data-sub-html="<h2>图17 TPC-C——在TPC-C benchmark下不同版本存储策略的吞吐量与延迟对比。</h2><p>图17 TPC-C——在TPC-C benchmark下不同版本存储策略的吞吐量与延迟对比。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-17.png"
             data-srcset="/posts/paper-reading/wu-vldb2017/figure-17.png, figure-17.png 1.5x, /posts/paper-reading/wu-vldb2017/figure-17.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/wu-vldb2017/figure-17.png" />
+            alt="/posts/paper-reading/wu-vldb2017/figure-17.png"
+        />
     </a><figcaption class="image-caption">图17 TPC-C——在TPC-C benchmark下不同版本存储策略的吞吐量与延迟对比。</figcaption>
     </figure></p>
 <p>如<strong>图17a</strong>中的结果所示，仅追加存储比其它两种策略有更好的性能。这是因为该策略在执行多属性读操作时的开销更小，这种操作在TPC-C benchmark中很普遍。尽管增量数据存储在创建新版本时分配的内存更少，这一优势并没有带来显著的性能提升，因为在我们的实现中我们通过维护多个内存空间优化了内存管理。时间旅行策略的吞吐量更低，因为它没有为读取或写入操作带来任何好处。在<strong>图17b</strong>中，我们可以看到，仅追加策略和时间旅行策略在表扫描查询中表现更好。在增量存储策略下，扫描查询的延迟随着线程数的增长近线性地增长（这是不好的），而仅追加策略和时间旅行策略在使用40个线程时延迟降低了25%~47%。</p>
@@ -496,21 +509,21 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/figure-18.png" title="图18 元组级对比（吞吐量）——在YCSB负载下DBMS吞吐量随时间变化，其使用了40个线程与元组级GC机制。" data-thumbnail="/posts/paper-reading/wu-vldb2017/figure-18.png" data-sub-html="<h2>图18 元组级对比（吞吐量）——在YCSB负载下DBMS吞吐量随时间变化，其使用了40个线程与元组级GC机制。</h2><p>图18 元组级对比（吞吐量）——在YCSB负载下DBMS吞吐量随时间变化，其使用了40个线程与元组级GC机制。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-18.png"
             data-srcset="/posts/paper-reading/wu-vldb2017/figure-18.png, figure-18.png 1.5x, /posts/paper-reading/wu-vldb2017/figure-18.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/wu-vldb2017/figure-18.png" />
+            alt="/posts/paper-reading/wu-vldb2017/figure-18.png"
+        />
     </a><figcaption class="image-caption">图18 元组级对比（吞吐量）——在YCSB负载下DBMS吞吐量随时间变化，其使用了40个线程与元组级GC机制。</figcaption>
     </figure></p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/figure-19.png" title="图19 元组级对比（内存）——在YCSB负载下DBMS为每个事务分配的内存总量（越低越好）随时间变化，其使用了40个线程与元组级GC机制。" data-thumbnail="/posts/paper-reading/wu-vldb2017/figure-19.png" data-sub-html="<h2>图19 元组级对比（内存）——在YCSB负载下DBMS为每个事务分配的内存总量（越低越好）随时间变化，其使用了40个线程与元组级GC机制。</h2><p>图19 元组级对比（内存）——在YCSB负载下DBMS为每个事务分配的内存总量（越低越好）随时间变化，其使用了40个线程与元组级GC机制。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-19.png"
             data-srcset="/posts/paper-reading/wu-vldb2017/figure-19.png, figure-19.png 1.5x, /posts/paper-reading/wu-vldb2017/figure-19.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/wu-vldb2017/figure-19.png" />
+            alt="/posts/paper-reading/wu-vldb2017/figure-19.png"
+        />
     </a><figcaption class="image-caption">图19 元组级对比（内存）——在YCSB负载下DBMS为每个事务分配的内存总量（越低越好）随时间变化，其使用了40个线程与元组级GC机制。</figcaption>
     </figure></p>
 <p><strong>图18</strong>中的结果显示，在读取敏感负载下，COOP的吞吐量比VAC高出了45%。在<strong>图19</strong>中，我们可以看到，COOP中每个事务的内存占用比VAC少30%~60%。与VAC相比，COOP的性能更加稳定，因为它可以将GC的开销分摊到多个线程上，且内存回收更快。在两种负载下，我们都能看到，当GC被禁用时，性能会随着时间下降，因为DBMS需要遍历更长的版本链以检索版本。另外，因为系统永远不会回收内存，它需要为每个新版本分配新内存。</p>
@@ -518,21 +531,21 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/figure-20.png" title="图20 元组级vs事务级（吞吐量）——在两种YCSB混合负载下（$ \theta = 0.8 $）的持续吞吐量随时间变化，其使用了不同的GC机制。" data-thumbnail="/posts/paper-reading/wu-vldb2017/figure-20.png" data-sub-html="<h2>图20 元组级vs事务级（吞吐量）——在两种YCSB混合负载下（$ \theta = 0.8 $）的持续吞吐量随时间变化，其使用了不同的GC机制。</h2><p>图20 元组级vs事务级（吞吐量）——在两种YCSB混合负载下（$ \theta = 0.8 $）的持续吞吐量随时间变化，其使用了不同的GC机制。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-20.png"
             data-srcset="/posts/paper-reading/wu-vldb2017/figure-20.png, figure-20.png 1.5x, /posts/paper-reading/wu-vldb2017/figure-20.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/wu-vldb2017/figure-20.png" />
+            alt="/posts/paper-reading/wu-vldb2017/figure-20.png"
+        />
     </a><figcaption class="image-caption">图20 元组级vs事务级（吞吐量）——在两种YCSB混合负载下（$ \theta = 0.8 $）的持续吞吐量随时间变化，其使用了不同的GC机制。</figcaption>
     </figure></p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/figure-21.png" title="图21 元组级vs事务级（内存）——在两种YCSB混合负载下（$ \theta = 0.8 $）DBMS为每个事务分配的总内存（越低越好）随时间变化，其使用了不同的GC机制。" data-thumbnail="/posts/paper-reading/wu-vldb2017/figure-21.png" data-sub-html="<h2>图21 元组级vs事务级（内存）——在两种YCSB混合负载下（$ \theta = 0.8 $）DBMS为每个事务分配的总内存（越低越好）随时间变化，其使用了不同的GC机制。</h2><p>图21 元组级vs事务级（内存）——在两种YCSB混合负载下（$ \theta = 0.8 $）DBMS为每个事务分配的总内存（越低越好）随时间变化，其使用了不同的GC机制。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-21.png"
             data-srcset="/posts/paper-reading/wu-vldb2017/figure-21.png, figure-21.png 1.5x, /posts/paper-reading/wu-vldb2017/figure-21.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/wu-vldb2017/figure-21.png" />
+            alt="/posts/paper-reading/wu-vldb2017/figure-21.png"
+        />
     </a><figcaption class="image-caption">图21 元组级vs事务级（内存）——在两种YCSB混合负载下（$ \theta = 0.8 $）DBMS为每个事务分配的总内存（越低越好）随时间变化，其使用了不同的GC机制。</figcaption>
     </figure></p>
 <p><strong>图20a</strong>中的结果显示，对于读取敏感型负载，事务级GC的性能比元组级GC的性能稍微好了一点，但在<strong>图20b</strong>的更新敏感型负载下，性能的差距增大到了20%。事务级GC会分批移除过期的版本，这减少了同步开销。与禁用GC的情况相比，两种机制的吞吐量都提高了20%~30%。如<strong>图21</strong>所示，两种机制都减少了内存使用量。</p>
@@ -541,21 +554,21 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/figure-22.png" title="图22 索引管理——在不同辅助索引数下事务达到的吞吐量。" data-thumbnail="/posts/paper-reading/wu-vldb2017/figure-22.png" data-sub-html="<h2>图22 索引管理——在不同辅助索引数下事务达到的吞吐量。</h2><p>图22 索引管理——在不同辅助索引数下事务达到的吞吐量。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-22.png"
             data-srcset="/posts/paper-reading/wu-vldb2017/figure-22.png, figure-22.png 1.5x, /posts/paper-reading/wu-vldb2017/figure-22.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/wu-vldb2017/figure-22.png" />
+            alt="/posts/paper-reading/wu-vldb2017/figure-22.png"
+        />
     </a><figcaption class="image-caption">图22 索引管理——在不同辅助索引数下事务达到的吞吐量。</figcaption>
     </figure></p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/figure-23.png" title="图23 索引管理——在更新敏感型YCSB负载下，有8个辅助索引时，吞吐量随线程数的变化。" data-thumbnail="/posts/paper-reading/wu-vldb2017/figure-23.png" data-sub-html="<h2>图23 索引管理——在更新敏感型YCSB负载下，有8个辅助索引时，吞吐量随线程数的变化。</h2><p>图23 索引管理——在更新敏感型YCSB负载下，有8个辅助索引时，吞吐量随线程数的变化。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-23.png"
             data-srcset="/posts/paper-reading/wu-vldb2017/figure-23.png, figure-23.png 1.5x, /posts/paper-reading/wu-vldb2017/figure-23.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/wu-vldb2017/figure-23.png" />
+            alt="/posts/paper-reading/wu-vldb2017/figure-23.png"
+        />
     </a><figcaption class="image-caption">图23 索引管理——在更新敏感型YCSB负载下，有8个辅助索引时，吞吐量随线程数的变化。</figcaption>
     </figure></p>
 <p><strong>图22b</strong>中的结果表明，在高争用因子下，逻辑指针策略的性能比物理指针策略高出了25%。<strong>图22a</strong>中的结果表明，在低争用因子下，随着辅助索引数增加到20个，性能差距增大到了40%。<strong>图23</strong>进一步展示了逻辑指针的优势。其结果表明，在高争用负载下，使用逻辑指针的DBMS吞吐量比使用物理指针的高出45%。无论是在低争用因子下还是在高争用因子下，性能的差距都会醉着线程数的增加而下降。</p>
@@ -568,22 +581,22 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/figure-24.png" title="图24 配置对比（吞吐量）——在TPC-C benchmark下，表1中MVCC配置的性能。" data-thumbnail="/posts/paper-reading/wu-vldb2017/figure-24.png" data-sub-html="<h2>图24 配置对比（吞吐量）——在TPC-C benchmark下，表1中MVCC配置的性能。</h2><p>图24 配置对比（吞吐量）——在TPC-C benchmark下，表1中MVCC配置的性能。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-24.png"
             data-srcset="/posts/paper-reading/wu-vldb2017/figure-24.png, figure-24.png 1.5x, /posts/paper-reading/wu-vldb2017/figure-24.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/wu-vldb2017/figure-24.png" />
+            alt="/posts/paper-reading/wu-vldb2017/figure-24.png"
+        />
     </a><figcaption class="image-caption">图24 配置对比（吞吐量）——在TPC-C benchmark下，表1中MVCC配置的性能。</figcaption>
     </figure></p>
 <p>如<strong>图24</strong>所示，使用Oracle/MySQL和NuoBD的配置的DBMS在低争用和高争用负载下的表现都是最好的。这是因为这些系统的存储策略在多核和内存式系统中伸缩性最好，且它们的NV2PL协议无论在哪种争用的负载下都能提供相对高的性能。HYRISE、MemSQL和HyPer的配置的性能相对较低，因为它们使用的MVOCC协议在验证阶段需要的读取集合遍历会带来很高的开销。Postgres和Hekaton的配置的性能最差，其主要原因是它们使用的O2N顺序的仅追加存储严重限制了系统的可伸缩性。该实验表明并发控制协议和版本存储方案都可以对吞吐量产生很大影响。</p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/figure-25.png" title="图25 配置对比（扫描延迟）——在TPC-C benchmark下，表1中MVCC配置的性能。" data-thumbnail="/posts/paper-reading/wu-vldb2017/figure-25.png" data-sub-html="<h2>图25 配置对比（扫描延迟）——在TPC-C benchmark下，表1中MVCC配置的性能。</h2><p>图25 配置对比（扫描延迟）——在TPC-C benchmark下，表1中MVCC配置的性能。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-25.png"
             data-srcset="/posts/paper-reading/wu-vldb2017/figure-25.png, figure-25.png 1.5x, /posts/paper-reading/wu-vldb2017/figure-25.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/wu-vldb2017/figure-25.png" />
+            alt="/posts/paper-reading/wu-vldb2017/figure-25.png"
+        />
     </a><figcaption class="image-caption">图25 配置对比（扫描延迟）——在TPC-C benchmark下，表1中MVCC配置的性能。</figcaption>
     </figure></p>
 <p>但是<strong>图25</strong>中的延迟结果显示，使用增量存储的DBMS性能最差。这是因为增量存储必须花费更多时间遍历版本链，以找到目标元组版本的属性。</p>
@@ -647,7 +660,9 @@
 <p>[47] X. Yu, A. Pavlo, D. Sanchez, and S. Devadas. Tictoc: Time Traveling Optimistic Concurrency Control. In SIGMOD, 2016.</p>
 <p>[48] X. Yu and et al. Staring Into the Abyss: An Evaluation of Concurrency Control with One Thousand Cores. VLDB, 2014.</p>
 <p>[49] W. Zheng, S. Tu, E. Kohler, and B. Liskov. Fast Databases with Fast Durability and Recovery Through Multicore Parallelism. In OSDI, 2014.</p>
-</div></div><div class="post-footer" id="post-footer">
+</div></div>
+
+        <div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
@@ -674,16 +689,22 @@
             <a href="/posts/paper-reading/spanner-osdi2012/" class="next" rel="next" title="《Spanner: Google’s Globally-Distributed Database》论文翻译">《Spanner: Google’s Globally-Distributed Database》论文翻译<i class="fas fa-angle-right fa-fw"></i></a></div>
 </div>
 </article></div>
-            </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
-                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
-        </div>
-    </footer></div>
+        </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank" rel="noopener noreferrer">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        </div></footer></div>
 
-        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
-                <i class="fas fa-arrow-up fa-fw"></i>
-            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
-                <i class="fas fa-comment fa-fw"></i>
-            </a>
-        </div><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"><link rel="stylesheet" href="/lib/katex/katex.min.css"><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"><script type="text/javascript" src="/lib/smooth-scroll/smooth-scroll.min.js"></script><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"id-1":"叉鸽 | MrCroxx","id-2":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"id-1":["id-1"],"id-2":["id-2"]},"duration":null,"speed":null}};</script><script type="text/javascript" src="/js/theme.min.js"></script></body>
+    <div id="fixed-buttons"><a href="#back-to-top" id="back-to-top-button" class="fixed-button" title="回到顶部">
+            <i class="fas fa-arrow-up fa-fw"></i>
+        </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+            <i class="fas fa-comment fa-fw"></i>
+        </a>
+    </div><div class="assets"><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/topbar/topbar.min.js"></script><script type="text/javascript" src="/lib/pjax/pjax.min.js"></script><script type="text/javascript" src="/js/theme.min.js"></script></div>
+
+<div class="pjax-assets"><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"desktop-header-typeit":"叉鸽 | MrCroxx","mobile-header-typeit":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"desktop-header-typeit":["desktop-header-typeit"],"mobile-header-typeit":["mobile-header-typeit"]},"duration":null,"speed":null}};</script><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/lightgallery/lightgallery.min.css">
+    <noscript><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/katex/katex.min.css">
+    <noscript><link rel="stylesheet" href="/lib/katex/katex.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/katex/copy-tex.min.css">
+    <noscript><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"></noscript></div>
+</body>
+
 </html>

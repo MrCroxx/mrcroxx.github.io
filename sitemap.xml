@@ -2,13 +2,13 @@
     xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
     xmlns:xhtml="http://www.w3.org/1999/xhtml"
     ><url>
-            <loc>https://mrcroxx.github.io/categories/</loc><lastmod>2021-10-30T18:00:00&#43;08:00</lastmod></url><url>
-            <loc>https://mrcroxx.github.io/categories/indexes/</loc><lastmod>2021-10-30T18:00:00&#43;08:00</lastmod></url><url>
-            <loc>https://mrcroxx.github.io/posts/</loc><lastmod>2021-10-30T18:00:00&#43;08:00</lastmod></url><url>
-            <loc>https://mrcroxx.github.io/tags/reading/</loc><lastmod>2021-10-30T18:00:00&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.github.io/categories/</loc><lastmod>2021-12-12T18:00:00&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.github.io/posts/</loc><lastmod>2021-12-12T18:00:00&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.github.io/tags/reading-list/</loc><lastmod>2021-10-30T18:00:00&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.github.io/categories/reading-list/</loc><lastmod>2021-10-30T18:00:00&#43;08:00</lastmod></url><url>
             <loc>https://mrcroxx.github.io/posts/reading-list/</loc><lastmod>2021-10-30T18:00:00&#43;08:00</lastmod></url><url>
-            <loc>https://mrcroxx.github.io/tags/</loc><lastmod>2021-10-30T18:00:00&#43;08:00</lastmod></url><url>
-            <loc>https://mrcroxx.github.io/</loc><lastmod>2021-10-30T18:00:00&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.github.io/tags/</loc><lastmod>2021-12-12T18:00:00&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.github.io/</loc><lastmod>2021-12-12T18:00:00&#43;08:00</lastmod></url><url>
             <loc>https://mrcroxx.github.io/tags/leveldb/</loc><lastmod>2021-03-16T12:49:48&#43;08:00</lastmod></url><url>
             <loc>https://mrcroxx.github.io/tags/lsm-tree/</loc><lastmod>2021-03-16T12:49:48&#43;08:00</lastmod></url><url>
             <loc>https://mrcroxx.github.io/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/</loc><lastmod>2021-03-16T12:49:48&#43;08:00</lastmod></url><url>
@@ -81,4 +81,7 @@
             <loc>https://mrcroxx.github.io/posts/csp/csp-201312-t3/</loc><lastmod>2019-07-10T15:10:30&#43;08:00</lastmod></url><url>
             <loc>https://mrcroxx.github.io/posts/csp/csp-201312-t4/</loc><lastmod>2019-07-10T15:10:30&#43;08:00</lastmod></url><url>
             <loc>https://mrcroxx.github.io/posts/csp/csp-201312-t5/</loc><lastmod>2019-07-10T15:10:30&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.github.io/tags/about-me/</loc><lastmod>2021-12-12T18:00:00&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.github.io/categories/about-me/</loc><lastmod>2021-12-12T18:00:00&#43;08:00</lastmod></url><url>
+            <loc>https://mrcroxx.github.io/posts/about-me/</loc><lastmod>2021-12-12T18:00:00&#43;08:00</lastmod></url><url>
             <loc>https://mrcroxx.github.io/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAetcd/raft/</loc></url></urlset>

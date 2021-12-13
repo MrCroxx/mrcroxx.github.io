@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="robots" content="noodp" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
-        <title>《Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing》论文翻译（RDD-NSDI12-FINAL138） - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing》论文翻译（RDD-NSDI12-FINAL138）" />
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noodp" />
+    <title class="pjax-title">《Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing》论文翻译（RDD-NSDI12-FINAL138） - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing》论文翻译（RDD-NSDI12-FINAL138）" />
 <meta property="og:description" content="本篇文章是对论文RDD-NSDI12-FINAL138的原创翻译，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/rdd-nsdi12-final138/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/paper-reading/rdd-nsdi12-final138/paper-reading.jpg"/><meta property="article:section" content="posts" />
@@ -17,9 +17,13 @@
 <meta name="twitter:title" content="《Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing》论文翻译（RDD-NSDI12-FINAL138）"/>
 <meta name="twitter:description" content="本篇文章是对论文RDD-NSDI12-FINAL138的原创翻译，转载请严格遵守CC BY-NC-SA协议。"/>
 <meta name="application-name" content="叉鸽 MrCroxx 的博客">
-<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客">
+
+<meta name="theme-color" content="#f8f8f8"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/paper-reading/rdd-nsdi12-final138/" /><link rel="prev" href="https://mrcroxx.github.io/posts/paper-reading/xoring-elephants/" /><link rel="next" href="https://mrcroxx.github.io/posts/paper-reading/web-caching-with-consistent-hashing/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="canonical" href="https://mrcroxx.github.io/posts/paper-reading/rdd-nsdi12-final138/" /><link rel="prev" href="https://mrcroxx.github.io/posts/paper-reading/xoring-elephants/" /><link rel="next" href="https://mrcroxx.github.io/posts/paper-reading/web-caching-with-consistent-hashing/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/fontawesome-free/all.min.css">
+    <noscript><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/animate/animate.min.css">
+    <noscript><link rel="stylesheet" href="/lib/animate/animate.min.css"></noscript><script type="application/ld+json">
     {
         "@context": "http://schema.org",
         "@type": "BlogPosting",
@@ -42,36 +46,43 @@
             },"description": ""
     }
     </script></head>
-    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : '' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
 
-        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+<body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">
+        function setTheme(theme) {document.body.setAttribute('theme', theme);}
+        function saveTheme(theme) {window.localStorage && localStorage.setItem('theme', theme);}
+        function getMeta(metaName) {const metas = document.getElementsByTagName('meta'); for (let i = 0; i < metas.length; i++) if (metas[i].getAttribute('name') === metaName) return metas[i]; return '';}
+        if (window.localStorage && localStorage.getItem('theme')) {let theme = localStorage.getItem('theme');theme === 'light' || theme === 'dark' || theme === 'black' ? setTheme(theme) : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? setTheme('dark') : setTheme('light')); } else { if ('' === 'light' || '' === 'dark' || '' === 'black') setTheme(''), saveTheme(''); else saveTheme('auto'), window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? setTheme('dark') : setTheme('light');}
+        let metaColors = {'light': '#f8f8f8','dark': '#252627','black': '#000000'}
+        getMeta('theme-color').content = metaColors[document.body.getAttribute('theme')];
+    </script>
+    <div id="back-to-top"></div>
+    <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
     <div class="header-wrapper">
         <div class="header-title">
-            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-1" class="typeit"></span></a>
+            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="desktop-header-typeit" class="typeit"></span></a>
         </div>
         <div class="menu">
-            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/posts/about-me"> 关于我 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
                         <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
-                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                        <a href="#" onclick="return false;" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
                             <i class="fas fa-search fa-fw"></i>
                         </a>
-                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                        <a href="#" onclick="return false;" class="search-button search-clear" id="search-clear-desktop" title="清空">
                             <i class="fas fa-times-circle fa-fw"></i>
                         </a>
                         <span class="search-button search-loading" id="search-loading-desktop">
                             <i class="fas fa-spinner fa-fw fa-spin"></i>
                         </span>
-                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    </span><a href="#" onclick="return false;" class="menu-item theme-switch" title="切换主题">
                     <i class="fas fa-adjust fa-fw"></i>
-                </a>
-            </div>
+                </a></div>
         </div>
     </div>
 </header><header class="mobile" id="header-mobile">
     <div class="header-container">
         <div class="header-wrapper">
             <div class="header-title">
-                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-2" class="typeit"></span></a>
+                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="mobile-header-typeit" class="typeit"></span></a>
             </div>
             <div class="menu-toggle" id="menu-toggle-mobile">
                 <span></span><span></span><span></span>
@@ -80,20 +91,20 @@
         <div class="menu" id="menu-mobile"><div class="search-wrapper">
                     <div class="search mobile" id="search-mobile">
                         <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
-                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                        <a href="#" onclick="return false;" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
                             <i class="fas fa-search fa-fw"></i>
                         </a>
-                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                        <a href="#" onclick="return false;" class="search-button search-clear" id="search-clear-mobile" title="清空">
                             <i class="fas fa-times-circle fa-fw"></i>
                         </a>
                         <span class="search-button search-loading" id="search-loading-mobile">
                             <i class="fas fa-spinner fa-fw fa-spin"></i>
                         </span>
                     </div>
-                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                    <a href="#" onclick="return false;" class="search-cancel" id="search-cancel-mobile">
                         取消
                     </a>
-                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/posts/about-me" title="">关于我</a><a href="#" onclick="return false;" class="menu-item theme-switch" title="切换主题">
                 <i class="fas fa-adjust fa-fw"></i>
             </a></div>
     </div>
@@ -105,21 +116,23 @@
     <div id="search-dropdown-mobile"></div>
 </div>
 <main class="main">
-                <div class="container"><div class="toc" id="toc-auto">
-            <h2 class="toc-title">目录</h2>
-            <div class="toc-content" id="toc-content-auto"></div>
-        </div><article class="page single"><h1 class="single-title animated flipInX">《Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing》论文翻译（RDD-NSDI12-FINAL138）</h1><div class="post-meta">
-            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-07">2020-09-07</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 24879 字&nbsp;
+            <div class="container"><div class="toc" id="toc-auto">
+        <h2 class="toc-title">目录</h2>
+        <div class="toc-content" id="toc-content-auto"></div>
+    </div><script>document.getElementsByTagName("main")[0].setAttribute("pageStyle", "normal")</script><script>document.getElementsByTagName("main")[0].setAttribute("autoTOC", "true")</script><article class="page single"><h1 class="single-title animate__animated animate__flipInX">《Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing》论文翻译（RDD-NSDI12-FINAL138）</h1><div class="post-meta">
+            <div class="post-meta-line">
+                <span class="post-author"><i class="author fas fa-user-circle fa-fw"></i><a href="about" title="Author" rel=" author" class="author">叉鸽</a>
+                </span>&nbsp;<span class="post-category">收录于 </span>&nbsp;<span class="post-category">类别 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-07">2020-09-07</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2020-09-07">2020-09-07</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 24879 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 50 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
-        src="/svg/loading.min.svg"
         data-src="/posts/paper-reading/rdd-nsdi12-final138/paper-reading.jpg"
         data-srcset="/posts/paper-reading/rdd-nsdi12-final138/paper-reading.jpg, /posts/paper-reading/rdd-nsdi12-final138/paper-reading.jpg 1.5x, /posts/paper-reading/rdd-nsdi12-final138/paper-reading.jpg 2x"
         data-sizes="auto"
         alt="/posts/paper-reading/rdd-nsdi12-final138/paper-reading.jpg"
-        title="/posts/paper-reading/rdd-nsdi12-final138/paper-reading.jpg" /></div><div class="details toc" id="toc-static"  kept="">
+        title="/posts/paper-reading/rdd-nsdi12-final138/paper-reading.jpg" height="360" width="1200"
+    /></div><div class="details toc" id="toc-static"  kept="">
                 <div class="details-summary toc-title">
                     <span>目录</span>
                     <span><i class="details-icon fas fa-angle-right"></i></span>
@@ -246,11 +259,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/rdd-nsdi12-final138/figure-1.png" title="图1 我们的例子中第三个查询的谱系图。方框表示RDD，箭头表示变换" data-thumbnail="/posts/paper-reading/rdd-nsdi12-final138/figure-1.png" data-sub-html="<h2>图1 我们的例子中第三个查询的谱系图。方框表示RDD，箭头表示变换</h2><p>图1 我们的例子中第三个查询的谱系图。方框表示RDD，箭头表示变换</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-1.png"
             data-srcset="/posts/paper-reading/rdd-nsdi12-final138/figure-1.png, figure-1.png 1.5x, /posts/paper-reading/rdd-nsdi12-final138/figure-1.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-1.png" />
+            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-1.png"
+        />
     </a><figcaption class="image-caption">图1 我们的例子中第三个查询的谱系图。方框表示RDD，箭头表示变换</figcaption>
     </figure></p>
 <h3 id="23-rdd模型的优势">2.3 RDD模型的优势</h3>
@@ -317,11 +330,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/rdd-nsdi12-final138/figure-2.png" title="图2 Spark Runtime。用户的驱动程序启动了多个worker，worker从分布式文件系统中读取数据块并将计算出的RDD分区在内存中持久保存。" data-thumbnail="/posts/paper-reading/rdd-nsdi12-final138/figure-2.png" data-sub-html="<h2>图2 Spark Runtime。用户的驱动程序启动了多个worker，worker从分布式文件系统中读取数据块并将计算出的RDD分区在内存中持久保存。</h2><p>图2 Spark Runtime。用户的驱动程序启动了多个worker，worker从分布式文件系统中读取数据块并将计算出的RDD分区在内存中持久保存。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-2.png"
             data-srcset="/posts/paper-reading/rdd-nsdi12-final138/figure-2.png, figure-2.png 1.5x, /posts/paper-reading/rdd-nsdi12-final138/figure-2.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-2.png" />
+            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-2.png"
+        />
     </a><figcaption class="image-caption">图2 Spark Runtime。用户的驱动程序启动了多个worker，worker从分布式文件系统中读取数据块并将计算出的RDD分区在内存中持久保存。</figcaption>
     </figure></p>
 <p>正如我们在<a href="#221-%e6%a0%b7%e4%be%8b%e7%bb%88%e7%ab%af%e6%97%a5%e5%bf%97%e6%8c%96%e6%8e%98" rel="">章节2.2.1</a>中的日志挖掘样例一样，用户提供通过传递闭包（字面函数，function literals）的方式为像<em>map</em>之类的RDD操作提供参数。Scala将每个闭包表示为一个Java对象，这些对象可被序列化，以通过网络床底该闭包并在另一个节点上载入。Scala还会将任何绑定在闭包中的变量作为Java对象的字段保存。例如，用户可以编写如<code>var x=5; rdd.map(_ + x)</code>的代码来将RDD中的每个元素加5.<sup>注5</sup></p>
@@ -337,11 +350,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/rdd-nsdi12-final138/table-2.png" title="表2 Spark中可用的RDD变换和aciton。Seq[T]表示一个类型的T的元素序列。" data-thumbnail="/posts/paper-reading/rdd-nsdi12-final138/table-2.png" data-sub-html="<h2>表2 Spark中可用的RDD变换和aciton。Seq[T]表示一个类型的T的元素序列。</h2><p>表2 Spark中可用的RDD变换和aciton。Seq[T]表示一个类型的T的元素序列。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="table-2.png"
             data-srcset="/posts/paper-reading/rdd-nsdi12-final138/table-2.png, table-2.png 1.5x, /posts/paper-reading/rdd-nsdi12-final138/table-2.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/rdd-nsdi12-final138/table-2.png" />
+            alt="/posts/paper-reading/rdd-nsdi12-final138/table-2.png"
+        />
     </a><figcaption class="image-caption">表2 Spark中可用的RDD变换和aciton。Seq[T]表示一个类型的T的元素序列。</figcaption>
     </figure></p>
 <h3 id="32-应用程序样例">3.2 应用程序样例</h3>
@@ -386,11 +399,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/rdd-nsdi12-final138/figure-3.png" title="图3 PageRank中数据集的谱系图" data-thumbnail="/posts/paper-reading/rdd-nsdi12-final138/figure-3.png" data-sub-html="<h2>图3 PageRank中数据集的谱系图</h2><p>图3 PageRank中数据集的谱系图</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-3.png"
             data-srcset="/posts/paper-reading/rdd-nsdi12-final138/figure-3.png, figure-3.png 1.5x, /posts/paper-reading/rdd-nsdi12-final138/figure-3.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-3.png" />
+            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-3.png"
+        />
     </a><figcaption class="image-caption">图3 PageRank中数据集的谱系图</figcaption>
     </figure></p>
 <p>最后，我们可以通过控制RDD的分区方式来优化PageRank中的通信。如果我们为<code>links</code>指定一个分区方式（例如，将link的列表基于哈希算法在节点间分区），我们可以将<code>ranks</code>采用同样的方式分区，以保证对<code>links</code>和<code>ranks</code>的<em>join</em>操作不需要进行通信（因为每个URL的rank将于其link的列表在相同的机器上）。我们还可以编写一个自定义的Partitioner类对互相链接的页面进行分组（例如按照域名分区）这两种优化都可以在我们定义<code>links</code>时通过调用<em>partitionBy</em>来表达：</p>
@@ -435,11 +448,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/rdd-nsdi12-final138/figure-4.png" title="图4 窄依赖和宽依赖的例子。每个方格是一个RDD，其分区以涂色的矩形表示。" data-thumbnail="/posts/paper-reading/rdd-nsdi12-final138/figure-4.png" data-sub-html="<h2>图4 窄依赖和宽依赖的例子。每个方格是一个RDD，其分区以涂色的矩形表示。</h2><p>图4 窄依赖和宽依赖的例子。每个方格是一个RDD，其分区以涂色的矩形表示。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-4.png"
             data-srcset="/posts/paper-reading/rdd-nsdi12-final138/figure-4.png, figure-4.png 1.5x, /posts/paper-reading/rdd-nsdi12-final138/figure-4.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-4.png" />
+            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-4.png"
+        />
     </a><figcaption class="image-caption">图4 窄依赖和宽依赖的例子。每个方格是一个RDD，其分区以涂色的矩形表示。</figcaption>
     </figure></p>
 <p>这一划分很有用，其原因有二。窄依赖允许在集群的节点上流水线式执行计算，该节点可以计算所有的祖先分区（译注：即可以将多步窄依赖压缩，在一个节点上对之前所有的窄依赖流水线式计算）。例如，用户可以在基于逐元素计算的<em>filter</em>操作后紧接着进行一个<em>map</em>操作。相反，宽依赖需要所有来自父分区的数据都可用，而且需要将这些数据通过类似MapReduce方式的操作将这些数据在节点间“shuffle”。第二，窄依赖的节点在故障后可以更高效地恢复，因为其仅都是的父分区需要被重新计算且这些分区可以在不同节点中并行地重新计算。相反，对于有宽依赖的谱系图，单节点故障可能导致RDD的所有祖先分区中都有部分分区丢失，其需要完整地重新执行。</p>
@@ -474,11 +487,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/rdd-nsdi12-final138/figure-5.png" title="图5 Spark执行作业的stage的样例。实线框表示RDD。有填充的矩形是分区，如果分区已经在内存中那么使用黑色表示。为了在RDD上运行action，我们根据宽依赖建立stage，且每个stage中有流水线式的窄依赖变换。在图中，stage 1的输出RDD已经在RAM中，所以我们只需先后运行stage 2和stage 3。" data-thumbnail="/posts/paper-reading/rdd-nsdi12-final138/figure-5.png" data-sub-html="<h2>图5 Spark执行作业的stage的样例。实线框表示RDD。有填充的矩形是分区，如果分区已经在内存中那么使用黑色表示。为了在RDD上运行action，我们根据宽依赖建立stage，且每个stage中有流水线式的窄依赖变换。在图中，stage 1的输出RDD已经在RAM中，所以我们只需先后运行stage 2和stage 3。</h2><p>图5 Spark执行作业的stage的样例。实线框表示RDD。有填充的矩形是分区，如果分区已经在内存中那么使用黑色表示。为了在RDD上运行action，我们根据宽依赖建立stage，且每个stage中有流水线式的窄依赖变换。在图中，stage 1的输出RDD已经在RAM中，所以我们只需先后运行stage 2和stage 3。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-5.png"
             data-srcset="/posts/paper-reading/rdd-nsdi12-final138/figure-5.png, figure-5.png 1.5x, /posts/paper-reading/rdd-nsdi12-final138/figure-5.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-5.png" />
+            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-5.png"
+        />
     </a><figcaption class="image-caption">图5 Spark执行作业的stage的样例。实线框表示RDD。有填充的矩形是分区，如果分区已经在内存中那么使用黑色表示。为了在RDD上运行action，我们根据宽依赖建立stage，且每个stage中有流水线式的窄依赖变换。在图中，stage 1的输出RDD已经在RAM中，所以我们只需先后运行stage 2和stage 3。</figcaption>
     </figure></p>
 <p>我们的调度器使用延时调度<sup>[32]</sup>的方式基于数据的位置将任务分配到机器上。如果一个任务需要出在一个节点的内存中可用的分区，我们会将任务发送到该节点上。否则，任务会被发送达到在分区所在的RDD提供的首选位置（例如HDFS文件）上处理。</p>
@@ -501,11 +514,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/rdd-nsdi12-final138/figure-6.png" title="图6 展示Spark解释器如何将用户输入的两行代码翻译为Java对象的样例。" data-thumbnail="/posts/paper-reading/rdd-nsdi12-final138/figure-6.png" data-sub-html="<h2>图6 展示Spark解释器如何将用户输入的两行代码翻译为Java对象的样例。</h2><p>图6 展示Spark解释器如何将用户输入的两行代码翻译为Java对象的样例。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-6.png"
             data-srcset="/posts/paper-reading/rdd-nsdi12-final138/figure-6.png, figure-6.png 1.5x, /posts/paper-reading/rdd-nsdi12-final138/figure-6.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-6.png" />
+            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-6.png"
+        />
     </a><figcaption class="image-caption">图6 展示Spark解释器如何将用户输入的两行代码翻译为Java对象的样例。</figcaption>
     </figure></p>
 <p>我们发现Spark解释器在处理存储在HDFS中的轨迹数据时非常有用，这些数据是我们在研究和探索用的数据集的一部分。我们还计划交互式运行高层的查询语言，如SQL。</p>
@@ -557,21 +570,21 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/rdd-nsdi12-final138/figure-7.png" title="图7 Hadoop、HadoopBinMem和Spark中逻辑回归和k-means的首轮迭代和最后一轮迭代执行时间（在100个节点组成的集群中使用100GB的数据）。" data-thumbnail="/posts/paper-reading/rdd-nsdi12-final138/figure-7.png" data-sub-html="<h2>图7 Hadoop、HadoopBinMem和Spark中逻辑回归和k-means的首轮迭代和最后一轮迭代执行时间（在100个节点组成的集群中使用100GB的数据）。</h2><p>图7 Hadoop、HadoopBinMem和Spark中逻辑回归和k-means的首轮迭代和最后一轮迭代执行时间（在100个节点组成的集群中使用100GB的数据）。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-7.png"
             data-srcset="/posts/paper-reading/rdd-nsdi12-final138/figure-7.png, figure-7.png 1.5x, /posts/paper-reading/rdd-nsdi12-final138/figure-7.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-7.png" />
+            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-7.png"
+        />
     </a><figcaption class="image-caption">图7 Hadoop、HadoopBinMem和Spark中逻辑回归和k-means的首轮迭代和最后一轮迭代执行时间（在100个节点组成的集群中使用100GB的数据）。</figcaption>
     </figure></p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/rdd-nsdi12-final138/figure-8.png" title="图8 Hadoop、HadoopBinMen和Spark中首轮迭代的后续迭代的运行时间。所有作业都处理了100GB数据。" data-thumbnail="/posts/paper-reading/rdd-nsdi12-final138/figure-8.png" data-sub-html="<h2>图8 Hadoop、HadoopBinMen和Spark中首轮迭代的后续迭代的运行时间。所有作业都处理了100GB数据。</h2><p>图8 Hadoop、HadoopBinMen和Spark中首轮迭代的后续迭代的运行时间。所有作业都处理了100GB数据。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-8.png"
             data-srcset="/posts/paper-reading/rdd-nsdi12-final138/figure-8.png, figure-8.png 1.5x, /posts/paper-reading/rdd-nsdi12-final138/figure-8.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-8.png" />
+            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-8.png"
+        />
     </a><figcaption class="image-caption">图8 Hadoop、HadoopBinMen和Spark中首轮迭代的后续迭代的运行时间。所有作业都处理了100GB数据。</figcaption>
     </figure></p>
 <p><strong>首轮迭代：</strong> 所有三个系统在首轮迭代中都从HDFS中读取文本输入。正如<strong>图7</strong>所示，Spark在两个实验中比Hadoop稍快一点。这一不同是由于Hadoop中master和worker的心跳协议带来的巨大开销。HadoopBinMem最慢，因为其需要额外运行一个MapReduce作业来将数据转为二进制的，其还需要将数据通过网络在仅使用内存的HDFS实例中备份。</p>
@@ -593,11 +606,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/rdd-nsdi12-final138/figure-9.png" title="图9 在单个机器上使用来自不同输入源的256MB数据运行逻辑回国的迭代时间。" data-thumbnail="/posts/paper-reading/rdd-nsdi12-final138/figure-9.png" data-sub-html="<h2>图9 在单个机器上使用来自不同输入源的256MB数据运行逻辑回国的迭代时间。</h2><p>图9 在单个机器上使用来自不同输入源的256MB数据运行逻辑回国的迭代时间。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-9.png"
             data-srcset="/posts/paper-reading/rdd-nsdi12-final138/figure-9.png, figure-9.png 1.5x, /posts/paper-reading/rdd-nsdi12-final138/figure-9.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-9.png" />
+            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-9.png"
+        />
     </a><figcaption class="image-caption">图9 在单个机器上使用来自不同输入源的256MB数据运行逻辑回国的迭代时间。</figcaption>
     </figure></p>
 <p>我们将这些测试的结果展示在了<strong>图9</strong>中。内存式HDFS和本地文件的结果差异说明从HDFS读取会引入2秒的额外开销，即使数据在本地机器的内存中。文本和二进制输入的结果差异表明解析的开销为7秒。最后，即使从本地内存文件中读取，将预解析的二进制数据转为Java对象仍花费了3秒，这几乎与逻辑回归本身的开销一样。通过将RDD的元素直接作为Java对象保存在内存中，Spark可以避免所有的这些额外开销。</p>
@@ -606,11 +619,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/rdd-nsdi12-final138/figure-10.png" title="图10 Hadoop和Spark上PageRank的性能表现。" data-thumbnail="/posts/paper-reading/rdd-nsdi12-final138/figure-10.png" data-sub-html="<h2>图10 Hadoop和Spark上PageRank的性能表现。</h2><p>图10 Hadoop和Spark上PageRank的性能表现。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-10.png"
             data-srcset="/posts/paper-reading/rdd-nsdi12-final138/figure-10.png, figure-10.png 1.5x, /posts/paper-reading/rdd-nsdi12-final138/figure-10.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-10.png" />
+            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-10.png"
+        />
     </a><figcaption class="image-caption">图10 Hadoop和Spark上PageRank的性能表现。</figcaption>
     </figure></p>
 <p>我们还评估了一个使用了我们在Spark上实现的Pregel来编写的PageRank版本的性能，我们在<a href="#71-%e8%a1%a8%e7%a4%ba%e5%b7%b2%e5%ad%98%e5%9c%a8%e7%9a%84%e7%bc%96%e7%a8%8b%e6%a8%a1%e5%9e%8b" rel="">章节7.1</a>中描述了它。其迭代次数与<strong>图10</strong>中的相似，但是时间长了大概4秒，因为Pregel需要在每轮迭代时运行额外的操作以让节点（vertice）“投票”是否完成作业。</p>
@@ -619,11 +632,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/rdd-nsdi12-final138/figure-11.png" title="图11 出现故障时k-means的迭代时间。在第6轮迭代开始时，一台机器被kill掉，这导致了RDD需要使用谱系图重构部分RDD。" data-thumbnail="/posts/paper-reading/rdd-nsdi12-final138/figure-11.png" data-sub-html="<h2>图11 出现故障时k-means的迭代时间。在第6轮迭代开始时，一台机器被kill掉，这导致了RDD需要使用谱系图重构部分RDD。</h2><p>图11 出现故障时k-means的迭代时间。在第6轮迭代开始时，一台机器被kill掉，这导致了RDD需要使用谱系图重构部分RDD。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-11.png"
             data-srcset="/posts/paper-reading/rdd-nsdi12-final138/figure-11.png, figure-11.png 1.5x, /posts/paper-reading/rdd-nsdi12-final138/figure-11.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-11.png" />
+            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-11.png"
+        />
     </a><figcaption class="image-caption">图11 出现故障时k-means的迭代时间。在第6轮迭代开始时，一台机器被kill掉，这导致了RDD需要使用谱系图重构部分RDD。</figcaption>
     </figure></p>
 <p>直到第5轮迭代结束时，迭代时间大概为58秒。在第6轮迭代开始时，其中一台机器被kill掉，这导致了运行在该机器上的任务和存储在其上的RDD分区丢失。Spark并行地在其他机器上重跑了这些任务，它们重读了相关的输入数据并通过谱系图重构了RDD，这使迭代时间增加到了80秒。当丢失的RDD分区被重建后，迭代时间又回到了58秒。</p>
@@ -633,11 +646,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/rdd-nsdi12-final138/figure-12.png" title="图12 在25台节点上使用100GB数据的逻辑回归在内存中有不同的总数据量下的性能。" data-thumbnail="/posts/paper-reading/rdd-nsdi12-final138/figure-12.png" data-sub-html="<h2>图12 在25台节点上使用100GB数据的逻辑回归在内存中有不同的总数据量下的性能。</h2><p>图12 在25台节点上使用100GB数据的逻辑回归在内存中有不同的总数据量下的性能。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-12.png"
             data-srcset="/posts/paper-reading/rdd-nsdi12-final138/figure-12.png, figure-12.png 1.5x, /posts/paper-reading/rdd-nsdi12-final138/figure-12.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-12.png" />
+            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-12.png"
+        />
     </a><figcaption class="image-caption">图12 在25台节点上使用100GB数据的逻辑回归在内存中有不同的总数据量下的性能。</figcaption>
     </figure></p>
 <h3 id="65-使用spark构建的用户应用程序">6.5 使用Spark构建的用户应用程序</h3>
@@ -647,11 +660,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/rdd-nsdi12-final138/figure-13.png" title="图13 两个通过Spark实现的用户程序每轮查询的运行时间。误差条表示标准差。" data-thumbnail="/posts/paper-reading/rdd-nsdi12-final138/figure-13.png" data-sub-html="<h2>图13 两个通过Spark实现的用户程序每轮查询的运行时间。误差条表示标准差。</h2><p>图13 两个通过Spark实现的用户程序每轮查询的运行时间。误差条表示标准差。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-13.png"
             data-srcset="/posts/paper-reading/rdd-nsdi12-final138/figure-13.png, figure-13.png 1.5x, /posts/paper-reading/rdd-nsdi12-final138/figure-13.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-13.png" />
+            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-13.png"
+        />
     </a><figcaption class="image-caption">图13 两个通过Spark实现的用户程序每轮查询的运行时间。误差条表示标准差。</figcaption>
     </figure></p>
 <h3 id="66-交互式数据挖掘">6.6 交互式数据挖掘</h3>
@@ -659,11 +672,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/rdd-nsdi12-final138/figure-14.png" title="图14 在100台机器上的Spark交互式查询的响应时间，其扫描的输入数据集越来越大。" data-thumbnail="/posts/paper-reading/rdd-nsdi12-final138/figure-14.png" data-sub-html="<h2>图14 在100台机器上的Spark交互式查询的响应时间，其扫描的输入数据集越来越大。</h2><p>图14 在100台机器上的Spark交互式查询的响应时间，其扫描的输入数据集越来越大。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-14.png"
             data-srcset="/posts/paper-reading/rdd-nsdi12-final138/figure-14.png, figure-14.png 1.5x, /posts/paper-reading/rdd-nsdi12-final138/figure-14.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-14.png" />
+            alt="/posts/paper-reading/rdd-nsdi12-final138/figure-14.png"
+        />
     </a><figcaption class="image-caption">图14 在100台机器上的Spark交互式查询的响应时间，其扫描的输入数据集越来越大。</figcaption>
     </figure></p>
 <p><strong>图14</strong>展示了分别在完整的数据集、一半的数据集和十分之一的数据上的查询的响应时间。即使在1TB数据下，Spark查询也仅需5~7秒。这比在磁盘上处理数据快乐一个数量级。例如，从磁盘上的文件查询数据需要170秒。这表明RDD使Spark成为了一个强大的数据挖掘工具。</p>
@@ -738,7 +751,9 @@
 <p>[31] Y. Yu, M. Isard, D. Fetterly, M. Budiu, U. Erlingsson, P. K. ´ Gunda, and J. Currey. DryadLINQ: A system for general-purpose distributed data-parallel computing using a high-level language. In OSDI ’08, 2008.</p>
 <p>[32] M. Zaharia, D. Borthakur, J. Sen Sarma, K. Elmeleegy, S. Shenker, and I. Stoica. Delay scheduling: A simple technique for achieving locality and fairness in cluster scheduling. In EuroSys ’10, 2010.</p>
 <p>[33] M. Zaharia, M. Chowdhury, T. Das, A. Dave, J. Ma, M. McCauley, M. Franklin, S. Shenker, and I. Stoica. Resilient distributed datasets: A fault-tolerant abstraction for in-memory cluster computing. Technical Report UCB/EECS-2011-82, EECS Department, UC Berkeley, 2011.</p>
-</div></div><div class="post-footer" id="post-footer">
+</div></div>
+
+        <div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
@@ -765,16 +780,22 @@
             <a href="/posts/paper-reading/web-caching-with-consistent-hashing/" class="next" rel="next" title="《Web caching with consistent hashing》论文翻译">《Web caching with consistent hashing》论文翻译<i class="fas fa-angle-right fa-fw"></i></a></div>
 </div>
 </article></div>
-            </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
-                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
-        </div>
-    </footer></div>
+        </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank" rel="noopener noreferrer">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        </div></footer></div>
 
-        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
-                <i class="fas fa-arrow-up fa-fw"></i>
-            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
-                <i class="fas fa-comment fa-fw"></i>
-            </a>
-        </div><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"><link rel="stylesheet" href="/lib/katex/katex.min.css"><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"><script type="text/javascript" src="/lib/smooth-scroll/smooth-scroll.min.js"></script><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"id-1":"叉鸽 | MrCroxx","id-2":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"id-1":["id-1"],"id-2":["id-2"]},"duration":null,"speed":null}};</script><script type="text/javascript" src="/js/theme.min.js"></script></body>
+    <div id="fixed-buttons"><a href="#back-to-top" id="back-to-top-button" class="fixed-button" title="回到顶部">
+            <i class="fas fa-arrow-up fa-fw"></i>
+        </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+            <i class="fas fa-comment fa-fw"></i>
+        </a>
+    </div><div class="assets"><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/topbar/topbar.min.js"></script><script type="text/javascript" src="/lib/pjax/pjax.min.js"></script><script type="text/javascript" src="/js/theme.min.js"></script></div>
+
+<div class="pjax-assets"><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"desktop-header-typeit":"叉鸽 | MrCroxx","mobile-header-typeit":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"desktop-header-typeit":["desktop-header-typeit"],"mobile-header-typeit":["mobile-header-typeit"]},"duration":null,"speed":null}};</script><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/lightgallery/lightgallery.min.css">
+    <noscript><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/katex/katex.min.css">
+    <noscript><link rel="stylesheet" href="/lib/katex/katex.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/katex/copy-tex.min.css">
+    <noscript><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"></noscript></div>
+</body>
+
 </html>

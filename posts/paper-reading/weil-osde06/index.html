@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="robots" content="noodp" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
-        <title>《Ceph: A Scalable, High-Performance Distributed File System》论文翻译 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《Ceph: A Scalable, High-Performance Distributed File System》论文翻译" />
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noodp" />
+    <title class="pjax-title">《Ceph: A Scalable, High-Performance Distributed File System》论文翻译 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《Ceph: A Scalable, High-Performance Distributed File System》论文翻译" />
 <meta property="og:description" content="本篇文章是对论文weil-osdi06的原创翻译，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/weil-osde06/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/paper-reading/weil-osde06/paper-reading.jpg"/><meta property="article:section" content="posts" />
@@ -17,9 +17,13 @@
 <meta name="twitter:title" content="《Ceph: A Scalable, High-Performance Distributed File System》论文翻译"/>
 <meta name="twitter:description" content="本篇文章是对论文weil-osdi06的原创翻译，转载请严格遵守CC BY-NC-SA协议。"/>
 <meta name="application-name" content="叉鸽 MrCroxx 的博客">
-<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客">
+
+<meta name="theme-color" content="#f8f8f8"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/paper-reading/weil-osde06/" /><link rel="prev" href="https://mrcroxx.github.io/posts/paper-reading/web-caching-with-consistent-hashing/" /><link rel="next" href="https://mrcroxx.github.io/posts/paper-reading/paxos-made-simple/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="canonical" href="https://mrcroxx.github.io/posts/paper-reading/weil-osde06/" /><link rel="prev" href="https://mrcroxx.github.io/posts/paper-reading/web-caching-with-consistent-hashing/" /><link rel="next" href="https://mrcroxx.github.io/posts/paper-reading/paxos-made-simple/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/fontawesome-free/all.min.css">
+    <noscript><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/animate/animate.min.css">
+    <noscript><link rel="stylesheet" href="/lib/animate/animate.min.css"></noscript><script type="application/ld+json">
     {
         "@context": "http://schema.org",
         "@type": "BlogPosting",
@@ -42,36 +46,43 @@
             },"description": ""
     }
     </script></head>
-    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : '' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
 
-        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+<body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">
+        function setTheme(theme) {document.body.setAttribute('theme', theme);}
+        function saveTheme(theme) {window.localStorage && localStorage.setItem('theme', theme);}
+        function getMeta(metaName) {const metas = document.getElementsByTagName('meta'); for (let i = 0; i < metas.length; i++) if (metas[i].getAttribute('name') === metaName) return metas[i]; return '';}
+        if (window.localStorage && localStorage.getItem('theme')) {let theme = localStorage.getItem('theme');theme === 'light' || theme === 'dark' || theme === 'black' ? setTheme(theme) : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? setTheme('dark') : setTheme('light')); } else { if ('' === 'light' || '' === 'dark' || '' === 'black') setTheme(''), saveTheme(''); else saveTheme('auto'), window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? setTheme('dark') : setTheme('light');}
+        let metaColors = {'light': '#f8f8f8','dark': '#252627','black': '#000000'}
+        getMeta('theme-color').content = metaColors[document.body.getAttribute('theme')];
+    </script>
+    <div id="back-to-top"></div>
+    <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
     <div class="header-wrapper">
         <div class="header-title">
-            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-1" class="typeit"></span></a>
+            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="desktop-header-typeit" class="typeit"></span></a>
         </div>
         <div class="menu">
-            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/posts/about-me"> 关于我 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
                         <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
-                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                        <a href="#" onclick="return false;" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
                             <i class="fas fa-search fa-fw"></i>
                         </a>
-                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                        <a href="#" onclick="return false;" class="search-button search-clear" id="search-clear-desktop" title="清空">
                             <i class="fas fa-times-circle fa-fw"></i>
                         </a>
                         <span class="search-button search-loading" id="search-loading-desktop">
                             <i class="fas fa-spinner fa-fw fa-spin"></i>
                         </span>
-                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    </span><a href="#" onclick="return false;" class="menu-item theme-switch" title="切换主题">
                     <i class="fas fa-adjust fa-fw"></i>
-                </a>
-            </div>
+                </a></div>
         </div>
     </div>
 </header><header class="mobile" id="header-mobile">
     <div class="header-container">
         <div class="header-wrapper">
             <div class="header-title">
-                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-2" class="typeit"></span></a>
+                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="mobile-header-typeit" class="typeit"></span></a>
             </div>
             <div class="menu-toggle" id="menu-toggle-mobile">
                 <span></span><span></span><span></span>
@@ -80,20 +91,20 @@
         <div class="menu" id="menu-mobile"><div class="search-wrapper">
                     <div class="search mobile" id="search-mobile">
                         <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
-                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                        <a href="#" onclick="return false;" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
                             <i class="fas fa-search fa-fw"></i>
                         </a>
-                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                        <a href="#" onclick="return false;" class="search-button search-clear" id="search-clear-mobile" title="清空">
                             <i class="fas fa-times-circle fa-fw"></i>
                         </a>
                         <span class="search-button search-loading" id="search-loading-mobile">
                             <i class="fas fa-spinner fa-fw fa-spin"></i>
                         </span>
                     </div>
-                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                    <a href="#" onclick="return false;" class="search-cancel" id="search-cancel-mobile">
                         取消
                     </a>
-                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/posts/about-me" title="">关于我</a><a href="#" onclick="return false;" class="menu-item theme-switch" title="切换主题">
                 <i class="fas fa-adjust fa-fw"></i>
             </a></div>
     </div>
@@ -105,21 +116,23 @@
     <div id="search-dropdown-mobile"></div>
 </div>
 <main class="main">
-                <div class="container"><div class="toc" id="toc-auto">
-            <h2 class="toc-title">目录</h2>
-            <div class="toc-content" id="toc-content-auto"></div>
-        </div><article class="page single"><h1 class="single-title animated flipInX">《Ceph: A Scalable, High-Performance Distributed File System》论文翻译</h1><div class="post-meta">
-            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-14">2020-09-14</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 24746 字&nbsp;
+            <div class="container"><div class="toc" id="toc-auto">
+        <h2 class="toc-title">目录</h2>
+        <div class="toc-content" id="toc-content-auto"></div>
+    </div><script>document.getElementsByTagName("main")[0].setAttribute("pageStyle", "normal")</script><script>document.getElementsByTagName("main")[0].setAttribute("autoTOC", "true")</script><article class="page single"><h1 class="single-title animate__animated animate__flipInX">《Ceph: A Scalable, High-Performance Distributed File System》论文翻译</h1><div class="post-meta">
+            <div class="post-meta-line">
+                <span class="post-author"><i class="author fas fa-user-circle fa-fw"></i><a href="about" title="Author" rel=" author" class="author">叉鸽</a>
+                </span>&nbsp;<span class="post-category">收录于 </span>&nbsp;<span class="post-category">类别 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-14">2020-09-14</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2020-09-19">2020-09-19</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 24746 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 50 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
-        src="/svg/loading.min.svg"
         data-src="/posts/paper-reading/weil-osde06/paper-reading.jpg"
         data-srcset="/posts/paper-reading/weil-osde06/paper-reading.jpg, /posts/paper-reading/weil-osde06/paper-reading.jpg 1.5x, /posts/paper-reading/weil-osde06/paper-reading.jpg 2x"
         data-sizes="auto"
         alt="/posts/paper-reading/weil-osde06/paper-reading.jpg"
-        title="/posts/paper-reading/weil-osde06/paper-reading.jpg" /></div><div class="details toc" id="toc-static"  kept="">
+        title="/posts/paper-reading/weil-osde06/paper-reading.jpg" height="360" width="1200"
+    /></div><div class="details toc" id="toc-static"  kept="">
                 <div class="details-summary toc-title">
                     <span>目录</span>
                     <span><i class="details-icon fas fa-angle-right"></i></span>
@@ -201,11 +214,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/weil-osde06/figure-1.png" title="图1 系统架构。客户端通过直接与OSD通信来执行文件I/O。每个进程既可以直接链接到客户端实例，也可以通过一个挂载的文件系统交互。" data-thumbnail="/posts/paper-reading/weil-osde06/figure-1.png" data-sub-html="<h2>图1 系统架构。客户端通过直接与OSD通信来执行文件I/O。每个进程既可以直接链接到客户端实例，也可以通过一个挂载的文件系统交互。</h2><p>图1 系统架构。客户端通过直接与OSD通信来执行文件I/O。每个进程既可以直接链接到客户端实例，也可以通过一个挂载的文件系统交互。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-1.png"
             data-srcset="/posts/paper-reading/weil-osde06/figure-1.png, figure-1.png 1.5x, /posts/paper-reading/weil-osde06/figure-1.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/weil-osde06/figure-1.png" />
+            alt="/posts/paper-reading/weil-osde06/figure-1.png"
+        />
     </a><figcaption class="image-caption">图1 系统架构。客户端通过直接与OSD通信来执行文件I/O。每个进程既可以直接链接到客户端实例，也可以通过一个挂载的文件系统交互。</figcaption>
     </figure></p>
 <p>该架构的主要目标是伸缩性（用于数百PB或更多）、性能、和可靠性。伸缩性被从多维度考虑，包括系统整体的存储容量、吞吐量、和单个客户端、目录或文件的性能。我们的目标负载可能包括一些极端情况，如数万或数十万个主机并发地读取或写入同一个文件，或在同目录下创建文件。这种场景在运行在超级计算机集群上的科学计算程序中很常见，并在未来的通用的负载中越来越多地起着指示作用。更重要的是，我们发现分布式文件系统的负载本质上是动态的，随着活动的应用程序和数据集随着时间的变化，数据与元数据的访问也显著的变化。Ceph直接解决了伸缩性的问题，同时通过三个基本设计特性解决了高性能、可靠性和可用性，这三种设计为：数据与元数据解耦、动态分布式元数据管理、和可靠的自主分布式对象存储。</p>
@@ -238,11 +251,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/weil-osde06/figure-2.png" title="图2 Ceph动态地将目录层级的子树根据当前的负载映射到元数据服务器中。每个独立的目录仅当它们成为热点时，才会被通过哈希分布到多个节点中。" data-thumbnail="/posts/paper-reading/weil-osde06/figure-2.png" data-sub-html="<h2>图2 Ceph动态地将目录层级的子树根据当前的负载映射到元数据服务器中。每个独立的目录仅当它们成为热点时，才会被通过哈希分布到多个节点中。</h2><p>图2 Ceph动态地将目录层级的子树根据当前的负载映射到元数据服务器中。每个独立的目录仅当它们成为热点时，才会被通过哈希分布到多个节点中。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-2.png"
             data-srcset="/posts/paper-reading/weil-osde06/figure-2.png, figure-2.png 1.5x, /posts/paper-reading/weil-osde06/figure-2.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/weil-osde06/figure-2.png" />
+            alt="/posts/paper-reading/weil-osde06/figure-2.png"
+        />
     </a><figcaption class="image-caption">图2 Ceph动态地将目录层级的子树根据当前的负载映射到元数据服务器中。每个独立的目录仅当它们成为热点时，才会被通过哈希分布到多个节点中。</figcaption>
     </figure></p>
 <p>Ceph的MDS集群基于一种动态子树分区策略<sup>[30]</sup>，其在一组节点间自适应地分层分布缓存元数据，如<strong>图2</strong>所示。每个MDS会通过随时间指数衰减的计数器来测量每个目录层级的元数据的流行度（popularity）。任何操作都会增长受影响的inode和从它们开始向上直到根目录所有计数器，这为每个MDS提供了描述最近负载分布的加权树。每个一段时间，MDS的负载值会被进行比较，且目录层级的适当大小的子树会被迁移，以保证负载最终会被分布。使用共享的长期存储和谨慎构造的命名空间锁，让这种迁移可以通过将内存缓存中的适当的内容传输到新的被授权的节点实现，这样可以减少对连贯性锁或客户端功能的影响。为了安全起见，导入的元数据会被写入新MDS的日志中，且两边的额外日志确保了授权的转移不会受中间发生的故障影响（类似于两段式提交）。最终得到的基于子树的分区会保持粗粒度，以减少前缀复制开销并保持局部性。</p>
@@ -257,11 +270,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/weil-osde06/figure-3.png" title="图3 文件被分条为许多对象，且被分组到放置组（placement group，PG）中，并通过专用的副本放置函数——CRUSH分布到OSD上。" data-thumbnail="/posts/paper-reading/weil-osde06/figure-3.png" data-sub-html="<h2>图3 文件被分条为许多对象，且被分组到放置组（placement group，PG）中，并通过专用的副本放置函数——CRUSH分布到OSD上。</h2><p>图3 文件被分条为许多对象，且被分组到放置组（placement group，PG）中，并通过专用的副本放置函数——CRUSH分布到OSD上。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-3.png"
             data-srcset="/posts/paper-reading/weil-osde06/figure-3.png, figure-3.png 1.5x, /posts/paper-reading/weil-osde06/figure-3.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/weil-osde06/figure-3.png" />
+            alt="/posts/paper-reading/weil-osde06/figure-3.png"
+        />
     </a><figcaption class="image-caption">图3 文件被分条为许多对象，且被分组到放置组（placement group，PG）中，并通过专用的副本放置函数——CRUSH分布到OSD上。</figcaption>
     </figure></p>
 <p>Ceph首先使用一个简单的哈希函数将对象映射到放置组（placement group，PG）中，该哈希函数中有一个可调的位掩码，以控制PG的数量。我们选定的值给每个OSD大约100个PG，来通过平衡每个OSD维护的副本相关的元数据的总量，以平衡OSD利用率的差异。接着，会将放置组通过CRUSH算法（Controlled Replication Under Scalable Hashing）分配给OSD，CRUSH是一个伪随机数据分配函数，其可以高效地将每个PG映射到一个有序的存储对象副本的OSD列表上。这与传统的方法（包括其他的基于对象的文件系统）的不同之处在于，数据分配不依赖任何块或对象列表元数据。为了定位任意对象，CRUSH仅需要放置组和OSD集群映射，二者是对组成存储集群的设备的紧凑、分层的描述。这种方法有两个关键优势：首先，这是完全分布式的，任何一方（客户端、OSD或MDS）可以独立地计算任何对象的位置；第二，映射不会频繁更新，这消除了任何与数据分布相关的元数据交换。这样做，CRUSH同时解决了数据分布问题（“我该把数据存在哪儿”）和数据定位问题（“我把数据存到哪儿了”）。按照设计，对存储集群的较小的修改对已有的PG映射影响非常小，这减少了由于设备故障或集群扩展而导致的数据迁移。</p>
@@ -275,11 +288,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/weil-osde06/figure-4.png" title="图4 RADOS在写入被应用到所有备份该对象的OSD的缓冲区缓存后回复ack。仅在写入被安全地提交到磁盘后，最终的commit通知才会发送到客户端。" data-thumbnail="/posts/paper-reading/weil-osde06/figure-4.png" data-sub-html="<h2>图4 RADOS在写入被应用到所有备份该对象的OSD的缓冲区缓存后回复ack。仅在写入被安全地提交到磁盘后，最终的commit通知才会发送到客户端。</h2><p>图4 RADOS在写入被应用到所有备份该对象的OSD的缓冲区缓存后回复ack。仅在写入被安全地提交到磁盘后，最终的commit通知才会发送到客户端。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-4.png"
             data-srcset="/posts/paper-reading/weil-osde06/figure-4.png, figure-4.png 1.5x, /posts/paper-reading/weil-osde06/figure-4.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/weil-osde06/figure-4.png" />
+            alt="/posts/paper-reading/weil-osde06/figure-4.png"
+        />
     </a><figcaption class="image-caption">图4 RADOS在写入被应用到所有备份该对象的OSD的缓冲区缓存后回复ack。仅在写入被安全地提交到磁盘后，最终的commit通知才会发送到客户端。</figcaption>
     </figure></p>
 <h3 id="54-故障检测">5.4 故障检测</h3>
@@ -304,22 +317,22 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/weil-osde06/figure-5.png" title="图5 每个OSD的写入性能。水平线表示受物理磁盘影响的上限。副本对OSD吞吐量的影响很小，即使OSD的数量是固定的，n路复制会将总的有效小吞吐量削减n倍，因为复制的数据必须被写入到n个OSD中。" data-thumbnail="/posts/paper-reading/weil-osde06/figure-5.png" data-sub-html="<h2>图5 每个OSD的写入性能。水平线表示受物理磁盘影响的上限。副本对OSD吞吐量的影响很小，即使OSD的数量是固定的，n路复制会将总的有效小吞吐量削减n倍，因为复制的数据必须被写入到n个OSD中。</h2><p>图5 每个OSD的写入性能。水平线表示受物理磁盘影响的上限。副本对OSD吞吐量的影响很小，即使OSD的数量是固定的，n路复制会将总的有效小吞吐量削减n倍，因为复制的数据必须被写入到n个OSD中。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-5.png"
             data-srcset="/posts/paper-reading/weil-osde06/figure-5.png, figure-5.png 1.5x, /posts/paper-reading/weil-osde06/figure-5.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/weil-osde06/figure-5.png" />
+            alt="/posts/paper-reading/weil-osde06/figure-5.png"
+        />
     </a><figcaption class="image-caption">图5 每个OSD的写入性能。水平线表示受物理磁盘影响的上限。副本对OSD吞吐量的影响很小，即使OSD的数量是固定的，n路复制会将总的有效小吞吐量削减n倍，因为复制的数据必须被写入到n个OSD中。</figcaption>
     </figure></p>
 <p>我们从测量14个OSD节点组成的集群的I/O性能开始。<strong>图5</strong>展示了在不同的写入大小（x轴）和副本数下每个OSD的吞吐量（y轴）。负载由20个额外节点的400个客户端生成。如图中的水平线所示，性能基本上受限于原始磁盘带宽（约58MB/s）。副本让磁盘I/O翻了两倍或三倍，当OSD数量固定时，减少了相关客户端的数据速率。</p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/weil-osde06/figure-6.png" title="图6 EBOFS与通用文件系统的性能比较。尽管在我们的原型中，少量的写操作会受粗粒度的锁影响，但是对于大于32KB的写入操作，EBOFS几乎会让磁盘饱和。因为EBOFS在大量增量地写入数据时，会把数据安置到很大的区间中，所以其有明显更好的读性能。" data-thumbnail="/posts/paper-reading/weil-osde06/figure-6.png" data-sub-html="<h2>图6 EBOFS与通用文件系统的性能比较。尽管在我们的原型中，小的写操作会受粗粒度的锁影响，但是对于大于32KB的写入操作，EBOFS几乎会让磁盘饱和。因为EBOFS在大量增量地写入数据时，会把数据安置到很大的区间中，所以其有明显更好的读性能。</h2><p>图6 EBOFS与通用文件系统的性能比较。尽管在我们的原型中，少量的写操作会受粗粒度的锁影响，但是对于大于32KB的写入操作，EBOFS几乎会让磁盘饱和。因为EBOFS在大量增量地写入数据时，会把数据安置到很大的区间中，所以其有明显更好的读性能。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-6.png"
             data-srcset="/posts/paper-reading/weil-osde06/figure-6.png, figure-6.png 1.5x, /posts/paper-reading/weil-osde06/figure-6.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/weil-osde06/figure-6.png" />
+            alt="/posts/paper-reading/weil-osde06/figure-6.png"
+        />
     </a><figcaption class="image-caption">图6 EBOFS与通用文件系统的性能比较。尽管在我们的原型中，小的写操作会受粗粒度的锁影响，但是对于大于32KB的写入操作，EBOFS几乎会让磁盘饱和。因为EBOFS在大量增量地写入数据时，会把数据安置到很大的区间中，所以其有明显更好的读性能。</figcaption>
     </figure></p>
 <p><strong>图6</strong>比较了EBOFS与通用文件系统（ext3、ReiserFS、XFS）在处理Ceph的负载时的性能。客户端同步地写入大文件，将其分条为16MB的多个对象，并随后读回数据。尽管少量的读取和写入的性能受EBOFS粗粒度的线程和锁的影响很大，但是当写入大小超过32KB时，EBOFS几乎可以使可用的磁盘带宽饱和，且其读取性能比其他文件系统有明显的优势，因为数据被安排到与其大小匹配的磁盘区间上，即使数据很大也是如此。性能通过一个新的文件系统测量.使用早期的EBOFS的实验表明，其产生的碎片比ext3少很多，但是我们还没在用了很久的文件系统上测量过当前实现的情况。无论如何，我们预期用了很久以后，EBOFS的性能也不会比其它的差。</p>
@@ -327,11 +340,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/weil-osde06/figure-7.png" title="图7 不同写入大小和副本数下写入延迟。对于少量的写入来说，超过两个的副本所带来的额外开销很小，因为副本的更新时并发发生的。对于大量的同步写入来说，传输时间占了大部分的延迟。对于超过128KB的写入，客户端通过请求排他锁和异步冲刷数据，掩盖了部分的延迟。" data-thumbnail="/posts/paper-reading/weil-osde06/figure-7.png" data-sub-html="<h2>图7 不同写入大小和副本数下写入延迟。对于少量的写入来说，超过两个的副本所带来的额外开销很小，因为副本的更新时并发发生的。对于大量的同步写入来说，传输时间占了大部分的延迟。对于超过128KB的写入，客户端通过请求排他锁和异步冲刷数据，掩盖了部分的延迟。</h2><p>图7 不同写入大小和副本数下写入延迟。对于少量的写入来说，超过两个的副本所带来的额外开销很小，因为副本的更新时并发发生的。对于大量的同步写入来说，传输时间占了大部分的延迟。对于超过128KB的写入，客户端通过请求排他锁和异步冲刷数据，掩盖了部分的延迟。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-7.png"
             data-srcset="/posts/paper-reading/weil-osde06/figure-7.png, figure-7.png 1.5x, /posts/paper-reading/weil-osde06/figure-7.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/weil-osde06/figure-7.png" />
+            alt="/posts/paper-reading/weil-osde06/figure-7.png"
+        />
     </a><figcaption class="image-caption">图7 不同写入大小和副本数下写入延迟。对于少量的写入来说，超过两个的副本所带来的额外开销很小，因为副本的更新时并发发生的。对于大量的同步写入来说，传输时间占了大部分的延迟。对于超过128KB的写入，客户端通过请求排他锁和异步冲刷数据，掩盖了部分的延迟。</figcaption>
     </figure></p>
 <p><strong>图7</strong>展示了单次同步写入不同大小的数据（x轴）和副本数时的延迟（y轴）。因为主OSD同时将更新传输给所有备OSD，对于少量的写入来说，超过两个的副本所带来的额外开销很小。对于大量的写入，传输的开销占了大部分的延迟；单副本1MB的写入（没在图中给出）花了13ms，而三副本的时间长了2.5倍（33ms）。Ceph的客户端在写入超过128KB的数据时通过请求排他锁和异步地将数据冲刷到磁盘上，掩盖了部分的延迟。或者，共享写入的应用程序可以选择使用O_LAZY。由于这样会放松一致性，客户端可以缓冲少量的写入并仅提交大量的写入，异步地写入到OSD中；应用程序能看到的延迟仅为因客户端填满了其缓存而等待数据冲刷到磁盘时的延迟。</p>
@@ -339,11 +352,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/weil-osde06/figure-8.png" title="图8 OSD的写入性能随OSD集群的大小线性增长，直到交换机在24个OSD时达到饱和为止。当有更多的PG时，OSD的利用率差异被降低，且CRUSH和哈希的性能提升。" data-thumbnail="/posts/paper-reading/weil-osde06/figure-8.png" data-sub-html="<h2>图8 OSD的写入性能随OSD集群的大小线性增长，直到交换机在24个OSD时达到饱和为止。当有更多的PG时，OSD的利用率差异被降低，且CRUSH和哈希的性能提升。</h2><p>图8 OSD的写入性能随OSD集群的大小线性增长，直到交换机在24个OSD时达到饱和为止。当有更多的PG时，OSD的利用率差异被降低，且CRUSH和哈希的性能提升。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-8.png"
             data-srcset="/posts/paper-reading/weil-osde06/figure-8.png, figure-8.png 1.5x, /posts/paper-reading/weil-osde06/figure-8.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/weil-osde06/figure-8.png" />
+            alt="/posts/paper-reading/weil-osde06/figure-8.png"
+        />
     </a><figcaption class="image-caption">图8 OSD的写入性能随OSD集群的大小线性增长，直到交换机在24个OSD时达到饱和为止。当有更多的PG时，OSD的利用率差异被降低，且CRUSH和哈希的性能提升。</figcaption>
     </figure></p>
 <p>Ceph的数据性能随OSD的数量近似线性地增长。CRUSH伪随机地分布数据，这样OSD的利用率可以通过二项分布或正态分布精确地建模——这是通过完全随机过程的期望得到的<sup>[29]</sup>。使用率的差异会随着组数量的增加而减少：对于每个OSD上有100个PG的情况，标准差为10%；对于1000个PG的情况，其标准差为3%。<strong>图8</strong>展示了使用CRUSH、简单哈希函数的集群中每个OSD的吞吐量随集群伸缩的变化，其线性的分条策略将数据分布在可用的OSD上的4096或32768个PG中。线性分条可以很好地平衡负载以增加吞吐量，这给对比提供了benchmark，但与简单的哈希函数一样，它不能处理设备故障或其他的OSD集群更改。因为通过CRUSH或哈希函数的数据放置是随机的，PG数量更少时吞吐量更低：更大的OSD利用率差异在多客户端相互纠缠的情况下导致请求队列长度各异。因为设备可能有很小的概率过载或过度使用，这回拖慢性能，因此CRUSH可以通过卸载集群映射中标记的特定的OSD来修正这种情况。不想哈希和线性的策略，CRUSH还能在集群扩展时减少数据迁移，同时维护数据均衡分布。CRUSH计算复杂度是$O( \log n )$（对于由n个OSD组成的集群来说），在集群增长到有数百或数千个OSD时，也只需要几十毫秒。</p>
@@ -354,11 +367,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/weil-osde06/figure-9.png" title="图9 使用本地磁盘的方式可以避免最初的网络往返，从而降低写入延迟。当使用readdirplus或放松了的一致性要求时，消除了MDS在readdir后的stat时的交互，让读取操作能从缓存中受益。" data-thumbnail="/posts/paper-reading/weil-osde06/figure-9.png" data-sub-html="<h2>图9 使用本地磁盘的方式可以避免最初的网络往返，从而降低写入延迟。当使用readdirplus或放松了的一致性要求时，消除了MDS在readdir后的stat时的交互，让读取操作能从缓存中受益。</h2><p>图9 使用本地磁盘的方式可以避免最初的网络往返，从而降低写入延迟。当使用readdirplus或放松了的一致性要求时，消除了MDS在readdir后的stat时的交互，让读取操作能从缓存中受益。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-9.png"
             data-srcset="/posts/paper-reading/weil-osde06/figure-9.png, figure-9.png 1.5x, /posts/paper-reading/weil-osde06/figure-9.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/weil-osde06/figure-9.png" />
+            alt="/posts/paper-reading/weil-osde06/figure-9.png"
+        />
     </a><figcaption class="image-caption">图9 使用本地磁盘的方式可以避免最初的网络往返，从而降低写入延迟。当使用readdirplus或放松了的一致性要求时，消除了MDS在readdir后的stat时的交互，让读取操作能从缓存中受益。</figcaption>
     </figure></p>
 <h4 id="622-元数据读取延迟">6.2.2 元数据读取延迟</h4>
@@ -367,11 +380,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/weil-osde06/figure-10.png" title="图10 在不同负载和集群大小下的每个MDS的吞吐量。随着集群增长到128个节点，在大部分的负载下，性能降低不超过完全线性（水平）扩展的50%，这使该系统比已有的系统有大幅的性能提升。" data-thumbnail="/posts/paper-reading/weil-osde06/figure-10.png" data-sub-html="<h2>图10 在不同负载和集群大小下的每个MDS的吞吐量。随着集群增长到128个节点，在大部分的负载下，性能降低不超过完全线性（水平）扩展的50%，这使该系统比已有的系统有大幅的性能提升。</h2><p>图10 在不同负载和集群大小下的每个MDS的吞吐量。随着集群增长到128个节点，在大部分的负载下，性能降低不超过完全线性（水平）扩展的50%，这使该系统比已有的系统有大幅的性能提升。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-10.png"
             data-srcset="/posts/paper-reading/weil-osde06/figure-10.png, figure-10.png 1.5x, /posts/paper-reading/weil-osde06/figure-10.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/weil-osde06/figure-10.png" />
+            alt="/posts/paper-reading/weil-osde06/figure-10.png"
+        />
     </a><figcaption class="image-caption">图10 在不同负载和集群大小下的每个MDS的吞吐量。随着集群增长到128个节点，在大部分的负载下，性能降低不超过完全线性（水平）扩展的50%，这使该系统比已有的系统有大幅的性能提升。</figcaption>
     </figure></p>
 <p>我们使用Lawrence Livermore National Laboratory（LLNL）的alc Linux集群中由430个节点组成的一个分区来评估元数据的可伸缩性。<strong>图10</strong>展示了每台MDS的吞吐量（y轴）作为MDS集群大小（x轴）的函数，其中水平线表示完全线性伸缩。在makedirs负载中，每个客户端差UN构建一个4层嵌套的目录树，每个目录中有10个文件和1个子目录。在较小的集群中，每台MDS的吞吐量为2000ops/sec， 随着集群扩展到128个MDS时每个MDS的吞吐量大概为1000ops/sec（每台效率下降了50%，总吞吐量为100000ops/sec）。在makefiles的负载中，每个客户端在同一个目录下创建数千个文件。当检测到大量的写入时，Ceph会哈希化共享目录并放松目录的修改时间的连贯性，以将负载分摊到所有MDS节点上。openshared的负载演示了每个客户端反复打开关闭10个共享文件的共享读取。在openssh负载中，每个客户端会在私有目录中重放获取到的一次编译过程中对文件系统的跟踪。一种情况下使用共享的<code>/lib</code>目录，而另一种情况使用<code>/usr/include</code>，第二种情况使用的目录会被大量读取。openshared和openssh+include的负载的共享读取量是最大的，其伸缩表现最差，我们认为这是因客户端对备OSD的选择较差而导致的。openssh+lib比简单的分别makedir的伸缩性更好，因为其有相对少的元数据修改和相对少的共享。尽管我们认为，对于更大的MDS集群来说，在消息传递层的网络和线程的争用会进一步降低性能，但是我们访问大型集群的时间有限，无法进行详细的调查。</p>
@@ -379,11 +392,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/weil-osde06/figure-11.png" title="图11 不同集群大小下的平均延迟与每台MDS的吞吐量关系（makedir负载下）。" data-thumbnail="/posts/paper-reading/weil-osde06/figure-11.png" data-sub-html="<h2>图11 不同集群大小下的平均延迟与每台MDS的吞吐量关系（makedir负载下）。</h2><p>图11 不同集群大小下的平均延迟与每台MDS的吞吐量关系（makedir负载下）。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-11.png"
             data-srcset="/posts/paper-reading/weil-osde06/figure-11.png, figure-11.png 1.5x, /posts/paper-reading/weil-osde06/figure-11.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/weil-osde06/figure-11.png" />
+            alt="/posts/paper-reading/weil-osde06/figure-11.png"
+        />
     </a><figcaption class="image-caption">图11 不同集群大小下的平均延迟与每台MDS的吞吐量关系（makedir负载下）。</figcaption>
     </figure></p>
 <p>尽管这不是完美的线型伸缩，但是128个运行着我们的原型系统的MDS节点组成的集群还是能够提供超过每秒25万次的元数据操作（128台节点的每台节点2000ops/sec）。因为元数据的事务与数据I/O独立，且元数据大小与文件大小无关，所以该性能可能在数百PB或更大的存储中也是如此，这取决于平均文件大小。例如，科学计算应用程序在LLNL的Bluegene/L上的检查点创建可能使用了64000个双处理器的结点，每个节点在相同的目录下写入一个独立的文件（就像makefile的负载那样）。当前的存储系统的元数据操作在6000ops/sec时达到峰值，且完成每个检查点的创建需要花几分钟的时间，而Ceph的MDS集群可以在2秒内完成。如果每个文件仅为10MB（按照HPC的标准来说非常小）且OSD能支撑50MB/sec，这样的集群在使25000台OSD（与50000分副本）饱和的情况下能够以1.25TB/sec的速率写入。250GB的OSD能够构建出超过6PB的系统。更重要的是，Ceph的动态元数据分布让（任何大小的）MDS集群基于当前的负载重新分配资源，即使之前所有客户端都访问被分配到一台MDS上的元数据时也可以，这让Ceph的策略比任何静态分区策略都更具有通用性和适应性。</p>
@@ -446,7 +459,9 @@
 <p>[35] T. M. Wong, R. A. Golding, J. S. Glider, E. Borowsky, R. A. Becker-Szendy, C. Fleiner, D. R. Kenchammana-Hosekote, and O. A. Zaki. Kybos: self-management for distributed brick-base storage. Research Report RJ 10356, IBM Almaden Research Center, Aug. 2005.</p>
 <p>[36] J. C. Wu and S. A. Brandt. The design and implementation of AQuA: an adaptive quality of service aware object-based storage device. In Proceedings of the 23rd IEEE / 14th NASA Goddard Conference on Mass Storage Systems and Technologies, pages 209-218, College Park, MD, May 2006.</p>
 <p>[37] Q. Xin, E. L. Miller, and T. J. E. Schwarz. Evaluation of distributed recovery in large-scale storage systems. In Proceedings of the 13th IEEE International Symposium on High Performance Distributed Computing (HPDC), pages 172-181, Honolulu, HI, June 2004.</p>
-</div></div><div class="post-footer" id="post-footer">
+</div></div>
+
+        <div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
@@ -473,16 +488,22 @@
             <a href="/posts/paper-reading/paxos-made-simple/" class="next" rel="next" title="《Paxos Made Simple》论文翻译">《Paxos Made Simple》论文翻译<i class="fas fa-angle-right fa-fw"></i></a></div>
 </div>
 </article></div>
-            </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
-                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
-        </div>
-    </footer></div>
+        </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank" rel="noopener noreferrer">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        </div></footer></div>
 
-        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
-                <i class="fas fa-arrow-up fa-fw"></i>
-            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
-                <i class="fas fa-comment fa-fw"></i>
-            </a>
-        </div><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"><link rel="stylesheet" href="/lib/katex/katex.min.css"><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"><script type="text/javascript" src="/lib/smooth-scroll/smooth-scroll.min.js"></script><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"id-1":"叉鸽 | MrCroxx","id-2":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"id-1":["id-1"],"id-2":["id-2"]},"duration":null,"speed":null}};</script><script type="text/javascript" src="/js/theme.min.js"></script></body>
+    <div id="fixed-buttons"><a href="#back-to-top" id="back-to-top-button" class="fixed-button" title="回到顶部">
+            <i class="fas fa-arrow-up fa-fw"></i>
+        </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+            <i class="fas fa-comment fa-fw"></i>
+        </a>
+    </div><div class="assets"><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/topbar/topbar.min.js"></script><script type="text/javascript" src="/lib/pjax/pjax.min.js"></script><script type="text/javascript" src="/js/theme.min.js"></script></div>
+
+<div class="pjax-assets"><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"desktop-header-typeit":"叉鸽 | MrCroxx","mobile-header-typeit":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"desktop-header-typeit":["desktop-header-typeit"],"mobile-header-typeit":["mobile-header-typeit"]},"duration":null,"speed":null}};</script><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/lightgallery/lightgallery.min.css">
+    <noscript><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/katex/katex.min.css">
+    <noscript><link rel="stylesheet" href="/lib/katex/katex.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/katex/copy-tex.min.css">
+    <noscript><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"></noscript></div>
+</body>
+
 </html>

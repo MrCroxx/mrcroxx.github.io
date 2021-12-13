@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="robots" content="noodp" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
-        <title>《Web caching with consistent hashing》论文翻译 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《Web caching with consistent hashing》论文翻译" />
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noodp" />
+    <title class="pjax-title">《Web caching with consistent hashing》论文翻译 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《Web caching with consistent hashing》论文翻译" />
 <meta property="og:description" content="本篇文章是对论文Web caching with consistent hashing的原创翻译，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/web-caching-with-consistent-hashing/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/paper-reading/web-caching-with-consistent-hashing/paper-reading.jpg"/><meta property="article:section" content="posts" />
@@ -17,9 +17,13 @@
 <meta name="twitter:title" content="《Web caching with consistent hashing》论文翻译"/>
 <meta name="twitter:description" content="本篇文章是对论文Web caching with consistent hashing的原创翻译，转载请严格遵守CC BY-NC-SA协议。"/>
 <meta name="application-name" content="叉鸽 MrCroxx 的博客">
-<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客">
+
+<meta name="theme-color" content="#f8f8f8"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/paper-reading/web-caching-with-consistent-hashing/" /><link rel="prev" href="https://mrcroxx.github.io/posts/paper-reading/rdd-nsdi12-final138/" /><link rel="next" href="https://mrcroxx.github.io/posts/paper-reading/weil-osde06/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="canonical" href="https://mrcroxx.github.io/posts/paper-reading/web-caching-with-consistent-hashing/" /><link rel="prev" href="https://mrcroxx.github.io/posts/paper-reading/rdd-nsdi12-final138/" /><link rel="next" href="https://mrcroxx.github.io/posts/paper-reading/weil-osde06/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/fontawesome-free/all.min.css">
+    <noscript><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/animate/animate.min.css">
+    <noscript><link rel="stylesheet" href="/lib/animate/animate.min.css"></noscript><script type="application/ld+json">
     {
         "@context": "http://schema.org",
         "@type": "BlogPosting",
@@ -42,36 +46,43 @@
             },"description": ""
     }
     </script></head>
-    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : '' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
 
-        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+<body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">
+        function setTheme(theme) {document.body.setAttribute('theme', theme);}
+        function saveTheme(theme) {window.localStorage && localStorage.setItem('theme', theme);}
+        function getMeta(metaName) {const metas = document.getElementsByTagName('meta'); for (let i = 0; i < metas.length; i++) if (metas[i].getAttribute('name') === metaName) return metas[i]; return '';}
+        if (window.localStorage && localStorage.getItem('theme')) {let theme = localStorage.getItem('theme');theme === 'light' || theme === 'dark' || theme === 'black' ? setTheme(theme) : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? setTheme('dark') : setTheme('light')); } else { if ('' === 'light' || '' === 'dark' || '' === 'black') setTheme(''), saveTheme(''); else saveTheme('auto'), window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? setTheme('dark') : setTheme('light');}
+        let metaColors = {'light': '#f8f8f8','dark': '#252627','black': '#000000'}
+        getMeta('theme-color').content = metaColors[document.body.getAttribute('theme')];
+    </script>
+    <div id="back-to-top"></div>
+    <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
     <div class="header-wrapper">
         <div class="header-title">
-            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-1" class="typeit"></span></a>
+            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="desktop-header-typeit" class="typeit"></span></a>
         </div>
         <div class="menu">
-            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/posts/about-me"> 关于我 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
                         <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
-                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                        <a href="#" onclick="return false;" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
                             <i class="fas fa-search fa-fw"></i>
                         </a>
-                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                        <a href="#" onclick="return false;" class="search-button search-clear" id="search-clear-desktop" title="清空">
                             <i class="fas fa-times-circle fa-fw"></i>
                         </a>
                         <span class="search-button search-loading" id="search-loading-desktop">
                             <i class="fas fa-spinner fa-fw fa-spin"></i>
                         </span>
-                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    </span><a href="#" onclick="return false;" class="menu-item theme-switch" title="切换主题">
                     <i class="fas fa-adjust fa-fw"></i>
-                </a>
-            </div>
+                </a></div>
         </div>
     </div>
 </header><header class="mobile" id="header-mobile">
     <div class="header-container">
         <div class="header-wrapper">
             <div class="header-title">
-                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-2" class="typeit"></span></a>
+                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="mobile-header-typeit" class="typeit"></span></a>
             </div>
             <div class="menu-toggle" id="menu-toggle-mobile">
                 <span></span><span></span><span></span>
@@ -80,20 +91,20 @@
         <div class="menu" id="menu-mobile"><div class="search-wrapper">
                     <div class="search mobile" id="search-mobile">
                         <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
-                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                        <a href="#" onclick="return false;" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
                             <i class="fas fa-search fa-fw"></i>
                         </a>
-                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                        <a href="#" onclick="return false;" class="search-button search-clear" id="search-clear-mobile" title="清空">
                             <i class="fas fa-times-circle fa-fw"></i>
                         </a>
                         <span class="search-button search-loading" id="search-loading-mobile">
                             <i class="fas fa-spinner fa-fw fa-spin"></i>
                         </span>
                     </div>
-                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                    <a href="#" onclick="return false;" class="search-cancel" id="search-cancel-mobile">
                         取消
                     </a>
-                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/posts/about-me" title="">关于我</a><a href="#" onclick="return false;" class="menu-item theme-switch" title="切换主题">
                 <i class="fas fa-adjust fa-fw"></i>
             </a></div>
     </div>
@@ -105,21 +116,23 @@
     <div id="search-dropdown-mobile"></div>
 </div>
 <main class="main">
-                <div class="container"><div class="toc" id="toc-auto">
-            <h2 class="toc-title">目录</h2>
-            <div class="toc-content" id="toc-content-auto"></div>
-        </div><article class="page single"><h1 class="single-title animated flipInX">《Web caching with consistent hashing》论文翻译</h1><div class="post-meta">
-            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-10">2020-09-10</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 13544 字&nbsp;
+            <div class="container"><div class="toc" id="toc-auto">
+        <h2 class="toc-title">目录</h2>
+        <div class="toc-content" id="toc-content-auto"></div>
+    </div><script>document.getElementsByTagName("main")[0].setAttribute("pageStyle", "normal")</script><script>document.getElementsByTagName("main")[0].setAttribute("autoTOC", "true")</script><article class="page single"><h1 class="single-title animate__animated animate__flipInX">《Web caching with consistent hashing》论文翻译</h1><div class="post-meta">
+            <div class="post-meta-line">
+                <span class="post-author"><i class="author fas fa-user-circle fa-fw"></i><a href="about" title="Author" rel=" author" class="author">叉鸽</a>
+                </span>&nbsp;<span class="post-category">收录于 </span>&nbsp;<span class="post-category">类别 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-10">2020-09-10</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2020-09-13">2020-09-13</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 13544 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 28 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
-        src="/svg/loading.min.svg"
         data-src="/posts/paper-reading/web-caching-with-consistent-hashing/paper-reading.jpg"
         data-srcset="/posts/paper-reading/web-caching-with-consistent-hashing/paper-reading.jpg, /posts/paper-reading/web-caching-with-consistent-hashing/paper-reading.jpg 1.5x, /posts/paper-reading/web-caching-with-consistent-hashing/paper-reading.jpg 2x"
         data-sizes="auto"
         alt="/posts/paper-reading/web-caching-with-consistent-hashing/paper-reading.jpg"
-        title="/posts/paper-reading/web-caching-with-consistent-hashing/paper-reading.jpg" /></div><div class="details toc" id="toc-static"  kept="">
+        title="/posts/paper-reading/web-caching-with-consistent-hashing/paper-reading.jpg" height="360" width="1200"
+    /></div><div class="details toc" id="toc-static"  kept="">
                 <div class="details-summary toc-title">
                     <span>目录</span>
                     <span><i class="details-icon fas fa-angle-right"></i></span>
@@ -220,11 +233,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/web-caching-with-consistent-hashing/figure-1.png" title="图1 (i)URL和缓存都通过标准哈希函数映射为圆上的点。URL被分配给在圆顺时针方向最近的缓存。项1、2、3被映射到缓存A。项4、5被映射到缓存B。 (ii)当加入新缓存时，仅那些在圆上顺时针方向最接近该新缓存的URL被重新分配。这样，当我们加入新缓存C时，仅项1、2移动到了新缓存C。项不会在之前已存在的缓存间移动。" data-thumbnail="/posts/paper-reading/web-caching-with-consistent-hashing/figure-1.png" data-sub-html="<h2>图1 (i)URL和缓存都通过标准哈希函数映射为圆上的点。URL被分配给在圆顺时针方向最近的缓存。项1、2、3被映射到缓存A。项4、5被映射到缓存B。 (ii)当加入新缓存时，仅那些在圆上顺时针方向最接近该新缓存的URL被重新分配。这样，当我们加入新缓存C时，仅项1、2移动到了新缓存C。项不会在之前已存在的缓存间移动。</h2><p>图1 (i)URL和缓存都通过标准哈希函数映射为圆上的点。URL被分配给在圆顺时针方向最近的缓存。项1、2、3被映射到缓存A。项4、5被映射到缓存B。 (ii)当加入新缓存时，仅那些在圆上顺时针方向最接近该新缓存的URL被重新分配。这样，当我们加入新缓存C时，仅项1、2移动到了新缓存C。项不会在之前已存在的缓存间移动。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-1.png"
             data-srcset="/posts/paper-reading/web-caching-with-consistent-hashing/figure-1.png, figure-1.png 1.5x, /posts/paper-reading/web-caching-with-consistent-hashing/figure-1.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/web-caching-with-consistent-hashing/figure-1.png" />
+            alt="/posts/paper-reading/web-caching-with-consistent-hashing/figure-1.png"
+        />
     </a><figcaption class="image-caption">图1 (i)URL和缓存都通过标准哈希函数映射为圆上的点。URL被分配给在圆顺时针方向最近的缓存。项1、2、3被映射到缓存A。项4、5被映射到缓存B。 (ii)当加入新缓存时，仅那些在圆上顺时针方向最接近该新缓存的URL被重新分配。这样，当我们加入新缓存C时，仅项1、2移动到了新缓存C。项不会在之前已存在的缓存间移动。</figcaption>
     </figure></p>
 <p>一致性哈希很容易实现，所有“缓存点”被存储在一个二叉树中，通过一次二叉树查询就可以（在哈希URL点后）找到“URL点”顺时针方向的后继节点。这可以在$O( \log n)$时间内一致性哈希到$n$个缓存。另一种实现<sup>[6]</sup>将圆划分为等长的段，并根据段对缓存点“分组”，这样，不管有多少个缓存，都可以在常数时间内查找。值得注意的是，CARP<sup>[3, 8]</sup>中提出的方案查找时间与缓存数量是线性关系，因此在大量缓存的情况下可伸缩性小得多。</p>
@@ -252,12 +265,12 @@
 <p>我们还测量了一些能显示一致性哈希能在缓存间实现良好均衡的指标，正如其低负载的性质保证的那样。我们使用了来自<em>theory.lcs.mit.edu</em>的Web服务器的一周的日志。在此期间，总计有26804个不同的URL请求。我们在不同数量的缓存上通过我们的哈希函数计算这些不同的URL，来看一致性哈希在缓存间能把文件分布得多好。</p>
 <p><img
         class="lazyload"
-        src="/svg/loading.min.svg"
         data-src="image-1.png"
         data-srcset="/posts/paper-reading/web-caching-with-consistent-hashing/image-1.png, image-1.png 1.5x, /posts/paper-reading/web-caching-with-consistent-hashing/image-1.png 2x"
         data-sizes="auto"
         alt="/posts/paper-reading/web-caching-with-consistent-hashing/image-1.png"
-        title="分析数据" /></p>
+        title="分析数据"
+    /></p>
 <p>从以上的数据可以看出，每一条数据的标准差都很小，平仅在3%左右。当数据集变大时，这一数字还会变得更好。</p>
 <p>在第二个实验中，我们使用多个视图将1500个网页名映射到缓存中，其设计到80台机器，其中5台机器在每个视图中的上下线情况都不同。此时，$(项, 缓存)$对的数量上升到了1877个，与基数相比仅增加了25%。</p>
 <h2 id="3-我们的系统">3. 我们的系统</h2>
@@ -291,22 +304,22 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/web-caching-with-consistent-hashing/figure-2.png" title="图2 Common模式 vs Cache Resolver模式。x轴表示实验中使用的所有缓存的大小（Mb），y轴在左图中表示失配率，在右图中表示平均延迟（ms）。" data-thumbnail="/posts/paper-reading/web-caching-with-consistent-hashing/figure-2.png" data-sub-html="<h2>图2 Common模式 vs Cache Resolver模式。x轴表示实验中使用的所有缓存的大小（Mb），y轴在左图中表示失配率，在右图中表示平均延迟（ms）。</h2><p>图2 Common模式 vs Cache Resolver模式。x轴表示实验中使用的所有缓存的大小（Mb），y轴在左图中表示失配率，在右图中表示平均延迟（ms）。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-2.png"
             data-srcset="/posts/paper-reading/web-caching-with-consistent-hashing/figure-2.png, figure-2.png 1.5x, /posts/paper-reading/web-caching-with-consistent-hashing/figure-2.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/web-caching-with-consistent-hashing/figure-2.png" />
+            alt="/posts/paper-reading/web-caching-with-consistent-hashing/figure-2.png"
+        />
     </a><figcaption class="image-caption">图2 Common模式 vs Cache Resolver模式。x轴表示实验中使用的所有缓存的大小（Mb），y轴在左图中表示失配率，在右图中表示平均延迟（ms）。</figcaption>
     </figure></p>
 <p>我们还使用我们的缓存测试了另外三个常用的缓存系统配置。我们测试了Sibling配置，即所有三个缓存都被配置为sibling，且在失配时使用组播协议来检查数据是否在其他缓存上。我们还测试了Hierarchy配置，即我们sibling按照Harvest方法的风格添加了另一个缓存作为父级缓存。最后，我们还测试了CRISP配置，即建立一个中央目录，它会被所有的缓存在失配时查询。对于每个系统，我们测量了主缓存的失配率（用户查询的第一个缓存的失配率）和系统失配率（整个缓存系统的失配率，即没有缓存持有所需数据的情况）。<strong>图3</strong>展示了三种配置下的主缓存失配率，其与<strong>图2</strong>中Common Cahce模式的失配率相似，且所有配置的系统失配率几乎都与Cache Resolver模式的失配率一样好。对于这三个系统，主缓存失配会导致额外的缓存间通信，包括检查哪个缓存持有所需数据及缓存间数据传输。另外，缓存间数据传输会导致数据冗余，这使缓存的磁盘和RAM中剩余空间变小，最重要的是RAM空间是为用户提供快速服务的空间。当用户通过哈希函数决定使用哪个缓存时，可以避免关键循环中的额外通信及带来的负面效果。</p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/web-caching-with-consistent-hashing/figure-3.png" title="图3 三种额外配置的失配率与延迟。" data-thumbnail="/posts/paper-reading/web-caching-with-consistent-hashing/figure-3.png" data-sub-html="<h2>图3 三种额外配置的失配率与延迟。</h2><p>图3 三种额外配置的失配率与延迟。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-3.png"
             data-srcset="/posts/paper-reading/web-caching-with-consistent-hashing/figure-3.png, figure-3.png 1.5x, /posts/paper-reading/web-caching-with-consistent-hashing/figure-3.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/web-caching-with-consistent-hashing/figure-3.png" />
+            alt="/posts/paper-reading/web-caching-with-consistent-hashing/figure-3.png"
+        />
     </a><figcaption class="image-caption">图3 三种额外配置的失配率与延迟。</figcaption>
     </figure></p>
 <h3 id="5-扩展">5. 扩展</h3>
@@ -336,7 +349,9 @@
 <p>[7] R. Malpani, J. Lorch and D. Berger, Making World Wide Web caching servers cooperate, in: Proc. 4th Int. World Wide Web Conference, 1995, pp. 107–110.</p>
 <p>[8] Microsoft Proxy Server, White paper, <a href="http://www.microsoft.com/proxy/guide/CarpWP.asp" target="_blank" rel="noopener noreffer">http://www.microsoft.com/proxy/guide/CarpWP.asp</a>, 1998.</p>
 <p>[9] P. Yu and E.A. MaxNair, Performance study of a collaborative method for hierarchical caching in proxy servers, Technical Report RC 21026, IBM T.J. Watson Research Center, 1997.</p>
-</div></div><div class="post-footer" id="post-footer">
+</div></div>
+
+        <div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
@@ -363,16 +378,22 @@
             <a href="/posts/paper-reading/weil-osde06/" class="next" rel="next" title="《Ceph: A Scalable, High-Performance Distributed File System》论文翻译">《Ceph: A Scalable, High-Performance Distributed File System》论文翻译<i class="fas fa-angle-right fa-fw"></i></a></div>
 </div>
 </article></div>
-            </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
-                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
-        </div>
-    </footer></div>
+        </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank" rel="noopener noreferrer">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        </div></footer></div>
 
-        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
-                <i class="fas fa-arrow-up fa-fw"></i>
-            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
-                <i class="fas fa-comment fa-fw"></i>
-            </a>
-        </div><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"><link rel="stylesheet" href="/lib/katex/katex.min.css"><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"><script type="text/javascript" src="/lib/smooth-scroll/smooth-scroll.min.js"></script><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"id-1":"叉鸽 | MrCroxx","id-2":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"id-1":["id-1"],"id-2":["id-2"]},"duration":null,"speed":null}};</script><script type="text/javascript" src="/js/theme.min.js"></script></body>
+    <div id="fixed-buttons"><a href="#back-to-top" id="back-to-top-button" class="fixed-button" title="回到顶部">
+            <i class="fas fa-arrow-up fa-fw"></i>
+        </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+            <i class="fas fa-comment fa-fw"></i>
+        </a>
+    </div><div class="assets"><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/topbar/topbar.min.js"></script><script type="text/javascript" src="/lib/pjax/pjax.min.js"></script><script type="text/javascript" src="/js/theme.min.js"></script></div>
+
+<div class="pjax-assets"><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"desktop-header-typeit":"叉鸽 | MrCroxx","mobile-header-typeit":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"desktop-header-typeit":["desktop-header-typeit"],"mobile-header-typeit":["mobile-header-typeit"]},"duration":null,"speed":null}};</script><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/lightgallery/lightgallery.min.css">
+    <noscript><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/katex/katex.min.css">
+    <noscript><link rel="stylesheet" href="/lib/katex/katex.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/katex/copy-tex.min.css">
+    <noscript><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"></noscript></div>
+</body>
+
 </html>

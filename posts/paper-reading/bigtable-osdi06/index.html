@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="robots" content="noodp" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
-        <title>《Bigtable: A Distributed Storage System for Structured Data》论文翻译（BigTable-OSDI06） - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《Bigtable: A Distributed Storage System for Structured Data》论文翻译（BigTable-OSDI06）" />
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noodp" />
+    <title class="pjax-title">《Bigtable: A Distributed Storage System for Structured Data》论文翻译（BigTable-OSDI06） - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《Bigtable: A Distributed Storage System for Structured Data》论文翻译（BigTable-OSDI06）" />
 <meta property="og:description" content="本篇文章是对论文Bigtable-OSDI06的原创翻译，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/bigtable-osdi06/" /><meta property="article:section" content="posts" />
@@ -16,9 +16,13 @@
 <meta name="twitter:title" content="《Bigtable: A Distributed Storage System for Structured Data》论文翻译（BigTable-OSDI06）"/>
 <meta name="twitter:description" content="本篇文章是对论文Bigtable-OSDI06的原创翻译，转载请严格遵守CC BY-NC-SA协议。"/>
 <meta name="application-name" content="叉鸽 MrCroxx 的博客">
-<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客">
+
+<meta name="theme-color" content="#f8f8f8"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/paper-reading/bigtable-osdi06/" /><link rel="prev" href="https://mrcroxx.github.io/posts/paper-reading/mapreduce-osdi04/" /><link rel="next" href="https://mrcroxx.github.io/posts/paper-reading/xoring-elephants/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="canonical" href="https://mrcroxx.github.io/posts/paper-reading/bigtable-osdi06/" /><link rel="prev" href="https://mrcroxx.github.io/posts/paper-reading/mapreduce-osdi04/" /><link rel="next" href="https://mrcroxx.github.io/posts/paper-reading/xoring-elephants/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/fontawesome-free/all.min.css">
+    <noscript><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/animate/animate.min.css">
+    <noscript><link rel="stylesheet" href="/lib/animate/animate.min.css"></noscript><script type="application/ld+json">
     {
         "@context": "http://schema.org",
         "@type": "BlogPosting",
@@ -36,36 +40,43 @@
             },"description": ""
     }
     </script></head>
-    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : '' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
 
-        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+<body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">
+        function setTheme(theme) {document.body.setAttribute('theme', theme);}
+        function saveTheme(theme) {window.localStorage && localStorage.setItem('theme', theme);}
+        function getMeta(metaName) {const metas = document.getElementsByTagName('meta'); for (let i = 0; i < metas.length; i++) if (metas[i].getAttribute('name') === metaName) return metas[i]; return '';}
+        if (window.localStorage && localStorage.getItem('theme')) {let theme = localStorage.getItem('theme');theme === 'light' || theme === 'dark' || theme === 'black' ? setTheme(theme) : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? setTheme('dark') : setTheme('light')); } else { if ('' === 'light' || '' === 'dark' || '' === 'black') setTheme(''), saveTheme(''); else saveTheme('auto'), window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? setTheme('dark') : setTheme('light');}
+        let metaColors = {'light': '#f8f8f8','dark': '#252627','black': '#000000'}
+        getMeta('theme-color').content = metaColors[document.body.getAttribute('theme')];
+    </script>
+    <div id="back-to-top"></div>
+    <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
     <div class="header-wrapper">
         <div class="header-title">
-            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-1" class="typeit"></span></a>
+            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="desktop-header-typeit" class="typeit"></span></a>
         </div>
         <div class="menu">
-            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/posts/about-me"> 关于我 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
                         <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
-                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                        <a href="#" onclick="return false;" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
                             <i class="fas fa-search fa-fw"></i>
                         </a>
-                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                        <a href="#" onclick="return false;" class="search-button search-clear" id="search-clear-desktop" title="清空">
                             <i class="fas fa-times-circle fa-fw"></i>
                         </a>
                         <span class="search-button search-loading" id="search-loading-desktop">
                             <i class="fas fa-spinner fa-fw fa-spin"></i>
                         </span>
-                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    </span><a href="#" onclick="return false;" class="menu-item theme-switch" title="切换主题">
                     <i class="fas fa-adjust fa-fw"></i>
-                </a>
-            </div>
+                </a></div>
         </div>
     </div>
 </header><header class="mobile" id="header-mobile">
     <div class="header-container">
         <div class="header-wrapper">
             <div class="header-title">
-                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-2" class="typeit"></span></a>
+                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="mobile-header-typeit" class="typeit"></span></a>
             </div>
             <div class="menu-toggle" id="menu-toggle-mobile">
                 <span></span><span></span><span></span>
@@ -74,20 +85,20 @@
         <div class="menu" id="menu-mobile"><div class="search-wrapper">
                     <div class="search mobile" id="search-mobile">
                         <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
-                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                        <a href="#" onclick="return false;" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
                             <i class="fas fa-search fa-fw"></i>
                         </a>
-                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                        <a href="#" onclick="return false;" class="search-button search-clear" id="search-clear-mobile" title="清空">
                             <i class="fas fa-times-circle fa-fw"></i>
                         </a>
                         <span class="search-button search-loading" id="search-loading-mobile">
                             <i class="fas fa-spinner fa-fw fa-spin"></i>
                         </span>
                     </div>
-                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                    <a href="#" onclick="return false;" class="search-cancel" id="search-cancel-mobile">
                         取消
                     </a>
-                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/posts/about-me" title="">关于我</a><a href="#" onclick="return false;" class="menu-item theme-switch" title="切换主题">
                 <i class="fas fa-adjust fa-fw"></i>
             </a></div>
     </div>
@@ -99,12 +110,14 @@
     <div id="search-dropdown-mobile"></div>
 </div>
 <main class="main">
-                <div class="container"><div class="toc" id="toc-auto">
-            <h2 class="toc-title">目录</h2>
-            <div class="toc-content" id="toc-content-auto"></div>
-        </div><article class="page single"><h1 class="single-title animated flipInX">《Bigtable: A Distributed Storage System for Structured Data》论文翻译（BigTable-OSDI06）</h1><div class="post-meta">
-            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-08-15">2020-08-15</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 24666 字&nbsp;
+            <div class="container"><div class="toc" id="toc-auto">
+        <h2 class="toc-title">目录</h2>
+        <div class="toc-content" id="toc-content-auto"></div>
+    </div><script>document.getElementsByTagName("main")[0].setAttribute("pageStyle", "normal")</script><script>document.getElementsByTagName("main")[0].setAttribute("autoTOC", "true")</script><article class="page single"><h1 class="single-title animate__animated animate__flipInX">《Bigtable: A Distributed Storage System for Structured Data》论文翻译（BigTable-OSDI06）</h1><div class="post-meta">
+            <div class="post-meta-line">
+                <span class="post-author"><i class="author fas fa-user-circle fa-fw"></i><a href="about" title="Author" rel=" author" class="author">叉鸽</a>
+                </span>&nbsp;<span class="post-category">收录于 </span>&nbsp;<span class="post-category">类别 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-08-15">2020-08-15</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2020-08-15">2020-08-15</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 24666 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 50 分钟&nbsp;</div>
         </div><div class="details toc" id="toc-static"  kept="">
                 <div class="details-summary toc-title">
@@ -183,11 +196,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/bigtable-osdi06/figure-1.png" title="图1 存储网页的样例表的一个分片。行名是反转后的URL。“contents（内容）”列族包含网页内容，“anchor（锚）”列族包含所有引用了该网页的锚的文本。CNN的主页同时被Sports Illustrated和the MY-look的主页引用，因此该行中包含名为“anchor:cnnsi.com”和“anchor:my.look.ca”的列。每个锚定的单元格都有一个版本号。“contents有3个版本，时间戳分别为$t_{3}$、$t_{5}$和$t_{6}$”。" data-thumbnail="/posts/paper-reading/bigtable-osdi06/figure-1.png" data-sub-html="<h2>图1 存储网页的样例表的一个分片。行名是反转后的URL。“contents（内容）”列族包含网页内容，“anchor（锚）”列族包含所有引用了该网页的锚的文本。CNN的主页同时被Sports Illustrated和MY-look的主页引用，因此该行中包含名为“anchor:cnnsi.com”和“anchor:my.look.ca”的列。每个锚定的单元格都有一个版本号。“contents有3个版本，时间戳分别为$t_{3}$、$t_{5}$和$t_{6}$”。</h2><p>图1 存储网页的样例表的一个分片。行名是反转后的URL。“contents（内容）”列族包含网页内容，“anchor（锚）”列族包含所有引用了该网页的锚的文本。CNN的主页同时被Sports Illustrated和the MY-look的主页引用，因此该行中包含名为“anchor:cnnsi.com”和“anchor:my.look.ca”的列。每个锚定的单元格都有一个版本号。“contents有3个版本，时间戳分别为$t_{3}$、$t_{5}$和$t_{6}$”。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-1.png"
             data-srcset="/posts/paper-reading/bigtable-osdi06/figure-1.png, figure-1.png 1.5x, /posts/paper-reading/bigtable-osdi06/figure-1.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/bigtable-osdi06/figure-1.png" />
+            alt="/posts/paper-reading/bigtable-osdi06/figure-1.png"
+        />
     </a><figcaption class="image-caption">图1 存储网页的样例表的一个分片。行名是反转后的URL。“contents（内容）”列族包含网页内容，“anchor（锚）”列族包含所有引用了该网页的锚的文本。CNN的主页同时被Sports Illustrated和MY-look的主页引用，因此该行中包含名为“anchor:cnnsi.com”和“anchor:my.look.ca”的列。每个锚定的单元格都有一个版本号。“contents有3个版本，时间戳分别为$t_{3}$、$t_{5}$和$t_{6}$”。</figcaption>
     </figure></p>
 <h3 id="21-行">2.1 行</h3>
@@ -207,22 +220,22 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/bigtable-osdi06/figure-2.png" title="图2 向Bigtable写入" data-thumbnail="/posts/paper-reading/bigtable-osdi06/figure-2.png" data-sub-html="<h2>图2 向Bigtable写入</h2><p>图2 向Bigtable写入</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-2.png"
             data-srcset="/posts/paper-reading/bigtable-osdi06/figure-2.png, figure-2.png 1.5x, /posts/paper-reading/bigtable-osdi06/figure-2.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/bigtable-osdi06/figure-2.png" />
+            alt="/posts/paper-reading/bigtable-osdi06/figure-2.png"
+        />
     </a><figcaption class="image-caption">图2 向Bigtable写入</figcaption>
     </figure></p>
 <p><strong>图3</strong>展示了在c++代码中使用<code>Scanner</code>抽象遍历特定行的所有anchor。客户端可以遍历多个列族。客户端有几种限制扫描获取的行、列和时间戳的机制。例如，我们可以限制扫描仅获取列名匹配正则表达式<code>anchor:*.cnn.com</code>的anchor，或者仅匹配时间戳在当前时间的十天内的anchor。</p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/bigtable-osdi06/figure-3.png" title="图3 从Bigtable读取" data-thumbnail="/posts/paper-reading/bigtable-osdi06/figure-3.png" data-sub-html="<h2>图3 从Bigtable读取</h2><p>图3 从Bigtable读取</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-3.png"
             data-srcset="/posts/paper-reading/bigtable-osdi06/figure-3.png, figure-3.png 1.5x, /posts/paper-reading/bigtable-osdi06/figure-3.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/bigtable-osdi06/figure-3.png" />
+            alt="/posts/paper-reading/bigtable-osdi06/figure-3.png"
+        />
     </a><figcaption class="image-caption">图3 从Bigtable读取</figcaption>
     </figure></p>
 <p>Bigtable支持其他的一些允许用户通过更复杂的方式操作数据的特性。第一，Bigtable支持单行事务（single-row transaction），该特性可用作原子性地对一个行键下的数据串行地读、改、写。尽管Bigtable的客户端提供了跨行键的批量写入的接口，但是Bigtable目前不支持跨行键的事务。第二，Bigtable允许单元格被用作整型计数器。最后，Bigtable支持服务器的地址空间中执行用户提供的脚本。这些脚本通过Google开发的用于数据处理的Sawzall语言<sup>[28]</sup>编写。目前，基于Sawzall的API不允许客户端脚本将数据写回Bigtable，但支持多种形式的数据转换、基于任意表达式的数据过滤、使用多种操作符运算。</p>
@@ -243,11 +256,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/bigtable-osdi06/figure-4.png" title="图4 tablet位置层级" data-thumbnail="/posts/paper-reading/bigtable-osdi06/figure-4.png" data-sub-html="<h2>图4 tablet位置层级</h2><p>图4 tablet位置层级</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-4.png"
             data-srcset="/posts/paper-reading/bigtable-osdi06/figure-4.png, figure-4.png 1.5x, /posts/paper-reading/bigtable-osdi06/figure-4.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/bigtable-osdi06/figure-4.png" />
+            alt="/posts/paper-reading/bigtable-osdi06/figure-4.png"
+        />
     </a><figcaption class="image-caption">图4 tablet位置层级</figcaption>
     </figure></p>
 <p>第一层是一个存储在Chubby中的文件，其包含了root tablet的位置信息。root tablet中特殊的<code>METADATA</code>表包含了所有tablet的位置信息。每个<code>METADATA</code> tablet包含了一系列用户tablet的位置信息。虽然root tablet只是<code>METADATA</code>表的第一个tablet，但其被处理的方式比较特殊：root tablet永远不会被分割，这样可以保证tablet位置层级不超过三层。</p>
@@ -266,11 +279,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/bigtable-osdi06/figure-5.png" title="图5 tablet的表示" data-thumbnail="/posts/paper-reading/bigtable-osdi06/figure-5.png" data-sub-html="<h2>图5 tablet的表示</h2><p>图5 tablet的表示</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-5.png"
             data-srcset="/posts/paper-reading/bigtable-osdi06/figure-5.png, figure-5.png 1.5x, /posts/paper-reading/bigtable-osdi06/figure-5.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/bigtable-osdi06/figure-5.png" />
+            alt="/posts/paper-reading/bigtable-osdi06/figure-5.png"
+        />
     </a><figcaption class="image-caption">图5 tablet的表示</figcaption>
     </figure></p>
 <p>当写操作到达tablet server时，tablet server会检查其是否格式正确且其sender是否被授权执行该变更。鉴权通过从一个Chubby文件（大多数情况下总是会命中Chubby client的缓存）中读取被允许的writer列表来实现。合法的变更会被写入到commit log中。tablet server使用了分组提交的方式来提高多个小变更<sup>[13, 16]</sup>的吞吐量。在写入操作被提交后，其内容会被插入到<code>memtable</code>中。</p>
@@ -314,11 +327,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/bigtable-osdi06/figure-6.png" title="图6 每秒中1000字节的值读写量。表中展示了每个tablet server的速率，图中展示了总速率。" data-thumbnail="/posts/paper-reading/bigtable-osdi06/figure-6.png" data-sub-html="<h2>图6 每秒中1000字节的值读写量。表中展示了每个tablet server的速率，图中展示了总速率。</h2><p>图6 每秒中1000字节的值读写量。表中展示了每个tablet server的速率，图中展示了总速率。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-6.png"
             data-srcset="/posts/paper-reading/bigtable-osdi06/figure-6.png, figure-6.png 1.5x, /posts/paper-reading/bigtable-osdi06/figure-6.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/bigtable-osdi06/figure-6.png" />
+            alt="/posts/paper-reading/bigtable-osdi06/figure-6.png"
+        />
     </a><figcaption class="image-caption">图6 每秒中1000字节的值读写量。表中展示了每个tablet server的速率，图中展示了总速率。</figcaption>
     </figure></p>
 <p><strong>图6</strong>中展示了在Bigtable中读写1000字节的值的性能表现的两种视图。表中展示了每个tablet server每秒的操作数，图中展示了整体的每秒操作数。</p>
@@ -337,22 +350,22 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/bigtable-osdi06/table-1.png" title="表1 Bigtable集群中tablet server的数量分布" data-thumbnail="/posts/paper-reading/bigtable-osdi06/table-1.png" data-sub-html="<h2>表1 Bigtable集群中tablet server的数量分布</h2><p>表1 Bigtable集群中tablet server的数量分布</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="table-1.png"
             data-srcset="/posts/paper-reading/bigtable-osdi06/table-1.png, table-1.png 1.5x, /posts/paper-reading/bigtable-osdi06/table-1.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/bigtable-osdi06/table-1.png" />
+            alt="/posts/paper-reading/bigtable-osdi06/table-1.png"
+        />
     </a><figcaption class="image-caption">表1 Bigtable集群中tablet server的数量分布</figcaption>
     </figure></p>
 <p><strong>表2</strong>提供了一些目前正在使用的表的相关数据。其中一些表被用作存储用户数据，其他的一些表用于皮肤处。表的总大小、平均单元大小、服务中内存中数据使用百分比和表schema的复杂度丰富多变。在本章后续章节中，我们将简要描述三个生产团队如何使用Bigtable。</p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/bigtable-osdi06/table-2.png" title="表2 一些生产用的表的特征。Table size（压缩前测量）和#Cells可用来大致衡量大小。禁用了压缩的标的压缩率没有给出" data-thumbnail="/posts/paper-reading/bigtable-osdi06/table-2.png" data-sub-html="<h2>表2 一些生产用的表的特征。Table size（压缩前测量）和#Cells可用来大致衡量大小。禁用了压缩的标的压缩率没有给出</h2><p>表2 一些生产用的表的特征。Table size（压缩前测量）和#Cells可用来大致衡量大小。禁用了压缩的标的压缩率没有给出</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="table-2.png"
             data-srcset="/posts/paper-reading/bigtable-osdi06/table-2.png, table-2.png 1.5x, /posts/paper-reading/bigtable-osdi06/table-2.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/bigtable-osdi06/table-2.png" />
+            alt="/posts/paper-reading/bigtable-osdi06/table-2.png"
+        />
     </a><figcaption class="image-caption">表2 一些生产用的表的特征。Table size（压缩前测量）和#Cells可用来大致衡量大小。禁用了压缩的标的压缩率没有给出</figcaption>
     </figure></p>
 <h3 id="81-google-analytics">8.1 Google Analytics</h3>
@@ -433,7 +446,9 @@
 <p>[36] SYBASE.COM. <a href="http://www.sybase.com/products/databaseservers/sybaseiq" target="_blank" rel="noopener noreffer">www.sybase.com/products/databaseservers/sybaseiq</a>. Product page.</p>
 <p>[37] ZHAO, B. Y., KUBIATOWICZ, J., AND JOSEPH, A. D. Tapestry: An infrastructure for fault-tolerant wide-area location and routing. Tech. Rep. UCB/CSD-01-1141, CS Division, UC Berkeley, Apr. 2001.</p>
 <p>[38] ZUKOWSKI, M., BONCZ, P. A., NES, N., AND HEMAN, S. MonetDB/X100 — A DBMS in the CPU cache. IEEE Data Eng. Bull. 28, 2 (2005), 17–22.</p>
-</div></div><div class="post-footer" id="post-footer">
+</div></div>
+
+        <div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
@@ -460,16 +475,22 @@
             <a href="/posts/paper-reading/xoring-elephants/" class="next" rel="next" title="《XORing Elephants: Novel Erasure Codes for Big Data》论文翻译（arXiv:1301.3791v1）">《XORing Elephants: Novel Erasure Codes for Big Data》论文翻译（arXiv:1301.3791v1）<i class="fas fa-angle-right fa-fw"></i></a></div>
 </div>
 </article></div>
-            </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
-                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
-        </div>
-    </footer></div>
+        </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank" rel="noopener noreferrer">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        </div></footer></div>
 
-        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
-                <i class="fas fa-arrow-up fa-fw"></i>
-            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
-                <i class="fas fa-comment fa-fw"></i>
-            </a>
-        </div><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"><link rel="stylesheet" href="/lib/katex/katex.min.css"><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"><script type="text/javascript" src="/lib/smooth-scroll/smooth-scroll.min.js"></script><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"id-1":"叉鸽 | MrCroxx","id-2":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"id-1":["id-1"],"id-2":["id-2"]},"duration":null,"speed":null}};</script><script type="text/javascript" src="/js/theme.min.js"></script></body>
+    <div id="fixed-buttons"><a href="#back-to-top" id="back-to-top-button" class="fixed-button" title="回到顶部">
+            <i class="fas fa-arrow-up fa-fw"></i>
+        </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+            <i class="fas fa-comment fa-fw"></i>
+        </a>
+    </div><div class="assets"><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/topbar/topbar.min.js"></script><script type="text/javascript" src="/lib/pjax/pjax.min.js"></script><script type="text/javascript" src="/js/theme.min.js"></script></div>
+
+<div class="pjax-assets"><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"desktop-header-typeit":"叉鸽 | MrCroxx","mobile-header-typeit":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"desktop-header-typeit":["desktop-header-typeit"],"mobile-header-typeit":["mobile-header-typeit"]},"duration":null,"speed":null}};</script><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/lightgallery/lightgallery.min.css">
+    <noscript><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/katex/katex.min.css">
+    <noscript><link rel="stylesheet" href="/lib/katex/katex.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/katex/copy-tex.min.css">
+    <noscript><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"></noscript></div>
+</body>
+
 </html>

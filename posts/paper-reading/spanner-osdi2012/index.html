@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="robots" content="noodp" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
-        <title>《Spanner: Google’s Globally-Distributed Database》论文翻译 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《Spanner: Google’s Globally-Distributed Database》论文翻译" />
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noodp" />
+    <title class="pjax-title">《Spanner: Google’s Globally-Distributed Database》论文翻译 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《Spanner: Google’s Globally-Distributed Database》论文翻译" />
 <meta property="og:description" content="本篇文章是对论文Spanner: Google’s Globally-Distributed Database的原创翻译，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/spanner-osdi2012/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/paper-reading/spanner-osdi2012/paper-reading.jpg"/><meta property="article:section" content="posts" />
@@ -17,9 +17,13 @@
 <meta name="twitter:title" content="《Spanner: Google’s Globally-Distributed Database》论文翻译"/>
 <meta name="twitter:description" content="本篇文章是对论文Spanner: Google’s Globally-Distributed Database的原创翻译，转载请严格遵守CC BY-NC-SA协议。"/>
 <meta name="application-name" content="叉鸽 MrCroxx 的博客">
-<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客">
+
+<meta name="theme-color" content="#f8f8f8"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/paper-reading/spanner-osdi2012/" /><link rel="prev" href="https://mrcroxx.github.io/posts/paper-reading/wu-vldb2017/" /><link rel="next" href="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/0-introduction/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="canonical" href="https://mrcroxx.github.io/posts/paper-reading/spanner-osdi2012/" /><link rel="prev" href="https://mrcroxx.github.io/posts/paper-reading/wu-vldb2017/" /><link rel="next" href="https://mrcroxx.github.io/posts/code-reading/etcdraft-made-simple/0-introduction/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/fontawesome-free/all.min.css">
+    <noscript><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/animate/animate.min.css">
+    <noscript><link rel="stylesheet" href="/lib/animate/animate.min.css"></noscript><script type="application/ld+json">
     {
         "@context": "http://schema.org",
         "@type": "BlogPosting",
@@ -42,36 +46,43 @@
             },"description": ""
     }
     </script></head>
-    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : '' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
 
-        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+<body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">
+        function setTheme(theme) {document.body.setAttribute('theme', theme);}
+        function saveTheme(theme) {window.localStorage && localStorage.setItem('theme', theme);}
+        function getMeta(metaName) {const metas = document.getElementsByTagName('meta'); for (let i = 0; i < metas.length; i++) if (metas[i].getAttribute('name') === metaName) return metas[i]; return '';}
+        if (window.localStorage && localStorage.getItem('theme')) {let theme = localStorage.getItem('theme');theme === 'light' || theme === 'dark' || theme === 'black' ? setTheme(theme) : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? setTheme('dark') : setTheme('light')); } else { if ('' === 'light' || '' === 'dark' || '' === 'black') setTheme(''), saveTheme(''); else saveTheme('auto'), window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? setTheme('dark') : setTheme('light');}
+        let metaColors = {'light': '#f8f8f8','dark': '#252627','black': '#000000'}
+        getMeta('theme-color').content = metaColors[document.body.getAttribute('theme')];
+    </script>
+    <div id="back-to-top"></div>
+    <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
     <div class="header-wrapper">
         <div class="header-title">
-            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-1" class="typeit"></span></a>
+            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="desktop-header-typeit" class="typeit"></span></a>
         </div>
         <div class="menu">
-            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/posts/about-me"> 关于我 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
                         <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
-                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                        <a href="#" onclick="return false;" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
                             <i class="fas fa-search fa-fw"></i>
                         </a>
-                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                        <a href="#" onclick="return false;" class="search-button search-clear" id="search-clear-desktop" title="清空">
                             <i class="fas fa-times-circle fa-fw"></i>
                         </a>
                         <span class="search-button search-loading" id="search-loading-desktop">
                             <i class="fas fa-spinner fa-fw fa-spin"></i>
                         </span>
-                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    </span><a href="#" onclick="return false;" class="menu-item theme-switch" title="切换主题">
                     <i class="fas fa-adjust fa-fw"></i>
-                </a>
-            </div>
+                </a></div>
         </div>
     </div>
 </header><header class="mobile" id="header-mobile">
     <div class="header-container">
         <div class="header-wrapper">
             <div class="header-title">
-                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-2" class="typeit"></span></a>
+                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="mobile-header-typeit" class="typeit"></span></a>
             </div>
             <div class="menu-toggle" id="menu-toggle-mobile">
                 <span></span><span></span><span></span>
@@ -80,20 +91,20 @@
         <div class="menu" id="menu-mobile"><div class="search-wrapper">
                     <div class="search mobile" id="search-mobile">
                         <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
-                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                        <a href="#" onclick="return false;" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
                             <i class="fas fa-search fa-fw"></i>
                         </a>
-                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                        <a href="#" onclick="return false;" class="search-button search-clear" id="search-clear-mobile" title="清空">
                             <i class="fas fa-times-circle fa-fw"></i>
                         </a>
                         <span class="search-button search-loading" id="search-loading-mobile">
                             <i class="fas fa-spinner fa-fw fa-spin"></i>
                         </span>
                     </div>
-                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                    <a href="#" onclick="return false;" class="search-cancel" id="search-cancel-mobile">
                         取消
                     </a>
-                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/posts/about-me" title="">关于我</a><a href="#" onclick="return false;" class="menu-item theme-switch" title="切换主题">
                 <i class="fas fa-adjust fa-fw"></i>
             </a></div>
     </div>
@@ -105,21 +116,23 @@
     <div id="search-dropdown-mobile"></div>
 </div>
 <main class="main">
-                <div class="container"><div class="toc" id="toc-auto">
-            <h2 class="toc-title">目录</h2>
-            <div class="toc-content" id="toc-content-auto"></div>
-        </div><article class="page single"><h1 class="single-title animated flipInX">《Spanner: Google’s Globally-Distributed Database》论文翻译</h1><div class="post-meta">
-            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-10-23">2020-10-23</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 25856 字&nbsp;
+            <div class="container"><div class="toc" id="toc-auto">
+        <h2 class="toc-title">目录</h2>
+        <div class="toc-content" id="toc-content-auto"></div>
+    </div><script>document.getElementsByTagName("main")[0].setAttribute("pageStyle", "normal")</script><script>document.getElementsByTagName("main")[0].setAttribute("autoTOC", "true")</script><article class="page single"><h1 class="single-title animate__animated animate__flipInX">《Spanner: Google’s Globally-Distributed Database》论文翻译</h1><div class="post-meta">
+            <div class="post-meta-line">
+                <span class="post-author"><i class="author fas fa-user-circle fa-fw"></i><a href="about" title="Author" rel=" author" class="author">叉鸽</a>
+                </span>&nbsp;<span class="post-category">收录于 </span>&nbsp;<span class="post-category">类别 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-10-23">2020-10-23</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2020-10-28">2020-10-28</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 25856 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 52 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
-        src="/svg/loading.min.svg"
         data-src="/posts/paper-reading/spanner-osdi2012/paper-reading.jpg"
         data-srcset="/posts/paper-reading/spanner-osdi2012/paper-reading.jpg, /posts/paper-reading/spanner-osdi2012/paper-reading.jpg 1.5x, /posts/paper-reading/spanner-osdi2012/paper-reading.jpg 2x"
         data-sizes="auto"
         alt="/posts/paper-reading/spanner-osdi2012/paper-reading.jpg"
-        title="/posts/paper-reading/spanner-osdi2012/paper-reading.jpg" /></div><div class="details toc" id="toc-static"  kept="">
+        title="/posts/paper-reading/spanner-osdi2012/paper-reading.jpg" height="360" width="1200"
+    /></div><div class="details toc" id="toc-static"  kept="">
                 <div class="details-summary toc-title">
                     <span>目录</span>
                     <span><i class="details-icon fas fa-angle-right"></i></span>
@@ -194,11 +207,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/spanner-osdi2012/figure-1.png" title="图1 spanner服务器组织结构。" data-thumbnail="/posts/paper-reading/spanner-osdi2012/figure-1.png" data-sub-html="<h2>图1 spanner服务器组织结构。</h2><p>图1 spanner服务器组织结构。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-1.png"
             data-srcset="/posts/paper-reading/spanner-osdi2012/figure-1.png, figure-1.png 1.5x, /posts/paper-reading/spanner-osdi2012/figure-1.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/spanner-osdi2012/figure-1.png" />
+            alt="/posts/paper-reading/spanner-osdi2012/figure-1.png"
+        />
     </a><figcaption class="image-caption">图1 spanner服务器组织结构。</figcaption>
     </figure></p>
 <p><strong>图1</strong>描述了Sppanner universe中的服务器。一个zone有一个<em>zonemaster</em>和几百到几千个<em>spanserver</em>。前者为spannerserver分配数据，后者向客户端提供数据服务。客户端使用每个zone的<em>location proxy</em>来定位给它分配的为其提供数据服务的spanserver。<em>universe master</em>和<em>placement driver</em>目前是单例。universe master主要是一个控制台，其显示了所有zone的状态信息，以用来交互式调试。placement driver分钟级地处理zone间的自动化迁移。placement driver定期与spanserver交互来查找需要移动的数据，以满足更新后的副本约束或进行负载均衡。出于篇幅的原因，我们仅详细描述spanserver。</p>
@@ -208,11 +221,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/spanner-osdi2012/figure-2.png" title="图2 spanserver软件栈。" data-thumbnail="/posts/paper-reading/spanner-osdi2012/figure-2.png" data-sub-html="<h2>图2 spanserver软件栈。</h2><p>图2 spanserver软件栈。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-2.png"
             data-srcset="/posts/paper-reading/spanner-osdi2012/figure-2.png, figure-2.png 1.5x, /posts/paper-reading/spanner-osdi2012/figure-2.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/spanner-osdi2012/figure-2.png" />
+            alt="/posts/paper-reading/spanner-osdi2012/figure-2.png"
+        />
     </a><figcaption class="image-caption">图2 spanserver软件栈。</figcaption>
     </figure></p>
 <p>不像Bigtable，Spannner为数据分配时间戳，这是Spanner更像多版本数据库而不是键值存储的重要原因之一。tablet的状态被保存在一系列类B树的文件和一个预写日志（write-ahead log，WAL）中，它们都在一个被称为Colossus的分布式文件系统中（Google File System<sup>[15]</sup>的继任者）。</p>
@@ -226,11 +239,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/spanner-osdi2012/figure-3.png" title="图3 directory是Paxos group间数据移动的单位。" data-thumbnail="/posts/paper-reading/spanner-osdi2012/figure-3.png" data-sub-html="<h2>图3 directory是Paxos group间数据移动的单位。</h2><p>图3 directory是Paxos group间数据移动的单位。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-3.png"
             data-srcset="/posts/paper-reading/spanner-osdi2012/figure-3.png, figure-3.png 1.5x, /posts/paper-reading/spanner-osdi2012/figure-3.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/spanner-osdi2012/figure-3.png" />
+            alt="/posts/paper-reading/spanner-osdi2012/figure-3.png"
+        />
     </a><figcaption class="image-caption">图3 directory是Paxos group间数据移动的单位。</figcaption>
     </figure></p>
 <p>一个Paxos group可能包含多个directory，这意味着Spanner的tablet与Bigtable的tablet不同：Spanner的tablet并非必须是行空间上按字典序连续的分区。Spanner的tablet是一个装有多个行空间的分区的容器。因为这样做可以一起定位多个经常被一起访问的directory，所以我们做了这样的决策。</p>
@@ -244,11 +257,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/spanner-osdi2012/figure-4.png" title="图4 照片元数据的Spanner模型示例，其交错结构通过INTERLEAVE IN实现。" data-thumbnail="/posts/paper-reading/spanner-osdi2012/figure-4.png" data-sub-html="<h2>图4 照片元数据的Spanner模型示例，其交错结构通过INTERLEAVE IN实现。</h2><p>图4 照片元数据的Spanner模型示例，其交错结构通过INTERLEAVE IN实现。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-4.png"
             data-srcset="/posts/paper-reading/spanner-osdi2012/figure-4.png, figure-4.png 1.5x, /posts/paper-reading/spanner-osdi2012/figure-4.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/spanner-osdi2012/figure-4.png" />
+            alt="/posts/paper-reading/spanner-osdi2012/figure-4.png"
+        />
     </a><figcaption class="image-caption">图4 照片元数据的Spanner模型示例，其交错结构通过INTERLEAVE IN实现。</figcaption>
     </figure></p>
 <p><strong>图4</strong>中有一个照片元数据的Spanner模型的示例，每个用户的每个相册（album）都有有一条元数据。该模型语言与Megastore的类似，另外它还要求每个Spanner数据库必须通过客户端分区到一个或多个有层次结构的表。客户端程序通过<code>INTERLEAVE IN</code>在数据库模型中声明该结构层次。结构层次上层的表是directory table。directory table的每行的键为$K$，它与所有后继（descendant）表中按字典序以$K$开头的行一起构成一个directory。<code>ON DELETE CASCADE</code>表示删除directory table中的行时删除所有相关的子行。图中还阐释了样例数据库的交错结构（interleave）：例如，$Albums(2,1)$表示$Albums$表中$user\ id\ 2, album\ id\ 1$的行。这种通过表交错形成directory的方式十分重要，因为这让客户端可以描述多个表间存在的局部性的关系，这是高性能分布式分片数据库必须的。如果没有它，Spanner将无从得知最重要的局部性关系。</p>
@@ -256,11 +269,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/spanner-osdi2012/table-1.png" title="表1 TrueTime API。参数t是TTstamp的类型。" data-thumbnail="/posts/paper-reading/spanner-osdi2012/table-1.png" data-sub-html="<h2>表1 TrueTime API。参数t是TTstamp的类型。</h2><p>表1 TrueTime API。参数t是TTstamp的类型。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="table-1.png"
             data-srcset="/posts/paper-reading/spanner-osdi2012/table-1.png, table-1.png 1.5x, /posts/paper-reading/spanner-osdi2012/table-1.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/spanner-osdi2012/table-1.png" />
+            alt="/posts/paper-reading/spanner-osdi2012/table-1.png"
+        />
     </a><figcaption class="image-caption">表1 TrueTime API。参数t是TTstamp的类型。</figcaption>
     </figure></p>
 <p>本章描述了TrueTime API并概述了其实现。我们将大部分的细节放在了另一篇论文中，本文的目标是证明这一API的能力。<strong>表1</strong>列出了API的方法。TrueTime显式地将时间表示为$TTinterval$，它是一个有时间不确定度界限的时间范围（不像标准的时间接口，标准时间接口不会给客户端不确定度的概念）。$TTinterval$的接入点（endpoint）是$TTstamp$类型。$TT.now()$方法返回一个$TTinterval$，该时间范围保证了包含$TT.now()$被调用的绝对时间。该时间类似于带有闰秒（leap-second）的UNIX时间。（译注：此处原文为“The time epoch is analogous to UNIX time with leap-second smearing.”）定义瞬时误差的界限为$\epsilon$，其为时间范围宽度的一半，定义平均错误界限为$\bar{\epsilon}$。$TT.after()$和$TT.before()$是对$TT.now()$的方便的封装。</p>
@@ -276,11 +289,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/spanner-osdi2012/table-2.png" title="表2 Spanner中的读写类型与对比。" data-thumbnail="/posts/paper-reading/spanner-osdi2012/table-2.png" data-sub-html="<h2>表2 Spanner中的读写类型与对比。</h2><p>表2 Spanner中的读写类型与对比。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="table-2.png"
             data-srcset="/posts/paper-reading/spanner-osdi2012/table-2.png, table-2.png 1.5x, /posts/paper-reading/spanner-osdi2012/table-2.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/spanner-osdi2012/table-2.png" />
+            alt="/posts/paper-reading/spanner-osdi2012/table-2.png"
+        />
     </a><figcaption class="image-caption">表2 Spanner中的读写类型与对比。</figcaption>
     </figure></p>
 <p><strong>表2</strong>列出了Spanner支持的操作类型。Spanner的实现支持读写事务（read-write transaction）、只读事务（read-only transaction）（即预先声明了的快照隔离事务，(predeclared snapshot-isolation transactions））、和快照读取（snapshot read）。单独的写入作为读写事务实现；单独的非快照读作为只读事务实现。二者都在内部重试。（客户端不需要自己编写重试循环。）</p>
@@ -336,11 +349,11 @@ $$ s_1 &lt; s_2 \tag{transitivity} $$</p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/spanner-osdi2012/table-3.png" title="表3 操作的小批量benchmark。10次运行的均值与标准差。1D表示1个副本禁用了提交等待。" data-thumbnail="/posts/paper-reading/spanner-osdi2012/table-3.png" data-sub-html="<h2>表3 操作的小批量benchmark。10次运行的均值与标准差。1D表示1个副本禁用了提交等待。</h2><p>表3 操作的小批量benchmark。10次运行的均值与标准差。1D表示1个副本禁用了提交等待。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="table-3.png"
             data-srcset="/posts/paper-reading/spanner-osdi2012/table-3.png, table-3.png 1.5x, /posts/paper-reading/spanner-osdi2012/table-3.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/spanner-osdi2012/table-3.png" />
+            alt="/posts/paper-reading/spanner-osdi2012/table-3.png"
+        />
     </a><figcaption class="image-caption">表3 操作的小批量benchmark。10次运行的均值与标准差。1D表示1个副本禁用了提交等待。</figcaption>
     </figure></p>
 <p>对于延迟实验，客户端会发出很少的操作，以避免在服务器上排队。从1路副本实验得出，提交等待打野为5ms，Paxos的延迟大约为9ms。随着副本数的增加，延迟大概恒定，且标准差更小，因为Paxos在一个group的副本汇总并行执行。随着副本数的增加，达到大多数投票（quorum）的延迟不再对单个较慢的slave副本敏感。</p>
@@ -348,11 +361,11 @@ $$ s_1 &lt; s_2 \tag{transitivity} $$</p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/spanner-osdi2012/table-4.png" title="表4 两阶段提交的伸缩性。10次运行的均值与标准差。" data-thumbnail="/posts/paper-reading/spanner-osdi2012/table-4.png" data-sub-html="<h2>表4 两阶段提交的伸缩性。10次运行的均值与标准差。</h2><p>表4 两阶段提交的伸缩性。10次运行的均值与标准差。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="table-4.png"
             data-srcset="/posts/paper-reading/spanner-osdi2012/table-4.png, table-4.png 1.5x, /posts/paper-reading/spanner-osdi2012/table-4.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/spanner-osdi2012/table-4.png" />
+            alt="/posts/paper-reading/spanner-osdi2012/table-4.png"
+        />
     </a><figcaption class="image-caption">表4 两阶段提交的伸缩性。10次运行的均值与标准差。</figcaption>
     </figure></p>
 <p><strong>表4</strong>展示了两阶段提交能够扩展到合理的参与者数量：其对跨3个zone运行的一系列实验进行了总结，每个实验有25个spanserver。在扩展到50个participant时，均值和99%比例的延迟都很合理，而扩展到100个participant时延迟开始显著增加。</p>
@@ -361,11 +374,11 @@ $$ s_1 &lt; s_2 \tag{transitivity} $$</p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/spanner-osdi2012/figure-5.png" title="图5 杀掉服务器对吞吐量的影响。" data-thumbnail="/posts/paper-reading/spanner-osdi2012/figure-5.png" data-sub-html="<h2>图5 杀掉服务器对吞吐量的影响。</h2><p>图5 杀掉服务器对吞吐量的影响。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-5.png"
             data-srcset="/posts/paper-reading/spanner-osdi2012/figure-5.png, figure-5.png 1.5x, /posts/paper-reading/spanner-osdi2012/figure-5.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/spanner-osdi2012/figure-5.png" />
+            alt="/posts/paper-reading/spanner-osdi2012/figure-5.png"
+        />
     </a><figcaption class="image-caption">图5 杀掉服务器对吞吐量的影响。</figcaption>
     </figure></p>
 <p>杀掉$Z_2$对读取吞吐量没有影响。在杀掉$Z_1$时给leader时间来将领导权移交给另一个zone的影响最小：其吞吐量的减小在图中看不出，大概在3~4%。而另一方面，不进行警告就杀掉$Z_1$的影响最严重：完成率几乎降到了0.然而，随着leader被重新选举出，系统的吞吐量升高到了约100K读取/秒，其原因在于我们实验中的2个因素：系统还有余量、leader不可用时操作会排队。因此，系统的吞吐量会增加，然后再慢慢回到其稳定状态下的速率。</p>
@@ -375,11 +388,11 @@ $$ s_1 &lt; s_2 \tag{transitivity} $$</p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/spanner-osdi2012/figure-6.png" title="图6 TrueTime的ε值的分布，在timeslave daemon查询time master后立即采样。图中分别绘制了第90%、99%、99.9%个数据的情况。" data-thumbnail="/posts/paper-reading/spanner-osdi2012/figure-6.png" data-sub-html="<h2>图6 TrueTime的ε值的分布，在timeslave daemon查询time master后立即采样。图中分别绘制了第90%、99%、99.9%个数据的情况。</h2><p>图6 TrueTime的ε值的分布，在timeslave daemon查询time master后立即采样。图中分别绘制了第90%、99%、99.9%个数据的情况。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-6.png"
             data-srcset="/posts/paper-reading/spanner-osdi2012/figure-6.png, figure-6.png 1.5x, /posts/paper-reading/spanner-osdi2012/figure-6.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/spanner-osdi2012/figure-6.png" />
+            alt="/posts/paper-reading/spanner-osdi2012/figure-6.png"
+        />
     </a><figcaption class="image-caption">图6 TrueTime的ε值的分布，在timeslave daemon查询time master后立即采样。图中分别绘制了第90%、99%、99.9%个数据的情况。</figcaption>
     </figure></p>
 <p><strong>图6</strong>给出了在距离高达2200km的数据中心间的几千台spanserver机器上获取的TrueTime数据。图中绘出了第90%、99%和99.9%个的$\epsilon$，其在timeslave daemon查询time master后立即采样。采样中去掉了$\epsilon$因本地时钟的不确定度而产生的锯齿波，因此其测量的是time master的不确定度（通常为0）加上到time master的通信延迟的值。</p>
@@ -392,22 +405,22 @@ $$ s_1 &lt; s_2 \tag{transitivity} $$</p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/spanner-osdi2012/table-5.png" title="表5 F1中directory-fragment的数量分布。" data-thumbnail="/posts/paper-reading/spanner-osdi2012/table-5.png" data-sub-html="<h2>表5 F1中directory与fragment的数量分布。</h2><p>表5 F1中directory-fragment的数量分布。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="table-5.png"
             data-srcset="/posts/paper-reading/spanner-osdi2012/table-5.png, table-5.png 1.5x, /posts/paper-reading/spanner-osdi2012/table-5.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/spanner-osdi2012/table-5.png" />
+            alt="/posts/paper-reading/spanner-osdi2012/table-5.png"
+        />
     </a><figcaption class="image-caption">表5 F1中directory与fragment的数量分布。</figcaption>
     </figure></p>
 <p><strong>表5</strong>阐述了F1中每个directory中的fragment的数量的分布。每个directory通常对应于一个F1上的应用程序栈的消费者。绝大多数的directory（即对绝大多数消费者来说）仅包含一个fragment，这意味着对那些消费者数据的读写操作能保证仅发生在单个服务器上。包含100多个fragment的directory都是包含F1辅助索引的表：对于这种不止有几个fragment的表的写入是极为少见的。F1团队仅在他们以事务的方式处理未优化的批数据负载时见到过这种行为。</p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/spanner-osdi2012/table-6.png" title="表6 在24小时内测量的F1感知到的操作延迟。" data-thumbnail="/posts/paper-reading/spanner-osdi2012/table-6.png" data-sub-html="<h2>表6 在24小时内测量的F1感知到的操作延迟。</h2><p>表6 在24小时内测量的F1感知到的操作延迟。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="table-6.png"
             data-srcset="/posts/paper-reading/spanner-osdi2012/table-6.png, table-6.png 1.5x, /posts/paper-reading/spanner-osdi2012/table-6.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/spanner-osdi2012/table-6.png" />
+            alt="/posts/paper-reading/spanner-osdi2012/table-6.png"
+        />
     </a><figcaption class="image-caption">表6 在24小时内测量的F1感知到的操作延迟。</figcaption>
     </figure></p>
 <p><strong>表6</strong>给出了从F1服务器测出的Spanner操作延迟。在东海岸的数据中心在选取Paxos leader方面有更高的优先级。表中的数据是从这些数据中心内的F1服务器测量的。写入延迟的标准差更大，这是由因锁冲突而导致的一个长尾操作导致的。读取延迟的标准差甚至更大，其部分原因是，Paxos leader分布在两个数据中心中，其中只有一个数据中心有装有SSD的机器。此外，我们还对两个数据中心中的系统的每个读取操作进行了测量：字节读取量的均值与标准差分别约为1.6KB和119KB。</p>
@@ -484,7 +497,9 @@ $$ t_{abs}(e_{i,r_0}^{send})+10 \le t_{abs}(e_{i,r_0}^{receive})+10 \tag{causali
 $$ t_{abs}(e_{i,r_0}^{receive})+10 \le t_{i,r_0}^{end} \tag{by definition} $$
 $$ t_{i,r_0}^{end} &lt; t_{abs}(e_{i+1,r_0}^{grant}) \tag{single-vote} $$
 $$ t_{abs}(e_{i+1,r_0}^{grant}) \le t_{abs}(e_{i+1}^{quorum}) \tag{causality} $$
-$$ t_{abs}(e_{i+1}^{quorum}) \le lease_{i+1}.start \tag{by definition} $$</p></div><div class="post-footer" id="post-footer">
+$$ t_{abs}(e_{i+1}^{quorum}) \le lease_{i+1}.start \tag{by definition} $$</p></div>
+
+        <div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
@@ -511,16 +526,22 @@ $$ t_{abs}(e_{i+1}^{quorum}) \le lease_{i+1}.start \tag{by definition} $$</p></d
             <a href="/posts/code-reading/etcdraft-made-simple/0-introduction/" class="next" rel="next" title="深入浅出etcd/raft —— 0x00 引言">深入浅出etcd/raft —— 0x00 引言<i class="fas fa-angle-right fa-fw"></i></a></div>
 </div>
 </article></div>
-            </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
-                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
-        </div>
-    </footer></div>
+        </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank" rel="noopener noreferrer">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        </div></footer></div>
 
-        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
-                <i class="fas fa-arrow-up fa-fw"></i>
-            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
-                <i class="fas fa-comment fa-fw"></i>
-            </a>
-        </div><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"><link rel="stylesheet" href="/lib/katex/katex.min.css"><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"><script type="text/javascript" src="/lib/smooth-scroll/smooth-scroll.min.js"></script><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"id-1":"叉鸽 | MrCroxx","id-2":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"id-1":["id-1"],"id-2":["id-2"]},"duration":null,"speed":null}};</script><script type="text/javascript" src="/js/theme.min.js"></script></body>
+    <div id="fixed-buttons"><a href="#back-to-top" id="back-to-top-button" class="fixed-button" title="回到顶部">
+            <i class="fas fa-arrow-up fa-fw"></i>
+        </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+            <i class="fas fa-comment fa-fw"></i>
+        </a>
+    </div><div class="assets"><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/topbar/topbar.min.js"></script><script type="text/javascript" src="/lib/pjax/pjax.min.js"></script><script type="text/javascript" src="/js/theme.min.js"></script></div>
+
+<div class="pjax-assets"><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"desktop-header-typeit":"叉鸽 | MrCroxx","mobile-header-typeit":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"desktop-header-typeit":["desktop-header-typeit"],"mobile-header-typeit":["mobile-header-typeit"]},"duration":null,"speed":null}};</script><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/lightgallery/lightgallery.min.css">
+    <noscript><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/katex/katex.min.css">
+    <noscript><link rel="stylesheet" href="/lib/katex/katex.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/katex/copy-tex.min.css">
+    <noscript><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"></noscript></div>
+</body>
+
 </html>

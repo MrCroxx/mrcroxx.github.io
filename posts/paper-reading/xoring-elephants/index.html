@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="robots" content="noodp" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
-        <title>《XORing Elephants: Novel Erasure Codes for Big Data》论文翻译（arXiv:1301.3791v1） - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《XORing Elephants: Novel Erasure Codes for Big Data》论文翻译（arXiv:1301.3791v1）" />
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noodp" />
+    <title class="pjax-title">《XORing Elephants: Novel Erasure Codes for Big Data》论文翻译（arXiv:1301.3791v1） - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《XORing Elephants: Novel Erasure Codes for Big Data》论文翻译（arXiv:1301.3791v1）" />
 <meta property="og:description" content="本篇文章是对论文XORing Elephants: Novel Erasure Codes for Big Data的原创翻译，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/xoring-elephants/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/paper-reading/xoring-elephants/paper-reading.jpg"/><meta property="article:section" content="posts" />
@@ -17,9 +17,13 @@
 <meta name="twitter:title" content="《XORing Elephants: Novel Erasure Codes for Big Data》论文翻译（arXiv:1301.3791v1）"/>
 <meta name="twitter:description" content="本篇文章是对论文XORing Elephants: Novel Erasure Codes for Big Data的原创翻译，转载请严格遵守CC BY-NC-SA协议。"/>
 <meta name="application-name" content="叉鸽 MrCroxx 的博客">
-<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客">
+
+<meta name="theme-color" content="#f8f8f8"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/paper-reading/xoring-elephants/" /><link rel="prev" href="https://mrcroxx.github.io/posts/paper-reading/bigtable-osdi06/" /><link rel="next" href="https://mrcroxx.github.io/posts/paper-reading/rdd-nsdi12-final138/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="canonical" href="https://mrcroxx.github.io/posts/paper-reading/xoring-elephants/" /><link rel="prev" href="https://mrcroxx.github.io/posts/paper-reading/bigtable-osdi06/" /><link rel="next" href="https://mrcroxx.github.io/posts/paper-reading/rdd-nsdi12-final138/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/fontawesome-free/all.min.css">
+    <noscript><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/animate/animate.min.css">
+    <noscript><link rel="stylesheet" href="/lib/animate/animate.min.css"></noscript><script type="application/ld+json">
     {
         "@context": "http://schema.org",
         "@type": "BlogPosting",
@@ -42,36 +46,43 @@
             },"description": ""
     }
     </script></head>
-    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : '' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
 
-        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+<body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">
+        function setTheme(theme) {document.body.setAttribute('theme', theme);}
+        function saveTheme(theme) {window.localStorage && localStorage.setItem('theme', theme);}
+        function getMeta(metaName) {const metas = document.getElementsByTagName('meta'); for (let i = 0; i < metas.length; i++) if (metas[i].getAttribute('name') === metaName) return metas[i]; return '';}
+        if (window.localStorage && localStorage.getItem('theme')) {let theme = localStorage.getItem('theme');theme === 'light' || theme === 'dark' || theme === 'black' ? setTheme(theme) : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? setTheme('dark') : setTheme('light')); } else { if ('' === 'light' || '' === 'dark' || '' === 'black') setTheme(''), saveTheme(''); else saveTheme('auto'), window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? setTheme('dark') : setTheme('light');}
+        let metaColors = {'light': '#f8f8f8','dark': '#252627','black': '#000000'}
+        getMeta('theme-color').content = metaColors[document.body.getAttribute('theme')];
+    </script>
+    <div id="back-to-top"></div>
+    <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
     <div class="header-wrapper">
         <div class="header-title">
-            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-1" class="typeit"></span></a>
+            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="desktop-header-typeit" class="typeit"></span></a>
         </div>
         <div class="menu">
-            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/posts/about-me"> 关于我 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
                         <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
-                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                        <a href="#" onclick="return false;" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
                             <i class="fas fa-search fa-fw"></i>
                         </a>
-                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                        <a href="#" onclick="return false;" class="search-button search-clear" id="search-clear-desktop" title="清空">
                             <i class="fas fa-times-circle fa-fw"></i>
                         </a>
                         <span class="search-button search-loading" id="search-loading-desktop">
                             <i class="fas fa-spinner fa-fw fa-spin"></i>
                         </span>
-                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    </span><a href="#" onclick="return false;" class="menu-item theme-switch" title="切换主题">
                     <i class="fas fa-adjust fa-fw"></i>
-                </a>
-            </div>
+                </a></div>
         </div>
     </div>
 </header><header class="mobile" id="header-mobile">
     <div class="header-container">
         <div class="header-wrapper">
             <div class="header-title">
-                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-2" class="typeit"></span></a>
+                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="mobile-header-typeit" class="typeit"></span></a>
             </div>
             <div class="menu-toggle" id="menu-toggle-mobile">
                 <span></span><span></span><span></span>
@@ -80,20 +91,20 @@
         <div class="menu" id="menu-mobile"><div class="search-wrapper">
                     <div class="search mobile" id="search-mobile">
                         <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
-                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                        <a href="#" onclick="return false;" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
                             <i class="fas fa-search fa-fw"></i>
                         </a>
-                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                        <a href="#" onclick="return false;" class="search-button search-clear" id="search-clear-mobile" title="清空">
                             <i class="fas fa-times-circle fa-fw"></i>
                         </a>
                         <span class="search-button search-loading" id="search-loading-mobile">
                             <i class="fas fa-spinner fa-fw fa-spin"></i>
                         </span>
                     </div>
-                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                    <a href="#" onclick="return false;" class="search-cancel" id="search-cancel-mobile">
                         取消
                     </a>
-                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/posts/about-me" title="">关于我</a><a href="#" onclick="return false;" class="menu-item theme-switch" title="切换主题">
                 <i class="fas fa-adjust fa-fw"></i>
             </a></div>
     </div>
@@ -105,21 +116,23 @@
     <div id="search-dropdown-mobile"></div>
 </div>
 <main class="main">
-                <div class="container"><div class="toc" id="toc-auto">
-            <h2 class="toc-title">目录</h2>
-            <div class="toc-content" id="toc-content-auto"></div>
-        </div><article class="page single"><h1 class="single-title animated flipInX">《XORing Elephants: Novel Erasure Codes for Big Data》论文翻译（arXiv:1301.3791v1）</h1><div class="post-meta">
-            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-03">2020-09-03</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 19987 字&nbsp;
+            <div class="container"><div class="toc" id="toc-auto">
+        <h2 class="toc-title">目录</h2>
+        <div class="toc-content" id="toc-content-auto"></div>
+    </div><script>document.getElementsByTagName("main")[0].setAttribute("pageStyle", "normal")</script><script>document.getElementsByTagName("main")[0].setAttribute("autoTOC", "true")</script><article class="page single"><h1 class="single-title animate__animated animate__flipInX">《XORing Elephants: Novel Erasure Codes for Big Data》论文翻译（arXiv:1301.3791v1）</h1><div class="post-meta">
+            <div class="post-meta-line">
+                <span class="post-author"><i class="author fas fa-user-circle fa-fw"></i><a href="about" title="Author" rel=" author" class="author">叉鸽</a>
+                </span>&nbsp;<span class="post-category">收录于 </span>&nbsp;<span class="post-category">类别 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-03">2020-09-03</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2020-09-07">2020-09-07</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 19987 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 40 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
-        src="/svg/loading.min.svg"
         data-src="/posts/paper-reading/xoring-elephants/paper-reading.jpg"
         data-srcset="/posts/paper-reading/xoring-elephants/paper-reading.jpg, /posts/paper-reading/xoring-elephants/paper-reading.jpg 1.5x, /posts/paper-reading/xoring-elephants/paper-reading.jpg 2x"
         data-sizes="auto"
         alt="/posts/paper-reading/xoring-elephants/paper-reading.jpg"
-        title="/posts/paper-reading/xoring-elephants/paper-reading.jpg" /></div><div class="details toc" id="toc-static"  kept="">
+        title="/posts/paper-reading/xoring-elephants/paper-reading.jpg" height="360" width="1200"
+    /></div><div class="details toc" id="toc-static"  kept="">
                 <div class="details-summary toc-title">
                     <span>目录</span>
                     <span><i class="details-icon fas fa-angle-right"></i></span>
@@ -202,11 +215,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/xoring-elephants/figure-1.png" title="图1 Facebook中由3000个节点组成的生产集群中一个月内节点故障数量" data-thumbnail="/posts/paper-reading/xoring-elephants/figure-1.png" data-sub-html="<h2>图1 Facebook中由3000个节点组成的生产集群中一个月内节点故障数量</h2><p>图1 Facebook中由3000个节点组成的生产集群中一个月内节点故障数量</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-1.png"
             data-srcset="/posts/paper-reading/xoring-elephants/figure-1.png, figure-1.png 1.5x, /posts/paper-reading/xoring-elephants/figure-1.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/xoring-elephants/figure-1.png" />
+            alt="/posts/paper-reading/xoring-elephants/figure-1.png"
+        />
     </a><figcaption class="image-caption">图1 Facebook中由3000个节点组成的生产集群中一个月内节点故障数量</figcaption>
     </figure></p>
 <p>高效的可修复的编码方案在编码存储系统中变得越来越重要的原因还有4点。原因一，是读取降级（degraded read）问题。无永久性数据丢失的瞬时错误占数据中心错误事件的90%<sup>[9, 19]</sup>。当瞬时性错误发生时，如果一个编码了的条带的相关数据块不可用时，对该块的读取会被降级（degraded）。在这种情况下，丢失的数据块可以被修复进程重建，其目的并不在于容错，而是为了更高的数据可用性。这与标准的数据修复的区别在于，为了可用性而重建的块不需要被写入磁盘。因此，高效且快速的修复可以大幅提高数据可用性。</p>
@@ -242,11 +255,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/xoring-elephants/figure-2.png" title="图2 HDFS-Xorbas中实现的LRC。4个奇偶校验块$P_{1},P_{2},P_{3},P_{4}$通过标准RS码构造，局部的奇偶校验为单块故障提供了高效的修复能力。主要的理论挑战是如何选择系数$c_{i}$来最大化编码的容错能力。" data-thumbnail="/posts/paper-reading/xoring-elephants/figure-2.png" data-sub-html="<h2>图2 HDFS-Xorbas中实现的LRC。4个奇偶校验块$P_{1},P_{2},P_{3},P_{4}$通过标准RS码构造，局部的奇偶校验为单块故障提供了高效的修复能力。主要的理论挑战是如何选择系数$c_{i}$来最大化编码的容错能力。</h2><p>图2 HDFS-Xorbas中实现的LRC。4个奇偶校验块$P_{1},P_{2},P_{3},P_{4}$通过标准RS码构造，局部的奇偶校验为单块故障提供了高效的修复能力。主要的理论挑战是如何选择系数$c_{i}$来最大化编码的容错能力。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-2.png"
             data-srcset="/posts/paper-reading/xoring-elephants/figure-2.png, figure-2.png 1.5x, /posts/paper-reading/xoring-elephants/figure-2.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/xoring-elephants/figure-2.png" />
+            alt="/posts/paper-reading/xoring-elephants/figure-2.png"
+        />
     </a><figcaption class="image-caption">图2 HDFS-Xorbas中实现的LRC。4个奇偶校验块$P_{1},P_{2},P_{3},P_{4}$通过标准RS码构造，局部的奇偶校验为单块故障提供了高效的修复能力。主要的理论挑战是如何选择系数$c_{i}$来最大化编码的容错能力。</figcaption>
     </figure></p>
 <p>通过添加局部奇偶校验块$S_{1}=c_{1}X_{1}+c_{2}X_{2}+c_{3}X_{3}+c_{4}X_{4}+c_{5}X_{5}$，单块故障可以通过仅访问另外5个块来修复。例如，如果块$X_{3}$丢失（或在不可用时被读取降级）其可以通过下式重建。</p>
@@ -289,22 +302,22 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/xoring-elephants/figure-3.png" title="图3 用来计算$(10,4)$RS和$(10,6,5)$LRC的$MTTDL_{stripe}$的马尔科夫模型。" data-thumbnail="/posts/paper-reading/xoring-elephants/figure-3.png" data-sub-html="<h2>图3 用来计算$(10,4)$RS和$(10,6,5)$LRC的$MTTDL_{stripe}$的马尔科夫模型。</h2><p>图3 用来计算$(10,4)$RS和$(10,6,5)$LRC的$MTTDL_{stripe}$的马尔科夫模型。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-3.png"
             data-srcset="/posts/paper-reading/xoring-elephants/figure-3.png, figure-3.png 1.5x, /posts/paper-reading/xoring-elephants/figure-3.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/xoring-elephants/figure-3.png" />
+            alt="/posts/paper-reading/xoring-elephants/figure-3.png"
+        />
     </a><figcaption class="image-caption">图3 用来计算$(10,4)$RS和$(10,6,5)$LRC的$MTTDL_{stripe}$的马尔科夫模型。</figcaption>
     </figure></p>
 <p>我们接下来计算状态转移概率。假设发生故障的间隔时间呈指数分布。修复时间也是如此。通常，修复时间可能不服从指数分布，然而，这样假设可以简化我们的分析。当条带中还有$i$个块时（即，当状态为$n-1$时），失去一个块的概率$ \lambda _{i} = i \lambda $，因为这$i$个块分布在不同节点上，且每个节点故障事件是独立的，其概率为$\lambda$。块被修复的概率取决于修复需要下载多少个块、块大小和下载速率$\gamma$。例如，对于3副本策略，修复单个块需要下载一个块，因此我们假设$\rho _{i} = \gamma / B $，其中$i=1,2$。对于编码策略，我们需要额外考虑使用轻量级和重量级编码器的影响。以LRC为例，如果两个相同条带的块丢失，我们决定调用轻量级和重量级编码器的概率，然后计算需要下载的块数的期望。受篇幅所限，我们跳过详细的推导。相似的做法可参见<sup>[9]</sup>。条带的MTTDL等于其从状态0到数据丢失状态的平均时间。在以上的假设和状态转移概率下，我们来计算条带的MTTDL，这样就可以通过**公式(3)**计算系统的MTTDL。</p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/xoring-elephants/table-1.png" title="表1 对比三种策略的总结。MTTDL假设节点故障是独立事件" data-thumbnail="/posts/paper-reading/xoring-elephants/table-1.png" data-sub-html="<h2>表1 对比三种策略的总结。MTTDL假设节点故障是独立事件</h2><p>表1 对比三种策略的总结。MTTDL假设节点故障是独立事件</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="table-1.png"
             data-srcset="/posts/paper-reading/xoring-elephants/table-1.png, table-1.png 1.5x, /posts/paper-reading/xoring-elephants/table-1.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/xoring-elephants/table-1.png" />
+            alt="/posts/paper-reading/xoring-elephants/table-1.png"
+        />
     </a><figcaption class="image-caption">表1 对比三种策略的总结。MTTDL假设节点故障是独立事件</figcaption>
     </figure></p>
 <p>我们在马尔可夫模型下计算得到的副本策略、HDFS-RS和Xorbas的MTTDL的值如<strong>表1</strong>所示。我们观察到，在可靠性方面，LRC较高的修复速度弥补了需要额外存储的不足。这让Xorbas LRC$(10,6,5)$比$(10,6)$RS码的可靠性多出了两个0。三副本策略的可靠性比两种编码策略的可靠性低得多，这与相关工作<sup>[9]</sup>中观测到的结果相似。</p>
@@ -321,31 +334,31 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/xoring-elephants/figure-4.png" title="图4 200个文件的实验中的测量指标。由于网络输入和网络输出相似，因此没在图中显示。在实验期间，我们模拟了8次故障事件，x轴给出了每次故障事件中杀死的DataNode数量，括号中显示了丢失的块的数量。" data-thumbnail="/posts/paper-reading/xoring-elephants/figure-4.png" data-sub-html="<h2>图4 200次文件实验中的测量指标。由于网络输入和网络输出相似，因此没在图中显示。在实验期间，我们模拟了8次故障事件，x轴给出了每次故障事件中杀死的DataNode数量，括号中显示了丢失的块的数量。</h2><p>图4 200个文件的实验中的测量指标。由于网络输入和网络输出相似，因此没在图中显示。在实验期间，我们模拟了8次故障事件，x轴给出了每次故障事件中杀死的DataNode数量，括号中显示了丢失的块的数量。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-4.png"
             data-srcset="/posts/paper-reading/xoring-elephants/figure-4.png, figure-4.png 1.5x, /posts/paper-reading/xoring-elephants/figure-4.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/xoring-elephants/figure-4.png" />
+            alt="/posts/paper-reading/xoring-elephants/figure-4.png"
+        />
     </a><figcaption class="image-caption">图4 200次文件实验中的测量指标。由于网络输入和网络输出相似，因此没在图中显示。在实验期间，我们模拟了8次故障事件，x轴给出了每次故障事件中杀死的DataNode数量，括号中显示了丢失的块的数量。</figcaption>
     </figure></p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/xoring-elephants/figure-5.png" title="图5 两个EC2集群中故障事件序列按时间的测量值。" data-thumbnail="/posts/paper-reading/xoring-elephants/figure-5.png" data-sub-html="<h2>图5 两个EC2集群中故障事件序列按时间的测量值。</h2><p>图5 两个EC2集群中故障事件序列按时间的测量值。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-5.png"
             data-srcset="/posts/paper-reading/xoring-elephants/figure-5.png, figure-5.png 1.5x, /posts/paper-reading/xoring-elephants/figure-5.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/xoring-elephants/figure-5.png" />
+            alt="/posts/paper-reading/xoring-elephants/figure-5.png"
+        />
     </a><figcaption class="image-caption">图5 两个EC2集群中故障事件序列按时间的测量值。</figcaption>
     </figure></p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/xoring-elephants/figure-6.png" title="图6 故障事件测量点与相应事件中丢失的锁的总数。测量值来自所有三次实验。" data-thumbnail="/posts/paper-reading/xoring-elephants/figure-6.png" data-sub-html="<h2>图6 故障事件测量点与相应事件中丢失的锁的总数。测量值来自所有三次实验。</h2><p>图6 故障事件测量点与相应事件中丢失的锁的总数。测量值来自所有三次实验。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-6.png"
             data-srcset="/posts/paper-reading/xoring-elephants/figure-6.png, figure-6.png 1.5x, /posts/paper-reading/xoring-elephants/figure-6.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/xoring-elephants/figure-6.png" />
+            alt="/posts/paper-reading/xoring-elephants/figure-6.png"
+        />
     </a><figcaption class="image-caption">图6 故障事件测量点与相应事件中丢失的锁的总数。测量值来自所有三次实验。</figcaption>
     </figure></p>
 <h4 id="521-hdfs字节读取数">5.2.1 HDFS字节读取数</h4>
@@ -361,22 +374,22 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/xoring-elephants/figure-7.png" title="图7 在没有块丢失和最多20%块丢失时两个集群上完成10个WordCound的时间。虚线表示任务平均完成时间。" data-thumbnail="/posts/paper-reading/xoring-elephants/figure-7.png" data-sub-html="<h2>图7 在没有块丢失和最多20%块丢失时两个集群上完成10个WordCound的时间。虚线表示任务平均完成时间。</h2><p>图7 在没有块丢失和最多20%块丢失时两个集群上完成10个WordCound的时间。虚线表示任务平均完成时间。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-7.png"
             data-srcset="/posts/paper-reading/xoring-elephants/figure-7.png, figure-7.png 1.5x, /posts/paper-reading/xoring-elephants/figure-7.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/xoring-elephants/figure-7.png" />
+            alt="/posts/paper-reading/xoring-elephants/figure-7.png"
+        />
     </a><figcaption class="image-caption">图7 在没有块丢失和最多20%块丢失时两个集群上完成10个WordCound的时间。虚线表示任务平均完成时间。</figcaption>
     </figure></p>
 <p>我们注意到，这些优势主要取决于Hadoop FairScheduler的配置方式。如果并发的工作被阻塞，但是调度器仍为他们分配了槽，那么延时会大幅增加。而且，修复时间超过阈值，那么需要读取块的工作可能会失败。在这些实验中，调度配置的选项是按照对RS最有利的方式设置的。最后，像之前讨论过的那样，由于网络饱和，我们预期在大规模的实验中，LRCs会比RS快的更多。</p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/xoring-elephants/table-2.png" title="表2 修复对工作负载的影响" data-thumbnail="/posts/paper-reading/xoring-elephants/table-2.png" data-sub-html="<h2>表2 修复对工作负载的影响</h2><p>表2 修复对工作负载的影响</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="table-2.png"
             data-srcset="/posts/paper-reading/xoring-elephants/table-2.png, table-2.png 1.5x, /posts/paper-reading/xoring-elephants/table-2.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/xoring-elephants/table-2.png" />
+            alt="/posts/paper-reading/xoring-elephants/table-2.png"
+        />
     </a><figcaption class="image-caption">表2 修复对工作负载的影响</figcaption>
     </figure></p>
 <h3 id="53-facebook的集群">5.3 Facebook的集群</h3>
@@ -384,11 +397,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/xoring-elephants/table-3.png" title="表3 Facebook集群中的实验结果" data-thumbnail="/posts/paper-reading/xoring-elephants/table-3.png" data-sub-html="<h2>表3 Facebook集群中的实验结果</h2><p>表3 Facebook集群中的实验结果</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="table-3.png"
             data-srcset="/posts/paper-reading/xoring-elephants/table-3.png, table-3.png 1.5x, /posts/paper-reading/xoring-elephants/table-3.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/xoring-elephants/table-3.png" />
+            alt="/posts/paper-reading/xoring-elephants/table-3.png"
+        />
     </a><figcaption class="image-caption">表3 Facebook集群中的实验结果</figcaption>
     </figure></p>
 <p>对我们的实验来说，集群上部署了HDFS-RS，且一旦数据的RAID操作完成后，就会有一台随机的DataNode被杀死。对HDFS字节读取量和修复时间的测量值会被采集起来。不幸的是，我们没有对网络流量的测量。实验会在以相同配置部署的HDFS-Xorbas上再次执行一遍。结果在<strong>表3</strong>中显示。需要注意的是，在本次实验中，HDFS-Xorbas比HDFS-RS的存储多出了27%（理想情况下，额外开销应为13%），这是由于集群中存储的主要是小文件。正如我们之前提到的那样，被存储在HDFS上的文件通常很大（小文件通常会被归档为较大的HAR文件）。此外，需要强调的是，本次实验中使用的特定的数据集接不代表Facebook生产集群中存储的数据集。</p>
@@ -456,7 +469,9 @@
 <p>注3：接下来，我们考虑有相同局部性的编码。即，$(k,n-k)$编码中所有编码块都有局部性$r$。这些编码被称为非规范化的编码<sup>[10]</sup>。</p>
 </blockquote>
 <h3 id="附录b">附录B</h3>
-<p>才疏学浅&hellip; 后面实在翻不动了&hellip; 感兴趣的小伙伴请参考原文<a href="https://arxiv.org/pdf/1301.3791.pdf" target="_blank" rel="noopener noreffer">XORing Elephants: Novel Erasure Codes for Big Data</a>。</p></div><div class="post-footer" id="post-footer">
+<p>才疏学浅&hellip; 后面实在翻不动了&hellip; 感兴趣的小伙伴请参考原文<a href="https://arxiv.org/pdf/1301.3791.pdf" target="_blank" rel="noopener noreffer">XORing Elephants: Novel Erasure Codes for Big Data</a>。</p></div>
+
+        <div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
@@ -483,16 +498,22 @@
             <a href="/posts/paper-reading/rdd-nsdi12-final138/" class="next" rel="next" title="《Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing》论文翻译（RDD-NSDI12-FINAL138）">《Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing》论文翻译（RDD-NSDI12-FINAL138）<i class="fas fa-angle-right fa-fw"></i></a></div>
 </div>
 </article></div>
-            </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
-                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
-        </div>
-    </footer></div>
+        </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank" rel="noopener noreferrer">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        </div></footer></div>
 
-        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
-                <i class="fas fa-arrow-up fa-fw"></i>
-            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
-                <i class="fas fa-comment fa-fw"></i>
-            </a>
-        </div><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"><link rel="stylesheet" href="/lib/katex/katex.min.css"><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"><script type="text/javascript" src="/lib/smooth-scroll/smooth-scroll.min.js"></script><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"id-1":"叉鸽 | MrCroxx","id-2":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"id-1":["id-1"],"id-2":["id-2"]},"duration":null,"speed":null}};</script><script type="text/javascript" src="/js/theme.min.js"></script></body>
+    <div id="fixed-buttons"><a href="#back-to-top" id="back-to-top-button" class="fixed-button" title="回到顶部">
+            <i class="fas fa-arrow-up fa-fw"></i>
+        </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+            <i class="fas fa-comment fa-fw"></i>
+        </a>
+    </div><div class="assets"><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/topbar/topbar.min.js"></script><script type="text/javascript" src="/lib/pjax/pjax.min.js"></script><script type="text/javascript" src="/js/theme.min.js"></script></div>
+
+<div class="pjax-assets"><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"desktop-header-typeit":"叉鸽 | MrCroxx","mobile-header-typeit":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"desktop-header-typeit":["desktop-header-typeit"],"mobile-header-typeit":["mobile-header-typeit"]},"duration":null,"speed":null}};</script><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/lightgallery/lightgallery.min.css">
+    <noscript><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/katex/katex.min.css">
+    <noscript><link rel="stylesheet" href="/lib/katex/katex.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/katex/copy-tex.min.css">
+    <noscript><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"></noscript></div>
+</body>
+
 </html>

@@ -5,74 +5,74 @@
         <description>Tags - 标签 - 叉鸽 MrCroxx 的博客</description>
         <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>mrcroxx@outlook.com (叉鸽)</managingEditor>
             <webMaster>mrcroxx@outlook.com (叉鸽)</webMaster><lastBuildDate>Sat, 30 Oct 2021 18:00:00 &#43;0800</lastBuildDate><atom:link href="https://mrcroxx.github.io/tags/" rel="self" type="application/rss+xml" /><item>
-    <title>Reading</title>
-    <link>https://mrcroxx.github.io/tags/reading/</link>
-    <pubDate>Sat, 30 Oct 2021 18:00:00 &#43;0800</pubDate>
-    <author>作者</author>
-    <guid>https://mrcroxx.github.io/tags/reading/</guid>
+    <title>Reading List</title>
+    <link>https://mrcroxx.github.io/tags/reading-list/</link>
+    <pubDate>Sat, 30 Oct 2021 18:00:00 &#43;0800</pubDate><author>
+        <name>叉鸽</name>
+    </author><guid>https://mrcroxx.github.io/tags/reading-list/</guid>
     <description><![CDATA[]]></description>
 </item><item>
     <title>LevelDB</title>
     <link>https://mrcroxx.github.io/tags/leveldb/</link>
-    <pubDate>Tue, 16 Mar 2021 12:49:45 &#43;0800</pubDate>
-    <author>作者</author>
-    <guid>https://mrcroxx.github.io/tags/leveldb/</guid>
+    <pubDate>Tue, 16 Mar 2021 12:49:45 &#43;0800</pubDate><author>
+        <name>叉鸽</name>
+    </author><guid>https://mrcroxx.github.io/tags/leveldb/</guid>
     <description><![CDATA[]]></description>
 </item><item>
     <title>LSM-Tree</title>
     <link>https://mrcroxx.github.io/tags/lsm-tree/</link>
-    <pubDate>Tue, 16 Mar 2021 12:49:45 &#43;0800</pubDate>
-    <author>作者</author>
-    <guid>https://mrcroxx.github.io/tags/lsm-tree/</guid>
+    <pubDate>Tue, 16 Mar 2021 12:49:45 &#43;0800</pubDate><author>
+        <name>叉鸽</name>
+    </author><guid>https://mrcroxx.github.io/tags/lsm-tree/</guid>
     <description><![CDATA[]]></description>
 </item><item>
     <title>B&#43;Tree</title>
     <link>https://mrcroxx.github.io/tags/b&#43;tree/</link>
-    <pubDate>Tue, 26 Jan 2021 13:30:24 &#43;0800</pubDate>
-    <author>作者</author>
-    <guid>https://mrcroxx.github.io/tags/b&#43;tree/</guid>
+    <pubDate>Tue, 26 Jan 2021 13:30:24 &#43;0800</pubDate><author>
+        <name>叉鸽</name>
+    </author><guid>https://mrcroxx.github.io/tags/b&#43;tree/</guid>
     <description><![CDATA[]]></description>
 </item><item>
     <title>boltdb</title>
     <link>https://mrcroxx.github.io/tags/boltdb/</link>
-    <pubDate>Tue, 26 Jan 2021 13:30:24 &#43;0800</pubDate>
-    <author>作者</author>
-    <guid>https://mrcroxx.github.io/tags/boltdb/</guid>
+    <pubDate>Tue, 26 Jan 2021 13:30:24 &#43;0800</pubDate><author>
+        <name>叉鸽</name>
+    </author><guid>https://mrcroxx.github.io/tags/boltdb/</guid>
     <description><![CDATA[]]></description>
 </item><item>
     <title>etcd</title>
     <link>https://mrcroxx.github.io/tags/etcd/</link>
-    <pubDate>Fri, 01 Jan 2021 21:10:17 &#43;0800</pubDate>
-    <author>作者</author>
-    <guid>https://mrcroxx.github.io/tags/etcd/</guid>
+    <pubDate>Fri, 01 Jan 2021 21:10:17 &#43;0800</pubDate><author>
+        <name>叉鸽</name>
+    </author><guid>https://mrcroxx.github.io/tags/etcd/</guid>
     <description><![CDATA[]]></description>
 </item><item>
     <title>Raft</title>
     <link>https://mrcroxx.github.io/tags/raft/</link>
-    <pubDate>Fri, 01 Jan 2021 21:10:17 &#43;0800</pubDate>
-    <author>作者</author>
-    <guid>https://mrcroxx.github.io/tags/raft/</guid>
+    <pubDate>Fri, 01 Jan 2021 21:10:17 &#43;0800</pubDate><author>
+        <name>叉鸽</name>
+    </author><guid>https://mrcroxx.github.io/tags/raft/</guid>
     <description><![CDATA[]]></description>
 </item><item>
     <title>Spanner</title>
     <link>https://mrcroxx.github.io/tags/spanner/</link>
-    <pubDate>Fri, 23 Oct 2020 13:00:19 &#43;0800</pubDate>
-    <author>作者</author>
-    <guid>https://mrcroxx.github.io/tags/spanner/</guid>
+    <pubDate>Fri, 23 Oct 2020 13:00:19 &#43;0800</pubDate><author>
+        <name>叉鸽</name>
+    </author><guid>https://mrcroxx.github.io/tags/spanner/</guid>
     <description><![CDATA[]]></description>
 </item><item>
     <title>Translation</title>
     <link>https://mrcroxx.github.io/tags/translation/</link>
-    <pubDate>Fri, 23 Oct 2020 13:00:19 &#43;0800</pubDate>
-    <author>作者</author>
-    <guid>https://mrcroxx.github.io/tags/translation/</guid>
+    <pubDate>Fri, 23 Oct 2020 13:00:19 &#43;0800</pubDate><author>
+        <name>叉鸽</name>
+    </author><guid>https://mrcroxx.github.io/tags/translation/</guid>
     <description><![CDATA[]]></description>
 </item><item>
     <title>MVCC</title>
     <link>https://mrcroxx.github.io/tags/mvcc/</link>
-    <pubDate>Thu, 08 Oct 2020 16:02:56 &#43;0800</pubDate>
-    <author>作者</author>
-    <guid>https://mrcroxx.github.io/tags/mvcc/</guid>
+    <pubDate>Thu, 08 Oct 2020 16:02:56 &#43;0800</pubDate><author>
+        <name>叉鸽</name>
+    </author><guid>https://mrcroxx.github.io/tags/mvcc/</guid>
     <description><![CDATA[]]></description>
 </item></channel>
 </rss>

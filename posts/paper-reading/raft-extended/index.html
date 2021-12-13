@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="robots" content="noodp" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
-        <title>《In Search of an Understandable Consensus Algorithm (Extended Version)》论文翻译 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《In Search of an Understandable Consensus Algorithm (Extended Version)》论文翻译" />
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noodp" />
+    <title class="pjax-title">《In Search of an Understandable Consensus Algorithm (Extended Version)》论文翻译 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《In Search of an Understandable Consensus Algorithm (Extended Version)》论文翻译" />
 <meta property="og:description" content="本篇文章是对论文In Search of an Understandable Consensus Algorithm (Extended Version)的原创翻译，转载请严格遵守CC BY-NC-SA协议。" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/raft-extended/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/paper-reading/raft-extended/paper-reading.jpg"/><meta property="article:section" content="posts" />
@@ -17,9 +17,13 @@
 <meta name="twitter:title" content="《In Search of an Understandable Consensus Algorithm (Extended Version)》论文翻译"/>
 <meta name="twitter:description" content="本篇文章是对论文In Search of an Understandable Consensus Algorithm (Extended Version)的原创翻译，转载请严格遵守CC BY-NC-SA协议。"/>
 <meta name="application-name" content="叉鸽 MrCroxx 的博客">
-<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客">
+
+<meta name="theme-color" content="#f8f8f8"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest"><link rel="canonical" href="https://mrcroxx.github.io/posts/paper-reading/raft-extended/" /><link rel="prev" href="https://mrcroxx.github.io/posts/paper-reading/paxos-made-live/" /><link rel="next" href="https://mrcroxx.github.io/posts/paper-reading/weil-crush-sc06/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"><link rel="stylesheet" href="/lib/animate/animate.min.css"><script type="application/ld+json">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="canonical" href="https://mrcroxx.github.io/posts/paper-reading/raft-extended/" /><link rel="prev" href="https://mrcroxx.github.io/posts/paper-reading/paxos-made-live/" /><link rel="next" href="https://mrcroxx.github.io/posts/paper-reading/weil-crush-sc06/" /><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/fontawesome-free/all.min.css">
+    <noscript><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/animate/animate.min.css">
+    <noscript><link rel="stylesheet" href="/lib/animate/animate.min.css"></noscript><script type="application/ld+json">
     {
         "@context": "http://schema.org",
         "@type": "BlogPosting",
@@ -42,36 +46,43 @@
             },"description": ""
     }
     </script></head>
-    <body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">(window.localStorage && localStorage.getItem('theme') ? localStorage.getItem('theme') === 'dark' : ('' === 'auto' ? window.matchMedia('(prefers-color-scheme: dark)').matches : '' === 'dark')) && document.body.setAttribute('theme', 'dark');</script>
 
-        <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+<body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">
+        function setTheme(theme) {document.body.setAttribute('theme', theme);}
+        function saveTheme(theme) {window.localStorage && localStorage.setItem('theme', theme);}
+        function getMeta(metaName) {const metas = document.getElementsByTagName('meta'); for (let i = 0; i < metas.length; i++) if (metas[i].getAttribute('name') === metaName) return metas[i]; return '';}
+        if (window.localStorage && localStorage.getItem('theme')) {let theme = localStorage.getItem('theme');theme === 'light' || theme === 'dark' || theme === 'black' ? setTheme(theme) : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? setTheme('dark') : setTheme('light')); } else { if ('' === 'light' || '' === 'dark' || '' === 'black') setTheme(''), saveTheme(''); else saveTheme('auto'), window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? setTheme('dark') : setTheme('light');}
+        let metaColors = {'light': '#f8f8f8','dark': '#252627','black': '#000000'}
+        getMeta('theme-color').content = metaColors[document.body.getAttribute('theme')];
+    </script>
+    <div id="back-to-top"></div>
+    <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
     <div class="header-wrapper">
         <div class="header-title">
-            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-1" class="typeit"></span></a>
+            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="desktop-header-typeit" class="typeit"></span></a>
         </div>
         <div class="menu">
-            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/posts/about-me"> 关于我 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
                         <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
-                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+                        <a href="#" onclick="return false;" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
                             <i class="fas fa-search fa-fw"></i>
                         </a>
-                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                        <a href="#" onclick="return false;" class="search-button search-clear" id="search-clear-desktop" title="清空">
                             <i class="fas fa-times-circle fa-fw"></i>
                         </a>
                         <span class="search-button search-loading" id="search-loading-desktop">
                             <i class="fas fa-spinner fa-fw fa-spin"></i>
                         </span>
-                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                    </span><a href="#" onclick="return false;" class="menu-item theme-switch" title="切换主题">
                     <i class="fas fa-adjust fa-fw"></i>
-                </a>
-            </div>
+                </a></div>
         </div>
     </div>
 </header><header class="mobile" id="header-mobile">
     <div class="header-container">
         <div class="header-wrapper">
             <div class="header-title">
-                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="id-2" class="typeit"></span></a>
+                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="mobile-header-typeit" class="typeit"></span></a>
             </div>
             <div class="menu-toggle" id="menu-toggle-mobile">
                 <span></span><span></span><span></span>
@@ -80,20 +91,20 @@
         <div class="menu" id="menu-mobile"><div class="search-wrapper">
                     <div class="search mobile" id="search-mobile">
                         <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
-                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                        <a href="#" onclick="return false;" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
                             <i class="fas fa-search fa-fw"></i>
                         </a>
-                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                        <a href="#" onclick="return false;" class="search-button search-clear" id="search-clear-mobile" title="清空">
                             <i class="fas fa-times-circle fa-fw"></i>
                         </a>
                         <span class="search-button search-loading" id="search-loading-mobile">
                             <i class="fas fa-spinner fa-fw fa-spin"></i>
                         </span>
                     </div>
-                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                    <a href="#" onclick="return false;" class="search-cancel" id="search-cancel-mobile">
                         取消
                     </a>
-                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a href="javascript:void(0);" class="menu-item theme-switch" title="切换主题">
+                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/posts/about-me" title="">关于我</a><a href="#" onclick="return false;" class="menu-item theme-switch" title="切换主题">
                 <i class="fas fa-adjust fa-fw"></i>
             </a></div>
     </div>
@@ -105,21 +116,23 @@
     <div id="search-dropdown-mobile"></div>
 </div>
 <main class="main">
-                <div class="container"><div class="toc" id="toc-auto">
-            <h2 class="toc-title">目录</h2>
-            <div class="toc-content" id="toc-content-auto"></div>
-        </div><article class="page single"><h1 class="single-title animated flipInX">《In Search of an Understandable Consensus Algorithm (Extended Version)》论文翻译</h1><div class="post-meta">
-            <div class="post-meta-line"><span class="post-author"><a href="about" title="Author" rel=" author" class="author"><i class="fas fa-user-circle fa-fw"></i>叉鸽</a></span>&nbsp;<span class="post-category">收录于 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-27">2020-09-27</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 33618 字&nbsp;
+            <div class="container"><div class="toc" id="toc-auto">
+        <h2 class="toc-title">目录</h2>
+        <div class="toc-content" id="toc-content-auto"></div>
+    </div><script>document.getElementsByTagName("main")[0].setAttribute("pageStyle", "normal")</script><script>document.getElementsByTagName("main")[0].setAttribute("autoTOC", "true")</script><article class="page single"><h1 class="single-title animate__animated animate__flipInX">《In Search of an Understandable Consensus Algorithm (Extended Version)》论文翻译</h1><div class="post-meta">
+            <div class="post-meta-line">
+                <span class="post-author"><i class="author fas fa-user-circle fa-fw"></i><a href="about" title="Author" rel=" author" class="author">叉鸽</a>
+                </span>&nbsp;<span class="post-category">收录于 </span>&nbsp;<span class="post-category">类别 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-27">2020-09-27</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2020-10-01">2020-10-01</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 33618 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 68 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
-        src="/svg/loading.min.svg"
         data-src="/posts/paper-reading/raft-extended/paper-reading.jpg"
         data-srcset="/posts/paper-reading/raft-extended/paper-reading.jpg, /posts/paper-reading/raft-extended/paper-reading.jpg 1.5x, /posts/paper-reading/raft-extended/paper-reading.jpg 2x"
         data-sizes="auto"
         alt="/posts/paper-reading/raft-extended/paper-reading.jpg"
-        title="/posts/paper-reading/raft-extended/paper-reading.jpg" /></div><div class="details toc" id="toc-static"  kept="">
+        title="/posts/paper-reading/raft-extended/paper-reading.jpg" height="360" width="1200"
+    /></div><div class="details toc" id="toc-static"  kept="">
                 <div class="details-summary toc-title">
                     <span>目录</span>
                     <span><i class="details-icon fas fa-angle-right"></i></span>
@@ -198,11 +211,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/raft-extended/figure-1.png" title="图1 多副本状态机架构。共识算法管理由来自不同客户端的状态及指令组成的多副本日志。状态机按照日志处理相同的指令序列，因此它们会产生相同的输出。" data-thumbnail="/posts/paper-reading/raft-extended/figure-1.png" data-sub-html="<h2>图1 多副本状态机架构。共识算法管理由来自不同客户端的状态及指令组成的多副本日志。状态机按照日志处理相同的指令序列，因此它们会产生相同的输出。</h2><p>图1 多副本状态机架构。共识算法管理由来自不同客户端的状态及指令组成的多副本日志。状态机按照日志处理相同的指令序列，因此它们会产生相同的输出。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-1.png"
             data-srcset="/posts/paper-reading/raft-extended/figure-1.png, figure-1.png 1.5x, /posts/paper-reading/raft-extended/figure-1.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/raft-extended/figure-1.png" />
+            alt="/posts/paper-reading/raft-extended/figure-1.png"
+        />
     </a><figcaption class="image-caption">图1 多副本状态机架构。共识算法管理由来自不同客户端的状态及指令组成的多副本日志。状态机按照日志处理相同的指令序列，因此它们会产生相同的输出。</figcaption>
     </figure></p>
 <p>保持多副本日志的一致性是共识算法的任务。服务器上的共识模块会接收来自客户端的指令，并将其添加到它的日志中。它与其它服务器上的共识模块通信来确保每个日志最终包含相同顺序的相同请求，即使一些服务器故障也是如此。一旦指令被恰当地多副本化，每个服务器的状态机就可以按日志顺序处理它们，并将输出返回给客户端。这样，所有服务器对外会表现为单个高可靠性的状态机。</p>
@@ -247,21 +260,21 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/raft-extended/figure-2.jpg" title="图2 对Raft共识算法的浓缩总结（不包括成员变更和日志压缩）。服务器的行为在左上角的的格子中被作为一系列独立且可重复的触发器规则描述。像“§5.2”这样的章节号表示某个特征将在哪一节中讨论。正式定义&lt;sup&gt;[31]&lt;/sup&gt;将会更精确地描述算法。" data-thumbnail="/posts/paper-reading/raft-extended/figure-2.jpg" data-sub-html="<h2>图2 对Raft共识算法的浓缩总结（不包括成员变更和日志压缩）。服务器的行为在左上角的的格子中被作为一系列独立且可重复的触发器规则描述。像“§5.2”这样的章节号表示某个特征将在哪一节中讨论。正式定义&lt;sup&gt;[31]&lt;/sup&gt;将会更精确地描述算法。</h2><p>图2 对Raft共识算法的浓缩总结（不包括成员变更和日志压缩）。服务器的行为在左上角的的格子中被作为一系列独立且可重复的触发器规则描述。像“§5.2”这样的章节号表示某个特征将在哪一节中讨论。正式定义&lt;sup&gt;[31]&lt;/sup&gt;将会更精确地描述算法。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-2.jpg"
             data-srcset="/posts/paper-reading/raft-extended/figure-2.jpg, figure-2.jpg 1.5x, /posts/paper-reading/raft-extended/figure-2.jpg 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/raft-extended/figure-2.jpg" />
+            alt="/posts/paper-reading/raft-extended/figure-2.jpg"
+        />
     </a><figcaption class="image-caption">图2 对Raft共识算法的浓缩总结（不包括成员变更和日志压缩）。服务器的行为在左上角的的格子中被作为一系列独立且可重复的触发器规则描述。像“§5.2”这样的章节号表示某个特征将在哪一节中讨论。正式定义<sup>[31]</sup>将会更精确地描述算法。</figcaption>
     </figure></p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/raft-extended/figure-3.png" title="图3 Raft在所有时刻都保证这些性质的每一条都成立。章节号表示每条性质将在哪一节中讨论。" data-thumbnail="/posts/paper-reading/raft-extended/figure-3.png" data-sub-html="<h2>图3 Raft在所有时刻都保证这些性质的每一条都成立。章节号表示每条性质将在哪一节中讨论。</h2><p>图3 Raft在所有时刻都保证这些性质的每一条都成立。章节号表示每条性质将在哪一节中讨论。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-3.png"
             data-srcset="/posts/paper-reading/raft-extended/figure-3.png, figure-3.png 1.5x, /posts/paper-reading/raft-extended/figure-3.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/raft-extended/figure-3.png" />
+            alt="/posts/paper-reading/raft-extended/figure-3.png"
+        />
     </a><figcaption class="image-caption">图3 Raft在所有时刻都保证这些性质的每一条都成立。章节号表示每条性质将在哪一节中讨论。</figcaption>
     </figure></p>
 <p>Raft通过先选举一个高级leader然后给予该leader管理分布式日志的所有责任的方式实现共识。该leader接收来自客户端的日志条目，将它们复制到其它服务器上，然后告诉服务器什么时候可以安全地将这些日志条目应用到它们的状态机中。使用leader可以简化对分布式日志的管理。例如，leader可以在不询问其它服务器的情况下决定将日志的新条目放在哪儿，且数据流仅简单地从leader流向其它服务器。leader可能发生故障也可能在其它服务器中失去对其的连接，在这种情况下，会有新的leader被选举出来。</p>
@@ -283,22 +296,22 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/raft-extended/figure-4.png" title="图4 服务器状态。follower仅响应来自其它服务器的请求。如果follower没有收到通信，那么它会变为candidate并开始一次选举。收到了来自整个集群中大多数节点投票的candidate会成为新的leader。leader通常会持续到其故障。" data-thumbnail="/posts/paper-reading/raft-extended/figure-4.png" data-sub-html="<h2>图4 服务器状态。follower仅响应来自其它服务器的请求。如果follower没有收到通信，那么它会变为candidate并开始一次选举。收到了来自整个集群中大多数节点投票的candidate会成为新的leader。leader通常会持续到其故障。</h2><p>图4 服务器状态。follower仅响应来自其它服务器的请求。如果follower没有收到通信，那么它会变为candidate并开始一次选举。收到了来自整个集群中大多数节点投票的candidate会成为新的leader。leader通常会持续到其故障。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-4.png"
             data-srcset="/posts/paper-reading/raft-extended/figure-4.png, figure-4.png 1.5x, /posts/paper-reading/raft-extended/figure-4.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/raft-extended/figure-4.png" />
+            alt="/posts/paper-reading/raft-extended/figure-4.png"
+        />
     </a><figcaption class="image-caption">图4 服务器状态。follower仅响应来自其它服务器的请求。如果follower没有收到通信，那么它会变为candidate并开始一次选举。收到了来自整个集群中大多数节点投票的candidate会成为新的leader。leader通常会持续到其故障。</figcaption>
     </figure></p>
 <p>Raft将时间划分为任意长度的term（任期），如<strong>图5</strong>所示。term被编号为连续的整数。每个term从选举（election）开始，在选举中一个或多个candidate会试图成为leader，就像<a href="#52-%e9%a2%86%e5%af%bc%e9%80%89%e4%b8%be" rel="">章节5.2</a>中描述的那样。如果candidate赢得选举，那么它将在该term余下的时间了作为leader提供服务。在某些情况下，一次选举可能导致投票决裂，此时该term最终可能没有leader，那么很快会开始一个新的term（伴随一次新的选举）。Raft确保一个给定的term中最多只会有一个leader。</p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/raft-extended/figure-5.png" title="图5 时间被划分为term，每个term从选举开始。在一次成功选举后，单个leader会管理集群，直到该term结束。有些选举会失败，在这种情况下，term会不选择leader就结束。term之间的转换可以在不同服务器上的不同时间被观测到。" data-thumbnail="/posts/paper-reading/raft-extended/figure-5.png" data-sub-html="<h2>图5 时间被划分为term，每个term从选举开始。在一次成功选举后，单个leader会管理集群，直到该term结束。有些选举会失败，在这种情况下，term会不选择leader就结束。term之间的转换可以在不同服务器上的不同时间被观测到。</h2><p>图5 时间被划分为term，每个term从选举开始。在一次成功选举后，单个leader会管理集群，直到该term结束。有些选举会失败，在这种情况下，term会不选择leader就结束。term之间的转换可以在不同服务器上的不同时间被观测到。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-5.png"
             data-srcset="/posts/paper-reading/raft-extended/figure-5.png, figure-5.png 1.5x, /posts/paper-reading/raft-extended/figure-5.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/raft-extended/figure-5.png" />
+            alt="/posts/paper-reading/raft-extended/figure-5.png"
+        />
     </a><figcaption class="image-caption">图5 时间被划分为term，每个term从选举开始。在一次成功选举后，单个leader会管理集群，直到该term结束。有些选举会失败，在这种情况下，term会不选择leader就结束。term之间的转换可以在不同服务器上的不同时间被观测到。</figcaption>
     </figure></p>
 <p>不同的服务器可能在不同时间观测到term的装换，且在一些情况下，服务器可能没有观测到选举甚至没观测到整个term。term在Raft扮演逻辑时钟<sup>[14]</sup>的角色，且term能让服务器检测到过时的（obsolete）信息，如陈旧的（stale）leader。每个服务器会存储当前的term号，其随时间单调递增。当前的term号在任何服务器通信时都会被交换，日过服务器当前的term小于其它服务器的，那么它会更新其term号到到较大值。如果candidate或leader发现它的term过期了，它会立刻转到follower状态。如果服务器收到了有陈旧的term号的请求，它会拒绝该请求。</p>
@@ -316,11 +329,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/raft-extended/figure-6.png" title="图6 日志由条目组成，日志条目被顺序编号。每个日志条目都包含它被创建时的term号（每个方框中的数字）和一条给状态机的指令。如果一个日志条目能被安全地应用到状态机中，它会被视为committed。" data-thumbnail="/posts/paper-reading/raft-extended/figure-6.png" data-sub-html="<h2>图6 日志由条目组成，日志条目被顺序编号。每个日志条目都包含它被创建时的term号（每个方框中的数字）和一条给状态机的指令。如果一个日志条目能被安全地应用到状态机中，它会被视为committed。</h2><p>图6 日志由条目组成，日志条目被顺序编号。每个日志条目都包含它被创建时的term号（每个方框中的数字）和一条给状态机的指令。如果一个日志条目能被安全地应用到状态机中，它会被视为committed。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-6.png"
             data-srcset="/posts/paper-reading/raft-extended/figure-6.png, figure-6.png 1.5x, /posts/paper-reading/raft-extended/figure-6.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/raft-extended/figure-6.png" />
+            alt="/posts/paper-reading/raft-extended/figure-6.png"
+        />
     </a><figcaption class="image-caption">图6 日志由条目组成，日志条目被顺序编号。每个日志条目都包含它被创建时的term号（每个方框中的数字）和一条给状态机的指令。如果一个日志条目能被安全地应用到状态机中，它会被视为committed。</figcaption>
     </figure></p>
 <p>日志被按照如<strong>图6</strong>的方式组织。每条日志都保存了一条状态机指令和leader收到该条目时的term号。日志条目中的term号被用作检测日志间的不一致性并确保<strong>图3</strong>中的一些性质。每个日志条目还有一个标识它在日志中的位置的整数index（索引）。</p>
@@ -339,11 +352,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/raft-extended/figure-7.png" title="图7 当最上面的leader开始当权时，a~f中的任意情况都可能在follower中发生。每个方框表示一个日志条目，方框中的条目是它的term。follower可能丢失条目（a~b），可能有额外的未被提交的条目（c~d），或者二者都有（e~f）。例如，在情况f中，该服务器是term 2的leader，其将一些条目添加到了它的日志中，然后它在将任意这些条目提交前崩溃了；该服务器快速地重启了并成了了term 3的leader，并又将更多条目添加到了它的日志中；在这些term 2和term 3的条目被提交前，该服务器再次崩溃，并在几个term期间保持离线状态。" data-thumbnail="/posts/paper-reading/raft-extended/figure-7.png" data-sub-html="<h2>图7 当最上面的leader开始当权时，a~f中的任意情况都可能在follower中发生。每个方框表示一个日志条目，方框中的条目是它的term。follower可能丢失条目（a~b），可能有额外的未被提交的条目（c~d），或者二者都有（e~f）。例如，在情况f中，该服务器是term 2的leader，其将一些条目添加到了它的日志中，然后它在将任意这些条目提交前崩溃了；该服务器快速地重启了并成了了term 3的leader，并又将更多条目添加到了它的日志中；在这些term 2和term 3的条目被提交前，该服务器再次崩溃，并在几个term期间保持离线状态。</h2><p>图7 当最上面的leader开始当权时，a~f中的任意情况都可能在follower中发生。每个方框表示一个日志条目，方框中的条目是它的term。follower可能丢失条目（a~b），可能有额外的未被提交的条目（c~d），或者二者都有（e~f）。例如，在情况f中，该服务器是term 2的leader，其将一些条目添加到了它的日志中，然后它在将任意这些条目提交前崩溃了；该服务器快速地重启了并成了了term 3的leader，并又将更多条目添加到了它的日志中；在这些term 2和term 3的条目被提交前，该服务器再次崩溃，并在几个term期间保持离线状态。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-7.png"
             data-srcset="/posts/paper-reading/raft-extended/figure-7.png, figure-7.png 1.5x, /posts/paper-reading/raft-extended/figure-7.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/raft-extended/figure-7.png" />
+            alt="/posts/paper-reading/raft-extended/figure-7.png"
+        />
     </a><figcaption class="image-caption">图7 当最上面的leader开始当权时，a~f中的任意情况都可能在follower中发生。每个方框表示一个日志条目，方框中的条目是它的term。follower可能丢失条目（a~b），可能有额外的未被提交的条目（c~d），或者二者都有（e~f）。例如，在情况f中，该服务器是term 2的leader，其将一些条目添加到了它的日志中，然后它在将任意这些条目提交前崩溃了；该服务器快速地重启了并成了了term 3的leader，并又将更多条目添加到了它的日志中；在这些term 2和term 3的条目被提交前，该服务器再次崩溃，并在几个term期间保持离线状态。</figcaption>
     </figure></p>
 <p>在Raft中，leader会通过强制follower复制其日志的方式处理不一致。这意味着follower日志中不一致的条目会被覆盖为leader日志中的条目。<a href="#54-%e5%ae%89%e5%85%a8%e6%80%a7" rel="">章节5.4</a>将展示当结合一个额外的约束后，这会是安全的。</p>
@@ -363,11 +376,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/raft-extended/figure-8.png" title="图8 展示为什么leader不能通过之前term的日志条目判断提交的时间序列。在（a）中，S1是leader，它部分复制了index为2的日志条目。在（b）中，S1崩溃，S5收到来自S3、S4和它自己的投票而被选举为term 3的leader，并接受了不同的日志条目作为index 2的条目。在（c）中，S5崩溃，S1重启且被选举为leader，并继续复制。此时，term 2的日志已经被复制到了大多数服务器上，但是没有被提交。如果此时S1像（d）中的情况一样发生崩溃，那么S5将会被选举为leader（S2、S3和S4会为其投票），且会用它自己的term 3的日志条目覆盖index 2中的条目。然而，如果S1在崩溃前复制了其当前term的条目到大多数服务器上，正如（e）中所示，那么这个条目会被提交（S5无法赢得选举）。此时，日志中所有之前的条目都同样被提交了。" data-thumbnail="/posts/paper-reading/raft-extended/figure-8.png" data-sub-html="<h2>图8 展示为什么leader不能通过之前term的日志条目判断提交的时间序列。在（a）中，S1是leader，它部分复制了index为2的日志条目。在（b）中，S1崩溃，S5收到来自S3、S4和它自己的投票而被选举为term 3的leader，并接受了不同的日志条目作为index 2的条目。在（c）中，S5崩溃，S1重启且被选举为leader，并继续复制。此时，term 2的日志已经被复制到了大多数服务器上，但是没有被提交。如果此时S1像（d）中的情况一样发生崩溃，那么S5将会被选举为leader（S2、S3和S4会为其投票），且会用它自己的term 3的日志条目覆盖index 2中的条目。然而，如果S1在崩溃前复制了其当前term的条目到大多数服务器上，正如（e）中所示，那么这个条目会被提交（S5无法赢得选举）。此时，日志中所有之前的条目都同样被提交了。</h2><p>图8 展示为什么leader不能通过之前term的日志条目判断提交的时间序列。在（a）中，S1是leader，它部分复制了index为2的日志条目。在（b）中，S1崩溃，S5收到来自S3、S4和它自己的投票而被选举为term 3的leader，并接受了不同的日志条目作为index 2的条目。在（c）中，S5崩溃，S1重启且被选举为leader，并继续复制。此时，term 2的日志已经被复制到了大多数服务器上，但是没有被提交。如果此时S1像（d）中的情况一样发生崩溃，那么S5将会被选举为leader（S2、S3和S4会为其投票），且会用它自己的term 3的日志条目覆盖index 2中的条目。然而，如果S1在崩溃前复制了其当前term的条目到大多数服务器上，正如（e）中所示，那么这个条目会被提交（S5无法赢得选举）。此时，日志中所有之前的条目都同样被提交了。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-8.png"
             data-srcset="/posts/paper-reading/raft-extended/figure-8.png, figure-8.png 1.5x, /posts/paper-reading/raft-extended/figure-8.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/raft-extended/figure-8.png" />
+            alt="/posts/paper-reading/raft-extended/figure-8.png"
+        />
     </a><figcaption class="image-caption">图8 展示为什么leader不能通过之前term的日志条目判断提交的时间序列。在（a）中，S1是leader，它部分复制了index为2的日志条目。在（b）中，S1崩溃，S5收到来自S3、S4和它自己的投票而被选举为term 3的leader，并接受了不同的日志条目作为index 2的条目。在（c）中，S5崩溃，S1重启且被选举为leader，并继续复制。此时，term 2的日志已经被复制到了大多数服务器上，但是没有被提交。如果此时S1像（d）中的情况一样发生崩溃，那么S5将会被选举为leader（S2、S3和S4会为其投票），且会用它自己的term 3的日志条目覆盖index 2中的条目。然而，如果S1在崩溃前复制了其当前term的条目到大多数服务器上，正如（e）中所示，那么这个条目会被提交（S5无法赢得选举）。此时，日志中所有之前的条目都同样被提交了。</figcaption>
     </figure></p>
 <p>为了消除<strong>图8</strong>中的这样的问题，Raft永远不会通过对副本数计数的方式提交之前term的条目。只有leader当前term的日志条目才能通过对副本数计数的方式被提交。而一旦当前term的日志被以这种方式提交后，所有在其之前的日志条目会因“日志匹配性质”被间接地提交。虽然在某些情况下，leader可以安全断定之前的日志条目被提交（例如，该条目被存储到了每台服务器上），但是Raft为了简单起见而采取了更保守的方法。</p>
@@ -406,11 +419,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/raft-extended/figure-9.png" title="图9 如果S1（term $T$的leader）提交了来自它的term的新的日志条目，且S5在之后的term $U$中被选举成为leader，那么必须有至少一个服务器（S3），其接受了该日志条目，并给S5投了票。" data-thumbnail="/posts/paper-reading/raft-extended/figure-9.png" data-sub-html="<h2>图9 如果S1（term $T$的leader）提交了来自它的term的新的日志条目，且S5在之后的term $U$中被选举成为leader，那么必须有至少一个服务器（S3），其接受了该日志条目，并给S5投了票。</h2><p>图9 如果S1（term $T$的leader）提交了来自它的term的新的日志条目，且S5在之后的term $U$中被选举成为leader，那么必须有至少一个服务器（S3），其接受了该日志条目，并给S5投了票。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-9.png"
             data-srcset="/posts/paper-reading/raft-extended/figure-9.png, figure-9.png 1.5x, /posts/paper-reading/raft-extended/figure-9.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/raft-extended/figure-9.png" />
+            alt="/posts/paper-reading/raft-extended/figure-9.png"
+        />
     </a><figcaption class="image-caption">图9 如果S1（term $T$的leader）提交了来自它的term的新的日志条目，且S5在之后的term $U$中被选举成为leader，那么必须有至少一个服务器（S3），其接受了该日志条目，并给S5投了票。</figcaption>
     </figure></p>
 <p>有了“领导完整性性质”，我们可以证明<strong>图3</strong>中的“状态机安全性质”，即：如果一个服务器将给定index的日志条目应用到了其状态机中，那么不会有另一台应用了index相同但内容不同的日志条目的服务器。当服务器将一个日志条目应用到其状态机时，它直到该条目的日志必须与leader的日志相同，且该条目必须是被提交的。现在考虑任何服务器都应用了给定index的日志条目的最小的term；“日志完整性性质”确保了所有term更高的leader都保存了相同的这个条目，所以在之后的term中应用了该条目的服务器将会应用相同的值。因此，“状态机安全性性质”成立。</p>
@@ -429,11 +442,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/raft-extended/figure-10.png" title="图10 直接从一个配置切换到另一个配置是不安全的，因为不同的服务器会在不同时间切换。在本例中，集群从3个服务器增长到5个服务器。不幸的是，有一个时间点可能出现在同一个term中有两个被选举出来的leade的情况，其中一个leader有旧配置（$C_{old}$）的大多数，另一个有新配置（$C_{new}$）的大多数。" data-thumbnail="/posts/paper-reading/raft-extended/figure-10.png" data-sub-html="<h2>图10 直接从一个配置切换到另一个配置是不安全的，因为不同的服务器会在不同时间切换。在本例中，集群从3个服务器增长到5个服务器。不幸的是，有一个时间点可能出现在同一个term中有两个被选举出来的leade的情况，其中一个leader有旧配置（$C_{old}$）的大多数，另一个有新配置（$C_{new}$）的大多数。</h2><p>图10 直接从一个配置切换到另一个配置是不安全的，因为不同的服务器会在不同时间切换。在本例中，集群从3个服务器增长到5个服务器。不幸的是，有一个时间点可能出现在同一个term中有两个被选举出来的leade的情况，其中一个leader有旧配置（$C_{old}$）的大多数，另一个有新配置（$C_{new}$）的大多数。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-10.png"
             data-srcset="/posts/paper-reading/raft-extended/figure-10.png, figure-10.png 1.5x, /posts/paper-reading/raft-extended/figure-10.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/raft-extended/figure-10.png" />
+            alt="/posts/paper-reading/raft-extended/figure-10.png"
+        />
     </a><figcaption class="image-caption">图10 直接从一个配置切换到另一个配置是不安全的，因为不同的服务器会在不同时间切换。在本例中，集群从3个服务器增长到5个服务器。不幸的是，有一个时间点可能出现在同一个term中有两个被选举出来的leade的情况，其中一个leader有旧配置（$C_{old}$）的大多数，另一个有新配置（$C_{new}$）的大多数。</figcaption>
     </figure></p>
 <p>为了确保安全，配置变更必须使用两阶段的方法。实现这两个阶段有很多方式。例如，有些系统（例如<sup>[22]</sup>）在第一阶段禁用旧配置，这样它就不能处理客户端请求，然后在第二阶段应用新配置。在Raft中，集群首先会切换到过渡配置，我们称之为<em>联合共识（joint consensus）</em>；一旦联合共识被提交，接着系统会切换到新配置。联合共识结合了旧配置和新配置：</p>
@@ -452,11 +465,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/raft-extended/figure-11.png" title="图11 配置变更的时间线。虚线表示已被创建但还没被提交的配置条目，实现表示最新的已被提交的配置条目。leader首先在它的日志中创建了配置条目$C_{old,new}$，并将其提交到了$C_{old,new}$中（$C_{old}$中的大多数和$C_{new}$中的大多数）。然后它创建$C_{new}$条目并将其提交到$C_{new}$的大多数。不存在$C_{old}$和$C_{new}$能独立作出决策的时间。" data-thumbnail="/posts/paper-reading/raft-extended/figure-11.png" data-sub-html="<h2>图11 配置变更的时间线。虚线表示已被创建但还没被提交的配置条目，实现表示最新的已被提交的配置条目。leader首先在它的日志中创建了配置条目$C_{old,new}$，并将其提交到了$C_{old,new}$中（$C_{old}$中的大多数和$C_{new}$中的大多数）。然后它创建$C_{new}$条目并将其提交到$C_{new}$的大多数。不存在$C_{old}$和$C_{new}$能独立作出决策的时间。</h2><p>图11 配置变更的时间线。虚线表示已被创建但还没被提交的配置条目，实现表示最新的已被提交的配置条目。leader首先在它的日志中创建了配置条目$C_{old,new}$，并将其提交到了$C_{old,new}$中（$C_{old}$中的大多数和$C_{new}$中的大多数）。然后它创建$C_{new}$条目并将其提交到$C_{new}$的大多数。不存在$C_{old}$和$C_{new}$能独立作出决策的时间。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-11.png"
             data-srcset="/posts/paper-reading/raft-extended/figure-11.png, figure-11.png 1.5x, /posts/paper-reading/raft-extended/figure-11.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/raft-extended/figure-11.png" />
+            alt="/posts/paper-reading/raft-extended/figure-11.png"
+        />
     </a><figcaption class="image-caption">图11 配置变更的时间线。虚线表示已被创建但还没被提交的配置条目，实现表示最新的已被提交的配置条目。leader首先在它的日志中创建了配置条目$C_{old,new}$，并将其提交到了$C_{old,new}$中（$C_{old}$中的大多数和$C_{new}$中的大多数）。然后它创建$C_{new}$条目并将其提交到$C_{new}$的大多数。不存在$C_{old}$和$C_{new}$能独立作出决策的时间。</figcaption>
     </figure></p>
 <p>集群配置的存储和通信使用了多副本日志中的特殊条目。<strong>图11</strong>阐释了配置变更的过程。当leader收到将配置从$C_{old}$变更为$C_{new}$的请求时，它会将该配置的联合共识（图中的$C_{old,new}$）作为一个日志条目存储，并将该条目使用之前描述的机制复制。一旦某个服务器将新配置的条目加入到了它的日志中，它会在所有之后的决策中应用该配置（服务器总是使用它的日志中的最新的配置，无论该条目是否被提交了）。这意味着leader会使用$C_{old,new}$的规则来决定什么时候$C_{old,new}$的日志条目被提交。如果leader崩溃，新的leader可能在$C_{old}$或$C_{old,new}$下被选举出，这取决于赢得选举的candidate有没有收到$C_{old,new}$。这期间的任何情况下，$C_{new}$都不能单独做决策。</p>
@@ -472,11 +485,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/raft-extended/figure-12.png" title="图12 服务器使用新的快照取代它日志中已提交的条目（index 1~5），快照只保存了当前状态（在本例中为变量$x$和$y$）。该快照包括的最后的index和term用来安置紧随其后的日志条目6。" data-thumbnail="/posts/paper-reading/raft-extended/figure-12.png" data-sub-html="<h2>图12 服务器使用新的快照取代它日志中已提交的条目（index 1~5），快照只保存了当前状态（在本例中为变量$x$和$y$）。该快照包括的最后的index和term用来安置紧随其后的日志条目6</h2><p>图12 服务器使用新的快照取代它日志中已提交的条目（index 1~5），快照只保存了当前状态（在本例中为变量$x$和$y$）。该快照包括的最后的index和term用来安置紧随其后的日志条目6。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-12.png"
             data-srcset="/posts/paper-reading/raft-extended/figure-12.png, figure-12.png 1.5x, /posts/paper-reading/raft-extended/figure-12.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/raft-extended/figure-12.png" />
+            alt="/posts/paper-reading/raft-extended/figure-12.png"
+        />
     </a><figcaption class="image-caption">图12 服务器使用新的快照取代它日志中已提交的条目（index 1~5），快照只保存了当前状态（在本例中为变量$x$和$y$）。该快照包括的最后的index和term用来安置紧随其后的日志条目6</figcaption>
     </figure></p>
 <p><strong>图12</strong>展示了Raft的快照的基本想法。每个服务器独立地创建快照，快照仅覆盖服务器日志中已提交的条目。大部分的工作由状态机将其当前状态写入到快照组成。Raft还在快照中包括了少量的元数据：<em>last included index</em>是快照替换的最后一个条目（状态机应用的最后一个条目）的index，<em>last included term</em>是这一条目的term。这些被保存的信息用来支持对紧随快照后面的第一个条目的AppendEntries的一致性检验，因为该条目需要前一条日志的index和term。为了启用集群成员变更（见<a href="#6-%e9%9b%86%e7%be%a4%e6%88%90%e5%91%98%e5%8f%98%e6%9b%b4" rel="">第六章</a>），快照还包括日志中直到last included index的最新的配置。一旦服务器完成了快照写入，它会删除直到last included index的所有日志条目和任何之前的快照。</p>
@@ -484,11 +497,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/raft-extended/figure-13.png" title="图13 InstallSnapshot RPC总结。快照被分割成块来传输，这可以通过给follower发送每个块时告知其存活，这样follower可以重设选举定时器。" data-thumbnail="/posts/paper-reading/raft-extended/figure-13.png" data-sub-html="<h2>图13 InstallSnapshot RPC总结。快照被分割成块来传输，这可以通过给follower发送每个块时告知其存活，这样follower可以重设选举定时器。</h2><p>图13 InstallSnapshot RPC总结。快照被分割成块来传输，这可以通过给follower发送每个块时告知其存活，这样follower可以重设选举定时器。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-13.png"
             data-srcset="/posts/paper-reading/raft-extended/figure-13.png, figure-13.png 1.5x, /posts/paper-reading/raft-extended/figure-13.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/raft-extended/figure-13.png" />
+            alt="/posts/paper-reading/raft-extended/figure-13.png"
+        />
     </a><figcaption class="image-caption">图13 InstallSnapshot RPC总结。快照被分割成块来传输，这可以通过给follower发送每个块时告知其存活，这样follower可以重设选举定时器。</figcaption>
     </figure></p>
 <p>leader使用一种被称为InstallSnapshot的新的RPC像落后太多的follower发送快照，如<strong>图13</strong>所示。当follower通过这个RPC收到一个快照时，它必须决定如何处理它已有的日志条目。通常，快照会包含在接收者的日志中还没有的新信息。在这种情况下，follower会丢弃它全部日志，因为这些日志都可以被快照取代，且日志中可能含有与快照冲突的未提交的日志条目。相反，如果follower收到的快照描述的是它日志的前面一部分（由于重传或错误），那么被快照覆盖的日志条目会被删除，但是快照之后的条目仍有效且必须被保留。</p>
@@ -510,22 +523,22 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/raft-extended/table-1.png" title="表1 学习中可能对Paxos存在的偏见、为每种情况采取的措施、可用的其他材料。" data-thumbnail="/posts/paper-reading/raft-extended/table-1.png" data-sub-html="<h2>表1 学习中可能对Paxos存在的偏见、为每种情况采取的措施、可用的其他材料。</h2><p>表1 学习中可能对Paxos存在的偏见、为每种情况采取的措施、可用的其他材料。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="table-1.png"
             data-srcset="/posts/paper-reading/raft-extended/table-1.png, table-1.png 1.5x, /posts/paper-reading/raft-extended/table-1.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/raft-extended/table-1.png" />
+            alt="/posts/paper-reading/raft-extended/table-1.png"
+        />
     </a><figcaption class="image-caption">表1 学习中可能对Paxos存在的偏见、为每种情况采取的措施、可用的其他材料。</figcaption>
     </figure></p>
 <p>平均来看，参与者在Raft的测验中比Paxos的测验高了4.9分（总分为60分，Raft的平均分是25.7，Paxos的平均分是20.8）。<strong>图14</strong>展示了他们每个人的分数。$t$-检验表明，在95%的置信度下，Raft分数的真实分布比Paxos的至少高2.5分。</p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/raft-extended/figure-14.png" title="图14 比较43名参与者在Raft和Paxos的测验中的表现的散点图。斜线以上的的点（33个）表示Raft分更高的参与者。" data-thumbnail="/posts/paper-reading/raft-extended/figure-14.png" data-sub-html="<h2>图14 比较43名参与者在Raft和Paxos的测验中的表现的散点图。斜线以上的的点（33个）表示Raft分更高的参与者。</h2><p>图14 比较43名参与者在Raft和Paxos的测验中的表现的散点图。斜线以上的的点（33个）表示Raft分更高的参与者。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-14.png"
             data-srcset="/posts/paper-reading/raft-extended/figure-14.png, figure-14.png 1.5x, /posts/paper-reading/raft-extended/figure-14.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/raft-extended/figure-14.png" />
+            alt="/posts/paper-reading/raft-extended/figure-14.png"
+        />
     </a><figcaption class="image-caption">图14 比较43名参与者在Raft和Paxos的测验中的表现的散点图。斜线以上的的点（33个）表示Raft分更高的参与者。</figcaption>
     </figure></p>
 <p>我们还基于三个因素创建了一个用来预测新学生的测验分数的线性回归模型，这三个因素是：他们做了哪个测验、他们之前对Paxos的理解程度、和他们学习算法的顺序。根据该模型的预测，测验的选择偏向Raft 12.5分。这比实际看到的4.9分的差异高很多，因为许多学生实际上之前都有Paxos的经验，这对理解Paxos很有帮助，而对理解Raft的帮助相对较少。奇怪的是，该模型还预测先参加过Paxos测验的参与者比先参加Raft测验的参与者低6.3分，虽然我们不知道为什么，但这在统计上确实很重要。</p>
@@ -534,11 +547,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/raft-extended/figure-15.png" title="图15 参与者通过5个程度衡量哪个算法更容易在有价值、正确、高效的系统中实现（左）和哪个对CS的研究生来说更容易解释（右）。" data-thumbnail="/posts/paper-reading/raft-extended/figure-15.png" data-sub-html="<h2>图15 参与者通过5个程度衡量哪个算法更容易在有价值、正确、高效的系统中实现（左）和哪个对CS的研究生来说更容易解释（右）。</h2><p>图15 参与者通过5个程度衡量哪个算法更容易在有价值、正确、高效的系统中实现（左）和哪个对CS的研究生来说更容易解释（右）。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-15.png"
             data-srcset="/posts/paper-reading/raft-extended/figure-15.png, figure-15.png 1.5x, /posts/paper-reading/raft-extended/figure-15.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/raft-extended/figure-15.png" />
+            alt="/posts/paper-reading/raft-extended/figure-15.png"
+        />
     </a><figcaption class="image-caption">图15 参与者通过5个程度衡量哪个算法更容易在有价值、正确、高效的系统中实现（左）和哪个对CS的研究生来说更容易解释（右）。</figcaption>
     </figure></p>
 <h3 id="92-正确性">9.2 正确性</h3>
@@ -549,11 +562,11 @@
 <p><figure><a class="lightgallery" href="/posts/paper-reading/raft-extended/figure-16.png" title="图16 检测与替换崩溃的leader的时间。上图中设置了不同的electionTimeout随机范围，下图中设置了不同的最小electionTimeout。每条线代表每个不同的electionTime的范围的1000次考察（除了“150-150ms”，其只有100次）；例如“150-150ms”表示对electionTime在150ms到155ms间随机且均匀分布的实验的考察。这些测量值是在5个服务器组成的集群得出的，该集群广播时间大概在15ms左右。9个服务器组成的集群实验结果相似。" data-thumbnail="/posts/paper-reading/raft-extended/figure-16.png" data-sub-html="<h2>图16 检测与替换崩溃的leader的时间。上图中设置了不同的electionTimeout随机范围，下图中设置了不同的最小electionTimeout。每条线代表每个不同的electionTime的范围的1000次考察（除了“150-150ms”，其只有100次）；例如“150-150ms”表示对electionTimeout在150ms到155ms间随机且均匀分布的实验的考察。这些测量值是在5个服务器组成的集群得出的，该集群广播时间大概在15ms左右。9个服务器组成的集群实验结果相似。</h2><p>图16 检测与替换崩溃的leader的时间。上图中设置了不同的electionTimeout随机范围，下图中设置了不同的最小electionTimeout。每条线代表每个不同的electionTime的范围的1000次考察（除了“150-150ms”，其只有100次）；例如“150-150ms”表示对electionTime在150ms到155ms间随机且均匀分布的实验的考察。这些测量值是在5个服务器组成的集群得出的，该集群广播时间大概在15ms左右。9个服务器组成的集群实验结果相似。</p>">
         <img
             class="lazyload"
-            src="/svg/loading.min.svg"
             data-src="figure-16.png"
             data-srcset="/posts/paper-reading/raft-extended/figure-16.png, figure-16.png 1.5x, /posts/paper-reading/raft-extended/figure-16.png 2x"
             data-sizes="auto"
-            alt="/posts/paper-reading/raft-extended/figure-16.png" />
+            alt="/posts/paper-reading/raft-extended/figure-16.png"
+        />
     </a><figcaption class="image-caption">图16 检测与替换崩溃的leader的时间。上图中设置了不同的electionTimeout随机范围，下图中设置了不同的最小electionTimeout。每条线代表每个不同的electionTime的范围的1000次考察（除了“150-150ms”，其只有100次）；例如“150-150ms”表示对electionTimeout在150ms到155ms间随机且均匀分布的实验的考察。这些测量值是在5个服务器组成的集群得出的，该集群广播时间大概在15ms左右。9个服务器组成的集群实验结果相似。</figcaption>
     </figure></p>
 <p>为了测量领导选举，我们反复地让5个服务器组成的leader崩溃，并测量集群多长时间能检测到崩溃并选举出新的leader（见图<strong>16</strong>）。为了保证最坏情况，每次考察中的日志长度都不同，所以一些candidate没有成为leader的资格。另外，为了提高投票决裂的产生，我们的测试脚本会在杀死leader的进程前触发一个同步的心跳RPC广播（这近似于leader在复制了新条目后崩溃的情况）。leader会在心跳时间内均匀且随机地崩溃，对于所有测试，心跳时间是最小electionTimeout的一半。因此，可能存在的最小停机事件大概是electionTimeout的一半。</p>
@@ -629,7 +642,9 @@
 <p>[37] SCHNEIDER, F. B. Implementing fault-tolerant services using the state machine approach: a tutorial. ACM Computing Surveys 22, 4 (Dec. 1990), 299–319.</p>
 <p>[38] SHVACHKO, K., KUANG, H., RADIA, S., AND CHANSLER, R. The Hadoop distributed file system. In Proc. MSST’10, Symposium on Mass Storage Systems and Technologies (2010), IEEE Computer Society, pp. 1–10.</p>
 <p>[39] VAN RENESSE, R. Paxos made moderately complex. Tech. rep., Cornell University, 2012.</p>
-</div></div><div class="post-footer" id="post-footer">
+</div></div>
+
+        <div class="post-footer" id="post-footer">
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
@@ -656,16 +671,22 @@
             <a href="/posts/paper-reading/weil-crush-sc06/" class="next" rel="next" title="《CRUSH: Controlled, Scalable, Decentralized Placement of Replicated Data》论文翻译">《CRUSH: Controlled, Scalable, Decentralized Placement of Replicated Data》论文翻译<i class="fas fa-angle-right fa-fw"></i></a></div>
 </div>
 </article></div>
-            </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/dillonzq/LoveIt" target="_blank" rel="noopener noreffer" title="LoveIt 0.2.10"><i class="far fa-kiss-wink-heart fa-fw"></i> LoveIt</a>
-                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
-        </div>
-    </footer></div>
+        </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank" rel="noopener noreferrer">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        </div></footer></div>
 
-        <div id="fixed-buttons"><a href="#" id="back-to-top" class="fixed-button" title="回到顶部">
-                <i class="fas fa-arrow-up fa-fw"></i>
-            </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
-                <i class="fas fa-comment fa-fw"></i>
-            </a>
-        </div><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"><link rel="stylesheet" href="/lib/katex/katex.min.css"><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"><script type="text/javascript" src="/lib/smooth-scroll/smooth-scroll.min.js"></script><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"id-1":"叉鸽 | MrCroxx","id-2":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"id-1":["id-1"],"id-2":["id-2"]},"duration":null,"speed":null}};</script><script type="text/javascript" src="/js/theme.min.js"></script></body>
+    <div id="fixed-buttons"><a href="#back-to-top" id="back-to-top-button" class="fixed-button" title="回到顶部">
+            <i class="fas fa-arrow-up fa-fw"></i>
+        </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+            <i class="fas fa-comment fa-fw"></i>
+        </a>
+    </div><div class="assets"><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/topbar/topbar.min.js"></script><script type="text/javascript" src="/lib/pjax/pjax.min.js"></script><script type="text/javascript" src="/js/theme.min.js"></script></div>
+
+<div class="pjax-assets"><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"desktop-header-typeit":"叉鸽 | MrCroxx","mobile-header-typeit":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"desktop-header-typeit":["desktop-header-typeit"],"mobile-header-typeit":["mobile-header-typeit"]},"duration":null,"speed":null}};</script><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/lightgallery/lightgallery.min.css">
+    <noscript><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/katex/katex.min.css">
+    <noscript><link rel="stylesheet" href="/lib/katex/katex.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/katex/copy-tex.min.css">
+    <noscript><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"></noscript></div>
+</body>
+
 </html>

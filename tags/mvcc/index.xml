@@ -7,9 +7,9 @@
             <webMaster>mrcroxx@outlook.com (叉鸽)</webMaster><lastBuildDate>Thu, 08 Oct 2020 16:02:56 &#43;0800</lastBuildDate><atom:link href="https://mrcroxx.github.io/tags/mvcc/" rel="self" type="application/rss+xml" /><item>
     <title>《An Empirical Evaluation of In-Memory Multi-Version Concurrency Control》论文翻译</title>
     <link>https://mrcroxx.github.io/posts/paper-reading/wu-vldb2017/</link>
-    <pubDate>Thu, 08 Oct 2020 16:02:56 &#43;0800</pubDate>
-    <author>作者</author>
-    <guid>https://mrcroxx.github.io/posts/paper-reading/wu-vldb2017/</guid>
+    <pubDate>Thu, 08 Oct 2020 16:02:56 &#43;0800</pubDate><author>
+        <name>作者</name>
+    </author><guid>https://mrcroxx.github.io/posts/paper-reading/wu-vldb2017/</guid>
     <description><![CDATA[<p><em>本篇文章是对论文<a href="https://15721.courses.cs.cmu.edu/spring2019/papers/03-mvcc1/wu-vldb2017.pdf" target="_blank" rel="noopener noreffer">An Empirical Evaluation of In-Memory Multi-Version Concurrency Control</a>的原创翻译，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>]]></description>
 </item></channel>
 </rss>
