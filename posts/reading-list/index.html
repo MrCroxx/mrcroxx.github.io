@@ -37,7 +37,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/reading-list\/index.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "Reading List","wordcount":  101 ,
+                        }],"genre": "posts","keywords": "Reading List","wordcount":  745 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/reading-list\/","datePublished": "2021-10-30T18:00:00+08:00","dateModified": "2021-10-30T18:00:00+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -123,8 +123,8 @@
             <div class="post-meta-line">
                 <span class="post-author"><i class="author fas fa-user-circle fa-fw"></i><a href="about" title="Author" rel=" author" class="author">叉鸽</a>
                 </span>&nbsp;<span class="post-category">收录于 </span>&nbsp;<span class="post-category">类别 <a href="/categories/reading-list/"><i class="far fa-folder fa-fw"></i>Reading List</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-10-30">2021-10-30</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2021-10-30">2021-10-30</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 101 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 1 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-10-30">2021-10-30</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2021-10-30">2021-10-30</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 745 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 2 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         data-src="/posts/reading-list/index.jpg"
@@ -139,19 +139,31 @@
                 </div>
                 <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
   <ul>
+    <li><a href="#scylla-userspace-io-scheduler">Scylla Userspace I/O Scheduler</a></li>
     <li><a href="#deal-with-fsync-failure">Deal with fsync() failure</a></li>
   </ul>
 </nav></div>
             </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
-<p>精力有限，可能没时间更新论文翻译/源码阅读，但是感觉比较好的 paper 或者 blog 会不定期分类更新在这里。</p>
-<h2 id="deal-with-fsync-failure">Deal with fsync() failure</h2>
+<p>碎碎念：在更了很多论文翻译后，发现翻译论文实在太花费精力了，而且英语水平有限，翻译质量也不高；另外，需要看这些论文的小伙伴英语似乎也不差，就不再献丑了。所以之后遇到的比较好的 paper 或者 blog 我会不定期地分类整理在这里。</p>
+<h2 id="scylla-userspace-io-scheduler">Scylla Userspace I/O Scheduler</h2>
+<p>Scylla 使用 Seastar 作为 c++ 的异步编程 runtime，Seastar 是一个 thread-per-core 的 runtime，也是在 thread-per-core 的 disk I/O 方面做的比较领先的框架，同时 Scylla 的 blog 写的也很详细。</p>
 <ul>
-<li><a href="https://archive.fosdem.org/2019/schedule/event/postgresql_fsync/" target="_blank" rel="noopener noreffer">PostgreSQL talk</a></li>
-<li><a href="https://www.usenix.org/system/files/atc20-rebello.pdf" target="_blank" rel="noopener noreffer">Can Applications Recover from fsync Failures?</a></li>
-<li><a href="https://kernelnewbies.org/Linux_4.13#Improved_block_layer_and_background_writes_error_handling" target="_blank" rel="noopener noreffer">Linux 4.13</a></li>
+<li><a href="https://www.scylladb.com/2017/10/05/io-access-methods-scylla/" target="_blank" rel="noopener noreffer">Different I/O Access Methods for Linux, What We Chose for Scylla, and Why</a> 总结了各种 disk I/O 访问模式，做了比较详细的分析，很有学习价值（不过当时还没有 io_uring ）。</li>
+<li><a href="https://www.scylladb.com/2016/02/09/qualifying-filesystems/" target="_blank" rel="noopener noreffer">Qualifying Filesystems for Seastar and ScyllaDB</a> 测试了当时不同文件系统对 AIO 的支持。</li>
+<li><a href="https://www.scylladb.com/2016/04/14/io-scheduler-1/" target="_blank" rel="noopener noreffer">Designing a Userspace Disk I/O Scheduler for Modern Datastores: the Scylla example (Part 1)</a> 和 <a href="https://www.scylladb.com/2016/04/29/io-scheduler-2/" target="_blank" rel="noopener noreffer">Designing a Userspace Disk I/O Scheduler for Modern Datastores: the Scylla example (Part 2)</a> 16年两篇介绍 Seastar 当时 Userspace I/O Scheduler 的博客，介绍并分析了 Seastar 基于 AIO/DIO 与 thread-per-core 的 Userspace I/O Scheduler 的背景、设计、效果，介绍了基于次线性函数与指数衰减的 quota 分配策略。</li>
+<li><a href="https://www.scylladb.com/2018/04/19/scylla-i-o-scheduler-3/" target="_blank" rel="noopener noreffer">The Scylla I/O Scheduler</a> 18年的 blog 介绍了在16年原有工作上的优化，通过基于 Little&rsquo;s Law 计算的 concurrency 替代了之前基于经验的 concurrency limit 方法。</li>
+<li><a href="https://www.scylladb.com/2018/07/26/how-scylla-data-cache-works/" target="_blank" rel="noopener noreffer">Exploring How the Scylla Data Cache Works</a> 介绍了 Scylla 的 cell-based format 的 Cache 设计，其中包括引入 Seastar 调度 I/O 前后对 cache refill 时对前台 latency jitter 的优化。</li>
+<li><a href="https://www.scylladb.com/2021/04/06/scyllas-new-io-scheduler/" target="_blank" rel="noopener noreffer">Scylla’s New IO Scheduler</a> 21年的优化，解决 thread-per-core 架构在 core 过多超过 disk I/O 能力时的调度问题。</li>
+</ul>
+<h2 id="deal-with-fsync-failure">Deal with fsync() failure</h2>
+<p>之前在P社实习遇到过写 WAL 时 fsync error 处理的问题，调研了一下相关工作之后发现这坑居然比想的要深，其中做的比较好的是 PostgreSQL 的工作。</p>
+<ul>
+<li><a href="https://archive.fosdem.org/2019/schedule/event/postgresql_fsync/" target="_blank" rel="noopener noreffer">PostgreSQL talk</a> PostgreSQL 在 FOSDEM'19 上做的 talk，很清晰地总结了他们在处理 PostgreSQL WAL fsync error 时遇到的问题和解决方案。</li>
+<li><a href="https://www.usenix.org/system/files/atc20-rebello.pdf" target="_blank" rel="noopener noreffer">Can Applications Recover from fsync Failures?</a> ATC'20 paper，分析了 PostgreSQL、LMDB、LevelDB、SQLite 与 Redis 对 fsync 的处理方式，以及不同文件系统 fsync error 的行为。</li>
+<li><a href="https://kernelnewbies.org/Linux_4.13#Improved_block_layer_and_background_writes_error_handling" target="_blank" rel="noopener noreffer">Linux 4.13</a> Linux 4.13 引入的错误处理机制，解决了 PostgreSQL 提出的问题的其中一个方面。</li>
 <li><a href="https://lwn.net/Articles/724232/" target="_blank" rel="noopener noreffer">new writeback error reporting</a></li>
 <li><a href="https://lwn.net/Articles/724307/" target="_blank" rel="noopener noreffer">improved block-layer error handling</a></li>
-<li><a href="https://www.postgresql.org/message-id/CAMsr&#43;YHh&#43;5Oq4xziwwoEfhoTZgr07vdGG&#43;hu=1adXx59aTeaoQ@mail.gmail.com" target="_blank" rel="noopener noreffer">PostgreSQL&rsquo;s fsync() error is unsafe</a></li>
+<li><a href="https://www.postgresql.org/message-id/CAMsr&#43;YHh&#43;5Oq4xziwwoEfhoTZgr07vdGG&#43;hu=1adXx59aTeaoQ@mail.gmail.com" target="_blank" rel="noopener noreffer">PostgreSQL&rsquo;s fsync() error is unsafe</a> 提出了 PostgreSQL 旧的 WAL fsync error 处理存在的问题。</li>
 </ul></div>
 
         <div class="post-footer" id="post-footer">
