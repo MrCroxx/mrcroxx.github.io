@@ -37,7 +37,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/reading-list\/index.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "Reading List","wordcount":  745 ,
+                        }],"genre": "posts","keywords": "Reading List","wordcount":  1455 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/reading-list\/","datePublished": "2021-10-30T18:00:00+08:00","dateModified": "2021-10-30T18:00:00+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -123,8 +123,8 @@
             <div class="post-meta-line">
                 <span class="post-author"><i class="author fas fa-user-circle fa-fw"></i><a href="about" title="Author" rel=" author" class="author">叉鸽</a>
                 </span>&nbsp;<span class="post-category">收录于 </span>&nbsp;<span class="post-category">类别 <a href="/categories/reading-list/"><i class="far fa-folder fa-fw"></i>Reading List</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-10-30">2021-10-30</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2021-10-30">2021-10-30</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 745 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 2 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-10-30">2021-10-30</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2021-10-30">2021-10-30</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 1455 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 3 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         data-src="/posts/reading-list/index.jpg"
@@ -139,12 +139,37 @@
                 </div>
                 <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
   <ul>
+    <li><a href="#bigdata-infra">BigData Infra</a></li>
+    <li><a href="#distributed-consensus">Distributed Consensus</a></li>
+    <li><a href="#lsm-tree">LSM-Tree</a></li>
     <li><a href="#scylla-userspace-io-scheduler">Scylla Userspace I/O Scheduler</a></li>
     <li><a href="#deal-with-fsync-failure">Deal with fsync() failure</a></li>
   </ul>
 </nav></div>
             </div><div class="content" id="content"><p><em>本文为原创文章，转载请严格遵守<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreffer">CC BY-NC-SA协议</a>。</em></p>
 <p>碎碎念：在更了很多论文翻译后，发现翻译论文实在太花费精力了，而且英语水平有限，翻译质量也不高；另外，需要看这些论文的小伙伴英语似乎也不差，就不再献丑了。所以之后遇到的比较好的 paper 或者 blog 我会不定期地分类整理在这里。</p>
+<h2 id="bigdata-infra">BigData Infra</h2>
+<ul>
+<li><a href="https://dl.acm.org/doi/pdf/10.1145/945445.945450" target="_blank" rel="noopener noreffer">The Google File System</a> Google 老三篇之一，GFS、BigTable、MapReduce 三篇 paper 基本上可以看做从此开创了大数据时代。</li>
+<li><a href="https://dl.acm.org/doi/abs/10.1145/1327452.1327492" target="_blank" rel="noopener noreffer">MapReduce: simplified data processing on large clusters</a> Google 老三篇之一，提出了 MapReduce 模型，也是大数据时代开山之作之一。</li>
+<li><a href="https://www.usenix.org/legacy/event/hotcloud10/tech/full_papers/Zaharia.pdf" target="_blank" rel="noopener noreffer">Spark: Cluster Computing with Working Sets</a> Spark 的 paper，分析了 MapReduce 在迭代计算、编程模型等上的不足，很详细地介绍了 Spark 最初为了解决的问题。</li>
+</ul>
+<h2 id="distributed-consensus">Distributed Consensus</h2>
+<ul>
+<li><a href="https://dl.acm.org/doi/pdf/10.1145/3335772.3335939" target="_blank" rel="noopener noreffer">The part-time parliament</a> Paxos 开山之作，祖师爷 Leslie Lamport 一个人的成果差不多养活了一个行业，这篇写的比较晦涩，建议拜读一下。</li>
+<li><a href="https://courses.cs.washington.edu/courses/cse550/17au/papers/CSE550.paxos-simple.pdf" target="_blank" rel="noopener noreffer">Paxos Made Simple</a> 因为 Paxos 最初的 paper 写的太晦涩，Lamport 老爷子亲自下场解释 Paxos 其实很简单，提供了完整、清晰的数学证明（作为工程背景的读起来仍然很难 orz）。</li>
+<li><a href="https://dl.acm.org/doi/abs/10.1145/1281100.1281103" target="_blank" rel="noopener noreffer">Paxos made live: an engineering perspective</a> 从工程的角度介绍了 Paxos 算法在 Chubby 上的的使用，提出了 Multi-Paxos。<em>注：Multi-Paxos 与 Multi-Raft 的 Multi 一般所指的并非为一个问题。Multi-Paxos 的 Multi 指连续的多次 Paxos 算法对连续的 log 达成 linearizability 共识；Multi-Raft 的 Multi 一般指 sharding 系统中每个 shard 通过单独的 Raft Group 维护副本一致性。</em></li>
+<li><a href="https://people.eecs.berkeley.edu/~kubitron/courses/cs262a-F18/handouts/papers/raft-technicalReport.pdf" target="_blank" rel="noopener noreffer">In Search of an Understandable Consensus Algorithm (Extended Version)</a> Raft 算法的小论文，终于有能让工程背景的容易理解的满足 Linearizability Consistency 的 Consensus 算法了。</li>
+<li><a href="http://files.catwell.info/misc/mirror/2014-ongaro-raft-phd.pdf" target="_blank" rel="noopener noreffer">CONSENSUS: BRIDGING THEORY AND PRACTICE</a> Diego Ongaro 的 Ph.D thesis，详细介绍了 Raft 算法，并提出了很多优化点与形式化证明，其中的大部分优化点至今都在工业界使用。</li>
+</ul>
+<h2 id="lsm-tree">LSM-Tree</h2>
+<ul>
+<li><a href="https://link.springer.com/article/10.1007/s002360050048" target="_blank" rel="noopener noreffer">The log-structured merge-tree (LSM-tree)</a> 最早提出 LSM-Tree 的 paper，其中很多设计与假设已经发生了变化。</li>
+<li><a href="https://dl.acm.org/doi/abs/10.1145/1365815.1365816" target="_blank" rel="noopener noreffer">Bigtable: A Distributed Storage System for Structured Data</a> Google 老三篇之一，重新捡起了 LSM-Tree 存储格式。</li>
+<li><a href="https://dl.acm.org/doi/abs/10.1145/3033273" target="_blank" rel="noopener noreffer">WiscKey: Separating Keys from Values in SSD-Conscious Storage</a> WiscKey 的 paper，基于 KV 分离优化 LSM-Tree 写放大的开篇，BadgerDB、Titan、TerarkDB 都是基于类似思想在工业实现上的变种。</li>
+<li><a href="https://dl.acm.org/doi/abs/10.1145/3132747.3132765" target="_blank" rel="noopener noreffer">PebblesDB: Building Key-Value Stores using Fragmented Log-Structured Merge Trees</a> 引入了 Guard 允许 Guard 划分的区间内 SSTable Keyspace overlap 以减少 Compaction 写放大。</li>
+<li>[https://ieeexplore.ieee.org/abstract/document/9556071](Building A Fast and Efficient LSM-tree Store by Integrating Local Storage with Cloud Storage) 根据 EC2 Instance Store 与 EBS 的性能、计费差异分层存储 LSM-Tree 的工作。</li>
+</ul>
 <h2 id="scylla-userspace-io-scheduler">Scylla Userspace I/O Scheduler</h2>
 <p>Scylla 使用 Seastar 作为 c++ 的异步编程 runtime，Seastar 是一个 thread-per-core 的 runtime，也是在 thread-per-core 的 disk I/O 方面做的比较领先的框架，同时 Scylla 的 blog 写的也很详细。</p>
 <ul>
