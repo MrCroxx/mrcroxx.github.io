@@ -299,7 +299,7 @@
 </span><span class="c1">// majority configurations. Decisions require the support of both majorities.
 </span><span class="c1"></span><span class="kd">type</span> <span class="nx">JointConfig</span> <span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="nx">MajorityConfig</span>
 
-</code></pre></div><p>为了实现方便，<code>JointConfig</code>的元素0表示$C_{new}$或非<em>joint consensus</em>状态下的当前配置，元素0表示$C_{old}$，在非<em>joint consensus</em>状态下的元素1应是一个空配置。</p>
+</code></pre></div><p><code>JointConfig</code>的元素0统一表示$C_{new}$；元素1在<em>joint consensus</em>下表示$C_{old}$，在非<em>joint consensus</em>下应为一个空配置。<em>（之前这里有个笔误，感谢 codedump gg 的提醒。）</em></p>
 <p><code>JointConfig</code>提供的方法与<code>MajorityConfig</code>几乎一样，其也提供了<code>CommittedIndex</code>方法与<code>VoteResult</code>方法。</p>
 <p><code>JointConfig</code>的<code>CommittedIndex</code>方法会获取两个<code>MajorityConfig</code>的<code>CommittedIndex</code>的返回值（若<code>MajorityConfig</code>为空配置，其返回类型最大值），并返回较小的结果，即被$C_{old}$和$C_{new}$都接受的<em>commit index</em>。</p>
 <p><code>JointConfig</code>的<code>VoteResult</code>方法也会获取两个<code>MajorityConfig</code>的<code>VoteResult</code>，如果二者结果相同可以直接返回，否则如果其中之一为<code>VoteLost</code>则直接返回<code>VoteLost</code>，否则还无法给出结果，返回<code>VotePending</code>。</p>
