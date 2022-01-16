@@ -298,14 +298,14 @@
 <p>为了更新一个元组，DBMS首先会在时间旅行表中获取一个槽，然后将master版本拷贝到这个位置上。然后，它会修改保存在主表上的master版本。因为索引总是指向master版本，所以索引不会受版本链更新的影响。因此，这避免了每次事务更新一个元组时维护数据库索引的额外开销，且对于访问元组当前版本的查询来说非常理想。</p>
 <p>这种策略与仅追加方法一样，也受非内联属性问题影响。我们之前描述的数据共享优化同样适用于此。</p>
 <h3 id="43-增量存储delta-storage">4.3 增量存储（Delta Storage）</h3>
-<p>在最后一种策略中，DBMS在主表中维护元组的<em>master版本</em> ，并在一个独立的<em>增量存储（delta storage）</em> 中维护<em>增量版本（delta storage）</em> 的序列。这一存储在MySQL和Oracle中被称为<em>回滚段（rollback segment）</em> ，在HyPer中也有使用。大部分已有的DBMS将元组的当前版本保存在主表中。为了更新已有的元组，DBMS会从增量存储中获取一个连续的空间，来创建新的增量版本。这一增量版本中包含被修改的属性的原始值而不是整个元组。随后，DBMS直接对主表中的master版本就地更新。</p>
+<p>在最后一种策略中，DBMS在主表中维护元组的<em>master版本</em> ，并在一个独立的<em>增量存储（delta storage）</em> 中维护<em>增量版本（delta versions）</em> 的序列。这一存储在MySQL和Oracle中被称为<em>回滚段（rollback segment）</em> ，在HyPer中也有使用。大部分已有的DBMS将元组的当前版本保存在主表中。为了更新已有的元组，DBMS会从增量存储中获取一个连续的空间，来创建新的增量版本。这一增量版本中包含被修改的属性的原始值而不是整个元组。随后，DBMS直接对主表中的master版本就地更新。</p>
 <p>这一策略对修改元组属性的子集的UPDATE操作来说很理想，因为它减少了内存分配。然而这种方法在读敏感负载中会导致更高的开销。为了执行访问一个元组的多个属性的读操作，DBMS不得不遍历版本链以拉取该操作访问的每个属性的数据。</p>
 <h3 id="44-探讨">4.4 探讨</h3>
 <p>这些策略的不同特征影响了它们在OLTP负载下的表现。因此，这些策略中没有一个能在任何负载类型下都有最优的性能。仅追加策略在执行大规模扫描的分析查询中表现更好，因为不同版本在内存中连续存储，这能够减少CPU缓存的失配且很适合硬件的预取（prefetch）。但是访问元组较旧版本的查询有更高的开销，因为DBMS会顺着元组的版本链来查找适当的版本。仅追加策略还会将物理版本暴露给索引结构，这会造成额外的索引管理开销。</p>
 <p>所有的这些存储策略都需要DBMS从中央数据结构中为每个事务分配内存（即表、增量存储）。多个线程会在同事访问并更新中央存储，因此这回导致访问竞争。为了避免这一问题，DBMS可以为每个中央数据结构（即表、增量存储）分别维护单独的内存空间，并以固定大小的增量扩展它们。随后每个工作线程将获取单独的内存空间。这本质上是对数据库分区，从而消除集中地争用点。</p>
 <h2 id="5-垃圾回收">5. 垃圾回收</h2>
 <p>因为MVCC会在事务更新元组时创建新版本，如果不回收不再需要的版本，那么系统会耗尽空间。这还会增加查询执行的时间，因为DBMS会花更多的时间来遍历较长的版本链。因此，MVCC DBMS的性能高度依赖它<em>垃圾回收（garbage collection，GC）</em> 组件在确保事务安全的条件下回收内存的能力。</p>
-<p>GC过程被分为三个步骤：（1）探测过期的版本（2）移除这些版本与它们香瓜你的链和索引的链接（3）回收它们的存储空间。 如果一个版是无效的版本（即由被打断的事务创建）或对任何活动的事务都不可见，那么DBMS会认为该版本是过期的。对于后者，DBMS会检查版本的<code>end-ts</code>是否比所有活动的事务的$ T_{id} $都小。DBMS会维护一个中央数据结构来追踪这一信息，但是这会在多核系统中成为可伸缩性的一个瓶颈<sup>[27, 48]</sup>。</p>
+<p>GC过程被分为三个步骤：（1）探测过期的版本（2）移除这些版本与和它们相关链及索引的链接（3）回收它们的存储空间。 如果一个版是无效的版本（即由被打断的事务创建）或对任何活动的事务都不可见，那么DBMS会认为该版本是过期的。对于后者，DBMS会检查版本的<code>end-ts</code>是否比所有活动的事务的$ T_{id} $都小。DBMS会维护一个中央数据结构来追踪这一信息，但是这会在多核系统中成为可伸缩性的一个瓶颈<sup>[27, 48]</sup>。</p>
 <p>内存式的DBMS可以通过粗粒度的（coarse-grained）基于epoch（epoch-based）的内存管理来追踪被事务创建的版本已解决这一问题<sup>[44]</sup>。该方法中，系统总有一个活动的epoch和一个早期epoch的FIFO队列。在一定时间后，DBMS会将当前活动的epoch移动到早期epoch队列中，随后创建一个新的活动epoch。epoch的变换可以由后台线程执行，也可以由DBMS的工作线程以协作的方式执行。每个epoch都有对分配给它的事务数量的计数。DBMS会将每个新事务注册到活动的epoch中并增加其计数器。当事务完成时，DBMS将它从它的epoch中移除（其epoch可能已经不再是当前活动的epoch），并减小其计数器。如果一个非活动的epoch的计数器变为零且其之前的epoch也没有活动的事务了，那么DBMS可以安全地回收在这个epoch中被更新的版本。</p>
 <p>MVCC中的GC有两种实现，它们的不同之处在于DBMS如何查找过期的版本。第一种方法是<em>元组级（tuple-level）</em> GC，DBMS会检验单个元组的可见性。第二种是<em>事务级（transaction-level）</em> GC，DBMS会检查被完成的事务创建的所有版本是否可见。需要注意的重要的点是，我们下面讨论的每个GC方案并非都与所有的版本存储策略兼容。</p>
 <h3 id="51-元组级垃圾回收">5.1 元组级垃圾回收</h3>
@@ -343,7 +343,7 @@
 <h3 id="61-逻辑指针">6.1 逻辑指针</h3>
 <p>使用逻辑指针的主要思想是，DBMS使用了固定的标识符，每个元组的索引条目的标识符不会改变。那么，如<strong>图5a</strong>所示，DBMS使用了一个将元组的标识符映射到其版本链链头的间接层。这避免了当元组被修改时（即使被索引的属性没被修改）必须更新一个表所有指向新物理地址的索引的问题。每次只需要修改映射条目。但是因为索引指向确切的版本，DBMS需要从版本链的链头开始遍历来找到可见的版本。这种方法适用于所有的存储策略。就我们目前讨论的来说，这一映射的实现有两种选择：</p>
 <p><strong>主键（Primary Key，PKey）：</strong> 在这种方法中，标识符和对应的元组的主键相同。当DBMS从辅助索引中检索到一个条目时，它会在表的主键索引中执行另一次查找，来定位版本链的链头。如果辅助索引的属性与主键有重叠，那么BDMS不必在每个条目中保存完整的主键。</p>
-<p><strong>元组Id（Tuple Id，TupleId）：</strong> Pkey指针的一个缺点是，随着元组主键的增长，数据库的存储开销会越来越大，因为每个辅助索引都有主键的一份完整的拷贝。除此之外，因为大多数数据库的主键索引都使用一种“保序（order-preserving）”的数据结构，所以执行额外的查找的开销取决于条目的数量。另一种方式是，使用一个唯一的64位元组标识符替代主键，病使用一个独立的无闩哈希表来维护到元组版本链链头的映射信息。</p>
+<p><strong>元组Id（Tuple Id，TupleId）：</strong> Pkey指针的一个缺点是，随着元组主键的增长，数据库的存储开销会越来越大，因为每个辅助索引都有主键的一份完整的拷贝。除此之外，因为大多数数据库的主键索引都使用一种“保序（order-preserving）”的数据结构，所以执行额外的查找的开销取决于条目的数量。另一种方式是，使用一个唯一的64位元组标识符替代主键，并使用一个独立的无闩哈希表来维护到元组版本链链头的映射信息。</p>
 <h3 id="62-物理指针">6.2 物理指针</h3>
 <p>在第二种策略下，BDMS在索引条目中保存版本的物理地址。这种方法仅适用于仅追加存储，因为DBMS会将版本保存到同一张中，所以所有索引都能指向这些版本。当更新表中任何元组时，DBMS会将新创建的版本插入到所有的辅助索引中。通过这种方式，DBMS不需要比较辅助索引和所有索引的版本，就能够从辅助索引中搜索元组。如MemSQL和Hekaton的一些MVCC DBMS就采用了这一策略。</p>
 <h3 id="63-探讨">6.3 探讨</h3>
@@ -385,7 +385,7 @@
     </figure></p>
 <p><strong>图7a</strong>展示了读取敏感型负载下的DBMS吞吐量。当$ \theta $小于0.7时，我们可以看到所有的协议的吞吐量相似。当超过该争用级别时，MVOCC的性能减小达50%。这是因为MVOCC直到事务已经执行了其操作时，才能发现事务会因冲突而被打断。多版本策略在这一情况下没有优势。如<strong>图7b</strong>所示，尽管在争用增加时，我们在更新敏感负载的结果中能看到相同的性能下降，但是除了MV2PL之外，这些协议都没有太大的区别。除了MV2PL之外的这些协议除了“写入-写入”冲突的方法相似，同样，多版本策略对于减少这类冲突没有帮助。</p>
 <p><strong>异构负载（Heterogeneous Workload）：</strong> 在接下来的这个实验中，我们评估了异构YCSB负载，该负载由读写和只读的SERIALIZABLE事务混合而成。每个事务包含100个操作，每个操作访问一个不同的元组。</p>
-<p>DBMS使用了20个线程来执行读写事务，我们使用不同的线程数来专门处理只读的查询。所有操作的访问模式的分布都采用了很大的争用配置（$ \theta = 0.8 $）。我们首先在让应用程序预先声明查询是“只读的”的情况下执行了该负载，然后让应用程序预先声明查询是“只读的”再次执行一次。</p>
+<p>DBMS使用了20个线程来执行读写事务，我们使用不同的线程数来专门处理只读的查询。所有操作的访问模式的分布都采用了很大的争用配置（$ \theta = 0.8 $）。我们首先在让应用程序预先没有声明查询是“只读的”的情况下执行了该负载，然后让应用程序预先声明查询是“只读的”再次执行一次。</p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/figure-8.png" title="图8 异构负载（不预先声明只读）——在YCSB（$ \theta = 0.8 $）下的并发控制协议的比较。读写部分在20个线程中执行了更新敏感型的混合负载，而处理只读负载的线程数是变化的。" data-thumbnail="/posts/paper-reading/wu-vldb2017/figure-8.png" data-sub-html="<h2>图8 异构负载（不预先声明只读）——在YCSB（$ \theta = 0.8 $）下的并发控制协议的比较。读写部分在20个线程中执行了更新敏感型的混合负载，而处理只读负载的线程数是变化的。</h2><p>图8 异构负载（不预先声明只读）——在YCSB（$ \theta = 0.8 $）下的并发控制协议的比较。读写部分在20个线程中执行了更新敏感型的混合负载，而处理只读负载的线程数是变化的。</p>">
         <img
             class="lazyload"
@@ -422,7 +422,7 @@
 <p>如<strong>图10a</strong>所示，与其它协议相比，MVTO的性能高出了了45%~120%。SI+SSN生成的吞吐量比其它的协议都高，因为它需要检测反依赖，而不是通过类似OCC的一致性检查盲目地打断。MVOCC造成了计算的浪费，因为它近在验证阶段检测冲突。在<strong>图10b</strong>中，更有趣的是，不同的协议打断的事务也不同。MVOCC更有可能打断NewOrder事务，而在MV2PL中，Payment被打断的概率比NewOrder高出了6.8倍。这两种事务访问同一张表，同样，乐观的协议仅在NewOrder事务的验证阶段检测读取冲突。SI+SSN因为有反依赖追踪，所以它的打断率低；而在MVTO中，因为分配给每个事务的时间戳直接决定了它们的顺序，所以它能够避免错误的打断。</p>
 <h3 id="73-版本存储">7.3 版本存储</h3>
 <p>接下来我们评估DBMS的版本存储策略。首先，我们分析了仅追加存储中非内联属性的存储机制。然后，我们讨论了版本链的顺序是如何影响仅追加存储的DBMS的性能的。接下来，我们通过使用不同的YCSB负载，将仅追加策略与时间旅行策略和增量策略进行了比较。最后，我们使用TPC-C benchmark再次比较了这些策略。在所有的这些实验中，我们让DBMS都使用了MVTO协议，因为它在之前的实验中有最均衡的性能。</p>
-<p><strong>非内联属性（Non-Inline Attributes）：</strong> 第一个实验评估了在仅追加存储中保存非内联属性的不同机制的性能。在本实验中，我们使用了混合的YCSB负载，数据库变为包含了一个有一千万个元组的表，每个元组有一个64位主键和一个用100字节的非内联VARCHAR类型的属性表示的可变数字。我们在40个线程中使用了低争用因子（$ \theta = 0.2 $）的读取敏感型和更新敏感型负载，其中每个事务执行10个操作。每个操作仅访问元组中的一个属性。</p>
+<p><strong>非内联属性（Non-Inline Attributes）：</strong> 第一个实验评估了在仅追加存储中保存非内联属性的不同机制的性能。在本实验中，我们使用了混合的YCSB负载，数据库变为包含了一个有一千万个元组的表，每个元组有一个64位主键和不同数目的用100字节的非内联VARCHAR类型表示的属性。我们在40个线程中使用了低争用因子（$ \theta = 0.2 $）的读取敏感型和更新敏感型负载，其中每个事务执行10个操作。每个操作仅访问元组中的一个属性。</p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/wu-vldb2017/figure-11.png" title="图11 非内联属性——对在YCSB负载下如何在仅追加存储策略中保存非内联属性的评估，其中有40个DBMS线程，元组中的属性的数量不同。" data-thumbnail="/posts/paper-reading/wu-vldb2017/figure-11.png" data-sub-html="<h2>图11 非内联属性——对在YCSB负载下如何在仅追加存储策略中保存非内联属性的评估，其中有40个DBMS线程，元组中的属性的数量不同。</h2><p>图11 非内联属性——对在YCSB负载下如何在仅追加存储策略中保存非内联属性的评估，其中有40个DBMS线程，元组中的属性的数量不同。</p>">
         <img
             class="lazyload"
@@ -691,7 +691,7 @@
 </article></div>
         </main><footer class="footer">
         <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
-                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2021</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank" rel="noopener noreferrer">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2022</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank" rel="noopener noreferrer">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div></footer></div>
 
     <div id="fixed-buttons"><a href="#back-to-top" id="back-to-top-button" class="fixed-button" title="回到顶部">
