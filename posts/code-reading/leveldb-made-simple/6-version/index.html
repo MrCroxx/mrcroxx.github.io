@@ -37,7 +37,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/6-version\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  5276 ,
+                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  5209 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/6-version\/","datePublished": "2021-03-07T20:45:05+08:00","dateModified": "2021-03-09T22:56:48+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -123,7 +123,7 @@
             <div class="post-meta-line">
                 <span class="post-author"><i class="author fas fa-user-circle fa-fw"></i><a href="about" title="Author" rel=" author" class="author">叉鸽</a>
                 </span>&nbsp;<span class="post-category">收录于 </span>&nbsp;<span class="post-category">类别 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-07">2021-03-07</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2021-03-09">2021-03-09</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 5276 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-07">2021-03-07</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2021-03-09">2021-03-09</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 5209 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 11 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
@@ -172,22 +172,21 @@
 <h3 id="11-versioneditmanifestcurrent">1.1 VersionEdit、Manifest、Current</h3>
 <p>LevelDB的版本增量数据在内存中的类型是<code>VersionEdit</code>，其<code>EncodeTo</code>与<code>DecodeFrom</code>方法分别用来序列化或反序列化<code>VersionEdit</code>，以便将其保存在文件中或从文件中读取。</p>
 <p>目前<code>VersionEdit</code>类中需要持久化到Manifest文件中的数据共有8种：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
-<span class="c1">// Tag numbers for serialized VersionEdit.  These numbers are written to
-</span><span class="c1">// disk and should not be changed.
-</span><span class="c1"></span><span class="k">enum</span> <span class="nc">Tag</span> <span class="p">{</span>
-  <span class="n">kComparator</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-  <span class="n">kLogNumber</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
-  <span class="n">kNextFileNumber</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
-  <span class="n">kLastSequence</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
-  <span class="n">kCompactPointer</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
-  <span class="n">kDeletedFile</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span>
-  <span class="n">kNewFile</span> <span class="o">=</span> <span class="mi">7</span><span class="p">,</span>
-  <span class="c1">// 8 was used for large value refs
-</span><span class="c1"></span>  <span class="n">kPrevLogNumber</span> <span class="o">=</span> <span class="mi">9</span>
-<span class="p">};</span>
-
-</code></pre></div><p>这些Tag分别对应以下数据：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Tag numbers for serialized VersionEdit.  These numbers are written to
+</span></span></span><span class="line"><span class="cl"><span class="c1">// disk and should not be changed.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">enum</span> <span class="nc">Tag</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">kComparator</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">kLogNumber</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">kNextFileNumber</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">kLastSequence</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">kCompactPointer</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">kDeletedFile</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">kNewFile</span> <span class="o">=</span> <span class="mi">7</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// 8 was used for large value refs
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">kPrevLogNumber</span> <span class="o">=</span> <span class="mi">9</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span></code></pre></div><p>这些Tag分别对应以下数据：</p>
 <ol>
 <li>Comparator Name：InternalKey比较器的名称字符串。</li>
 <li>Log Number：当前Log文件编号。</li>
@@ -204,19 +203,18 @@
 <h3 id="12-versioneditversionversionset">1.2 VersionEdit、Version、VersionSet</h3>
 <p>Manifest与Current文件是LevelDB保存在稳定存储中的文件版本信息，在LevelDB被打开后，其会先通过Current文件找到当前的Manifest文件，读取并反序列化其中数据，并在内存中维护文件版本信息，以便后续操作。</p>
 <p>LevelDB在内存中将每个版本的文件信息封装为<code>Version</code>保存，Version保存了该版本每个level中都有哪些文件（及一些与Compaction有关的字段，笔者将在本系列后续文章中介绍），Version中文件元数据被按层组织为<code>FileMetaData</code>结构体数组的vector容器。<code>FileMetaData</code>中的字段如下：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
-<span class="k">struct</span> <span class="nc">FileMetaData</span> <span class="p">{</span>
-  <span class="n">FileMetaData</span><span class="p">()</span> <span class="o">:</span> <span class="n">refs</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">allowed_seeks</span><span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">30</span><span class="p">),</span> <span class="n">file_size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="p">{}</span>
-
-  <span class="kt">int</span> <span class="n">refs</span><span class="p">;</span>
-  <span class="kt">int</span> <span class="n">allowed_seeks</span><span class="p">;</span>  <span class="c1">// Seeks allowed until compaction
-</span><span class="c1"></span>  <span class="kt">uint64_t</span> <span class="n">number</span><span class="p">;</span>
-  <span class="kt">uint64_t</span> <span class="n">file_size</span><span class="p">;</span>    <span class="c1">// File size in bytes
-</span><span class="c1"></span>  <span class="n">InternalKey</span> <span class="n">smallest</span><span class="p">;</span>  <span class="c1">// Smallest internal key served by table
-</span><span class="c1"></span>  <span class="n">InternalKey</span> <span class="n">largest</span><span class="p">;</span>   <span class="c1">// Largest internal key served by table
-</span><span class="c1"></span><span class="p">};</span>
-
-</code></pre></div><p>LevelDB将Version以双向链表的形式组织，每个Version的<code>next_</code>指针指向下一个Version，<code>prev_</code>指针指向上一个Version。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="nc">FileMetaData</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">FileMetaData</span><span class="p">()</span> <span class="o">:</span> <span class="n">refs</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">allowed_seeks</span><span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">30</span><span class="p">),</span> <span class="n">file_size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="p">{}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="n">refs</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="n">allowed_seeks</span><span class="p">;</span>  <span class="c1">// Seeks allowed until compaction
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="kt">uint64_t</span> <span class="n">number</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">uint64_t</span> <span class="n">file_size</span><span class="p">;</span>    <span class="c1">// File size in bytes
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">InternalKey</span> <span class="n">smallest</span><span class="p">;</span>  <span class="c1">// Smallest internal key served by table
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">InternalKey</span> <span class="n">largest</span><span class="p">;</span>   <span class="c1">// Largest internal key served by table
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">};</span>
+</span></span></code></pre></div><p>LevelDB将Version以双向链表的形式组织，每个Version的<code>next_</code>指针指向下一个Version，<code>prev_</code>指针指向上一个Version。</p>
 <p>LevelDB通过<code>VersionSet</code>结构来保存Version的双向链表，及其它不需要多版本记录的文件信息等（如<code>db_name</code>、<code>last_sequence_</code>、<code>log_number_</code>、<code>table_cache_</code>等）。<code>VersionSet</code>的<code>dummy_versions_</code>是Version双向链表的链头，其是一个无实际意义的Version对象，因此<code>dummy_versions_</code>的下一个Version是内存中保存的最旧的Version、<code>dummy_versions_</code>的上一个Version是最新的Version，<code>VersionSet</code>中还有一个<code>current_</code>指针指向链表中最新的Version。</p>
 <p><figure><a class="lightgallery" href="/posts/code-reading/leveldb-made-simple/6-version/assets/version-set.svg" title="VersionEdit、Version、VersionSet关系图" data-thumbnail="/posts/code-reading/leveldb-made-simple/6-version/assets/version-set.svg" data-sub-html="<h2>VersionEdit、Version、VersionSet关系图</h2><p>VersionEdit、Version、VersionSet关系图</p>">
         <img
@@ -278,7 +276,7 @@
 </div>
 </article></div>
         </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.101.0">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2022</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank" rel="noopener noreferrer">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div></footer></div>
 

@@ -37,7 +37,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/xoring-elephants\/paper-reading.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "Erasure Code, Translation","wordcount":  19987 ,
+                        }],"genre": "posts","keywords": "Erasure Code, Translation","wordcount":  19016 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/xoring-elephants\/","datePublished": "2020-09-03T12:01:45+08:00","dateModified": "2020-09-07T11:10:45+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -123,8 +123,8 @@
             <div class="post-meta-line">
                 <span class="post-author"><i class="author fas fa-user-circle fa-fw"></i><a href="about" title="Author" rel=" author" class="author">叉鸽</a>
                 </span>&nbsp;<span class="post-category">收录于 </span>&nbsp;<span class="post-category">类别 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-03">2020-09-03</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2020-09-07">2020-09-07</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 19987 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 40 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-03">2020-09-03</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2020-09-07">2020-09-07</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 19016 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 38 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         data-src="/posts/paper-reading/xoring-elephants/paper-reading.jpg"
@@ -265,9 +265,9 @@
 <p>通过添加局部奇偶校验块$S_{1}=c_{1}X_{1}+c_{2}X_{2}+c_{3}X_{3}+c_{4}X_{4}+c_{5}X_{5}$，单块故障可以通过仅访问另外5个块来修复。例如，如果块$X_{3}$丢失（或在不可用时被读取降级）其可以通过下式重建。</p>
 <p>$$X_{3}=c_{3}^{-1}(S_{1}-c_{1}X_{1}-c_{2}X_{2}-c_{4}X_{4}-c_{5}X_{5}) \tag {1}$$</p>
 <p>只要$c_{3}$不为0其倒数就存在，这时我们对所有局部奇偶校验块的系数的要求。我们可以通过选择$c_{i}$使所有线性方程线性无关。在附录中我们提出了一个随机的和一个确定的算法来构建这些系数。需要强调的是，确定性的算法的复杂度与编码的参数$(n,k)$呈指数关系，因此其仅在小规模的编码构造中有用。</p>
-<p>添加这些局部奇偶校验的缺点是需要额外的存储。原本使用RS码需要为每10个块存储14个块，而3个局部奇偶校验块将存储开销增加到了$17/10$。有一个额外优化我们可以实现：因此系数$c_{1},c_{2},&hellip;,c_{10}$可被选取，所以我们可以使局部奇偶检验块满足一个额外的校准方程$S1+S2+S3=0$。因此我们可以不存储局部奇偶校验块$S3$而将其看做是一个隐式奇偶校验块。需要注意的是，为了获得这一性质，我们需要置$c_{5} ' +c_{6} ' = 1$。</p>
+<p>添加这些局部奇偶校验的缺点是需要额外的存储。原本使用RS码需要为每10个块存储14个块，而3个局部奇偶校验块将存储开销增加到了$17/10$。有一个额外优化我们可以实现：因此系数$c_{1},c_{2},&hellip;,c_{10}$可被选取，所以我们可以使局部奇偶检验块满足一个额外的校准方程$S1+S2+S3=0$。因此我们可以不存储局部奇偶校验块$S3$而将其看做是一个隐式奇偶校验块。需要注意的是，为了获得这一性质，我们需要置$c_{5} &rsquo; +c_{6} &rsquo; = 1$。</p>
 <p>当RS奇偶校验块中的一个块发生故障时，可以重建隐式校验块并用其修复故障。例如，如果$P_{2}$丢失，可以通过读取$P_{1},P_{3},P_{4},S_{1},S_{2}$这5个块并通过如下等式来恢复该块。</p>
-<p>$$ P_{2}=( c_{2} ' )^{-1}(-S_{1}-S_{2}-c_{1} ' P_{1}-c_{3} ' P_{3}-c_{4} ' P_{4}) \tag {2} $$</p>
+<p>$$ P_{2}=( c_{2} &rsquo; )^{-1}(-S_{1}-S_{2}-c_{1} &rsquo; P_{1}-c_{3} &rsquo; P_{3}-c_{4} &rsquo; P_{4}) \tag {2} $$</p>
 <p>在我们的理论分析中，我们展示了如何找到能使条件成立的非零的系数$c_{i}$（其必须依赖$P_{i}$，但不依赖数据）。我们童颜展示了HDFS RAID中的RS码中的实现方式，其选择了$c_{i}=1 \forall i$，这是能够执行简单的XOR（异或）操作的充分条件。我们进一步证明了当给定局部性$r=5$且块长度$n=16$时的最大可行距离（$d=5$）。</p>
 <h2 id="3-系统描述">3. 系统描述</h2>
 <p>HDFS-RAID是一个在Apache Hadoop<sup>[2]</sup>上实现了RS编码和解码的开源模块。其提供了一个运行在HDFS之上的分布式RAID文件系统（Distributed Raid File System，DRFS）。存储在DRFS上的文件被划分为条带，即多个块的组。其对于每个条带都计算了一些奇偶校验块，且将其作为与原始文件对应的单独的奇偶校验文件存储。HDFS-RAID通过Java实现（大约12000行代码），且目前在包括Facebook的多个组织的生产环境中使用。</p>
@@ -499,7 +499,7 @@
 </div>
 </article></div>
         </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.101.0">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2022</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank" rel="noopener noreferrer">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div></footer></div>
 

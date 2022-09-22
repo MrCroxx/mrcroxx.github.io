@@ -160,58 +160,58 @@
 </nav></div>
             </div><div class="content" id="content"><h1 id="带ldap认证与webui的docker私有仓库搭建">带LDAP认证与WebUI的Docker私有仓库搭建</h1>
 <h2 id="1-获取docker仓库并运行">1. 获取docker仓库并运行</h2>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash">docker pull registry:latest
-docker run -d -p 127.0.0.1:5000:5000 --name registry-localhost -v /opt/docker-registry:/var/lib/registry --restart<span class="o">=</span>always registry:latest
-</code></pre></div><h2 id="2-获取webui并运行">2. 获取WebUI并运行</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">docker pull registry:latest
+</span></span><span class="line"><span class="cl">docker run -d -p 127.0.0.1:5000:5000 --name registry-localhost -v /opt/docker-registry:/var/lib/registry --restart<span class="o">=</span>always registry:latest
+</span></span></code></pre></div><h2 id="2-获取webui并运行">2. 获取WebUI并运行</h2>
 <p><em>Docker Registry的WebUI有很多，这里使用konradkleine/docker-registry-frontend:v2</em></p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash">docker pull konradkleine/docker-registry-frontend:v2
-docker run -d -e <span class="nv">ENV_DOCKER_REGISTRY_HOST</span><span class="o">=</span>barricade.ivic.org.cn -e <span class="nv">ENV_DOCKER_REGISTRY_PORT</span><span class="o">=</span><span class="m">80</span> -p 127.0.0.1:8081:80 --restart<span class="o">=</span>always --name frontend-localhost konradkleine/docker-registry-frontend:v2
-</code></pre></div><h2 id="3-搭建带有ldap认证的nginx服务">3. 搭建带有LDAP认证的Nginx服务</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">docker pull konradkleine/docker-registry-frontend:v2
+</span></span><span class="line"><span class="cl">docker run -d -e <span class="nv">ENV_DOCKER_REGISTRY_HOST</span><span class="o">=</span>barricade.ivic.org.cn -e <span class="nv">ENV_DOCKER_REGISTRY_PORT</span><span class="o">=</span><span class="m">80</span> -p 127.0.0.1:8081:80 --restart<span class="o">=</span>always --name frontend-localhost konradkleine/docker-registry-frontend:v2
+</span></span></code></pre></div><h2 id="3-搭建带有ldap认证的nginx服务">3. 搭建带有LDAP认证的Nginx服务</h2>
 <p>预编译版本的nginx默认不带有LDAP认证所需模块，需要手动编译nginx与拓展模块。</p>
 <h3 id="31-编译安装nginx依赖">3.1 编译安装nginx依赖</h3>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="c1"># 编译安装pcre</span>
-wget ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.42.tar.gz
-tar -zxf pcre-8.42.tar.gz
-<span class="nb">cd</span> pcre-8.42
-./configure
-make
-sudo make install
-
-<span class="c1"># 编译安装zlib</span>
-wget http://zlib.net/zlib-1.2.11.tar.gz
-tar -zxf zlib-1.2.11.tar.gz
-<span class="nb">cd</span> zlib-1.2.11
-./configure
-make
-sudo make install
-
-<span class="c1"># 如果没有安装openssl，请自行安装openssl</span>
-<span class="c1"># ...</span>
-
-<span class="c1"># 安装ldap依赖库</span>
-<span class="c1"># Ubuntu/Debian</span>
-sudo apt install libldap2-dev
-<span class="c1"># CentOS</span>
-yum install openldap-devel
-</code></pre></div><h3 id="32-下载nginx与拓展模块源码">3.2 下载nginx与拓展模块源码</h3>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="c1"># 下载解压nginx源码</span>
-wget https://nginx.org/download/nginx-1.15.11.tar.gz
-tar zxf nginx-1.15.11.tar.gz
-
-<span class="c1"># 下载解压nginx-auth-ldap</span>
-wget https://github.com/kvspb/nginx-auth-ldap/archive/master.zip
-unzip master.zip
-</code></pre></div><h3 id="33-编译安装nginx">3.3 编译安装nginx</h3>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="c1"># 编译nginx</span>
-<span class="nb">cd</span> nginx-1.15.11
-./configure --sbin-path<span class="o">=</span>/usr/local/nginx/nginx --conf-path<span class="o">=</span>/etc/nginx/nginx.conf --pid-path<span class="o">=</span>/usr/local/nginx/nginx.pid --with-pcre<span class="o">=</span>../pcre-8.42 --with-zlib<span class="o">=</span>../zlib-1.2.11 --with-http_ssl_module --with-stream --with-mail<span class="o">=</span>dynamic  --add-module<span class="o">=</span>~/nginx-auth-ldap-master
-
-make
-sudo make install
-
-<span class="c1"># 创建软连接</span>
-sudo ln -s /usr/local/nginx/nginx /usr/bin/nginx
-</code></pre></div><h3 id="34-编写nginx配置文件etcnginxnginxconf">3.4 编写nginx配置文件/etc/nginx/nginx.conf</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 编译安装pcre</span>
+</span></span><span class="line"><span class="cl">wget ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.42.tar.gz
+</span></span><span class="line"><span class="cl">tar -zxf pcre-8.42.tar.gz
+</span></span><span class="line"><span class="cl"><span class="nb">cd</span> pcre-8.42
+</span></span><span class="line"><span class="cl">./configure
+</span></span><span class="line"><span class="cl">make
+</span></span><span class="line"><span class="cl">sudo make install
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 编译安装zlib</span>
+</span></span><span class="line"><span class="cl">wget http://zlib.net/zlib-1.2.11.tar.gz
+</span></span><span class="line"><span class="cl">tar -zxf zlib-1.2.11.tar.gz
+</span></span><span class="line"><span class="cl"><span class="nb">cd</span> zlib-1.2.11
+</span></span><span class="line"><span class="cl">./configure
+</span></span><span class="line"><span class="cl">make
+</span></span><span class="line"><span class="cl">sudo make install
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 如果没有安装openssl，请自行安装openssl</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># ...</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 安装ldap依赖库</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Ubuntu/Debian</span>
+</span></span><span class="line"><span class="cl">sudo apt install libldap2-dev
+</span></span><span class="line"><span class="cl"><span class="c1"># CentOS</span>
+</span></span><span class="line"><span class="cl">yum install openldap-devel
+</span></span></code></pre></div><h3 id="32-下载nginx与拓展模块源码">3.2 下载nginx与拓展模块源码</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 下载解压nginx源码</span>
+</span></span><span class="line"><span class="cl">wget https://nginx.org/download/nginx-1.15.11.tar.gz
+</span></span><span class="line"><span class="cl">tar zxf nginx-1.15.11.tar.gz
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 下载解压nginx-auth-ldap</span>
+</span></span><span class="line"><span class="cl">wget https://github.com/kvspb/nginx-auth-ldap/archive/master.zip
+</span></span><span class="line"><span class="cl">unzip master.zip
+</span></span></code></pre></div><h3 id="33-编译安装nginx">3.3 编译安装nginx</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># 编译nginx</span>
+</span></span><span class="line"><span class="cl"><span class="nb">cd</span> nginx-1.15.11
+</span></span><span class="line"><span class="cl">./configure --sbin-path<span class="o">=</span>/usr/local/nginx/nginx --conf-path<span class="o">=</span>/etc/nginx/nginx.conf --pid-path<span class="o">=</span>/usr/local/nginx/nginx.pid --with-pcre<span class="o">=</span>../pcre-8.42 --with-zlib<span class="o">=</span>../zlib-1.2.11 --with-http_ssl_module --with-stream --with-mail<span class="o">=</span>dynamic  --add-module<span class="o">=</span>~/nginx-auth-ldap-master
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">make
+</span></span><span class="line"><span class="cl">sudo make install
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 创建软连接</span>
+</span></span><span class="line"><span class="cl">sudo ln -s /usr/local/nginx/nginx /usr/bin/nginx
+</span></span></code></pre></div><h3 id="34-编写nginx配置文件etcnginxnginxconf">3.4 编写nginx配置文件/etc/nginx/nginx.conf</h3>
 <p><strong>注意替换ldap_server中参数，同时注意其他位置关于host与port的配置</strong></p>
 <pre tabindex="0"><code>worker_processes  1;
 
@@ -253,18 +253,18 @@ http {
 
         location /v2/ {
                 # Do not allow connections from docker 1.5 and earlier
-                # docker pre-1.6.0 did not properly set the user agent on ping, catch &quot;Go *&quot; user agents
-                if ($http_user_agent ~ &quot;^(docker\/1\.(3|4|5(?!\.[0-9]-dev))|Go ).*$&quot; ) {
+                # docker pre-1.6.0 did not properly set the user agent on ping, catch &#34;Go *&#34; user agents
+                if ($http_user_agent ~ &#34;^(docker\/1\.(3|4|5(?!\.[0-9]-dev))|Go ).*$&#34; ) {
                         return 404;
                 }
 
-                auth_ldap &quot;Forbidden&quot;;
+                auth_ldap &#34;Forbidden&#34;;
                 auth_ldap_servers ldapserver;
-                add_header 'Docker-Distribution-Api-Version' 'registry/2.0' always;
+                add_header &#39;Docker-Distribution-Api-Version&#39; &#39;registry/2.0&#39; always;
 
                 proxy_pass                          http://docker-registry;
-                    proxy_set_header  Host              $http_host;   # required for docker client's sake
-                    proxy_set_header  X-Real-IP         $remote_addr; # pass on real client's IP
+                    proxy_set_header  Host              $http_host;   # required for docker client&#39;s sake
+                    proxy_set_header  X-Real-IP         $remote_addr; # pass on real client&#39;s IP
                     proxy_set_header  X-Forwarded-For   $proxy_add_x_forwarded_for;
                     proxy_set_header  X-Forwarded-Proto $scheme;
                     proxy_read_timeout                  900;
@@ -283,7 +283,7 @@ http {
 	chunked_transfer_encoding on;
 	location / {
 
-		auth_ldap &quot;Forbidden&quot;;
+		auth_ldap &#34;Forbidden&#34;;
 		auth_ldap_servers ldapserver;
 		proxy_pass http://localhost:8081;
 
@@ -294,37 +294,37 @@ http {
 }
 </code></pre><h3 id="35-配置nginx服务管理与自启动">3.5 配置Nginx服务管理与自启动</h3>
 <p>编写服务<code>/lib/systemd/system/nginx.service</code></p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="o">[</span>Unit<span class="o">]</span>
-<span class="nv">Description</span><span class="o">=</span>nginx - high performance web server
-<span class="nv">Documentation</span><span class="o">=</span>http://nginx.org/en/docs/
-<span class="nv">After</span><span class="o">=</span>network.target
-
-<span class="o">[</span>Service<span class="o">]</span>
-<span class="nv">Type</span><span class="o">=</span>forking
-<span class="nv">ExecStartPre</span><span class="o">=</span>/usr/local/nginx/nginx -t -c /etc/nginx/nginx.conf
-<span class="nv">ExecStart</span><span class="o">=</span>/usr/local/nginx/nginx -c /etc/nginx/nginx.conf
-<span class="nv">ExecReload</span><span class="o">=</span>/usr/local/nginx/nginx -s reload
-<span class="nv">ExecStop</span><span class="o">=</span>/usr/local/nginx/nginx -s quit
-<span class="nv">PrivateTmp</span><span class="o">=</span><span class="nb">true</span>
-
-<span class="o">[</span>Install<span class="o">]</span>
-<span class="nv">WantedBy</span><span class="o">=</span>multi-user.target
-</code></pre></div><p>启动Nginx服务并设置自启动</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash">sudo systemctl daemon-reload
-sudo systemctl start nginx
-sudo systemctl status nginx
-sudo systemctl <span class="nb">enable</span> nginx
-</code></pre></div><h2 id="4-客户端配置">4. 客户端配置</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="o">[</span>Unit<span class="o">]</span>
+</span></span><span class="line"><span class="cl"><span class="nv">Description</span><span class="o">=</span>nginx - high performance web server
+</span></span><span class="line"><span class="cl"><span class="nv">Documentation</span><span class="o">=</span>http://nginx.org/en/docs/
+</span></span><span class="line"><span class="cl"><span class="nv">After</span><span class="o">=</span>network.target
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">[</span>Service<span class="o">]</span>
+</span></span><span class="line"><span class="cl"><span class="nv">Type</span><span class="o">=</span>forking
+</span></span><span class="line"><span class="cl"><span class="nv">ExecStartPre</span><span class="o">=</span>/usr/local/nginx/nginx -t -c /etc/nginx/nginx.conf
+</span></span><span class="line"><span class="cl"><span class="nv">ExecStart</span><span class="o">=</span>/usr/local/nginx/nginx -c /etc/nginx/nginx.conf
+</span></span><span class="line"><span class="cl"><span class="nv">ExecReload</span><span class="o">=</span>/usr/local/nginx/nginx -s reload
+</span></span><span class="line"><span class="cl"><span class="nv">ExecStop</span><span class="o">=</span>/usr/local/nginx/nginx -s quit
+</span></span><span class="line"><span class="cl"><span class="nv">PrivateTmp</span><span class="o">=</span><span class="nb">true</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="o">[</span>Install<span class="o">]</span>
+</span></span><span class="line"><span class="cl"><span class="nv">WantedBy</span><span class="o">=</span>multi-user.target
+</span></span></code></pre></div><p>启动Nginx服务并设置自启动</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sudo systemctl daemon-reload
+</span></span><span class="line"><span class="cl">sudo systemctl start nginx
+</span></span><span class="line"><span class="cl">sudo systemctl status nginx
+</span></span><span class="line"><span class="cl">sudo systemctl <span class="nb">enable</span> nginx
+</span></span></code></pre></div><h2 id="4-客户端配置">4. 客户端配置</h2>
 <p>docker仅支持https的仓库，在内网中无需使用https，因此需要将仓库加入docker的白名单。</p>
 <h3 id="41-编写etcdockerdaemonjson">4.1 编写/etc/docker/daemon.json</h3>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
-    <span class="nt">&#34;insecure-registries&#34;</span><span class="p">:[</span>
-        <span class="s2">&#34;barricade.ivic.org.cn&#34;</span>
-    <span class="p">]</span>
-<span class="p">}</span>
-</code></pre></div><h3 id="42-重启docker服务">4.2 重启docker服务</h3>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash">sudo systemctl restart docker
-</code></pre></div></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&#34;insecure-registries&#34;</span><span class="p">:[</span>
+</span></span><span class="line"><span class="cl">        <span class="s2">&#34;barricade.ivic.org.cn&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h3 id="42-重启docker服务">4.2 重启docker服务</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sudo systemctl restart docker
+</span></span></code></pre></div></div>
 
         <div class="post-footer" id="post-footer">
     <div class="post-info">
@@ -354,7 +354,7 @@ sudo systemctl <span class="nb">enable</span> nginx
 </div>
 </article></div>
         </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.101.0">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2022</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank" rel="noopener noreferrer">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div></footer></div>
 

@@ -37,7 +37,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/weil-crush-sc06\/paper-reading.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "CRUSH, Translation","wordcount":  20000 ,
+                        }],"genre": "posts","keywords": "CRUSH, Translation","wordcount":  18190 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/weil-crush-sc06\/","datePublished": "2020-10-01T16:28:29+08:00","dateModified": "2020-10-08T14:16:28+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -123,8 +123,8 @@
             <div class="post-meta-line">
                 <span class="post-author"><i class="author fas fa-user-circle fa-fw"></i><a href="about" title="Author" rel=" author" class="author">叉鸽</a>
                 </span>&nbsp;<span class="post-category">收录于 </span>&nbsp;<span class="post-category">类别 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-10-01">2020-10-01</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2020-10-08">2020-10-08</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 20000 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 40 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-10-01">2020-10-01</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2020-10-08">2020-10-08</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 18190 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 37 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         data-src="/posts/paper-reading/weil-crush-sc06/paper-reading.jpg"
@@ -250,10 +250,10 @@
     </a><figcaption class="image-caption">图1 一个由磁盘（disk）、磁盘柜（shelf of disk）、cabinet（cabinet）、行（row）组成的4层集群映射的局部视图。粗线条表示放置规则中每个$select$操作选取的item和表1中假设的映射。</figcaption>
     </figure></p>
 <h4 id="321-碰撞故障与过载">3.2.1 碰撞、故障与过载</h4>
-<p>$select(n,t)$操作可能从它的起始点开始穿过多个存储层级以找到其下的$n$个不同的类型为$t$的item，它是一个以$r$（$r=1,&hellip;n$，n是所选的副本编号）作为部分参数的递归过程。在此过程中，CRUSH可能因三个不同原因拒绝（reject）并重新选取（reselect）item并修改输入$r'$：如果item已经被选取到当前的集合中（碰撞——$select(n,t)$的结果必须是不重复的），如果device是<em>故障的（failed）</em>，或者如果device是<em>过载的（overloaded）</em>。故障或过载的device会在集群映射中标记出来，但这些device还留在层级结构中，以避免不必要的数据迁移。CRUSH会有选择地迁移一个过载device上的数据，这通过按集群映射中指定的概率伪随机地拒绝（reject）实现——这通常与device报告的过度利用的情况有关。对于故障或过载的device，CRUSH会重新开始$select(n,t)$开始处的递归（见<strong>算法1</strong>第11行），均匀地将它们的item分布到存储集群中。如果发生碰撞，在递归的内层尝试本地搜索时首先会使用$r'$（见<strong>算法1</strong>第14行）并避免整体数据分布偏离更可能发生冲突的子树（例如，bucket数小于n的子树）。</p>
+<p>$select(n,t)$操作可能从它的起始点开始穿过多个存储层级以找到其下的$n$个不同的类型为$t$的item，它是一个以$r$（$r=1,&hellip;n$，n是所选的副本编号）作为部分参数的递归过程。在此过程中，CRUSH可能因三个不同原因拒绝（reject）并重新选取（reselect）item并修改输入$r&rsquo;$：如果item已经被选取到当前的集合中（碰撞——$select(n,t)$的结果必须是不重复的），如果device是<em>故障的（failed）</em>，或者如果device是<em>过载的（overloaded）</em>。故障或过载的device会在集群映射中标记出来，但这些device还留在层级结构中，以避免不必要的数据迁移。CRUSH会有选择地迁移一个过载device上的数据，这通过按集群映射中指定的概率伪随机地拒绝（reject）实现——这通常与device报告的过度利用的情况有关。对于故障或过载的device，CRUSH会重新开始$select(n,t)$开始处的递归（见<strong>算法1</strong>第11行），均匀地将它们的item分布到存储集群中。如果发生碰撞，在递归的内层尝试本地搜索时首先会使用$r&rsquo;$（见<strong>算法1</strong>第14行）并避免整体数据分布偏离更可能发生冲突的子树（例如，bucket数小于n的子树）。</p>
 <h4 id="322-副本排名">3.2.2 副本排名</h4>
-<p>奇偶校验和纠删码策略与副本策略相比有明显不同的放置需求。在主拷贝副本策略（primary copy replication scheme）中，副本常常希望在之前的目标副本（已经有一份数据拷贝的副本）故障后成为新的主副本。在这种情况下，CRUSH可以用$ r ' = r + f $来重新选取“前n个”合适的目标，其中$f$是当前的$select(n,t)$的失败的放置尝试次数（见<strong>算法1</strong>第16行）。然而，在奇偶校验或纠删码策略下，CRUSH输出中的device的排名或位置十分重要，因为每个目标保存数据对象的不同的位。特别是，如果一个device故障，CRUSH的输出列表$\overrightarrow{R}$的适当位置的item需要被替换，这样，列表中的其他device会保持相同的排名（即，$\overrightarrow{R}$中的位置，见<strong>图2</strong>）。在这种情况下，CRUSH会使用$ r ' = r + f_{r} n $重新选取，其中$f_{r}$是在item$r$上的失败尝试的次数。因此，这为每个副本的排名定义了一个候选序列，每个候选序列从概率上与其它device的故障无关。相反，RUSH没有特殊处理device故障。像其它已有的哈希分布函数一样，它隐式假设使用“前n个”方法跳过结果中的故障device，这使其也适用于副本策略。</p>
-<p><figure><a class="lightgallery" href="/posts/paper-reading/weil-crush-sc06/figure-2.png" title="图2 $select(6,disk)$中当device $r=2(b)$被拒绝时的重选取行为，方框中包含CRUSH的输出$\overrightarrow{R}$，表示按排名编号的$n=6$个device。左图展示了“前n个”方法，其已有设备排名$(c,d,e,f)$可能改变。右图中，每个排名都有一个概率独立的潜在目标序列；图中$f_r = 1$且$ r &#39; = r &#43; f_r n = 8 $（device h）。" data-thumbnail="/posts/paper-reading/weil-crush-sc06/figure-2.png" data-sub-html="<h2>图2 $select(6,disk)$中当device $r=2(b)$被拒绝时的重选取行为，方框中包含CRUSH的输出$\overrightarrow{R}$，表示按排名编号的$n=6$个device。左图展示了“前n个”方法，其已有设备排名$(c,d,e,f)$可能改变。右图中，每个排名都有一个概率独立的潜在目标序列；图中$f_r = 1$且$ r &#39; = r &#43; f_r n = 8 $（device h）。</h2><p>图2 $select(6,disk)$中当device $r=2(b)$被拒绝时的重选取行为，方框中包含CRUSH的输出$\overrightarrow{R}$，表示按排名编号的$n=6$个device。左图展示了“前n个”方法，其已有设备排名$(c,d,e,f)$可能改变。右图中，每个排名都有一个概率独立的潜在目标序列；图中$f_r = 1$且$ r &#39; = r &#43; f_r n = 8 $（device h）。</p>">
+<p>奇偶校验和纠删码策略与副本策略相比有明显不同的放置需求。在主拷贝副本策略（primary copy replication scheme）中，副本常常希望在之前的目标副本（已经有一份数据拷贝的副本）故障后成为新的主副本。在这种情况下，CRUSH可以用$ r &rsquo; = r + f $来重新选取“前n个”合适的目标，其中$f$是当前的$select(n,t)$的失败的放置尝试次数（见<strong>算法1</strong>第16行）。然而，在奇偶校验或纠删码策略下，CRUSH输出中的device的排名或位置十分重要，因为每个目标保存数据对象的不同的位。特别是，如果一个device故障，CRUSH的输出列表$\overrightarrow{R}$的适当位置的item需要被替换，这样，列表中的其他device会保持相同的排名（即，$\overrightarrow{R}$中的位置，见<strong>图2</strong>）。在这种情况下，CRUSH会使用$ r &rsquo; = r + f_{r} n $重新选取，其中$f_{r}$是在item$r$上的失败尝试的次数。因此，这为每个副本的排名定义了一个候选序列，每个候选序列从概率上与其它device的故障无关。相反，RUSH没有特殊处理device故障。像其它已有的哈希分布函数一样，它隐式假设使用“前n个”方法跳过结果中的故障device，这使其也适用于副本策略。</p>
+<p><figure><a class="lightgallery" href="/posts/paper-reading/weil-crush-sc06/figure-2.png" title="图2 $select(6,disk)$中当device $r=2(b)$被拒绝时的重选取行为，方框中包含CRUSH的输出$\overrightarrow{R}$，表示按排名编号的$n=6$个device。左图展示了“前n个”方法，其已有设备排名$(c,d,e,f)$可能改变。右图中，每个排名都有一个概率独立的潜在目标序列；图中$f_r = 1$且$ r &amp;rsquo; = r &#43; f_r n = 8 $（device h）。" data-thumbnail="/posts/paper-reading/weil-crush-sc06/figure-2.png" data-sub-html="<h2>图2 $select(6,disk)$中当device $r=2(b)$被拒绝时的重选取行为，方框中包含CRUSH的输出$\overrightarrow{R}$，表示按排名编号的$n=6$个device。左图展示了“前n个”方法，其已有设备排名$(c,d,e,f)$可能改变。右图中，每个排名都有一个概率独立的潜在目标序列；图中$f_r = 1$且$ r &#39; = r &#43; f_r n = 8 $（device h）。</h2><p>图2 $select(6,disk)$中当device $r=2(b)$被拒绝时的重选取行为，方框中包含CRUSH的输出$\overrightarrow{R}$，表示按排名编号的$n=6$个device。左图展示了“前n个”方法，其已有设备排名$(c,d,e,f)$可能改变。右图中，每个排名都有一个概率独立的潜在目标序列；图中$f_r = 1$且$ r &amp;rsquo; = r &#43; f_r n = 8 $（device h）。</p>">
         <img
             class="lazyload"
             data-src="figure-2.png"
@@ -494,7 +494,7 @@
 </div>
 </article></div>
         </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.101.0">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2022</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank" rel="noopener noreferrer">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div></footer></div>
 

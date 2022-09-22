@@ -37,7 +37,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/web-caching-with-consistent-hashing\/paper-reading.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "Consistent Hashing, Translation","wordcount":  13544 ,
+                        }],"genre": "posts","keywords": "Consistent Hashing, Translation","wordcount":  13055 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/web-caching-with-consistent-hashing\/","datePublished": "2020-09-10T15:45:45+08:00","dateModified": "2020-09-13T13:49:45+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -123,8 +123,8 @@
             <div class="post-meta-line">
                 <span class="post-author"><i class="author fas fa-user-circle fa-fw"></i><a href="about" title="Author" rel=" author" class="author">叉鸽</a>
                 </span>&nbsp;<span class="post-category">收录于 </span>&nbsp;<span class="post-category">类别 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-10">2020-09-10</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2020-09-13">2020-09-13</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 13544 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 28 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-10">2020-09-10</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2020-09-13">2020-09-13</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 13055 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 27 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         data-src="/posts/paper-reading/web-caching-with-consistent-hashing/paper-reading.jpg"
@@ -223,7 +223,7 @@
 <p>我们的系统基于一致性哈希，它是一篇以前的理论性的论文创建的策略<sup>[6]</sup>。这里，我们将介绍一致性哈希并描述其简单的实现方式。在概述其理论证明后，我们通过实验展示了在实际场景中它工作得很好。</p>
 <h3 id="21-需求">2.1 需求</h3>
 <p>我们的系统的目标是让任何一个client都能通过本地计算来将URL映射到包含它的缓存上。哈希是为实现这一目的被广泛使用的工具。例如，给定一个编号为0，&hellip;，22的缓存的23个缓存的集合，我们可能使用$h[u]=7u+4mod23$来将URL $u$映射到缓存$h$（我们可以将URL看做表示一个大数字的位字符串）。通常，根据对哈希函数的直觉，其倾向于把输入“随机地”分配的可能的位置上。这样的随机分布直观上看是均匀的，这意味着没有一个缓存负责处理不成比例的请求页面。哈希的这种负载均衡的特性是我们的应用程序高度需要的特性，因为负载不成比例的缓存将会成为整个系统的瓶颈。</p>
-<p>不幸的是，标准的哈希在缓存系统中应用时会有一些缺点。或许最明显的缺点是，系统中的缓存机器数可能会随着时间上下波动。试想一下，当第24个缓存加入到刚才描述的系统中时会发生什么。一个很自然的变化是开始使用哈希函数$h'(u)=7u+4mod24$。不幸的是，在这种改变下，原本的每个URL会被映射到新的缓存上。这会使整个缓存系统中的URL都被刷新：如果系统查找一个在新位置上的URL，那么事实上它在旧位置上的缓存就没用了，会产生一次失配。信息通过Internet异步传播的这一事实会加剧这一问题。在任何一个时刻，不同的client对哪些缓存在线哪些缓存离线都有不同的信息。我们将一台给定的机器所知道的缓存集合成为它的<em>视图（view）</em>，我们观察到，在任何时刻，系统中都有很多不同的视图。这样会有两个潜在的缺点。如果每个视图都会将URL映射到不同的缓存中，不就每个URL就会被在所有缓存中保存————这恰恰是我们想要避免的问题。另外，如果存在多种视图，那么会很难断言所有缓存都将收到相同的负载量————不同的视图可能将过多的负载导入东一个缓存中，即使每个单独的视图中的负载是均衡的。</p>
+<p>不幸的是，标准的哈希在缓存系统中应用时会有一些缺点。或许最明显的缺点是，系统中的缓存机器数可能会随着时间上下波动。试想一下，当第24个缓存加入到刚才描述的系统中时会发生什么。一个很自然的变化是开始使用哈希函数$h&rsquo;(u)=7u+4mod24$。不幸的是，在这种改变下，原本的每个URL会被映射到新的缓存上。这会使整个缓存系统中的URL都被刷新：如果系统查找一个在新位置上的URL，那么事实上它在旧位置上的缓存就没用了，会产生一次失配。信息通过Internet异步传播的这一事实会加剧这一问题。在任何一个时刻，不同的client对哪些缓存在线哪些缓存离线都有不同的信息。我们将一台给定的机器所知道的缓存集合成为它的<em>视图（view）</em>，我们观察到，在任何时刻，系统中都有很多不同的视图。这样会有两个潜在的缺点。如果每个视图都会将URL映射到不同的缓存中，不就每个URL就会被在所有缓存中保存————这恰恰是我们想要避免的问题。另外，如果存在多种视图，那么会很难断言所有缓存都将收到相同的负载量————不同的视图可能将过多的负载导入东一个缓存中，即使每个单独的视图中的负载是均衡的。</p>
 <p>因此，对我们的哈希函数来说，能够<em>一致性</em>地映射项目是很重要的：无论系统中是否存在多个变化中的视图，每个元素都应被映射到少数的机器上，这样，所有机器就会得到大致相同的负载。</p>
 <h3 id="22-一致性哈希">2.2 一致性哈希</h3>
 <p>一个能简单实现的<em>一致性哈希函数</em><sup>[6]</sup>满足了上一节中描述的需求。首先，选择某个能将字符串映射到范围$[0,&hellip;,M]$中的标准的基（base）哈希函数。再除以M，其可被看做一个映射到区间$[0,1]$（译注：此处指连续区间，此处的除以是数学上的除法而不是计算机的整除）的哈希函数，这一区间可被视为一个单位圆<sup>注2</sup>。同时，将系统中的每个缓存映射为单位圆上的一个点。现在，将URL分配给其在单位圆上顺时针移动遇到的第一个缓存，如<strong>图1</strong>所示。</p>
@@ -379,7 +379,7 @@
 </div>
 </article></div>
         </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.101.0">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2022</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank" rel="noopener noreferrer">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div></footer></div>
 

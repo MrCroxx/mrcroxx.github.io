@@ -37,7 +37,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/rdd-nsdi12-final138\/paper-reading.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "RDD, Translation","wordcount":  24879 ,
+                        }],"genre": "posts","keywords": "RDD, Translation","wordcount":  23286 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/rdd-nsdi12-final138\/","datePublished": "2020-09-07T11:14:45+08:00","dateModified": "2020-09-07T11:14:45+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -123,8 +123,8 @@
             <div class="post-meta-line">
                 <span class="post-author"><i class="author fas fa-user-circle fa-fw"></i><a href="about" title="Author" rel=" author" class="author">叉鸽</a>
                 </span>&nbsp;<span class="post-category">收录于 </span>&nbsp;<span class="post-category">类别 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-07">2020-09-07</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2020-09-07">2020-09-07</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 24879 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 50 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-07">2020-09-07</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2020-09-07">2020-09-07</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 23286 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 47 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         data-src="/posts/paper-reading/rdd-nsdi12-final138/paper-reading.jpg"
@@ -232,29 +232,26 @@
 <p>另外，编程人员可以调用<em>persist</em>方法来指定他们在未来的操作中需要复用的RDD。Spark默认会会将RDD在内存中持久保存，但Spark会在没有足够RAM的时候将其写入磁盘。用户可以可用<em>persisi</em>的标识请求其他的存储策略，如仅在磁盘中存储RDD或跨机器对RDD做副本。最后，用户可以对每个RDD设置持久化优先级，以指定内存中的那个数据会最先被写入到磁盘。</p>
 <h4 id="221-样例终端日志挖掘">2.2.1 样例：终端日志挖掘</h4>
 <p>假设一个Web服务发生了错误，且有一个想要通过搜索Hadoop文件系统（HDFS）中TB级的日志来找到原因的操作。通过使用Spark，该操作可以仅将跨一系列节点的错误信息从日志装入RAM，并交互式地查询它们。该编程人员首先需要编写如下Scala代码：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala">
-<span class="n">lines</span> <span class="k">=</span> <span class="n">spark</span><span class="o">.</span><span class="n">textFile</span><span class="o">(</span><span class="s">&#34;hdfs://...&#34;</span><span class="o">)</span>
-<span class="n">errors</span> <span class="k">=</span> <span class="n">lines</span><span class="o">.</span><span class="n">filter</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">startsWith</span><span class="o">(</span><span class="s">&#34;ERROR&#34;</span><span class="o">))</span>
-<span class="n">errors</span><span class="o">.</span><span class="n">persist</span><span class="o">()</span>
-
-</code></pre></div><p>第一行定义了一个以HDFS文件（该文件由多行纯文本组成）作为后端的RDD，第二行获取了一个从该RDD过滤得到的新RDD。第三行要求<code>errors</code>在内存中持久化，这样它就可以被其他的查询共享。注意<em>filter</em>的参数是一个Scala闭包的表达式。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">lines</span> <span class="k">=</span> <span class="n">spark</span><span class="o">.</span><span class="n">textFile</span><span class="o">(</span><span class="s">&#34;hdfs://...&#34;</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">errors</span> <span class="k">=</span> <span class="n">lines</span><span class="o">.</span><span class="n">filter</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">startsWith</span><span class="o">(</span><span class="s">&#34;ERROR&#34;</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl"><span class="n">errors</span><span class="o">.</span><span class="n">persist</span><span class="o">()</span>
+</span></span></code></pre></div><p>第一行定义了一个以HDFS文件（该文件由多行纯文本组成）作为后端的RDD，第二行获取了一个从该RDD过滤得到的新RDD。第三行要求<code>errors</code>在内存中持久化，这样它就可以被其他的查询共享。注意<em>filter</em>的参数是一个Scala闭包的表达式。</p>
 <p>此时，集群中没有任何任务执行。然而，用户现在可以在action中使用这个RDD。例如，想要统计消息数量：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala">
-<span class="n">errors</span><span class="o">.</span><span class="n">count</span><span class="o">()</span>
-
-</code></pre></div><p>用户也可以使用该RDD和其变换结果进行更多变换，就像下面代码中的那样：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala">
-<span class="c1">// Count errors mentioning MySQL:
-</span><span class="c1"></span><span class="n">errors</span><span class="o">.</span><span class="n">filter</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">contains</span><span class="o">(</span><span class="s">&#34;MySQL&#34;</span><span class="o">)).</span><span class="n">count</span><span class="o">()</span>
-
-<span class="c1">// Return the time fields of errors mentioning
-</span><span class="c1">// HDFS as an array (assuming time is field
-</span><span class="c1">// number 3 in a tab-separated format):
-</span><span class="c1"></span><span class="n">errors</span><span class="o">.</span><span class="n">filter</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">contains</span><span class="o">(</span><span class="s">&#34;HDFS&#34;</span><span class="o">))</span>
-      <span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">split</span><span class="o">(</span><span class="sc">&#39;\t&#39;</span><span class="o">)(</span><span class="mi">3</span><span class="o">))</span>
-      <span class="o">.</span><span class="n">collect</span><span class="o">()</span>
-
-</code></pre></div><p>在第一个涉及<code>errors</code>的action执行后，Spark会将<code>errors</code>的分区保存在内存中，这样大大提高了随后对其的计算速度。需要注意的是，基RDD <code>lines</code>没有被载入到RAM中。因为错误信息可能仅占数据的一小部分（小到足够放入内存中），所以这样是合理的。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">errors</span><span class="o">.</span><span class="n">count</span><span class="o">()</span>
+</span></span></code></pre></div><p>用户也可以使用该RDD和其变换结果进行更多变换，就像下面代码中的那样：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Count errors mentioning MySQL:
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">errors</span><span class="o">.</span><span class="n">filter</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">contains</span><span class="o">(</span><span class="s">&#34;MySQL&#34;</span><span class="o">)).</span><span class="n">count</span><span class="o">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Return the time fields of errors mentioning
+</span></span></span><span class="line"><span class="cl"><span class="c1">// HDFS as an array (assuming time is field
+</span></span></span><span class="line"><span class="cl"><span class="c1">// number 3 in a tab-separated format):
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">errors</span><span class="o">.</span><span class="n">filter</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">contains</span><span class="o">(</span><span class="s">&#34;HDFS&#34;</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">      <span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="k">_</span><span class="o">.</span><span class="n">split</span><span class="o">(</span><span class="sc">&#39;\t&#39;</span><span class="o">)(</span><span class="mi">3</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">      <span class="o">.</span><span class="n">collect</span><span class="o">()</span>
+</span></span></code></pre></div><p>在第一个涉及<code>errors</code>的action执行后，Spark会将<code>errors</code>的分区保存在内存中，这样大大提高了随后对其的计算速度。需要注意的是，基RDD <code>lines</code>没有被载入到RAM中。因为错误信息可能仅占数据的一小部分（小到足够放入内存中），所以这样是合理的。</p>
 <p>最后，为了阐明我们的模型如何实现容错，我们在<strong>图1</strong>中展示了第三个查询的谱系图。在该查询中，我们从基于<code>lines</code>上过滤器的结果<code>errors</code>开始，在运行<em>collect</em>前对其应用更多的<em>filter</em>和<em>map</em>。Spark的调度器会后续的两个变换流水线化，并向持有<code>errors</code>分区缓存的节点发送一系列任务来对计算它们。另外，如果<code>errors</code>的一个分区丢失，Spark会通过仅对其响应的<code>lines</code>的分区应用<code>filter</code>来重建这一分区。</p>
 <p><figure><a class="lightgallery" href="/posts/paper-reading/rdd-nsdi12-final138/figure-1.png" title="图1 我们的例子中第三个查询的谱系图。方框表示RDD，箭头表示变换" data-thumbnail="/posts/paper-reading/rdd-nsdi12-final138/figure-1.png" data-sub-html="<h2>图1 我们的例子中第三个查询的谱系图。方框表示RDD，箭头表示变换</h2><p>图1 我们的例子中第三个查询的谱系图。方框表示RDD，箭头表示变换</p>">
         <img
@@ -362,37 +359,35 @@
 <h4 id="321-逻辑回归">3.2.1 逻辑回归</h4>
 <p>许多机器学习算法本身就是迭代式的，因为它们运行如梯度下降法等迭代优化生成器以获得最大化的函数。因此。如果将数据保存在内存中，它们可以运行的快得多。</p>
 <p>作为一个样例，如下的程序实现了逻辑回归<sup>[14]</sup>，逻辑回归是一种通用的分类算法，其寻找一个能够最佳划分两个点集（如垃圾邮件与非垃圾邮件）的超平面$w$。该算法使用梯度下降法：$w$从一个随机值开始，在每一轮迭代中，会对$w$的函数求和，以使$w$向更优的方向移动。</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala">
-<span class="k">val</span> <span class="n">points</span> <span class="k">=</span> <span class="n">spark</span><span class="o">.</span><span class="n">textFile</span><span class="o">(...)</span>
-                  <span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="n">parsePoint</span><span class="o">).</span><span class="n">persist</span><span class="o">()</span>
-<span class="k">var</span> <span class="n">w</span> <span class="k">=</span> <span class="c1">// random initial vector
-</span><span class="c1"></span><span class="k">for</span> <span class="o">(</span><span class="n">i</span> <span class="k">&lt;-</span> <span class="mi">1</span> <span class="n">to</span> <span class="nc">ITERATIONS</span><span class="o">)</span> <span class="o">{</span>
-  <span class="k">val</span> <span class="n">gradient</span> <span class="k">=</span> <span class="n">points</span><span class="o">.</span><span class="n">map</span><span class="o">{</span> <span class="n">p</span> <span class="k">=&gt;</span>
-    <span class="n">p</span><span class="o">.</span><span class="n">x</span> <span class="o">*</span> <span class="o">(</span><span class="mi">1</span><span class="o">/(</span><span class="mi">1</span><span class="o">+</span><span class="n">exp</span><span class="o">(-</span><span class="n">p</span><span class="o">.</span><span class="n">y</span><span class="o">*(</span><span class="n">w</span> <span class="n">dot</span> <span class="n">p</span><span class="o">.</span><span class="n">x</span><span class="o">)))-</span><span class="mi">1</span><span class="o">)*</span><span class="n">p</span><span class="o">.</span><span class="n">y</span>
-  <span class="o">}.</span><span class="n">reduce</span><span class="o">((</span><span class="n">a</span><span class="o">,</span><span class="n">b</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="n">a</span><span class="o">+</span><span class="n">b</span><span class="o">)</span>
-  <span class="n">w</span> <span class="o">-=</span> <span class="n">gradient</span>
-<span class="o">}</span>
-
-</code></pre></div><p>我们从定义一个持久化的RDD <code>points</code>开始，它是在文本文件上使用<em>map</em>变换的结果，<em>map</em>变换将文本的每一行解析为一个<code>Point</code>对象。接下来，我们对<code>points</code>循环执行<em>map</em>和<em>reduce</em>来对当前$w$的函数求和，进而计算每一步的梯度。在多次迭代间，将<code>points</code>保存在内存中可以得到20倍的速度提升，正如我们在<a href="#61-" rel="">章节6.1</a>中展示的那样。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">val</span> <span class="n">points</span> <span class="k">=</span> <span class="n">spark</span><span class="o">.</span><span class="n">textFile</span><span class="o">(...)</span>
+</span></span><span class="line"><span class="cl">                  <span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="n">parsePoint</span><span class="o">).</span><span class="n">persist</span><span class="o">()</span>
+</span></span><span class="line"><span class="cl"><span class="k">var</span> <span class="n">w</span> <span class="k">=</span> <span class="c1">// random initial vector
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">for</span> <span class="o">(</span><span class="n">i</span> <span class="k">&lt;-</span> <span class="mi">1</span> <span class="n">to</span> <span class="nc">ITERATIONS</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">val</span> <span class="n">gradient</span> <span class="k">=</span> <span class="n">points</span><span class="o">.</span><span class="n">map</span><span class="o">{</span> <span class="n">p</span> <span class="k">=&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">p</span><span class="o">.</span><span class="n">x</span> <span class="o">*</span> <span class="o">(</span><span class="mi">1</span><span class="o">/(</span><span class="mi">1</span><span class="o">+</span><span class="n">exp</span><span class="o">(-</span><span class="n">p</span><span class="o">.</span><span class="n">y</span><span class="o">*(</span><span class="n">w</span> <span class="n">dot</span> <span class="n">p</span><span class="o">.</span><span class="n">x</span><span class="o">)))-</span><span class="mi">1</span><span class="o">)*</span><span class="n">p</span><span class="o">.</span><span class="n">y</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}.</span><span class="n">reduce</span><span class="o">((</span><span class="n">a</span><span class="o">,</span><span class="n">b</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="n">a</span><span class="o">+</span><span class="n">b</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">  <span class="n">w</span> <span class="o">-=</span> <span class="n">gradient</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span></code></pre></div><p>我们从定义一个持久化的RDD <code>points</code>开始，它是在文本文件上使用<em>map</em>变换的结果，<em>map</em>变换将文本的每一行解析为一个<code>Point</code>对象。接下来，我们对<code>points</code>循环执行<em>map</em>和<em>reduce</em>来对当前$w$的函数求和，进而计算每一步的梯度。在多次迭代间，将<code>points</code>保存在内存中可以得到20倍的速度提升，正如我们在<a href="#61-" rel="">章节6.1</a>中展示的那样。</p>
 <h4 id="322-pagerank">3.2.2 PageRank</h4>
 <p>在PageRank<sup>[6]</sup>中有更复杂的数据共享模式。PageRank算法对每个文档，迭代地累加其他链接到它的文档的贡献值，来更新该文档的rank值。在每一轮迭代中，每个文档向与它相邻的文档发送$\frac{r}{n}$的贡献值，其中$r$是它的rank，$n$是与它相邻的文档数。接下来，更新其rank值到$ \alpha / N + ( 1 - \alpha ) \sum c_i$，其中$ \sum c_i $是其收到的贡献值的和，$N$是文档的总数。我们可以在Spark中按如下方式编写PageRank：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala">
-<span class="c1">// Load graph as an RDD of (URL, outlinks) pairs
-</span><span class="c1"></span><span class="k">val</span> <span class="n">links</span> <span class="k">=</span> <span class="n">spark</span><span class="o">.</span><span class="n">textFile</span><span class="o">(...).</span><span class="n">map</span><span class="o">(...).</span><span class="n">persist</span><span class="o">()</span>
-<span class="k">var</span> <span class="n">ranks</span> <span class="k">=</span> <span class="c1">// RDD of (URL, rank) pairs
-</span><span class="c1"></span><span class="k">for</span> <span class="o">(</span><span class="n">i</span> <span class="k">&lt;-</span> <span class="mi">1</span> <span class="n">to</span> <span class="nc">ITERATIONS</span><span class="o">)</span> <span class="o">{</span>
-  <span class="c1">// Build an RDD of (targetURL, float) pairs
-</span><span class="c1"></span>  <span class="c1">// with the contributions sent bu each page
-</span><span class="c1"></span>  <span class="k">val</span> <span class="n">contribs</span> <span class="k">=</span> <span class="n">links</span><span class="o">.</span><span class="n">join</span><span class="o">(</span><span class="n">ranks</span><span class="o">).</span><span class="n">flatMap</span> <span class="o">{</span>
-    <span class="o">(</span><span class="n">url</span><span class="o">,</span> <span class="o">(</span><span class="n">links</span><span class="o">,</span> <span class="n">rank</span><span class="o">))</span> <span class="k">=&gt;</span> 
-      <span class="n">links</span><span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="n">dest</span> <span class="k">=&gt;</span> <span class="o">(</span><span class="n">dest</span><span class="o">,</span> <span class="n">rank</span><span class="o">/</span><span class="n">links</span><span class="o">.</span><span class="n">size</span><span class="o">))</span>
-  <span class="o">}</span>
-  <span class="c1">// Sum contributions by URL and get new ranks
-</span><span class="c1"></span>  <span class="n">ranks</span> <span class="k">=</span> <span class="n">contribs</span><span class="o">.</span><span class="n">reduceByKey</span><span class="o">((</span><span class="n">x</span><span class="o">,</span><span class="n">y</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="n">x</span><span class="o">+</span><span class="n">y</span><span class="o">)</span>
-                  <span class="o">.</span><span class="n">mapValues</span><span class="o">(</span><span class="n">sum</span> <span class="k">=&gt;</span> <span class="n">a</span><span class="o">/</span><span class="n">N</span> <span class="o">+</span> <span class="o">(</span><span class="mi">1</span><span class="o">-</span><span class="n">a</span><span class="o">)*</span><span class="n">sum</span><span class="o">)</span>
-<span class="o">}</span>
-
-</code></pre></div><p>这个程序的RDD谱系图如<strong>图3</strong>所示。在每轮迭代中，我们基于上一轮迭代的<code>contribs</code>和<code>ranks</code>和静态的<code>lnks</code>数据集创建了一个新的<code>ranks</code>数据集。<sup>注6</sup>该图的一个有趣的特征是，随着迭代次数的增加，该图会越来越长。因此，在有许多次迭代地任务中，有必要可靠地备份<code>ranks</code>的某些版本，以减少故障恢复次数<sup>[20]</sup>。用户通过一个<code>RELIABLE</code>标识符调用<em>persist</em>来实现这一点。然而，需要注意的是，<code>links</code>数据集不需要被备份，因为它的分区可通过在输入文件的块上重跑<em>map</em>来高效地重建。通常情况下，这个数据集要比<code>ranks</code>大得多，因为每个文档中有许多连接，但每个文档仅有它自己的一个rank值，所以采用谱系图的方式对其进行恢复比对程序在内存中的整个状态设置检查点会节省更多系统时间。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Load graph as an RDD of (URL, outlinks) pairs
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">val</span> <span class="n">links</span> <span class="k">=</span> <span class="n">spark</span><span class="o">.</span><span class="n">textFile</span><span class="o">(...).</span><span class="n">map</span><span class="o">(...).</span><span class="n">persist</span><span class="o">()</span>
+</span></span><span class="line"><span class="cl"><span class="k">var</span> <span class="n">ranks</span> <span class="k">=</span> <span class="c1">// RDD of (URL, rank) pairs
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">for</span> <span class="o">(</span><span class="n">i</span> <span class="k">&lt;-</span> <span class="mi">1</span> <span class="n">to</span> <span class="nc">ITERATIONS</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// Build an RDD of (targetURL, float) pairs
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// with the contributions sent bu each page
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">val</span> <span class="n">contribs</span> <span class="k">=</span> <span class="n">links</span><span class="o">.</span><span class="n">join</span><span class="o">(</span><span class="n">ranks</span><span class="o">).</span><span class="n">flatMap</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="o">(</span><span class="n">url</span><span class="o">,</span> <span class="o">(</span><span class="n">links</span><span class="o">,</span> <span class="n">rank</span><span class="o">))</span> <span class="k">=&gt;</span> 
+</span></span><span class="line"><span class="cl">      <span class="n">links</span><span class="o">.</span><span class="n">map</span><span class="o">(</span><span class="n">dest</span> <span class="k">=&gt;</span> <span class="o">(</span><span class="n">dest</span><span class="o">,</span> <span class="n">rank</span><span class="o">/</span><span class="n">links</span><span class="o">.</span><span class="n">size</span><span class="o">))</span>
+</span></span><span class="line"><span class="cl">  <span class="o">}</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// Sum contributions by URL and get new ranks
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">ranks</span> <span class="k">=</span> <span class="n">contribs</span><span class="o">.</span><span class="n">reduceByKey</span><span class="o">((</span><span class="n">x</span><span class="o">,</span><span class="n">y</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="n">x</span><span class="o">+</span><span class="n">y</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl">                  <span class="o">.</span><span class="n">mapValues</span><span class="o">(</span><span class="n">sum</span> <span class="k">=&gt;</span> <span class="n">a</span><span class="o">/</span><span class="n">N</span> <span class="o">+</span> <span class="o">(</span><span class="mi">1</span><span class="o">-</span><span class="n">a</span><span class="o">)*</span><span class="n">sum</span><span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span></code></pre></div><p>这个程序的RDD谱系图如<strong>图3</strong>所示。在每轮迭代中，我们基于上一轮迭代的<code>contribs</code>和<code>ranks</code>和静态的<code>lnks</code>数据集创建了一个新的<code>ranks</code>数据集。<sup>注6</sup>该图的一个有趣的特征是，随着迭代次数的增加，该图会越来越长。因此，在有许多次迭代地任务中，有必要可靠地备份<code>ranks</code>的某些版本，以减少故障恢复次数<sup>[20]</sup>。用户通过一个<code>RELIABLE</code>标识符调用<em>persist</em>来实现这一点。然而，需要注意的是，<code>links</code>数据集不需要被备份，因为它的分区可通过在输入文件的块上重跑<em>map</em>来高效地重建。通常情况下，这个数据集要比<code>ranks</code>大得多，因为每个文档中有许多连接，但每个文档仅有它自己的一个rank值，所以采用谱系图的方式对其进行恢复比对程序在内存中的整个状态设置检查点会节省更多系统时间。</p>
 <blockquote>
 <p>注6：需要注意的是，尽管RDD是不可变的，程序中的<code>ranks</code>和<code>contribs</code>变量在每轮迭代中都指向不同的RDD。</p>
 </blockquote>
@@ -407,11 +402,10 @@
     </a><figcaption class="image-caption">图3 PageRank中数据集的谱系图</figcaption>
     </figure></p>
 <p>最后，我们可以通过控制RDD的分区方式来优化PageRank中的通信。如果我们为<code>links</code>指定一个分区方式（例如，将link的列表基于哈希算法在节点间分区），我们可以将<code>ranks</code>采用同样的方式分区，以保证对<code>links</code>和<code>ranks</code>的<em>join</em>操作不需要进行通信（因为每个URL的rank将于其link的列表在相同的机器上）。我们还可以编写一个自定义的Partitioner类对互相链接的页面进行分组（例如按照域名分区）这两种优化都可以在我们定义<code>links</code>时通过调用<em>partitionBy</em>来表达：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala">
-<span class="n">links</span> <span class="k">=</span> <span class="n">spark</span><span class="o">.</span><span class="n">textFile</span><span class="o">(...).</span><span class="n">map</span><span class="o">(...)</span>
-             <span class="o">.</span><span class="n">partitionsBy</span><span class="o">(</span><span class="n">myPartFunc</span><span class="o">).</span><span class="n">persist</span><span class="o">()</span>
-
-</code></pre></div><p>在这次最初的调用后，<code>links</code>和<code>ranks</code>间的<em>join</em>操作会自动地将给每个URL的贡献聚合到该link所在的机器上，计算其新的rank值，并将改值加入到它的link中。这种迭代间的一致分区方式是类似Pregel的专用框架的主要优化方式之一。RDD让用户能够直接地表达这一目标。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-scala" data-lang="scala"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">links</span> <span class="k">=</span> <span class="n">spark</span><span class="o">.</span><span class="n">textFile</span><span class="o">(...).</span><span class="n">map</span><span class="o">(...)</span>
+</span></span><span class="line"><span class="cl">             <span class="o">.</span><span class="n">partitionsBy</span><span class="o">(</span><span class="n">myPartFunc</span><span class="o">).</span><span class="n">persist</span><span class="o">()</span>
+</span></span></code></pre></div><p>在这次最初的调用后，<code>links</code>和<code>ranks</code>间的<em>join</em>操作会自动地将给每个URL的贡献聚合到该link所在的机器上，计算其新的rank值，并将改值加入到它的link中。这种迭代间的一致分区方式是类似Pregel的专用框架的主要优化方式之一。RDD让用户能够直接地表达这一目标。</p>
 <h2 id="4-rdd的表示">4. RDD的表示</h2>
 <p>将RDD作为一种抽象提供的挑战之一是为其选择一种可以在大量的变换中追踪谱系图的表示法。在理想情况下，实现RDD的系统需要提供尽可能多的变换操作（如<strong>表2</strong>中的操作），且允许用户以任意方式组合这些操作。我们提出了一个简单的基于图的RDD表示法，其实现了这些目标。我们在Spark中使用了这种表示法，以在不为每一个调度器添加特殊逻辑的情况下支持大量变换，这大大简化了系统设计。</p>
 <p>简而言之，我们提出了一种能够通过通用的结构来表示每个RDD的方式，其暴露了5种信息：分区的集合，分区是数据集的原子单位；对父RDD的依赖的集合；一个基于其父数据集计算该数据集的函数；分区策略和数据放置位置的元数据。例如，有一个表示HDFS文件的RDD，其对该文件的每个块都有一个分区，且知道每个块在哪台机器上。同时，该RDD上的<em>map</em>操作结果的分区数与该RDD相同，在计算该RDD的元素时，会对其父级数据应用<em>map</em>函数。我们在<strong>表3</strong>中总结了这些接口。</p>
@@ -781,7 +775,7 @@
 </div>
 </article></div>
         </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.101.0">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2022</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank" rel="noopener noreferrer">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div></footer></div>
 

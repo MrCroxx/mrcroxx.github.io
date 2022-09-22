@@ -37,7 +37,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/mapreduce-osdi04\/paper-reading.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "MapReduce, Translation","wordcount":  18011 ,
+                        }],"genre": "posts","keywords": "MapReduce, Translation","wordcount":  17873 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/mapreduce-osdi04\/","datePublished": "2020-08-08T12:21:45+08:00","dateModified": "2020-08-14T17:08:45+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -123,7 +123,7 @@
             <div class="post-meta-line">
                 <span class="post-author"><i class="author fas fa-user-circle fa-fw"></i><a href="about" title="Author" rel=" author" class="author">叉鸽</a>
                 </span>&nbsp;<span class="post-category">收录于 </span>&nbsp;<span class="post-category">类别 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-08-08">2020-08-08</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2020-08-14">2020-08-14</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 18011 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-08-08">2020-08-08</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2020-08-14">2020-08-14</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 17873 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 36 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
@@ -223,7 +223,7 @@
   // key: document name
   // value: document contents
   for each word w in value:
-    EmitIntermediate(w, &quot;1&quot;);
+    EmitIntermediate(w, &#34;1&#34;);
 
 reduce(String key, Iterator values):
   // key: a word
@@ -376,14 +376,13 @@ reduce  (k2,list(v2))  -&gt;  list(v2)
 <p>若使用计数器，用户代码需要创建一个命名的计数器对象并在<em>map</em>和（或）<em>reduce</em>函数中适当地增加计数器计数。例如：</p>
 <pre tabindex="0"><code>
 Counter* uppercase;
-uppercase = GetCounter(&quot;uppercase&quot;);
+uppercase = GetCounter(&#34;uppercase&#34;);
 
 map(String name, String contents):
   for each word w in contents:
     if (IsCapitalized(w)):
       uppercase-&gt;Increment();
-    EmitIntermediate(w, &quot;1&quot;);
-
+    EmitIntermediate(w, &#34;1&#34;);
 </code></pre><p>每个worker机器会周期性地将计数器的值传给master（通过ping的响应报文携带）。master将成功执行的<em>map</em>和<em>reduce</em>任务中的计数器的值加在一起，并在MapReduce操作完成时将其返回给用户代码。计数器当前的值同样在master的分析页面中显示，这样用户就可以查看实时的计算进度。master在对计数器求和时，会对多次执行的相同的<em>map</em>或<em>reduce</em>任务中的计数器值去重，以避免重复计数。（<em>任务</em>副本和因故障被重新执行的<em>任务</em>都会导致重复执行。）</p>
 <p>有些计数器的值被MapReduce库自动维护，如处理过的<em>输入键值对</em>的数量或生成的<em>输出键值对</em>的数量。</p>
 <p>对用户而言，计数器对检查MapReduce操作是否完成非常有帮助。例如，在有些MapReduce操作中，用户代码可能希望保证<em>输出键值对</em>的数量和<em>输入键值对</em>的数量正好相等，或者想保证处理过的德语文档在总数中占的比例是否在允许的范围内。</p>
@@ -534,94 +533,93 @@ map(String name, String contents):
 </div>
 <h2 id="附录a-词频统计">附录A 词频统计</h2>
 <p>本节包含了一个对通过命令行指定的一系列输入文件中每个单词出现次数技术的程序。</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
-<span class="cp">#include</span> <span class="cpf">&#34;mapreduce/mapreduce.h&#34;</span><span class="cp">
-</span><span class="cp"></span>
-<span class="c1">// User’s map function
-</span><span class="c1"></span><span class="k">class</span> <span class="nc">WordCounter</span> <span class="o">:</span> <span class="k">public</span> <span class="n">Mapper</span> <span class="p">{</span>
-  <span class="k">public</span><span class="o">:</span>
-    <span class="k">virtual</span> <span class="kt">void</span> <span class="n">Map</span><span class="p">(</span><span class="k">const</span> <span class="n">MapInput</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">)</span> <span class="p">{</span>
-      <span class="k">const</span> <span class="n">string</span><span class="o">&amp;</span> <span class="n">text</span> <span class="o">=</span> <span class="n">input</span><span class="p">.</span><span class="n">value</span><span class="p">();</span>
-      <span class="k">const</span> <span class="kt">int</span> <span class="n">n</span> <span class="o">=</span> <span class="n">text</span><span class="p">.</span><span class="n">size</span><span class="p">();</span>
-      <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">;</span> <span class="p">)</span> <span class="p">{</span>
-        <span class="c1">// Skip past leading whitespace
-</span><span class="c1"></span>        <span class="k">while</span> <span class="p">((</span><span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="n">isspace</span><span class="p">(</span><span class="n">text</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
-          <span class="n">i</span><span class="o">++</span><span class="p">;</span>
-
-        <span class="c1">// Find word end
-</span><span class="c1"></span>        <span class="kt">int</span> <span class="n">start</span> <span class="o">=</span> <span class="n">i</span><span class="p">;</span>
-        <span class="k">while</span> <span class="p">((</span><span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">isspace</span><span class="p">(</span><span class="n">text</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
-          <span class="n">i</span><span class="o">++</span><span class="p">;</span>
-        
-        <span class="k">if</span> <span class="p">(</span><span class="n">start</span> <span class="o">&lt;</span> <span class="n">i</span><span class="p">)</span>
-          <span class="n">Emit</span><span class="p">(</span><span class="n">text</span><span class="p">.</span><span class="n">substr</span><span class="p">(</span><span class="n">start</span><span class="p">,</span><span class="n">i</span><span class="o">-</span><span class="n">start</span><span class="p">),</span><span class="s">&#34;1&#34;</span><span class="p">);</span>
-      <span class="p">}</span>
-  <span class="p">}</span>
-<span class="p">};</span>
-<span class="n">REGISTER_MAPPER</span><span class="p">(</span><span class="n">WordCounter</span><span class="p">);</span>
-
-<span class="c1">// User’s reduce function
-</span><span class="c1"></span><span class="k">class</span> <span class="nc">Adder</span> <span class="o">:</span> <span class="k">public</span> <span class="n">Reducer</span> <span class="p">{</span>
-  <span class="k">virtual</span> <span class="kt">void</span> <span class="nf">Reduce</span><span class="p">(</span><span class="n">ReduceInput</span><span class="o">*</span> <span class="n">input</span><span class="p">)</span> <span class="p">{</span>
-    <span class="c1">// Iterate over all entries with the
-</span><span class="c1"></span>    <span class="c1">// same key and add the values
-</span><span class="c1"></span>    <span class="n">int64</span> <span class="n">value</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-    <span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">input</span><span class="o">-&gt;</span><span class="n">done</span><span class="p">())</span> <span class="p">{</span>
-      <span class="n">value</span> <span class="o">+=</span> <span class="n">StringToInt</span><span class="p">(</span><span class="n">input</span><span class="o">-&gt;</span><span class="n">value</span><span class="p">());</span>
-      <span class="n">input</span><span class="o">-&gt;</span><span class="n">NextValue</span><span class="p">();</span>
-    <span class="p">}</span>
-
-    <span class="c1">// Emit sum for input-&gt;key()
-</span><span class="c1"></span>    <span class="n">Emit</span><span class="p">(</span><span class="n">IntToString</span><span class="p">(</span><span class="n">value</span><span class="p">));</span>
-  <span class="p">}</span>
-<span class="p">};</span>
-<span class="n">REGISTER_REDUCER</span><span class="p">(</span><span class="n">Adder</span><span class="p">);</span>
-
-<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span><span class="o">**</span> <span class="n">argv</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">ParseCommandLineFlags</span><span class="p">(</span><span class="n">argc</span><span class="p">,</span> <span class="n">argv</span><span class="p">);</span>
-
-  <span class="n">MapReduceSpecification</span> <span class="n">spec</span><span class="p">;</span>
-
-  <span class="c1">// Store list of input files into &#34;spec&#34;
-</span><span class="c1"></span>  <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">argc</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">MapReduceInput</span><span class="o">*</span> <span class="n">input</span> <span class="o">=</span> <span class="n">spec</span><span class="p">.</span><span class="n">add_input</span><span class="p">();</span>
-    <span class="n">input</span><span class="o">-&gt;</span><span class="n">set_format</span><span class="p">(</span><span class="s">&#34;text&#34;</span><span class="p">);</span>
-    <span class="n">input</span><span class="o">-&gt;</span><span class="n">set_filepattern</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
-    <span class="n">input</span><span class="o">-&gt;</span><span class="n">set_mapper_class</span><span class="p">(</span><span class="s">&#34;WordCounter&#34;</span><span class="p">);</span>
-  <span class="p">}</span>
-
-  <span class="c1">// Specify the output files:
-</span><span class="c1"></span>  <span class="c1">// /gfs/test/freq-00000-of-00100
-</span><span class="c1"></span>  <span class="c1">// /gfs/test/freq-00001-of-00100
-</span><span class="c1"></span>  <span class="c1">// ...
-</span><span class="c1"></span>  <span class="n">MapReduceOutput</span><span class="o">*</span> <span class="n">out</span> <span class="o">=</span> <span class="n">spec</span><span class="p">.</span><span class="n">output</span><span class="p">();</span>
-  <span class="n">out</span><span class="o">-&gt;</span><span class="n">set_filebase</span><span class="p">(</span><span class="s">&#34;/gfs/test/freq&#34;</span><span class="p">);</span>
-  <span class="n">out</span><span class="o">-&gt;</span><span class="n">set_num_tasks</span><span class="p">(</span><span class="mi">100</span><span class="p">);</span>
-  <span class="n">out</span><span class="o">-&gt;</span><span class="n">set_format</span><span class="p">(</span><span class="s">&#34;text&#34;</span><span class="p">);</span>
-  <span class="n">out</span><span class="o">-&gt;</span><span class="n">set_reducer_class</span><span class="p">(</span><span class="s">&#34;Adder&#34;</span><span class="p">);</span>
-
-  <span class="c1">// Optional: do partial sums within map
-</span><span class="c1"></span>  <span class="c1">// tasks to save network bandwidth
-</span><span class="c1"></span>  <span class="n">out</span><span class="o">-&gt;</span><span class="n">set_combiner_class</span><span class="p">(</span><span class="s">&#34;Adder&#34;</span><span class="p">);</span>
-
-  <span class="c1">// Tuning parameters: use at most 2000
-</span><span class="c1"></span>  <span class="c1">// machines and 100 MB of memory per task
-</span><span class="c1"></span>  <span class="n">spec</span><span class="p">.</span><span class="n">set_machines</span><span class="p">(</span><span class="mi">2000</span><span class="p">);</span>
-  <span class="n">spec</span><span class="p">.</span><span class="n">set_map_megabytes</span><span class="p">(</span><span class="mi">100</span><span class="p">);</span>
-  <span class="n">spec</span><span class="p">.</span><span class="n">set_reduce_megabytes</span><span class="p">(</span><span class="mi">100</span><span class="p">);</span>
-
-  <span class="c1">// Now run it
-</span><span class="c1"></span>  <span class="n">MapReduceResult</span> <span class="n">result</span><span class="p">;</span>
-  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">MapReduce</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">result</span><span class="p">))</span> <span class="n">abort</span><span class="p">();</span>
-
-  <span class="c1">// Done: ’result’ structure contains info
-</span><span class="c1"></span>  <span class="c1">// about counters, time taken, number of
-</span><span class="c1"></span>  <span class="c1">// machines used, etc.
-</span><span class="c1"></span>
-  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-<span class="p">}</span>
-
-</code></pre></div></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&#34;mapreduce/mapreduce.h&#34;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="c1">// User’s map function
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">class</span> <span class="nc">WordCounter</span> <span class="o">:</span> <span class="k">public</span> <span class="n">Mapper</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">public</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">    <span class="k">virtual</span> <span class="kt">void</span> <span class="n">Map</span><span class="p">(</span><span class="k">const</span> <span class="n">MapInput</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">const</span> <span class="n">string</span><span class="o">&amp;</span> <span class="n">text</span> <span class="o">=</span> <span class="n">input</span><span class="p">.</span><span class="n">value</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">      <span class="k">const</span> <span class="kt">int</span> <span class="n">n</span> <span class="o">=</span> <span class="n">text</span><span class="p">.</span><span class="n">size</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">      <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">;</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// Skip past leading whitespace
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="k">while</span> <span class="p">((</span><span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="n">isspace</span><span class="p">(</span><span class="n">text</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+</span></span><span class="line"><span class="cl">          <span class="n">i</span><span class="o">++</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1">// Find word end
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="kt">int</span> <span class="n">start</span> <span class="o">=</span> <span class="n">i</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">while</span> <span class="p">((</span><span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">isspace</span><span class="p">(</span><span class="n">text</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+</span></span><span class="line"><span class="cl">          <span class="n">i</span><span class="o">++</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="n">start</span> <span class="o">&lt;</span> <span class="n">i</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">          <span class="n">Emit</span><span class="p">(</span><span class="n">text</span><span class="p">.</span><span class="n">substr</span><span class="p">(</span><span class="n">start</span><span class="p">,</span><span class="n">i</span><span class="o">-</span><span class="n">start</span><span class="p">),</span><span class="s">&#34;1&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">      <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span><span class="line"><span class="cl"><span class="n">REGISTER_MAPPER</span><span class="p">(</span><span class="n">WordCounter</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// User’s reduce function
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">class</span> <span class="nc">Adder</span> <span class="o">:</span> <span class="k">public</span> <span class="n">Reducer</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">virtual</span> <span class="kt">void</span> <span class="nf">Reduce</span><span class="p">(</span><span class="n">ReduceInput</span><span class="o">*</span> <span class="n">input</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// Iterate over all entries with the
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// same key and add the values
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">int64</span> <span class="n">value</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">input</span><span class="o">-&gt;</span><span class="n">done</span><span class="p">())</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="n">value</span> <span class="o">+=</span> <span class="n">StringToInt</span><span class="p">(</span><span class="n">input</span><span class="o">-&gt;</span><span class="n">value</span><span class="p">());</span>
+</span></span><span class="line"><span class="cl">      <span class="n">input</span><span class="o">-&gt;</span><span class="n">NextValue</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Emit sum for input-&gt;key()
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">Emit</span><span class="p">(</span><span class="n">IntToString</span><span class="p">(</span><span class="n">value</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span><span class="line"><span class="cl"><span class="n">REGISTER_REDUCER</span><span class="p">(</span><span class="n">Adder</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span><span class="o">**</span> <span class="n">argv</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">ParseCommandLineFlags</span><span class="p">(</span><span class="n">argc</span><span class="p">,</span> <span class="n">argv</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="n">MapReduceSpecification</span> <span class="n">spec</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Store list of input files into &#34;spec&#34;
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">argc</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MapReduceInput</span><span class="o">*</span> <span class="n">input</span> <span class="o">=</span> <span class="n">spec</span><span class="p">.</span><span class="n">add_input</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="n">input</span><span class="o">-&gt;</span><span class="n">set_format</span><span class="p">(</span><span class="s">&#34;text&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">input</span><span class="o">-&gt;</span><span class="n">set_filepattern</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">input</span><span class="o">-&gt;</span><span class="n">set_mapper_class</span><span class="p">(</span><span class="s">&#34;WordCounter&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Specify the output files:
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// /gfs/test/freq-00000-of-00100
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// /gfs/test/freq-00001-of-00100
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">MapReduceOutput</span><span class="o">*</span> <span class="n">out</span> <span class="o">=</span> <span class="n">spec</span><span class="p">.</span><span class="n">output</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">  <span class="n">out</span><span class="o">-&gt;</span><span class="n">set_filebase</span><span class="p">(</span><span class="s">&#34;/gfs/test/freq&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">out</span><span class="o">-&gt;</span><span class="n">set_num_tasks</span><span class="p">(</span><span class="mi">100</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">out</span><span class="o">-&gt;</span><span class="n">set_format</span><span class="p">(</span><span class="s">&#34;text&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">out</span><span class="o">-&gt;</span><span class="n">set_reducer_class</span><span class="p">(</span><span class="s">&#34;Adder&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Optional: do partial sums within map
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// tasks to save network bandwidth
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">out</span><span class="o">-&gt;</span><span class="n">set_combiner_class</span><span class="p">(</span><span class="s">&#34;Adder&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Tuning parameters: use at most 2000
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// machines and 100 MB of memory per task
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">spec</span><span class="p">.</span><span class="n">set_machines</span><span class="p">(</span><span class="mi">2000</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">spec</span><span class="p">.</span><span class="n">set_map_megabytes</span><span class="p">(</span><span class="mi">100</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">spec</span><span class="p">.</span><span class="n">set_reduce_megabytes</span><span class="p">(</span><span class="mi">100</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Now run it
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">MapReduceResult</span> <span class="n">result</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">MapReduce</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">result</span><span class="p">))</span> <span class="n">abort</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Done: ’result’ structure contains info
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// about counters, time taken, number of
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// machines used, etc.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div></div>
 
         <div class="post-footer" id="post-footer">
     <div class="post-info">
@@ -651,7 +649,7 @@ map(String name, String contents):
 </div>
 </article></div>
         </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.101.0">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2022</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank" rel="noopener noreferrer">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div></footer></div>
 

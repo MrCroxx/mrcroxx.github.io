@@ -37,7 +37,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/3-log\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  4200 ,
+                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  4159 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/3-log\/","datePublished": "2021-03-05T12:43:16+08:00","dateModified": "2021-03-05T12:43:19+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -123,7 +123,7 @@
             <div class="post-meta-line">
                 <span class="post-author"><i class="author fas fa-user-circle fa-fw"></i><a href="about" title="Author" rel=" author" class="author">叉鸽</a>
                 </span>&nbsp;<span class="post-category">收录于 </span>&nbsp;<span class="post-category">类别 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-05">2021-03-05</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2021-03-05">2021-03-05</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 4200 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-05">2021-03-05</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2021-03-05">2021-03-05</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 4159 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 9 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
@@ -220,267 +220,261 @@
 <p>在介绍LevelDB中Log的Writer与Reader前，我们首先看一下LevelDB中对Log文件的抽象。LevelDB对Log文件的抽象有<code>WritableFile</code>和<code>SequentialFile</code>，分别对应顺序写入与顺序读取的文件。</p>
 <p><code>WritableFile</code>与<code>SequentialFile</code>是抽象类，定义在<code>include/leveldb/env/h</code>中。<code>env.h</code>中声明了很多与环境无关的抽象，让使用者不需要关心这些类在不同操作系统环境下的具体实现，而这些抽象的实现在<code>util/env_*.*</code>中，对应不同环境下的实现。</p>
 <p><code>WritableFile</code>与<code>SequentialFile</code>的声明如下：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
-<span class="c1">// A file abstraction for sequential writing.  The implementation
-</span><span class="c1">// must provide buffering since callers may append small fragments
-</span><span class="c1">// at a time to the file.
-</span><span class="c1"></span><span class="k">class</span> <span class="nc">LEVELDB_EXPORT</span> <span class="n">WritableFile</span> <span class="p">{</span>
- <span class="k">public</span><span class="o">:</span>
-  <span class="n">WritableFile</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
-
-  <span class="n">WritableFile</span><span class="p">(</span><span class="k">const</span> <span class="n">WritableFile</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
-  <span class="n">WritableFile</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">WritableFile</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
-
-  <span class="k">virtual</span> <span class="o">~</span><span class="n">WritableFile</span><span class="p">();</span>
-
-  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Append</span><span class="p">(</span><span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">data</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Close</span><span class="p">()</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Flush</span><span class="p">()</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Sync</span><span class="p">()</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-<span class="p">};</span>
-
-<span class="c1">// A file abstraction for reading sequentially through a file
-</span><span class="c1"></span><span class="k">class</span> <span class="nc">LEVELDB_EXPORT</span> <span class="n">SequentialFile</span> <span class="p">{</span>
- <span class="k">public</span><span class="o">:</span>
-  <span class="n">SequentialFile</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
-
-  <span class="n">SequentialFile</span><span class="p">(</span><span class="k">const</span> <span class="n">SequentialFile</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
-  <span class="n">SequentialFile</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">SequentialFile</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
-
-  <span class="k">virtual</span> <span class="o">~</span><span class="n">SequentialFile</span><span class="p">();</span>
-
-  <span class="c1">// Read up to &#34;n&#34; bytes from the file.  &#34;scratch[0..n-1]&#34; may be
-</span><span class="c1"></span>  <span class="c1">// written by this routine.  Sets &#34;*result&#34; to the data that was
-</span><span class="c1"></span>  <span class="c1">// read (including if fewer than &#34;n&#34; bytes were successfully read).
-</span><span class="c1"></span>  <span class="c1">// May set &#34;*result&#34; to point at data in &#34;scratch[0..n-1]&#34;, so
-</span><span class="c1"></span>  <span class="c1">// &#34;scratch[0..n-1]&#34; must be live when &#34;*result&#34; is used.
-</span><span class="c1"></span>  <span class="c1">// If an error was encountered, returns a non-OK status.
-</span><span class="c1"></span>  <span class="c1">//
-</span><span class="c1"></span>  <span class="c1">// REQUIRES: External synchronization
-</span><span class="c1"></span>  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Read</span><span class="p">(</span><span class="n">size_t</span> <span class="n">n</span><span class="p">,</span> <span class="n">Slice</span><span class="o">*</span> <span class="n">result</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span> <span class="n">scratch</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-
-  <span class="c1">// Skip &#34;n&#34; bytes from the file. This is guaranteed to be no
-</span><span class="c1"></span>  <span class="c1">// slower that reading the same data, but may be faster.
-</span><span class="c1"></span>  <span class="c1">//
-</span><span class="c1"></span>  <span class="c1">// If end of file is reached, skipping will stop at the end of the
-</span><span class="c1"></span>  <span class="c1">// file, and Skip will return OK.
-</span><span class="c1"></span>  <span class="c1">//
-</span><span class="c1"></span>  <span class="c1">// REQUIRES: External synchronization
-</span><span class="c1"></span>  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Skip</span><span class="p">(</span><span class="kt">uint64_t</span> <span class="n">n</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-<span class="p">};</span>
-
-</code></pre></div><h3 id="22-writer与reader">2.2 Writer与Reader</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// A file abstraction for sequential writing.  The implementation
+</span></span></span><span class="line"><span class="cl"><span class="c1">// must provide buffering since callers may append small fragments
+</span></span></span><span class="line"><span class="cl"><span class="c1">// at a time to the file.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">class</span> <span class="nc">LEVELDB_EXPORT</span> <span class="n">WritableFile</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"> <span class="k">public</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">  <span class="n">WritableFile</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="n">WritableFile</span><span class="p">(</span><span class="k">const</span> <span class="n">WritableFile</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">WritableFile</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">WritableFile</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="k">virtual</span> <span class="o">~</span><span class="n">WritableFile</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Append</span><span class="p">(</span><span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">data</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Close</span><span class="p">()</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Flush</span><span class="p">()</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Sync</span><span class="p">()</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// A file abstraction for reading sequentially through a file
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">class</span> <span class="nc">LEVELDB_EXPORT</span> <span class="n">SequentialFile</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"> <span class="k">public</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">  <span class="n">SequentialFile</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="n">SequentialFile</span><span class="p">(</span><span class="k">const</span> <span class="n">SequentialFile</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">SequentialFile</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">SequentialFile</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="k">virtual</span> <span class="o">~</span><span class="n">SequentialFile</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Read up to &#34;n&#34; bytes from the file.  &#34;scratch[0..n-1]&#34; may be
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// written by this routine.  Sets &#34;*result&#34; to the data that was
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// read (including if fewer than &#34;n&#34; bytes were successfully read).
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// May set &#34;*result&#34; to point at data in &#34;scratch[0..n-1]&#34;, so
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// &#34;scratch[0..n-1]&#34; must be live when &#34;*result&#34; is used.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// If an error was encountered, returns a non-OK status.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">//
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// REQUIRES: External synchronization
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Read</span><span class="p">(</span><span class="n">size_t</span> <span class="n">n</span><span class="p">,</span> <span class="n">Slice</span><span class="o">*</span> <span class="n">result</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span> <span class="n">scratch</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Skip &#34;n&#34; bytes from the file. This is guaranteed to be no
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// slower that reading the same data, but may be faster.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">//
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// If end of file is reached, skipping will stop at the end of the
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// file, and Skip will return OK.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">//
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// REQUIRES: External synchronization
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Skip</span><span class="p">(</span><span class="kt">uint64_t</span> <span class="n">n</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span></code></pre></div><h3 id="22-writer与reader">2.2 Writer与Reader</h3>
 <p>相关文件：<code>db/log_writer.h</code>、<code>db/log_writer.cc</code>、<code>db/log_reader.h</code>、<code>db/log_reader.cc</code>。</p>
 <p><code>leveldb::log::Writer</code>是用来写入Log文件的类，其除了构造方法外只对外提供了一个追加记录的方法<code>AddRecord</code>，内部通过<code>EmitPhysicalRecord</code>方法用来将记录写入存储；<code>leveldb::log::Reader</code>是用来读取Log文件的类，其对外提供了<code>ReadRecord</code>方法，该方法会读取下一条记录，并将参数<code>result</code>与<code>scratch</code>指向下一条记录，内部方法<code>ReadPhysicalRecord</code>会通过<code>unistd.h</code>的<code>read</code>方法，读取文件的下一个块（32KB）到内部buffer（<code>backing_store_</code>），以减少I/O次数。</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
-<span class="k">class</span> <span class="nc">Writer</span> <span class="p">{</span>
- <span class="k">public</span><span class="o">:</span>
-  <span class="c1">// Create a writer that will append data to &#34;*dest&#34;.
-</span><span class="c1"></span>  <span class="c1">// &#34;*dest&#34; must be initially empty.
-</span><span class="c1"></span>  <span class="c1">// &#34;*dest&#34; must remain live while this Writer is in use.
-</span><span class="c1"></span>  <span class="k">explicit</span> <span class="n">Writer</span><span class="p">(</span><span class="n">WritableFile</span><span class="o">*</span> <span class="n">dest</span><span class="p">);</span>
-
-  <span class="c1">// Create a writer that will append data to &#34;*dest&#34;.
-</span><span class="c1"></span>  <span class="c1">// &#34;*dest&#34; must have initial length &#34;dest_length&#34;.
-</span><span class="c1"></span>  <span class="c1">// &#34;*dest&#34; must remain live while this Writer is in use.
-</span><span class="c1"></span>  <span class="n">Writer</span><span class="p">(</span><span class="n">WritableFile</span><span class="o">*</span> <span class="n">dest</span><span class="p">,</span> <span class="kt">uint64_t</span> <span class="n">dest_length</span><span class="p">);</span>
-
-  <span class="n">Writer</span><span class="p">(</span><span class="k">const</span> <span class="n">Writer</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
-  <span class="n">Writer</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">Writer</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
-
-  <span class="o">~</span><span class="n">Writer</span><span class="p">();</span>
-
-  <span class="n">Status</span> <span class="nf">AddRecord</span><span class="p">(</span><span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">slice</span><span class="p">);</span>
-
- <span class="k">private</span><span class="o">:</span>
-  <span class="n">Status</span> <span class="n">EmitPhysicalRecord</span><span class="p">(</span><span class="n">RecordType</span> <span class="n">type</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">ptr</span><span class="p">,</span> <span class="n">size_t</span> <span class="n">length</span><span class="p">);</span>
-
-  <span class="c1">// ... ...
-</span><span class="c1"></span>
-<span class="p">};</span>
-
-<span class="k">class</span> <span class="nc">Reader</span> <span class="p">{</span>
- <span class="k">public</span><span class="o">:</span>
-  <span class="c1">// Interface for reporting errors.
-</span><span class="c1"></span>  <span class="k">class</span> <span class="nc">Reporter</span> <span class="p">{</span>
-   <span class="k">public</span><span class="o">:</span>
-    <span class="k">virtual</span> <span class="o">~</span><span class="n">Reporter</span><span class="p">();</span>
-
-    <span class="c1">// Some corruption was detected.  &#34;size&#34; is the approximate number
-</span><span class="c1"></span>    <span class="c1">// of bytes dropped due to the corruption.
-</span><span class="c1"></span>    <span class="k">virtual</span> <span class="kt">void</span> <span class="nf">Corruption</span><span class="p">(</span><span class="n">size_t</span> <span class="n">bytes</span><span class="p">,</span> <span class="k">const</span> <span class="n">Status</span><span class="o">&amp;</span> <span class="n">status</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-  <span class="p">};</span>
-
-  <span class="c1">// Create a reader that will return log records from &#34;*file&#34;.
-</span><span class="c1"></span>  <span class="c1">// &#34;*file&#34; must remain live while this Reader is in use.
-</span><span class="c1"></span>  <span class="c1">//
-</span><span class="c1"></span>  <span class="c1">// If &#34;reporter&#34; is non-null, it is notified whenever some data is
-</span><span class="c1"></span>  <span class="c1">// dropped due to a detected corruption.  &#34;*reporter&#34; must remain
-</span><span class="c1"></span>  <span class="c1">// live while this Reader is in use.
-</span><span class="c1"></span>  <span class="c1">//
-</span><span class="c1"></span>  <span class="c1">// If &#34;checksum&#34; is true, verify checksums if available.
-</span><span class="c1"></span>  <span class="c1">//
-</span><span class="c1"></span>  <span class="c1">// The Reader will start reading at the first record located at physical
-</span><span class="c1"></span>  <span class="c1">// position &gt;= initial_offset within the file.
-</span><span class="c1"></span>  <span class="n">Reader</span><span class="p">(</span><span class="n">SequentialFile</span><span class="o">*</span> <span class="n">file</span><span class="p">,</span> <span class="n">Reporter</span><span class="o">*</span> <span class="n">reporter</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">checksum</span><span class="p">,</span>
-         <span class="kt">uint64_t</span> <span class="n">initial_offset</span><span class="p">);</span>
-
-  <span class="n">Reader</span><span class="p">(</span><span class="k">const</span> <span class="n">Reader</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
-  <span class="n">Reader</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">Reader</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
-
-  <span class="o">~</span><span class="n">Reader</span><span class="p">();</span>
-
-  <span class="c1">// Read the next record into *record.  Returns true if read
-</span><span class="c1"></span>  <span class="c1">// successfully, false if we hit end of the input.  May use
-</span><span class="c1"></span>  <span class="c1">// &#34;*scratch&#34; as temporary storage.  The contents filled in *record
-</span><span class="c1"></span>  <span class="c1">// will only be valid until the next mutating operation on this
-</span><span class="c1"></span>  <span class="c1">// reader or the next mutation to *scratch.
-</span><span class="c1"></span>  <span class="kt">bool</span> <span class="nf">ReadRecord</span><span class="p">(</span><span class="n">Slice</span><span class="o">*</span> <span class="n">record</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">*</span> <span class="n">scratch</span><span class="p">);</span>
-
-  <span class="c1">// Returns the physical offset of the last record returned by ReadRecord.
-</span><span class="c1"></span>  <span class="c1">//
-</span><span class="c1"></span>  <span class="c1">// Undefined before the first call to ReadRecord.
-</span><span class="c1"></span>  <span class="kt">uint64_t</span> <span class="nf">LastRecordOffset</span><span class="p">();</span>
-
- <span class="k">private</span><span class="o">:</span>
-  <span class="c1">// Extend record types with the following special values
-</span><span class="c1"></span>  <span class="k">enum</span> <span class="p">{</span>
-    <span class="n">kEof</span> <span class="o">=</span> <span class="n">kMaxRecordType</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="c1">// Returned whenever we find an invalid physical record.
-</span><span class="c1"></span>    <span class="c1">// Currently there are three situations in which this happens:
-</span><span class="c1"></span>    <span class="c1">// * The record has an invalid CRC (ReadPhysicalRecord reports a drop)
-</span><span class="c1"></span>    <span class="c1">// * The record is a 0-length record (No drop is reported)
-</span><span class="c1"></span>    <span class="c1">// * The record is below constructor&#39;s initial_offset (No drop is reported)
-</span><span class="c1"></span>    <span class="n">kBadRecord</span> <span class="o">=</span> <span class="n">kMaxRecordType</span> <span class="o">+</span> <span class="mi">2</span>
-  <span class="p">};</span>
-
-  <span class="c1">// Skips all blocks that are completely before &#34;initial_offset_&#34;.
-</span><span class="c1"></span>  <span class="c1">//
-</span><span class="c1"></span>  <span class="c1">// Returns true on success. Handles reporting.
-</span><span class="c1"></span>  <span class="kt">bool</span> <span class="nf">SkipToInitialBlock</span><span class="p">();</span>
-
-  <span class="c1">// Return type, or one of the preceding special values
-</span><span class="c1"></span>  <span class="kt">unsigned</span> <span class="kt">int</span> <span class="nf">ReadPhysicalRecord</span><span class="p">(</span><span class="n">Slice</span><span class="o">*</span> <span class="n">result</span><span class="p">);</span>
-
-  <span class="c1">// Reports dropped bytes to the reporter.
-</span><span class="c1"></span>  <span class="c1">// buffer_ must be updated to remove the dropped bytes prior to invocation.
-</span><span class="c1"></span>  <span class="kt">void</span> <span class="nf">ReportCorruption</span><span class="p">(</span><span class="kt">uint64_t</span> <span class="n">bytes</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">reason</span><span class="p">);</span>
-  <span class="kt">void</span> <span class="nf">ReportDrop</span><span class="p">(</span><span class="kt">uint64_t</span> <span class="n">bytes</span><span class="p">,</span> <span class="k">const</span> <span class="n">Status</span><span class="o">&amp;</span> <span class="n">reason</span><span class="p">);</span>
-
-  <span class="c1">// ... ...
-</span><span class="c1"></span>
-<span class="p">};</span>
-
-</code></pre></div><p><code>leveldb::log::Writer</code>与<code>leveldb::log::Reader</code>中大部分是处理记录分段分块的代码，本文不再赘述。这里需要关注的是写入Log文件时数据的同步语义。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">Writer</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"> <span class="k">public</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// Create a writer that will append data to &#34;*dest&#34;.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// &#34;*dest&#34; must be initially empty.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// &#34;*dest&#34; must remain live while this Writer is in use.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">explicit</span> <span class="n">Writer</span><span class="p">(</span><span class="n">WritableFile</span><span class="o">*</span> <span class="n">dest</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Create a writer that will append data to &#34;*dest&#34;.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// &#34;*dest&#34; must have initial length &#34;dest_length&#34;.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// &#34;*dest&#34; must remain live while this Writer is in use.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">Writer</span><span class="p">(</span><span class="n">WritableFile</span><span class="o">*</span> <span class="n">dest</span><span class="p">,</span> <span class="kt">uint64_t</span> <span class="n">dest_length</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="n">Writer</span><span class="p">(</span><span class="k">const</span> <span class="n">Writer</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">Writer</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">Writer</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="o">~</span><span class="n">Writer</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="n">Status</span> <span class="nf">AddRecord</span><span class="p">(</span><span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">slice</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"> <span class="k">private</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">  <span class="n">Status</span> <span class="n">EmitPhysicalRecord</span><span class="p">(</span><span class="n">RecordType</span> <span class="n">type</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">ptr</span><span class="p">,</span> <span class="n">size_t</span> <span class="n">length</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// ... ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">Reader</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"> <span class="k">public</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// Interface for reporting errors.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">class</span> <span class="nc">Reporter</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">   <span class="k">public</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">    <span class="k">virtual</span> <span class="o">~</span><span class="n">Reporter</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Some corruption was detected.  &#34;size&#34; is the approximate number
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// of bytes dropped due to the corruption.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">virtual</span> <span class="kt">void</span> <span class="nf">Corruption</span><span class="p">(</span><span class="n">size_t</span> <span class="n">bytes</span><span class="p">,</span> <span class="k">const</span> <span class="n">Status</span><span class="o">&amp;</span> <span class="n">status</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Create a reader that will return log records from &#34;*file&#34;.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// &#34;*file&#34; must remain live while this Reader is in use.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">//
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// If &#34;reporter&#34; is non-null, it is notified whenever some data is
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// dropped due to a detected corruption.  &#34;*reporter&#34; must remain
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// live while this Reader is in use.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">//
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// If &#34;checksum&#34; is true, verify checksums if available.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">//
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// The Reader will start reading at the first record located at physical
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// position &gt;= initial_offset within the file.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">Reader</span><span class="p">(</span><span class="n">SequentialFile</span><span class="o">*</span> <span class="n">file</span><span class="p">,</span> <span class="n">Reporter</span><span class="o">*</span> <span class="n">reporter</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">checksum</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">         <span class="kt">uint64_t</span> <span class="n">initial_offset</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="n">Reader</span><span class="p">(</span><span class="k">const</span> <span class="n">Reader</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">Reader</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">Reader</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="o">~</span><span class="n">Reader</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Read the next record into *record.  Returns true if read
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// successfully, false if we hit end of the input.  May use
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// &#34;*scratch&#34; as temporary storage.  The contents filled in *record
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// will only be valid until the next mutating operation on this
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// reader or the next mutation to *scratch.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="kt">bool</span> <span class="nf">ReadRecord</span><span class="p">(</span><span class="n">Slice</span><span class="o">*</span> <span class="n">record</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">*</span> <span class="n">scratch</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Returns the physical offset of the last record returned by ReadRecord.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">//
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// Undefined before the first call to ReadRecord.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="kt">uint64_t</span> <span class="nf">LastRecordOffset</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"> <span class="k">private</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// Extend record types with the following special values
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">enum</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">kEof</span> <span class="o">=</span> <span class="n">kMaxRecordType</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// Returned whenever we find an invalid physical record.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// Currently there are three situations in which this happens:
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// * The record has an invalid CRC (ReadPhysicalRecord reports a drop)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// * The record is a 0-length record (No drop is reported)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// * The record is below constructor&#39;s initial_offset (No drop is reported)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">kBadRecord</span> <span class="o">=</span> <span class="n">kMaxRecordType</span> <span class="o">+</span> <span class="mi">2</span>
+</span></span><span class="line"><span class="cl">  <span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Skips all blocks that are completely before &#34;initial_offset_&#34;.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">//
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// Returns true on success. Handles reporting.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="kt">bool</span> <span class="nf">SkipToInitialBlock</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Return type, or one of the preceding special values
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="kt">unsigned</span> <span class="kt">int</span> <span class="nf">ReadPhysicalRecord</span><span class="p">(</span><span class="n">Slice</span><span class="o">*</span> <span class="n">result</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Reports dropped bytes to the reporter.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// buffer_ must be updated to remove the dropped bytes prior to invocation.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="kt">void</span> <span class="nf">ReportCorruption</span><span class="p">(</span><span class="kt">uint64_t</span> <span class="n">bytes</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">reason</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">void</span> <span class="nf">ReportDrop</span><span class="p">(</span><span class="kt">uint64_t</span> <span class="n">bytes</span><span class="p">,</span> <span class="k">const</span> <span class="n">Status</span><span class="o">&amp;</span> <span class="n">reason</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// ... ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span></code></pre></div><p><code>leveldb::log::Writer</code>与<code>leveldb::log::Reader</code>中大部分是处理记录分段分块的代码，本文不再赘述。这里需要关注的是写入Log文件时数据的同步语义。</p>
 <h3 id="23-wal数据同步">2.3 WAL数据同步</h3>
 <p>Log（或Write-Ahead Log，WAL）的意义在于保证机器故障时数据不会因为内存掉电而丢失，只有record被执行前，被完全同步到稳定存储后，才能保证掉电后数据的完整性。然而，如果每条记录都要等待同步写入，其开销很高。</p>
 <p>LevelDB提供了是否开启同步的选项<code>WriteOptions</code>，其定义在<code>include/leveldb/options.h</code>中：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
-<span class="c1">// Options that control write operations
-</span><span class="c1"></span><span class="k">struct</span> <span class="nc">LEVELDB_EXPORT</span> <span class="n">WriteOptions</span> <span class="p">{</span>
-  <span class="n">WriteOptions</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
-
-  <span class="c1">// If true, the write will be flushed from the operating system
-</span><span class="c1"></span>  <span class="c1">// buffer cache (by calling WritableFile::Sync()) before the write
-</span><span class="c1"></span>  <span class="c1">// is considered complete.  If this flag is true, writes will be
-</span><span class="c1"></span>  <span class="c1">// slower.
-</span><span class="c1"></span>  <span class="c1">//
-</span><span class="c1"></span>  <span class="c1">// If this flag is false, and the machine crashes, some recent
-</span><span class="c1"></span>  <span class="c1">// writes may be lost.  Note that if it is just the process that
-</span><span class="c1"></span>  <span class="c1">// crashes (i.e., the machine does not reboot), no writes will be
-</span><span class="c1"></span>  <span class="c1">// lost even if sync==false.
-</span><span class="c1"></span>  <span class="c1">//
-</span><span class="c1"></span>  <span class="c1">// In other words, a DB write with sync==false has similar
-</span><span class="c1"></span>  <span class="c1">// crash semantics as the &#34;write()&#34; system call.  A DB write
-</span><span class="c1"></span>  <span class="c1">// with sync==true has similar crash semantics to a &#34;write()&#34;
-</span><span class="c1"></span>  <span class="c1">// system call followed by &#34;fsync()&#34;.
-</span><span class="c1"></span>  <span class="kt">bool</span> <span class="n">sync</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
-<span class="p">};</span>
-
-</code></pre></div><p>如果在配置LevelDB时，将<code>WriteOptions</code>的<code>sync</code>字段置为<code>true</code>，LevelDB在写入WAL时会根据环境架构，通过适当的方式等待数据完全被写入到稳定存储。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Options that control write operations
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">struct</span> <span class="nc">LEVELDB_EXPORT</span> <span class="n">WriteOptions</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">WriteOptions</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// If true, the write will be flushed from the operating system
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// buffer cache (by calling WritableFile::Sync()) before the write
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// is considered complete.  If this flag is true, writes will be
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// slower.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">//
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// If this flag is false, and the machine crashes, some recent
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// writes may be lost.  Note that if it is just the process that
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// crashes (i.e., the machine does not reboot), no writes will be
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// lost even if sync==false.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">//
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// In other words, a DB write with sync==false has similar
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// crash semantics as the &#34;write()&#34; system call.  A DB write
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// with sync==true has similar crash semantics to a &#34;write()&#34;
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// system call followed by &#34;fsync()&#34;.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="kt">bool</span> <span class="n">sync</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span></code></pre></div><p>如果在配置LevelDB时，将<code>WriteOptions</code>的<code>sync</code>字段置为<code>true</code>，LevelDB在写入WAL时会根据环境架构，通过适当的方式等待数据完全被写入到稳定存储。</p>
 <p>接下来我们以支持POSIX的系统为例，分析LevelDB中WAL的同步写入过程。</p>
 <p><code>leveldb::log::Writer</code>的<code>EmitPhysicalRecord</code>方法是将Record写入到WAL中的方法：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
-<span class="n">Status</span> <span class="n">Writer</span><span class="o">::</span><span class="n">EmitPhysicalRecord</span><span class="p">(</span><span class="n">RecordType</span> <span class="n">t</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">ptr</span><span class="p">,</span>
-                                  <span class="n">size_t</span> <span class="n">length</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">assert</span><span class="p">(</span><span class="n">length</span> <span class="o">&lt;=</span> <span class="mh">0xffff</span><span class="p">);</span>  <span class="c1">// Must fit in two bytes
-</span><span class="c1"></span>  <span class="n">assert</span><span class="p">(</span><span class="n">block_offset_</span> <span class="o">+</span> <span class="n">kHeaderSize</span> <span class="o">+</span> <span class="n">length</span> <span class="o">&lt;=</span> <span class="n">kBlockSize</span><span class="p">);</span>
-
-  <span class="c1">// Format the header
-</span><span class="c1"></span>  <span class="kt">char</span> <span class="n">buf</span><span class="p">[</span><span class="n">kHeaderSize</span><span class="p">];</span>
-  <span class="n">buf</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">&gt;</span><span class="p">(</span><span class="n">length</span> <span class="o">&amp;</span> <span class="mh">0xff</span><span class="p">);</span>
-  <span class="n">buf</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">&gt;</span><span class="p">(</span><span class="n">length</span> <span class="o">&gt;&gt;</span> <span class="mi">8</span><span class="p">);</span>
-  <span class="n">buf</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">&gt;</span><span class="p">(</span><span class="n">t</span><span class="p">);</span>
-
-  <span class="c1">// Compute the crc of the record type and the payload.
-</span><span class="c1"></span>  <span class="kt">uint32_t</span> <span class="n">crc</span> <span class="o">=</span> <span class="n">crc32c</span><span class="o">::</span><span class="n">Extend</span><span class="p">(</span><span class="n">type_crc_</span><span class="p">[</span><span class="n">t</span><span class="p">],</span> <span class="n">ptr</span><span class="p">,</span> <span class="n">length</span><span class="p">);</span>
-  <span class="n">crc</span> <span class="o">=</span> <span class="n">crc32c</span><span class="o">::</span><span class="n">Mask</span><span class="p">(</span><span class="n">crc</span><span class="p">);</span>  <span class="c1">// Adjust for storage
-</span><span class="c1"></span>  <span class="n">EncodeFixed32</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span> <span class="n">crc</span><span class="p">);</span>
-
-  <span class="c1">// Write the header and the payload
-</span><span class="c1"></span>  <span class="n">Status</span> <span class="n">s</span> <span class="o">=</span> <span class="n">dest_</span><span class="o">-&gt;</span><span class="n">Append</span><span class="p">(</span><span class="n">Slice</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span> <span class="n">kHeaderSize</span><span class="p">));</span>
-  <span class="k">if</span> <span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
-    <span class="n">s</span> <span class="o">=</span> <span class="n">dest_</span><span class="o">-&gt;</span><span class="n">Append</span><span class="p">(</span><span class="n">Slice</span><span class="p">(</span><span class="n">ptr</span><span class="p">,</span> <span class="n">length</span><span class="p">));</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
-      <span class="n">s</span> <span class="o">=</span> <span class="n">dest_</span><span class="o">-&gt;</span><span class="n">Flush</span><span class="p">();</span>
-    <span class="p">}</span>
-  <span class="p">}</span>
-  <span class="n">block_offset_</span> <span class="o">+=</span> <span class="n">kHeaderSize</span> <span class="o">+</span> <span class="n">length</span><span class="p">;</span>
-  <span class="k">return</span> <span class="n">s</span><span class="p">;</span>
-<span class="p">}</span>
-
-</code></pre></div><p>从其源码中可以看出，该方法通过<code>Flush</code>方法将用户态buffer中写入的内容刷入内核态buffer后便会返回，后续写入通过操作系统实现。如果掉电时，操作系统还没有将数据写入到稳定存储，数据仍会丢失。为了确保内核缓冲区中的数据会被写入到稳定存储，需要通过系统调用实现，在POSIX系统下常用的系统调用有<code>fsync</code>、<code>fdatasync</code>、<code>msync</code>等。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">Status</span> <span class="n">Writer</span><span class="o">::</span><span class="n">EmitPhysicalRecord</span><span class="p">(</span><span class="n">RecordType</span> <span class="n">t</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">ptr</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                                  <span class="n">size_t</span> <span class="n">length</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">assert</span><span class="p">(</span><span class="n">length</span> <span class="o">&lt;=</span> <span class="mh">0xffff</span><span class="p">);</span>  <span class="c1">// Must fit in two bytes
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">assert</span><span class="p">(</span><span class="n">block_offset_</span> <span class="o">+</span> <span class="n">kHeaderSize</span> <span class="o">+</span> <span class="n">length</span> <span class="o">&lt;=</span> <span class="n">kBlockSize</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Format the header
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="kt">char</span> <span class="n">buf</span><span class="p">[</span><span class="n">kHeaderSize</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">  <span class="n">buf</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">&gt;</span><span class="p">(</span><span class="n">length</span> <span class="o">&amp;</span> <span class="mh">0xff</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">buf</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">&gt;</span><span class="p">(</span><span class="n">length</span> <span class="o">&gt;&gt;</span> <span class="mi">8</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">buf</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">&gt;</span><span class="p">(</span><span class="n">t</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Compute the crc of the record type and the payload.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="kt">uint32_t</span> <span class="n">crc</span> <span class="o">=</span> <span class="n">crc32c</span><span class="o">::</span><span class="n">Extend</span><span class="p">(</span><span class="n">type_crc_</span><span class="p">[</span><span class="n">t</span><span class="p">],</span> <span class="n">ptr</span><span class="p">,</span> <span class="n">length</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">crc</span> <span class="o">=</span> <span class="n">crc32c</span><span class="o">::</span><span class="n">Mask</span><span class="p">(</span><span class="n">crc</span><span class="p">);</span>  <span class="c1">// Adjust for storage
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">EncodeFixed32</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span> <span class="n">crc</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Write the header and the payload
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">Status</span> <span class="n">s</span> <span class="o">=</span> <span class="n">dest_</span><span class="o">-&gt;</span><span class="n">Append</span><span class="p">(</span><span class="n">Slice</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span> <span class="n">kHeaderSize</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">s</span> <span class="o">=</span> <span class="n">dest_</span><span class="o">-&gt;</span><span class="n">Append</span><span class="p">(</span><span class="n">Slice</span><span class="p">(</span><span class="n">ptr</span><span class="p">,</span> <span class="n">length</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="n">s</span> <span class="o">=</span> <span class="n">dest_</span><span class="o">-&gt;</span><span class="n">Flush</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="n">block_offset_</span> <span class="o">+=</span> <span class="n">kHeaderSize</span> <span class="o">+</span> <span class="n">length</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="n">s</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>从其源码中可以看出，该方法通过<code>Flush</code>方法将用户态buffer中写入的内容刷入内核态buffer后便会返回，后续写入通过操作系统实现。如果掉电时，操作系统还没有将数据写入到稳定存储，数据仍会丢失。为了确保内核缓冲区中的数据会被写入到稳定存储，需要通过系统调用实现，在POSIX系统下常用的系统调用有<code>fsync</code>、<code>fdatasync</code>、<code>msync</code>等。</p>
 <p><code>leveldb::log::Writer</code>的<code>AppendRecord</code>方法最终是通过<code>EmitPhysicalRecord</code>实现的，因此我们追溯到LevelDB调用<code>AppendRecord</code>的位置，其位于<code>db/db_impl.cc</code>中<code>DBImpl::Write</code>方法的实现中：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
-<span class="c1">// ... ...
-</span><span class="c1"></span>
-<span class="n">status</span> <span class="o">=</span> <span class="n">log_</span><span class="o">-&gt;</span><span class="n">AddRecord</span><span class="p">(</span><span class="n">WriteBatchInternal</span><span class="o">::</span><span class="n">Contents</span><span class="p">(</span><span class="n">write_batch</span><span class="p">));</span>
-<span class="kt">bool</span> <span class="n">sync_error</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
-<span class="k">if</span> <span class="p">(</span><span class="n">status</span><span class="p">.</span><span class="n">ok</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">options</span><span class="p">.</span><span class="n">sync</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">status</span> <span class="o">=</span> <span class="n">logfile_</span><span class="o">-&gt;</span><span class="n">Sync</span><span class="p">();</span>
-  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">status</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
-    <span class="n">sync_error</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
-  <span class="p">}</span>
-<span class="p">}</span>
-<span class="k">if</span> <span class="p">(</span><span class="n">status</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
-  <span class="n">status</span> <span class="o">=</span> <span class="n">WriteBatchInternal</span><span class="o">::</span><span class="n">InsertInto</span><span class="p">(</span><span class="n">write_batch</span><span class="p">,</span> <span class="n">mem_</span><span class="p">);</span>
-<span class="p">}</span>
-<span class="n">mutex_</span><span class="p">.</span><span class="n">Lock</span><span class="p">();</span>
-
-<span class="c1">// ... ...
-</span><span class="c1"></span>
-</code></pre></div><p>如果开启了<code>WriteOptions.sync</code>选项，LevelDB此处会在调用<code>AppendRecord</code>后调用<code>WritableFile</code>的<code>Sync</code>方法以保证数据被同步到了稳定存储中。在POSIX环境下，<code>WritableFile</code>的<code>Sync</code>方法实现最终会落到<code>SyncFd</code>方法中，该方法位于<code>util/env_posix.cc</code>文件中：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
-  <span class="c1">// Ensures that all the caches associated with the given file descriptor&#39;s
-</span><span class="c1"></span>  <span class="c1">// data are flushed all the way to durable media, and can withstand power
-</span><span class="c1"></span>  <span class="c1">// failures.
-</span><span class="c1"></span>  <span class="c1">//
-</span><span class="c1"></span>  <span class="c1">// The path argument is only used to populate the description string in the
-</span><span class="c1"></span>  <span class="c1">// returned Status if an error occurs.
-</span><span class="c1"></span>  <span class="k">static</span> <span class="n">Status</span> <span class="nf">SyncFd</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">fd_path</span><span class="p">)</span> <span class="p">{</span>
-<span class="cp">#if HAVE_FULLFSYNC
-</span><span class="cp"></span>    <span class="c1">// On macOS and iOS, fsync() doesn&#39;t guarantee durability past power
-</span><span class="c1"></span>    <span class="c1">// failures. fcntl(F_FULLFSYNC) is required for that purpose. Some
-</span><span class="c1"></span>    <span class="c1">// filesystems don&#39;t support fcntl(F_FULLFSYNC), and require a fallback to
-</span><span class="c1"></span>    <span class="c1">// fsync().
-</span><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="o">::</span><span class="n">fcntl</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">F_FULLFSYNC</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="n">Status</span><span class="o">::</span><span class="n">OK</span><span class="p">();</span>
-    <span class="p">}</span>
-<span class="cp">#endif  </span><span class="c1">// HAVE_FULLFSYNC
-</span><span class="c1"></span>
-<span class="cp">#if HAVE_FDATASYNC
-</span><span class="cp"></span>    <span class="kt">bool</span> <span class="n">sync_success</span> <span class="o">=</span> <span class="o">::</span><span class="n">fdatasync</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">;</span>
-<span class="cp">#else
-</span><span class="cp"></span>    <span class="kt">bool</span> <span class="n">sync_success</span> <span class="o">=</span> <span class="o">::</span><span class="n">fsync</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">;</span>
-<span class="cp">#endif  </span><span class="c1">// HAVE_FDATASYNC
-</span><span class="c1"></span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">sync_success</span><span class="p">)</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="n">Status</span><span class="o">::</span><span class="n">OK</span><span class="p">();</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="n">PosixError</span><span class="p">(</span><span class="n">fd_path</span><span class="p">,</span> <span class="n">errno</span><span class="p">);</span>
-  <span class="p">}</span>
-
-</code></pre></div><p><code>SyncFd</code>会根据宏定义来检查编译环境下系统支持的系统调用，并在保证安全的条件下选择开销最小的系统调用实现。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// ... ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="n">status</span> <span class="o">=</span> <span class="n">log_</span><span class="o">-&gt;</span><span class="n">AddRecord</span><span class="p">(</span><span class="n">WriteBatchInternal</span><span class="o">::</span><span class="n">Contents</span><span class="p">(</span><span class="n">write_batch</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl"><span class="kt">bool</span> <span class="n">sync_error</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="n">status</span><span class="p">.</span><span class="n">ok</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">options</span><span class="p">.</span><span class="n">sync</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">status</span> <span class="o">=</span> <span class="n">logfile_</span><span class="o">-&gt;</span><span class="n">Sync</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">status</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">sync_error</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="n">status</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">status</span> <span class="o">=</span> <span class="n">WriteBatchInternal</span><span class="o">::</span><span class="n">InsertInto</span><span class="p">(</span><span class="n">write_batch</span><span class="p">,</span> <span class="n">mem_</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="n">mutex_</span><span class="p">.</span><span class="n">Lock</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// ... ...
+</span></span></span></code></pre></div><p>如果开启了<code>WriteOptions.sync</code>选项，LevelDB此处会在调用<code>AppendRecord</code>后调用<code>WritableFile</code>的<code>Sync</code>方法以保证数据被同步到了稳定存储中。在POSIX环境下，<code>WritableFile</code>的<code>Sync</code>方法实现最终会落到<code>SyncFd</code>方法中，该方法位于<code>util/env_posix.cc</code>文件中：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Ensures that all the caches associated with the given file descriptor&#39;s
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// data are flushed all the way to durable media, and can withstand power
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// failures.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">//
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// The path argument is only used to populate the description string in the
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// returned Status if an error occurs.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">static</span> <span class="n">Status</span> <span class="nf">SyncFd</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">fd_path</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="cp">#if HAVE_FULLFSYNC
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>    <span class="c1">// On macOS and iOS, fsync() doesn&#39;t guarantee durability past power
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// failures. fcntl(F_FULLFSYNC) is required for that purpose. Some
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// filesystems don&#39;t support fcntl(F_FULLFSYNC), and require a fallback to
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// fsync().
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="o">::</span><span class="n">fcntl</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">F_FULLFSYNC</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">return</span> <span class="n">Status</span><span class="o">::</span><span class="n">OK</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="cp">#endif  </span><span class="c1">// HAVE_FULLFSYNC
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="cp">#if HAVE_FDATASYNC
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>    <span class="kt">bool</span> <span class="n">sync_success</span> <span class="o">=</span> <span class="o">::</span><span class="n">fdatasync</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="cp">#else
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>    <span class="kt">bool</span> <span class="n">sync_success</span> <span class="o">=</span> <span class="o">::</span><span class="n">fsync</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="cp">#endif  </span><span class="c1">// HAVE_FDATASYNC
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">sync_success</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">return</span> <span class="n">Status</span><span class="o">::</span><span class="n">OK</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">PosixError</span><span class="p">(</span><span class="n">fd_path</span><span class="p">,</span> <span class="n">errno</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span></code></pre></div><p><code>SyncFd</code>会根据宏定义来检查编译环境下系统支持的系统调用，并在保证安全的条件下选择开销最小的系统调用实现。</p>
 <h3 id="24-wal裁剪">2.4 WAL裁剪</h3>
 <p>如果LevelDB永远都不对WAL进行裁剪，那么随着对LevelDB的读写增加，WAL会越来越长。因此，在适当时机，LevelDB需要裁剪WAL文件。</p>
 <p>当WAL中记录的操作被写入到稳定存储后，就可以安全地释放旧的WAL文件。显然，这一时机即为Minor Comapction。Minor Compaction会将当前MemTable转为Immutable MemTable，并通过后台线程将Immutable MemTable写入到稳定存储。而裁剪WAL的方式也非常简单，只需要通过新的WAL文件记录Minor Compaction后的操作并删除旧的WAL文件即可。</p>
@@ -514,7 +508,7 @@
 </div>
 </article></div>
         </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.101.0">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2022</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank" rel="noopener noreferrer">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div></footer></div>
 

@@ -37,7 +37,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/1-storage-cache\/boltdb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "boltdb, B\u002bTree","wordcount":  9214 ,
+                        }],"genre": "posts","keywords": "boltdb, B\u002bTree","wordcount":  9012 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/boltdb-made-simple\/1-storage-cache\/","datePublished": "2021-01-05T18:26:19+08:00","dateModified": "2021-01-05T18:26:22+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -123,8 +123,8 @@
             <div class="post-meta-line">
                 <span class="post-author"><i class="author fas fa-user-circle fa-fw"></i><a href="about" title="Author" rel=" author" class="author">叉鸽</a>
                 </span>&nbsp;<span class="post-category">收录于 </span>&nbsp;<span class="post-category">类别 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAboltdb/"><i class="far fa-folder fa-fw"></i>深入浅出boltdb</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-05">2021-01-05</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2021-01-05">2021-01-05</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 9214 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 19 分钟&nbsp;</div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-01-05">2021-01-05</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2021-01-05">2021-01-05</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 9012 字&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 18 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         data-src="/posts/code-reading/boltdb-made-simple/1-storage-cache/boltdb.jpg"
@@ -219,18 +219,17 @@
     </a><figcaption class="image-caption">页结构</figcaption>
     </figure></p>
 <p>页相关的代码主要在<code>page.go</code>中。<em>Page Header</em>是以<code>page</code>结构体表示的，其包含的字段如下：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
-<span class="kd">type</span> <span class="nx">pgid</span> <span class="kt">uint64</span>
-
-<span class="kd">type</span> <span class="nx">page</span> <span class="kd">struct</span> <span class="p">{</span>
-	<span class="nx">id</span>       <span class="nx">pgid</span>
-	<span class="nx">flags</span>    <span class="kt">uint16</span>
-	<span class="nx">count</span>    <span class="kt">uint16</span>
-	<span class="nx">overflow</span> <span class="kt">uint32</span>
-	<span class="nx">ptr</span>      <span class="kt">uintptr</span>
-<span class="p">}</span>
-
-</code></pre></div><table>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">pgid</span> <span class="kt">uint64</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">page</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">id</span>       <span class="nx">pgid</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">flags</span>    <span class="kt">uint16</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">count</span>    <span class="kt">uint16</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">overflow</span> <span class="kt">uint32</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">ptr</span>      <span class="kt">uintptr</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><table>
 <thead>
 <tr>
 <th style="text-align:center">字段</th>
@@ -265,27 +264,26 @@
 <p>本节将分别介绍boltdb中<em>meta page</em>、<em>leaf page</em>与<em>branch page</em>的数组结构，<em>free page</em>的数据结构与其行为关系较为密切，将在本文之后的章节中介绍。</p>
 <h4 id="121-meta-page">1.2.1 meta page</h4>
 <p><em>meta page</em>是boltdb记录数据库元数据的页。<em>meta page</em>的格式非常简单，其<em>Page Body</em>就是一个<code>meta</code>结构体。<code>meta</code>结构体的字段如下：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
-<span class="kd">type</span> <span class="nx">meta</span> <span class="kd">struct</span> <span class="p">{</span>
-	<span class="nx">magic</span>    <span class="kt">uint32</span>
-	<span class="nx">version</span>  <span class="kt">uint32</span>
-	<span class="nx">pageSize</span> <span class="kt">uint32</span>
-	<span class="nx">flags</span>    <span class="kt">uint32</span>
-	<span class="nx">root</span>     <span class="nx">bucket</span>
-	<span class="nx">freelist</span> <span class="nx">pgid</span>
-	<span class="nx">pgid</span>     <span class="nx">pgid</span>
-	<span class="nx">txid</span>     <span class="nx">txid</span>
-	<span class="nx">checksum</span> <span class="kt">uint64</span>
-<span class="p">}</span>
-
-<span class="c1">// bucket.go
-</span><span class="c1"></span>
-<span class="kd">type</span> <span class="nx">bucket</span> <span class="kd">struct</span> <span class="p">{</span>
-	<span class="nx">root</span>     <span class="nx">pgid</span>   <span class="c1">// page id of the bucket&#39;s root-level page
-</span><span class="c1"></span>	<span class="nx">sequence</span> <span class="kt">uint64</span> <span class="c1">// monotonically incrementing, used by NextSequence()
-</span><span class="c1"></span><span class="p">}</span>
-
-</code></pre></div><table>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">meta</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">magic</span>    <span class="kt">uint32</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">version</span>  <span class="kt">uint32</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">pageSize</span> <span class="kt">uint32</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">flags</span>    <span class="kt">uint32</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">root</span>     <span class="nx">bucket</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">freelist</span> <span class="nx">pgid</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">pgid</span>     <span class="nx">pgid</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">txid</span>     <span class="nx">txid</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">checksum</span> <span class="kt">uint64</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// bucket.go
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">bucket</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">root</span>     <span class="nx">pgid</span>   <span class="c1">// page id of the bucket&#39;s root-level page
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">sequence</span> <span class="kt">uint64</span> <span class="c1">// monotonically incrementing, used by NextSequence()
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></div><table>
 <thead>
 <tr>
 <th style="text-align:center">字段</th>
@@ -333,21 +331,20 @@
 </table>
 <h4 id="122-branch-page--leaf-page">1.2.2 branch page &amp; leaf page</h4>
 <p><em>branch page</em>与<em>leaf page</em>是boltdb中用来保存B+树节点的页。B+树的分支节点仅用来保存索引（key），而叶子节点既保存索引，又保存值（value）。boltdb支持任意长度的key和value，因此无法直接结构化保存key和value的列表。为了解决这一问题，<em>branch page</em>和<em>leaf page</em>的<em>Page Body</em>起始处是一个由定长的索引（<code>branchPageElement</code>或<code>leafPageElement</code>）组成的列表，第$i$个索引记录了第$i$个key或key/value的起始位置与key的长度或key/value各自的长度：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
-<span class="c1">// branchPageElement represents a node on a branch page.
-</span><span class="c1"></span><span class="kd">type</span> <span class="nx">branchPageElement</span> <span class="kd">struct</span> <span class="p">{</span>
-	<span class="nx">pos</span>   <span class="kt">uint32</span>
-	<span class="nx">ksize</span> <span class="kt">uint32</span>
-	<span class="nx">pgid</span>  <span class="nx">pgid</span>
-<span class="p">}</span>
-
-<span class="c1">// key returns a byte slice of the node key.
-</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="o">*</span><span class="nx">branchPageElement</span><span class="p">)</span> <span class="nf">key</span><span class="p">()</span> <span class="p">[]</span><span class="kt">byte</span> <span class="p">{</span>
-	<span class="nx">buf</span> <span class="o">:=</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="nx">n</span><span class="p">))</span>
-	<span class="k">return</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">buf</span><span class="p">[</span><span class="nx">n</span><span class="p">.</span><span class="nx">pos</span><span class="p">]))[:</span><span class="nx">n</span><span class="p">.</span><span class="nx">ksize</span><span class="p">]</span>
-<span class="p">}</span>
-
-</code></pre></div><p><figure><a class="lightgallery" href="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/branch-page.svg" title="branch page结构示意图" data-thumbnail="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/branch-page.svg" data-sub-html="<h2>branch page结构示意图</h2><p>branch page结构示意图</p>">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// branchPageElement represents a node on a branch page.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">branchPageElement</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">pos</span>   <span class="kt">uint32</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">ksize</span> <span class="kt">uint32</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">pgid</span>  <span class="nx">pgid</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// key returns a byte slice of the node key.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="o">*</span><span class="nx">branchPageElement</span><span class="p">)</span> <span class="nf">key</span><span class="p">()</span> <span class="p">[]</span><span class="kt">byte</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">buf</span> <span class="o">:=</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="nx">n</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">buf</span><span class="p">[</span><span class="nx">n</span><span class="p">.</span><span class="nx">pos</span><span class="p">]))[:</span><span class="nx">n</span><span class="p">.</span><span class="nx">ksize</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p><figure><a class="lightgallery" href="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/branch-page.svg" title="branch page结构示意图" data-thumbnail="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/branch-page.svg" data-sub-html="<h2>branch page结构示意图</h2><p>branch page结构示意图</p>">
         <img
             class="lazyload"
             data-src="assets/branch-page.svg"
@@ -357,28 +354,27 @@
         />
     </a><figcaption class="image-caption">branch page结构示意图</figcaption>
     </figure></p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
-<span class="c1">// leafPageElement represents a node on a leaf page.
-</span><span class="c1"></span><span class="kd">type</span> <span class="nx">leafPageElement</span> <span class="kd">struct</span> <span class="p">{</span>
-	<span class="nx">flags</span> <span class="kt">uint32</span>
-	<span class="nx">pos</span>   <span class="kt">uint32</span>
-	<span class="nx">ksize</span> <span class="kt">uint32</span>
-	<span class="nx">vsize</span> <span class="kt">uint32</span>
-<span class="p">}</span>
-
-<span class="c1">// key returns a byte slice of the node key.
-</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="o">*</span><span class="nx">leafPageElement</span><span class="p">)</span> <span class="nf">key</span><span class="p">()</span> <span class="p">[]</span><span class="kt">byte</span> <span class="p">{</span>
-	<span class="nx">buf</span> <span class="o">:=</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="nx">n</span><span class="p">))</span>
-	<span class="k">return</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">buf</span><span class="p">[</span><span class="nx">n</span><span class="p">.</span><span class="nx">pos</span><span class="p">]))[:</span><span class="nx">n</span><span class="p">.</span><span class="nx">ksize</span><span class="p">:</span><span class="nx">n</span><span class="p">.</span><span class="nx">ksize</span><span class="p">]</span>
-<span class="p">}</span>
-
-<span class="c1">// value returns a byte slice of the node value.
-</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="o">*</span><span class="nx">leafPageElement</span><span class="p">)</span> <span class="nf">value</span><span class="p">()</span> <span class="p">[]</span><span class="kt">byte</span> <span class="p">{</span>
-	<span class="nx">buf</span> <span class="o">:=</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="nx">n</span><span class="p">))</span>
-	<span class="k">return</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">buf</span><span class="p">[</span><span class="nx">n</span><span class="p">.</span><span class="nx">pos</span><span class="o">+</span><span class="nx">n</span><span class="p">.</span><span class="nx">ksize</span><span class="p">]))[:</span><span class="nx">n</span><span class="p">.</span><span class="nx">vsize</span><span class="p">:</span><span class="nx">n</span><span class="p">.</span><span class="nx">vsize</span><span class="p">]</span>
-<span class="p">}</span>
-
-</code></pre></div><p><figure><a class="lightgallery" href="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/leaf-page.svg" title="leaf page结构示意图" data-thumbnail="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/leaf-page.svg" data-sub-html="<h2>leaf page结构示意图</h2><p>leaf page结构示意图</p>">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// leafPageElement represents a node on a leaf page.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">leafPageElement</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">flags</span> <span class="kt">uint32</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">pos</span>   <span class="kt">uint32</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">ksize</span> <span class="kt">uint32</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">vsize</span> <span class="kt">uint32</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// key returns a byte slice of the node key.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="o">*</span><span class="nx">leafPageElement</span><span class="p">)</span> <span class="nf">key</span><span class="p">()</span> <span class="p">[]</span><span class="kt">byte</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">buf</span> <span class="o">:=</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="nx">n</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">buf</span><span class="p">[</span><span class="nx">n</span><span class="p">.</span><span class="nx">pos</span><span class="p">]))[:</span><span class="nx">n</span><span class="p">.</span><span class="nx">ksize</span><span class="p">:</span><span class="nx">n</span><span class="p">.</span><span class="nx">ksize</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// value returns a byte slice of the node value.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">n</span> <span class="o">*</span><span class="nx">leafPageElement</span><span class="p">)</span> <span class="nf">value</span><span class="p">()</span> <span class="p">[]</span><span class="kt">byte</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">buf</span> <span class="o">:=</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="nx">n</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">buf</span><span class="p">[</span><span class="nx">n</span><span class="p">.</span><span class="nx">pos</span><span class="o">+</span><span class="nx">n</span><span class="p">.</span><span class="nx">ksize</span><span class="p">]))[:</span><span class="nx">n</span><span class="p">.</span><span class="nx">vsize</span><span class="p">:</span><span class="nx">n</span><span class="p">.</span><span class="nx">vsize</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p><figure><a class="lightgallery" href="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/leaf-page.svg" title="leaf page结构示意图" data-thumbnail="/posts/code-reading/boltdb-made-simple/1-storage-cache/assets/leaf-page.svg" data-sub-html="<h2>leaf page结构示意图</h2><p>leaf page结构示意图</p>">
         <img
             class="lazyload"
             data-src="assets/leaf-page.svg"
@@ -405,16 +401,15 @@
 <p>boltdb通过<code>freelist</code>实现了空闲页列表。boltdb也将<code>freelist</code>按照一定格式持久化存储在了<code>page</code>中。当数据库初始化或者恢复时，如果能够找到保存在页中的<code>freelist</code>，则直接使用该<code>freelist</code>，否则扫描数据库，构建新的<code>freelist</code>。</p>
 <h3 id="21-freelist的逻辑结构">2.1 freelist的逻辑结构</h3>
 <p><code>freelist</code>结构体中有3个字段：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
-<span class="c1">// freelist represents a list of all pages that are available for allocation.
-</span><span class="c1">// It also tracks pages that have been freed but are still in use by open transactions.
-</span><span class="c1"></span><span class="kd">type</span> <span class="nx">freelist</span> <span class="kd">struct</span> <span class="p">{</span>
-	<span class="nx">ids</span>     <span class="p">[]</span><span class="nx">pgid</span>          <span class="c1">// all free and available free page ids.
-</span><span class="c1"></span>	<span class="nx">pending</span> <span class="kd">map</span><span class="p">[</span><span class="nx">txid</span><span class="p">][]</span><span class="nx">pgid</span> <span class="c1">// mapping of soon-to-be free page ids by tx.
-</span><span class="c1"></span>	<span class="nx">cache</span>   <span class="kd">map</span><span class="p">[</span><span class="nx">pgid</span><span class="p">]</span><span class="kt">bool</span>   <span class="c1">// fast lookup of all free and pending page ids.
-</span><span class="c1"></span><span class="p">}</span>
-
-</code></pre></div><table>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// freelist represents a list of all pages that are available for allocation.
+</span></span></span><span class="line"><span class="cl"><span class="c1">// It also tracks pages that have been freed but are still in use by open transactions.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">freelist</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">ids</span>     <span class="p">[]</span><span class="nx">pgid</span>          <span class="c1">// all free and available free page ids.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">pending</span> <span class="kd">map</span><span class="p">[</span><span class="nx">txid</span><span class="p">][]</span><span class="nx">pgid</span> <span class="c1">// mapping of soon-to-be free page ids by tx.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">cache</span>   <span class="kd">map</span><span class="p">[</span><span class="nx">pgid</span><span class="p">]</span><span class="kt">bool</span>   <span class="c1">// fast lookup of all free and pending page ids.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></div><table>
 <thead>
 <tr>
 <th style="text-align:center">字段<div style="width: 14em"></th>
@@ -463,60 +458,59 @@
     </a><figcaption class="image-caption">大型freelist的存储结构</figcaption>
     </figure></p>
 <p>从page读取freelist与将freelist写入page的相应方法如下：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
-<span class="c1">// read initializes the freelist from a freelist page.
-</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">f</span> <span class="o">*</span><span class="nx">freelist</span><span class="p">)</span> <span class="nf">read</span><span class="p">(</span><span class="nx">p</span> <span class="o">*</span><span class="nx">page</span><span class="p">)</span> <span class="p">{</span>
-	<span class="c1">// If the page.count is at the max uint16 value (64k) then it&#39;s considered
-</span><span class="c1"></span>	<span class="c1">// an overflow and the size of the freelist is stored as the first element.
-</span><span class="c1"></span>	<span class="nx">idx</span><span class="p">,</span> <span class="nx">count</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">count</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">count</span> <span class="o">==</span> <span class="mh">0xFFFF</span> <span class="p">{</span>
-		<span class="nx">idx</span> <span class="p">=</span> <span class="mi">1</span>
-		<span class="nx">count</span> <span class="p">=</span> <span class="nb">int</span><span class="p">(((</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="nx">pgid</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">ptr</span><span class="p">)))[</span><span class="mi">0</span><span class="p">])</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Copy the list of page ids from the freelist.
-</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">count</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
-		<span class="nx">f</span><span class="p">.</span><span class="nx">ids</span> <span class="p">=</span> <span class="kc">nil</span>
-	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-		<span class="nx">ids</span> <span class="o">:=</span> <span class="p">((</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="nx">pgid</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">ptr</span><span class="p">)))[</span><span class="nx">idx</span><span class="p">:</span><span class="nx">count</span><span class="p">]</span>
-		<span class="nx">f</span><span class="p">.</span><span class="nx">ids</span> <span class="p">=</span> <span class="nb">make</span><span class="p">([]</span><span class="nx">pgid</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nx">ids</span><span class="p">))</span>
-		<span class="nb">copy</span><span class="p">(</span><span class="nx">f</span><span class="p">.</span><span class="nx">ids</span><span class="p">,</span> <span class="nx">ids</span><span class="p">)</span>
-
-		<span class="c1">// Make sure they&#39;re sorted.
-</span><span class="c1"></span>		<span class="nx">sort</span><span class="p">.</span><span class="nf">Sort</span><span class="p">(</span><span class="nf">pgids</span><span class="p">(</span><span class="nx">f</span><span class="p">.</span><span class="nx">ids</span><span class="p">))</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Rebuild the page cache.
-</span><span class="c1"></span>	<span class="nx">f</span><span class="p">.</span><span class="nf">reindex</span><span class="p">()</span>
-<span class="p">}</span>
-
-<span class="c1">// write writes the page ids onto a freelist page. All free and pending ids are
-</span><span class="c1">// saved to disk since in the event of a program crash, all pending ids will
-</span><span class="c1">// become free.
-</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">f</span> <span class="o">*</span><span class="nx">freelist</span><span class="p">)</span> <span class="nf">write</span><span class="p">(</span><span class="nx">p</span> <span class="o">*</span><span class="nx">page</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
-	<span class="c1">// Combine the old free pgids and pgids waiting on an open transaction.
-</span><span class="c1"></span>
-	<span class="c1">// Update the header flag.
-</span><span class="c1"></span>	<span class="nx">p</span><span class="p">.</span><span class="nx">flags</span> <span class="o">|=</span> <span class="nx">freelistPageFlag</span>
-
-	<span class="c1">// The page.count can only hold up to 64k elements so if we overflow that
-</span><span class="c1"></span>	<span class="c1">// number then we handle it by putting the size in the first element.
-</span><span class="c1"></span>	<span class="nx">lenids</span> <span class="o">:=</span> <span class="nx">f</span><span class="p">.</span><span class="nf">count</span><span class="p">()</span>
-	<span class="k">if</span> <span class="nx">lenids</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
-		<span class="nx">p</span><span class="p">.</span><span class="nx">count</span> <span class="p">=</span> <span class="nb">uint16</span><span class="p">(</span><span class="nx">lenids</span><span class="p">)</span>
-	<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nx">lenids</span> <span class="p">&lt;</span> <span class="mh">0xFFFF</span> <span class="p">{</span>
-		<span class="nx">p</span><span class="p">.</span><span class="nx">count</span> <span class="p">=</span> <span class="nb">uint16</span><span class="p">(</span><span class="nx">lenids</span><span class="p">)</span>
-		<span class="nx">f</span><span class="p">.</span><span class="nf">copyall</span><span class="p">(((</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="nx">pgid</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">ptr</span><span class="p">)))[:])</span>
-	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-		<span class="nx">p</span><span class="p">.</span><span class="nx">count</span> <span class="p">=</span> <span class="mh">0xFFFF</span>
-		<span class="p">((</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="nx">pgid</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">ptr</span><span class="p">)))[</span><span class="mi">0</span><span class="p">]</span> <span class="p">=</span> <span class="nf">pgid</span><span class="p">(</span><span class="nx">lenids</span><span class="p">)</span>
-		<span class="nx">f</span><span class="p">.</span><span class="nf">copyall</span><span class="p">(((</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="nx">pgid</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">ptr</span><span class="p">)))[</span><span class="mi">1</span><span class="p">:])</span>
-	<span class="p">}</span>
-
-	<span class="k">return</span> <span class="kc">nil</span>
-<span class="p">}</span>
-
-</code></pre></div><h3 id="23-freelist的方法">2.3 freelist的方法</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// read initializes the freelist from a freelist page.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">f</span> <span class="o">*</span><span class="nx">freelist</span><span class="p">)</span> <span class="nf">read</span><span class="p">(</span><span class="nx">p</span> <span class="o">*</span><span class="nx">page</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// If the page.count is at the max uint16 value (64k) then it&#39;s considered
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// an overflow and the size of the freelist is stored as the first element.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">idx</span><span class="p">,</span> <span class="nx">count</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">count</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">count</span> <span class="o">==</span> <span class="mh">0xFFFF</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">idx</span> <span class="p">=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">count</span> <span class="p">=</span> <span class="nb">int</span><span class="p">(((</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="nx">pgid</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">ptr</span><span class="p">)))[</span><span class="mi">0</span><span class="p">])</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Copy the list of page ids from the freelist.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">if</span> <span class="nx">count</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">f</span><span class="p">.</span><span class="nx">ids</span> <span class="p">=</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">ids</span> <span class="o">:=</span> <span class="p">((</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="nx">pgid</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">ptr</span><span class="p">)))[</span><span class="nx">idx</span><span class="p">:</span><span class="nx">count</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">f</span><span class="p">.</span><span class="nx">ids</span> <span class="p">=</span> <span class="nb">make</span><span class="p">([]</span><span class="nx">pgid</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nx">ids</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">		<span class="nb">copy</span><span class="p">(</span><span class="nx">f</span><span class="p">.</span><span class="nx">ids</span><span class="p">,</span> <span class="nx">ids</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="c1">// Make sure they&#39;re sorted.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">sort</span><span class="p">.</span><span class="nf">Sort</span><span class="p">(</span><span class="nf">pgids</span><span class="p">(</span><span class="nx">f</span><span class="p">.</span><span class="nx">ids</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Rebuild the page cache.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">f</span><span class="p">.</span><span class="nf">reindex</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// write writes the page ids onto a freelist page. All free and pending ids are
+</span></span></span><span class="line"><span class="cl"><span class="c1">// saved to disk since in the event of a program crash, all pending ids will
+</span></span></span><span class="line"><span class="cl"><span class="c1">// become free.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">f</span> <span class="o">*</span><span class="nx">freelist</span><span class="p">)</span> <span class="nf">write</span><span class="p">(</span><span class="nx">p</span> <span class="o">*</span><span class="nx">page</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// Combine the old free pgids and pgids waiting on an open transaction.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// Update the header flag.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">p</span><span class="p">.</span><span class="nx">flags</span> <span class="o">|=</span> <span class="nx">freelistPageFlag</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// The page.count can only hold up to 64k elements so if we overflow that
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// number then we handle it by putting the size in the first element.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">lenids</span> <span class="o">:=</span> <span class="nx">f</span><span class="p">.</span><span class="nf">count</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">lenids</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">p</span><span class="p">.</span><span class="nx">count</span> <span class="p">=</span> <span class="nb">uint16</span><span class="p">(</span><span class="nx">lenids</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nx">lenids</span> <span class="p">&lt;</span> <span class="mh">0xFFFF</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">p</span><span class="p">.</span><span class="nx">count</span> <span class="p">=</span> <span class="nb">uint16</span><span class="p">(</span><span class="nx">lenids</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">f</span><span class="p">.</span><span class="nf">copyall</span><span class="p">(((</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="nx">pgid</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">ptr</span><span class="p">)))[:])</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">p</span><span class="p">.</span><span class="nx">count</span> <span class="p">=</span> <span class="mh">0xFFFF</span>
+</span></span><span class="line"><span class="cl">		<span class="p">((</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="nx">pgid</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">ptr</span><span class="p">)))[</span><span class="mi">0</span><span class="p">]</span> <span class="p">=</span> <span class="nf">pgid</span><span class="p">(</span><span class="nx">lenids</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">f</span><span class="p">.</span><span class="nf">copyall</span><span class="p">(((</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="nx">pgid</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">p</span><span class="p">.</span><span class="nx">ptr</span><span class="p">)))[</span><span class="mi">1</span><span class="p">:])</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h3 id="23-freelist的方法">2.3 freelist的方法</h3>
 <p>本节简单介绍freelist提供的方法，以便读者阅读源码时参考。</p>
 <table>
 <thead>
@@ -585,26 +579,25 @@
 </tbody>
 </table>
 <p>其中，<code>release</code>调用的时机为新读写事务启动时。在启动新的读写事务时，boltdb会根据事务id释放所有已完成的事务在<code>pending</code>中的页：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
-<span class="kd">func</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="nf">beginRWTx</span><span class="p">()</span> <span class="p">(</span><span class="o">*</span><span class="nx">Tx</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
-	
-	<span class="c1">// ... ...
-</span><span class="c1"></span>
-	<span class="c1">// Free any pages associated with closed read-only transactions.
-</span><span class="c1"></span>	<span class="kd">var</span> <span class="nx">minid</span> <span class="nx">txid</span> <span class="p">=</span> <span class="mh">0xFFFFFFFFFFFFFFFF</span>
-	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">t</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">db</span><span class="p">.</span><span class="nx">txs</span> <span class="p">{</span>
-		<span class="k">if</span> <span class="nx">t</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">txid</span> <span class="p">&lt;</span> <span class="nx">minid</span> <span class="p">{</span>
-			<span class="nx">minid</span> <span class="p">=</span> <span class="nx">t</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">txid</span>
-		<span class="p">}</span>
-	<span class="p">}</span>
-	<span class="k">if</span> <span class="nx">minid</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
-		<span class="nx">db</span><span class="p">.</span><span class="nx">freelist</span><span class="p">.</span><span class="nf">release</span><span class="p">(</span><span class="nx">minid</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-	<span class="p">}</span>
-
-	<span class="k">return</span> <span class="nx">t</span><span class="p">,</span> <span class="kc">nil</span>
-<span class="p">}</span>
-
-</code></pre></div><h2 id="3-boltdb的读写与缓存策略">3. boltdb的读写与缓存策略</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="nf">beginRWTx</span><span class="p">()</span> <span class="p">(</span><span class="o">*</span><span class="nx">Tx</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	
+</span></span><span class="line"><span class="cl">	<span class="c1">// ... ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// Free any pages associated with closed read-only transactions.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="kd">var</span> <span class="nx">minid</span> <span class="nx">txid</span> <span class="p">=</span> <span class="mh">0xFFFFFFFFFFFFFFFF</span>
+</span></span><span class="line"><span class="cl">	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">t</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">db</span><span class="p">.</span><span class="nx">txs</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="nx">t</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">txid</span> <span class="p">&lt;</span> <span class="nx">minid</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">minid</span> <span class="p">=</span> <span class="nx">t</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">txid</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">minid</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">db</span><span class="p">.</span><span class="nx">freelist</span><span class="p">.</span><span class="nf">release</span><span class="p">(</span><span class="nx">minid</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">t</span><span class="p">,</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h2 id="3-boltdb的读写与缓存策略">3. boltdb的读写与缓存策略</h2>
 <p>boltdb的缓存策略主要有两种，一种是使用mmap的读缓存策略，一种是使用page buffer的写缓存策略。</p>
 <h3 id="31-读操作与缓存策略">3.1 读操作与缓存策略</h3>
 <p>boltdb在读取数据库文件时，为了避免频繁进行设备I/O，使用了mmap技术作为缓存。当boltdb打开数据库时，其会将数据库文件通过mmap系统调用映射到内存。这样可以避免使用read系统调用读取I/O设备，而是直接以内存访问的方式读取数据。在通过mmap将数据库文件映射到内存后，boltdb会根据数据库文件构建内存数据结构，如meta、freelist、B+Tree结构。</p>
@@ -650,107 +643,106 @@
 </tr>
 </tbody>
 </table>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
-<span class="c1">// mmap opens the underlying memory-mapped file and initializes the meta references.
-</span><span class="c1">// minsz is the minimum size that the new mmap can be.
-</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="nf">mmap</span><span class="p">(</span><span class="nx">minsz</span> <span class="kt">int</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
-	<span class="nx">db</span><span class="p">.</span><span class="nx">mmaplock</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
-	<span class="k">defer</span> <span class="nx">db</span><span class="p">.</span><span class="nx">mmaplock</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
-
-	<span class="nx">info</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">file</span><span class="p">.</span><span class="nf">Stat</span><span class="p">()</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="k">return</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;mmap stat error: %s&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-	<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="nx">info</span><span class="p">.</span><span class="nf">Size</span><span class="p">())</span> <span class="p">&lt;</span> <span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span><span class="o">*</span><span class="mi">2</span> <span class="p">{</span>
-		<span class="k">return</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;file size too small&#34;</span><span class="p">)</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Ensure the size is at least the minimum size.
-</span><span class="c1"></span>	<span class="kd">var</span> <span class="nx">size</span> <span class="p">=</span> <span class="nb">int</span><span class="p">(</span><span class="nx">info</span><span class="p">.</span><span class="nf">Size</span><span class="p">())</span>
-	<span class="k">if</span> <span class="nx">size</span> <span class="p">&lt;</span> <span class="nx">minsz</span> <span class="p">{</span>
-		<span class="nx">size</span> <span class="p">=</span> <span class="nx">minsz</span>
-	<span class="p">}</span>
-	<span class="nx">size</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">db</span><span class="p">.</span><span class="nf">mmapSize</span><span class="p">(</span><span class="nx">size</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="k">return</span> <span class="nx">err</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Dereference all mmap references before unmapping.
-</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">db</span><span class="p">.</span><span class="nx">rwtx</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">db</span><span class="p">.</span><span class="nx">rwtx</span><span class="p">.</span><span class="nx">root</span><span class="p">.</span><span class="nf">dereference</span><span class="p">()</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Unmap existing data before continuing.
-</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">db</span><span class="p">.</span><span class="nf">munmap</span><span class="p">();</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="k">return</span> <span class="nx">err</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Memory-map the data file as a byte slice.
-</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nf">mmap</span><span class="p">(</span><span class="nx">db</span><span class="p">,</span> <span class="nx">size</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="k">return</span> <span class="nx">err</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Save references to the meta pages.
-</span><span class="c1"></span>	<span class="nx">db</span><span class="p">.</span><span class="nx">meta0</span> <span class="p">=</span> <span class="nx">db</span><span class="p">.</span><span class="nf">page</span><span class="p">(</span><span class="mi">0</span><span class="p">).</span><span class="nf">meta</span><span class="p">()</span>
-	<span class="nx">db</span><span class="p">.</span><span class="nx">meta1</span> <span class="p">=</span> <span class="nx">db</span><span class="p">.</span><span class="nf">page</span><span class="p">(</span><span class="mi">1</span><span class="p">).</span><span class="nf">meta</span><span class="p">()</span>
-
-	<span class="c1">// Validate the meta pages. We only return an error if both meta pages fail
-</span><span class="c1"></span>	<span class="c1">// validation, since meta0 failing validation means that it wasn&#39;t saved
-</span><span class="c1"></span>	<span class="c1">// properly -- but we can recover using meta1. And vice-versa.
-</span><span class="c1"></span>	<span class="nx">err0</span> <span class="o">:=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">meta0</span><span class="p">.</span><span class="nf">validate</span><span class="p">()</span>
-	<span class="nx">err1</span> <span class="o">:=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">meta1</span><span class="p">.</span><span class="nf">validate</span><span class="p">()</span>
-	<span class="k">if</span> <span class="nx">err0</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="nx">err1</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="k">return</span> <span class="nx">err0</span>
-	<span class="p">}</span>
-
-	<span class="k">return</span> <span class="kc">nil</span>
-<span class="p">}</span>
-
-<span class="c1">// munmap unmaps the data file from memory.
-</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="nf">munmap</span><span class="p">()</span> <span class="kt">error</span> <span class="p">{</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nf">munmap</span><span class="p">(</span><span class="nx">db</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="k">return</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;unmap error: &#34;</span> <span class="o">+</span> <span class="nx">err</span><span class="p">.</span><span class="nf">Error</span><span class="p">())</span>
-	<span class="p">}</span>
-	<span class="k">return</span> <span class="kc">nil</span>
-<span class="p">}</span>
-
-<span class="c1">// mmapSize determines the appropriate size for the mmap given the current size
-</span><span class="c1">// of the database. The minimum size is 32KB and doubles until it reaches 1GB.
-</span><span class="c1">// Returns an error if the new mmap size is greater than the max allowed.
-</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="nf">mmapSize</span><span class="p">(</span><span class="nx">size</span> <span class="kt">int</span><span class="p">)</span> <span class="p">(</span><span class="kt">int</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
-	<span class="c1">// Double the size from 32KB until 1GB.
-</span><span class="c1"></span>	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="nb">uint</span><span class="p">(</span><span class="mi">15</span><span class="p">);</span> <span class="nx">i</span> <span class="o">&lt;=</span> <span class="mi">30</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
-		<span class="k">if</span> <span class="nx">size</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="o">&lt;&lt;</span><span class="nx">i</span> <span class="p">{</span>
-			<span class="k">return</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="nx">i</span><span class="p">,</span> <span class="kc">nil</span>
-		<span class="p">}</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Verify the requested size is not above the maximum allowed.
-</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">size</span> <span class="p">&gt;</span> <span class="nx">maxMapSize</span> <span class="p">{</span>
-		<span class="k">return</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;mmap too large&#34;</span><span class="p">)</span>
-	<span class="p">}</span>
-
-	<span class="c1">// If larger than 1GB then grow by 1GB at a time.
-</span><span class="c1"></span>	<span class="nx">sz</span> <span class="o">:=</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">size</span><span class="p">)</span>
-	<span class="k">if</span> <span class="nx">remainder</span> <span class="o">:=</span> <span class="nx">sz</span> <span class="o">%</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">maxMmapStep</span><span class="p">);</span> <span class="nx">remainder</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
-		<span class="nx">sz</span> <span class="o">+=</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">maxMmapStep</span><span class="p">)</span> <span class="o">-</span> <span class="nx">remainder</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Ensure that the mmap size is a multiple of the page size.
-</span><span class="c1"></span>	<span class="c1">// This should always be true since we&#39;re incrementing in MBs.
-</span><span class="c1"></span>	<span class="nx">pageSize</span> <span class="o">:=</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span><span class="p">)</span>
-	<span class="k">if</span> <span class="p">(</span><span class="nx">sz</span> <span class="o">%</span> <span class="nx">pageSize</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">{</span>
-		<span class="nx">sz</span> <span class="p">=</span> <span class="p">((</span><span class="nx">sz</span> <span class="o">/</span> <span class="nx">pageSize</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="nx">pageSize</span>
-	<span class="p">}</span>
-
-	<span class="c1">// If we&#39;ve exceeded the max size then only grow up to the max size.
-</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">sz</span> <span class="p">&gt;</span> <span class="nx">maxMapSize</span> <span class="p">{</span>
-		<span class="nx">sz</span> <span class="p">=</span> <span class="nx">maxMapSize</span>
-	<span class="p">}</span>
-
-	<span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="nx">sz</span><span class="p">),</span> <span class="kc">nil</span>
-<span class="p">}</span>
-
-</code></pre></div><p>boltdb中mmap会调用Linux的系统调用，其<code>prot</code>参数为<code>PROT_READ</code>，<code>flags</code>为<code>MAP_SHARED</code>与数据库配置中<code>MmapFlags</code>按位或的结果。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// mmap opens the underlying memory-mapped file and initializes the meta references.
+</span></span></span><span class="line"><span class="cl"><span class="c1">// minsz is the minimum size that the new mmap can be.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="nf">mmap</span><span class="p">(</span><span class="nx">minsz</span> <span class="kt">int</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">db</span><span class="p">.</span><span class="nx">mmaplock</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">defer</span> <span class="nx">db</span><span class="p">.</span><span class="nx">mmaplock</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">info</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">file</span><span class="p">.</span><span class="nf">Stat</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;mmap stat error: %s&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="nx">info</span><span class="p">.</span><span class="nf">Size</span><span class="p">())</span> <span class="p">&lt;</span> <span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span><span class="o">*</span><span class="mi">2</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;file size too small&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Ensure the size is at least the minimum size.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="kd">var</span> <span class="nx">size</span> <span class="p">=</span> <span class="nb">int</span><span class="p">(</span><span class="nx">info</span><span class="p">.</span><span class="nf">Size</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">size</span> <span class="p">&lt;</span> <span class="nx">minsz</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">size</span> <span class="p">=</span> <span class="nx">minsz</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">size</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">db</span><span class="p">.</span><span class="nf">mmapSize</span><span class="p">(</span><span class="nx">size</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Dereference all mmap references before unmapping.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">if</span> <span class="nx">db</span><span class="p">.</span><span class="nx">rwtx</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">db</span><span class="p">.</span><span class="nx">rwtx</span><span class="p">.</span><span class="nx">root</span><span class="p">.</span><span class="nf">dereference</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Unmap existing data before continuing.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">db</span><span class="p">.</span><span class="nf">munmap</span><span class="p">();</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Memory-map the data file as a byte slice.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nf">mmap</span><span class="p">(</span><span class="nx">db</span><span class="p">,</span> <span class="nx">size</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Save references to the meta pages.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">db</span><span class="p">.</span><span class="nx">meta0</span> <span class="p">=</span> <span class="nx">db</span><span class="p">.</span><span class="nf">page</span><span class="p">(</span><span class="mi">0</span><span class="p">).</span><span class="nf">meta</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">db</span><span class="p">.</span><span class="nx">meta1</span> <span class="p">=</span> <span class="nx">db</span><span class="p">.</span><span class="nf">page</span><span class="p">(</span><span class="mi">1</span><span class="p">).</span><span class="nf">meta</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Validate the meta pages. We only return an error if both meta pages fail
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// validation, since meta0 failing validation means that it wasn&#39;t saved
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// properly -- but we can recover using meta1. And vice-versa.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">err0</span> <span class="o">:=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">meta0</span><span class="p">.</span><span class="nf">validate</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">err1</span> <span class="o">:=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">meta1</span><span class="p">.</span><span class="nf">validate</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err0</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="nx">err1</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nx">err0</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// munmap unmaps the data file from memory.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="nf">munmap</span><span class="p">()</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nf">munmap</span><span class="p">(</span><span class="nx">db</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;unmap error: &#34;</span> <span class="o">+</span> <span class="nx">err</span><span class="p">.</span><span class="nf">Error</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// mmapSize determines the appropriate size for the mmap given the current size
+</span></span></span><span class="line"><span class="cl"><span class="c1">// of the database. The minimum size is 32KB and doubles until it reaches 1GB.
+</span></span></span><span class="line"><span class="cl"><span class="c1">// Returns an error if the new mmap size is greater than the max allowed.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="nf">mmapSize</span><span class="p">(</span><span class="nx">size</span> <span class="kt">int</span><span class="p">)</span> <span class="p">(</span><span class="kt">int</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// Double the size from 32KB until 1GB.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="nb">uint</span><span class="p">(</span><span class="mi">15</span><span class="p">);</span> <span class="nx">i</span> <span class="o">&lt;=</span> <span class="mi">30</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="nx">size</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="o">&lt;&lt;</span><span class="nx">i</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="k">return</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="nx">i</span><span class="p">,</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Verify the requested size is not above the maximum allowed.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">if</span> <span class="nx">size</span> <span class="p">&gt;</span> <span class="nx">maxMapSize</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;mmap too large&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// If larger than 1GB then grow by 1GB at a time.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">sz</span> <span class="o">:=</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">size</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">remainder</span> <span class="o">:=</span> <span class="nx">sz</span> <span class="o">%</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">maxMmapStep</span><span class="p">);</span> <span class="nx">remainder</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">sz</span> <span class="o">+=</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">maxMmapStep</span><span class="p">)</span> <span class="o">-</span> <span class="nx">remainder</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Ensure that the mmap size is a multiple of the page size.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// This should always be true since we&#39;re incrementing in MBs.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">pageSize</span> <span class="o">:=</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="p">(</span><span class="nx">sz</span> <span class="o">%</span> <span class="nx">pageSize</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">sz</span> <span class="p">=</span> <span class="p">((</span><span class="nx">sz</span> <span class="o">/</span> <span class="nx">pageSize</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="nx">pageSize</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// If we&#39;ve exceeded the max size then only grow up to the max size.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">if</span> <span class="nx">sz</span> <span class="p">&gt;</span> <span class="nx">maxMapSize</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">sz</span> <span class="p">=</span> <span class="nx">maxMapSize</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="nx">sz</span><span class="p">),</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>boltdb中mmap会调用Linux的系统调用，其<code>prot</code>参数为<code>PROT_READ</code>，<code>flags</code>为<code>MAP_SHARED</code>与数据库配置中<code>MmapFlags</code>按位或的结果。</p>
 <p>boltdb的mmap大小增长策略如下：最小的mmap大小为32KB，在1GB之前mmap大小每次倍增，在1GB之后每次增长1GB。</p>
 <div class="details admonition warning open">
         <div class="details-summary admonition-title">
@@ -776,134 +768,131 @@
 <h4 id="321-page-buffermemory-memory">3.2.1 page buffer（memory-&gt;memory）</h4>
 <p>无论是修改meta、freelist，还是修改或写入新B+Tree的node时，boltdb都会先将数据按照page结构写入mmap内存空间外的page buffer中，等到事务提交时再将page buffer中数据写入到底层数据库文件相应的page处。</p>
 <p>分配page buffer的逻辑在<code>db.go</code>的<code>allocate</code>方法中：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
-<span class="c1">// allocate returns a contiguous block of memory starting at a given page.
-</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="nf">allocate</span><span class="p">(</span><span class="nx">count</span> <span class="kt">int</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="nx">page</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
-	<span class="c1">// Allocate a temporary buffer for the page.
-</span><span class="c1"></span>	<span class="kd">var</span> <span class="nx">buf</span> <span class="p">[]</span><span class="kt">byte</span>
-	<span class="k">if</span> <span class="nx">count</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">{</span>
-		<span class="nx">buf</span> <span class="p">=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">pagePool</span><span class="p">.</span><span class="nf">Get</span><span class="p">().([]</span><span class="kt">byte</span><span class="p">)</span>
-	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-		<span class="nx">buf</span> <span class="p">=</span> <span class="nb">make</span><span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">count</span><span class="o">*</span><span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span><span class="p">)</span>
-	<span class="p">}</span>
-	<span class="nx">p</span> <span class="o">:=</span> <span class="p">(</span><span class="o">*</span><span class="nx">page</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">buf</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
-	<span class="nx">p</span><span class="p">.</span><span class="nx">overflow</span> <span class="p">=</span> <span class="nb">uint32</span><span class="p">(</span><span class="nx">count</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-
-	<span class="c1">// Use pages from the freelist if they are available.
-</span><span class="c1"></span>	<span class="k">if</span> <span class="nx">p</span><span class="p">.</span><span class="nx">id</span> <span class="p">=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">freelist</span><span class="p">.</span><span class="nf">allocate</span><span class="p">(</span><span class="nx">count</span><span class="p">);</span> <span class="nx">p</span><span class="p">.</span><span class="nx">id</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">{</span>
-		<span class="k">return</span> <span class="nx">p</span><span class="p">,</span> <span class="kc">nil</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Resize mmap() if we&#39;re at the end.
-</span><span class="c1"></span>	<span class="nx">p</span><span class="p">.</span><span class="nx">id</span> <span class="p">=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">rwtx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">pgid</span>
-	<span class="kd">var</span> <span class="nx">minsz</span> <span class="p">=</span> <span class="nb">int</span><span class="p">((</span><span class="nx">p</span><span class="p">.</span><span class="nx">id</span><span class="o">+</span><span class="nf">pgid</span><span class="p">(</span><span class="nx">count</span><span class="p">))</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span>
-	<span class="k">if</span> <span class="nx">minsz</span> <span class="o">&gt;=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">datasz</span> <span class="p">{</span>
-		<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">db</span><span class="p">.</span><span class="nf">mmap</span><span class="p">(</span><span class="nx">minsz</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-			<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;mmap allocate error: %s&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="p">}</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Move the page id high water mark.
-</span><span class="c1"></span>	<span class="nx">db</span><span class="p">.</span><span class="nx">rwtx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">pgid</span> <span class="o">+=</span> <span class="nf">pgid</span><span class="p">(</span><span class="nx">count</span><span class="p">)</span>
-
-	<span class="k">return</span> <span class="nx">p</span><span class="p">,</span> <span class="kc">nil</span>
-<span class="p">}</span>
-
-</code></pre></div><p>通过这段代码可以看出，<code>allocate</code>方法会先创建一段能够容纳给定数量page的连续内存空间，这段空间就是page buffer，然后将这段空间作为page返回给调用者。这样，调用者可以向读写正常page一样读写这段page buffer。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// allocate returns a contiguous block of memory starting at a given page.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">db</span> <span class="o">*</span><span class="nx">DB</span><span class="p">)</span> <span class="nf">allocate</span><span class="p">(</span><span class="nx">count</span> <span class="kt">int</span><span class="p">)</span> <span class="p">(</span><span class="o">*</span><span class="nx">page</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// Allocate a temporary buffer for the page.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="kd">var</span> <span class="nx">buf</span> <span class="p">[]</span><span class="kt">byte</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">count</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">buf</span> <span class="p">=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">pagePool</span><span class="p">.</span><span class="nf">Get</span><span class="p">().([]</span><span class="kt">byte</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">buf</span> <span class="p">=</span> <span class="nb">make</span><span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">count</span><span class="o">*</span><span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">p</span> <span class="o">:=</span> <span class="p">(</span><span class="o">*</span><span class="nx">page</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">buf</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">p</span><span class="p">.</span><span class="nx">overflow</span> <span class="p">=</span> <span class="nb">uint32</span><span class="p">(</span><span class="nx">count</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Use pages from the freelist if they are available.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">if</span> <span class="nx">p</span><span class="p">.</span><span class="nx">id</span> <span class="p">=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">freelist</span><span class="p">.</span><span class="nf">allocate</span><span class="p">(</span><span class="nx">count</span><span class="p">);</span> <span class="nx">p</span><span class="p">.</span><span class="nx">id</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nx">p</span><span class="p">,</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Resize mmap() if we&#39;re at the end.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">p</span><span class="p">.</span><span class="nx">id</span> <span class="p">=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">rwtx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">pgid</span>
+</span></span><span class="line"><span class="cl">	<span class="kd">var</span> <span class="nx">minsz</span> <span class="p">=</span> <span class="nb">int</span><span class="p">((</span><span class="nx">p</span><span class="p">.</span><span class="nx">id</span><span class="o">+</span><span class="nf">pgid</span><span class="p">(</span><span class="nx">count</span><span class="p">))</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">minsz</span> <span class="o">&gt;=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">datasz</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">db</span><span class="p">.</span><span class="nf">mmap</span><span class="p">(</span><span class="nx">minsz</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">fmt</span><span class="p">.</span><span class="nf">Errorf</span><span class="p">(</span><span class="s">&#34;mmap allocate error: %s&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Move the page id high water mark.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">db</span><span class="p">.</span><span class="nx">rwtx</span><span class="p">.</span><span class="nx">meta</span><span class="p">.</span><span class="nx">pgid</span> <span class="o">+=</span> <span class="nf">pgid</span><span class="p">(</span><span class="nx">count</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">p</span><span class="p">,</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>通过这段代码可以看出，<code>allocate</code>方法会先创建一段能够容纳给定数量page的连续内存空间，这段空间就是page buffer，然后将这段空间作为page返回给调用者。这样，调用者可以向读写正常page一样读写这段page buffer。</p>
 <p>为了避免分配较小的page buffer造成过多的内存碎片，boltdb通过<code>sync.Pool</code>类型的字段<code>pagePool</code>分配、复用长度为1的page buffer。<code>pagePool</code>的定义与初始化代码如下：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
-	<span class="c1">// in struct db
-</span><span class="c1"></span>	<span class="nx">pagePool</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Pool</span>
-
-	<span class="c1">// in `db.Open`
-</span><span class="c1"></span>	<span class="c1">// Initialize page pool.
-</span><span class="c1"></span>	<span class="nx">db</span><span class="p">.</span><span class="nx">pagePool</span> <span class="p">=</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Pool</span><span class="p">{</span>
-		<span class="nx">New</span><span class="p">:</span> <span class="kd">func</span><span class="p">()</span> <span class="kd">interface</span><span class="p">{}</span> <span class="p">{</span>
-			<span class="k">return</span> <span class="nb">make</span><span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span><span class="p">)</span>
-		<span class="p">},</span>
-	<span class="p">}</span>
-
-</code></pre></div><p>在分配page buffer时，需要分配的page buffer长度为1，boltdb会通过<code>pagePool</code>分配；在事务提交时，boltdb将page buffer中的数据写入到文件后，会将长度为1的page buffer放回<code>pagePool</code>。而如果所需的page buffer长度大于1，则boltdb会通过<code>make</code>分配page buffer的内存空间。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// in struct db
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">pagePool</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Pool</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// in `db.Open`
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// Initialize page pool.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">db</span><span class="p">.</span><span class="nx">pagePool</span> <span class="p">=</span> <span class="nx">sync</span><span class="p">.</span><span class="nx">Pool</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">New</span><span class="p">:</span> <span class="kd">func</span><span class="p">()</span> <span class="kd">interface</span><span class="p">{}</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="k">return</span> <span class="nb">make</span><span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="p">},</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span></code></pre></div><p>在分配page buffer时，需要分配的page buffer长度为1，boltdb会通过<code>pagePool</code>分配；在事务提交时，boltdb将page buffer中的数据写入到文件后，会将长度为1的page buffer放回<code>pagePool</code>。而如果所需的page buffer长度大于1，则boltdb会通过<code>make</code>分配page buffer的内存空间。</p>
 <h4 id="322-pwrite--fdatasyncmemory-disk">3.2.2 pwrite + fdatasync（memory-&gt;disk）</h4>
 <p>为了保证事务的ACID性质，当事务提交时，boltdb需要保证数据被完整地写入到了磁盘中。在介绍boltdb的数据同步策略前，笔者首先简单介绍Linux系统提供的文件数据同步方式。</p>
 <p>在Linux中，为了性能考虑，<code>write/pwrite</code>等系统调用不会等待设备I/O完成后再返回。<code>write/pwrite</code>等系统调用只会更新page cache，而脏页的同步时间由操作系统控制。<code>sync</code>系统调用会在page cache中的脏页提交到设备I/O队列后返回，但是不会等待设备I/O完成。如果此时I/O设备故障，则数据还可能丢失。而<code>fsync</code>与<code>fdatasync</code>则会等待设备I/O完成后返回，以提供最高的同步保证。<code>fsync</code>与<code>fdatasync</code>的区别在于，<code>fdatasync</code>只会更新文件数据和必要的元数据（如文件大小等），而<code>fsync</code>会更新文件数据和所有相关的元数据（包括文件修改时间等），由于文件元数据与数据的保存位置可能不同，因此在磁盘上<code>fsync</code>往往比<code>fdatasync</code>多一次旋转时延。</p>
 <p>对于内存映射文件，Linux提供了<code>msync</code>系统调用。该系统调用可以更精确地控制同步的内存范围。</p>
 <p>虽然boltdb使用了内存映射文件，但是当事务提交时，其还是通过<code>pwrite + fdatasync</code>的方式同步刷盘。在Linux的文档中并没有详细说明混用普通文件的同步方式与内存映射文件的同步方式的影响。但是通过实践和mmap的<code>MAP_SHARED</code>模式的描述可知，使用SHARED的mmap，当其它进程通过<code>fdatasync</code>等系统调用修改底层文件后，修改能通过mmap的内存访问到。</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
-<span class="c1">// write writes any dirty pages to disk.
-</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">tx</span> <span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="nf">write</span><span class="p">()</span> <span class="kt">error</span> <span class="p">{</span>
-	<span class="c1">// Sort pages by id.
-</span><span class="c1"></span>	<span class="nx">pages</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="nx">pages</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nx">tx</span><span class="p">.</span><span class="nx">pages</span><span class="p">))</span>
-	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">p</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">pages</span> <span class="p">{</span>
-		<span class="nx">pages</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">pages</span><span class="p">,</span> <span class="nx">p</span><span class="p">)</span>
-	<span class="p">}</span>
-	<span class="c1">// Clear out page cache early.
-</span><span class="c1"></span>	<span class="nx">tx</span><span class="p">.</span><span class="nx">pages</span> <span class="p">=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="nx">pgid</span><span class="p">]</span><span class="o">*</span><span class="nx">page</span><span class="p">)</span>
-	<span class="nx">sort</span><span class="p">.</span><span class="nf">Sort</span><span class="p">(</span><span class="nx">pages</span><span class="p">)</span>
-
-	<span class="c1">// Write pages to disk in order.
-</span><span class="c1"></span>	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">p</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">pages</span> <span class="p">{</span>
-		<span class="nx">size</span> <span class="o">:=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">overflow</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span>
-		<span class="nx">offset</span> <span class="o">:=</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">id</span><span class="p">)</span> <span class="o">*</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span><span class="p">)</span>
-
-		<span class="c1">// Write out page in &#34;max allocation&#34; sized chunks.
-</span><span class="c1"></span>		<span class="nx">ptr</span> <span class="o">:=</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="nx">p</span><span class="p">))</span>
-		<span class="k">for</span> <span class="p">{</span>
-			<span class="c1">// Limit our write to our max allocation size.
-</span><span class="c1"></span>			<span class="nx">sz</span> <span class="o">:=</span> <span class="nx">size</span>
-			<span class="k">if</span> <span class="nx">sz</span> <span class="p">&gt;</span> <span class="nx">maxAllocSize</span><span class="o">-</span><span class="mi">1</span> <span class="p">{</span>
-				<span class="nx">sz</span> <span class="p">=</span> <span class="nx">maxAllocSize</span> <span class="o">-</span> <span class="mi">1</span>
-			<span class="p">}</span>
-
-			<span class="c1">// Write chunk to disk.
-</span><span class="c1"></span>			<span class="nx">buf</span> <span class="o">:=</span> <span class="nx">ptr</span><span class="p">[:</span><span class="nx">sz</span><span class="p">]</span>
-			<span class="k">if</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">ops</span><span class="p">.</span><span class="nf">writeAt</span><span class="p">(</span><span class="nx">buf</span><span class="p">,</span> <span class="nx">offset</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-				<span class="k">return</span> <span class="nx">err</span>
-			<span class="p">}</span>
-
-			<span class="c1">// Update statistics.
-</span><span class="c1"></span>			<span class="nx">tx</span><span class="p">.</span><span class="nx">stats</span><span class="p">.</span><span class="nx">Write</span><span class="o">++</span>
-
-			<span class="c1">// Exit inner for loop if we&#39;ve written all the chunks.
-</span><span class="c1"></span>			<span class="nx">size</span> <span class="o">-=</span> <span class="nx">sz</span>
-			<span class="k">if</span> <span class="nx">size</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
-				<span class="k">break</span>
-			<span class="p">}</span>
-
-			<span class="c1">// Otherwise move offset forward and move pointer to next chunk.
-</span><span class="c1"></span>			<span class="nx">offset</span> <span class="o">+=</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">sz</span><span class="p">)</span>
-			<span class="nx">ptr</span> <span class="p">=</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">ptr</span><span class="p">[</span><span class="nx">sz</span><span class="p">]))</span>
-		<span class="p">}</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Ignore file sync if flag is set on DB.
-</span><span class="c1"></span>	<span class="k">if</span> <span class="p">!</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">NoSync</span> <span class="o">||</span> <span class="nx">IgnoreNoSync</span> <span class="p">{</span>
-		<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nf">fdatasync</span><span class="p">(</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-			<span class="k">return</span> <span class="nx">err</span>
-		<span class="p">}</span>
-	<span class="p">}</span>
-
-	<span class="c1">// Put small pages back to page pool.
-</span><span class="c1"></span>	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">p</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">pages</span> <span class="p">{</span>
-		<span class="c1">// Ignore page sizes over 1 page.
-</span><span class="c1"></span>		<span class="c1">// These are allocated using make() instead of the page pool.
-</span><span class="c1"></span>		<span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">overflow</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">{</span>
-			<span class="k">continue</span>
-		<span class="p">}</span>
-
-		<span class="nx">buf</span> <span class="o">:=</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="nx">p</span><span class="p">))[:</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span><span class="p">]</span>
-
-		<span class="c1">// See https://go.googlesource.com/go/+/f03c9202c43e0abb130669852082117ca50aa9b1
-</span><span class="c1"></span>		<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">buf</span> <span class="p">{</span>
-			<span class="nx">buf</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="p">=</span> <span class="mi">0</span>
-		<span class="p">}</span>
-		<span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">pagePool</span><span class="p">.</span><span class="nf">Put</span><span class="p">(</span><span class="nx">buf</span><span class="p">)</span>
-	<span class="p">}</span>
-
-	<span class="k">return</span> <span class="kc">nil</span>
-<span class="p">}</span>
-
-</code></pre></div><p>从上面这段来自<code>tx.go</code>的代码中，我们可以看到：在事务提交写入磁盘时，boltdb会先将事务使用的page buffer按照页id排序，然后将page buffer中的内容通过文件的<code>WriteAt</code>方法（go语言通过<code>pwrite</code>系统调用实现）写入到底层数据库文件中。在完成所有<code>pwrite</code>的调用后，boltdb通过<code>fdatasync</code>系统调用等待数据安全地同步到磁盘中。最后，boltdb将待释放的长度为1的page buffer放回到<code>pagePool</code>中，以复用这些单页，减少内存碎片的影响。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// write writes any dirty pages to disk.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">tx</span> <span class="o">*</span><span class="nx">Tx</span><span class="p">)</span> <span class="nf">write</span><span class="p">()</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// Sort pages by id.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">pages</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="nx">pages</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nx">tx</span><span class="p">.</span><span class="nx">pages</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">p</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">pages</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">pages</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">pages</span><span class="p">,</span> <span class="nx">p</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// Clear out page cache early.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">tx</span><span class="p">.</span><span class="nx">pages</span> <span class="p">=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="nx">pgid</span><span class="p">]</span><span class="o">*</span><span class="nx">page</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">sort</span><span class="p">.</span><span class="nf">Sort</span><span class="p">(</span><span class="nx">pages</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Write pages to disk in order.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">p</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">pages</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">size</span> <span class="o">:=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">overflow</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">offset</span> <span class="o">:=</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">id</span><span class="p">)</span> <span class="o">*</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="c1">// Write out page in &#34;max allocation&#34; sized chunks.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">ptr</span> <span class="o">:=</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="nx">p</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">		<span class="k">for</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="c1">// Limit our write to our max allocation size.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>			<span class="nx">sz</span> <span class="o">:=</span> <span class="nx">size</span>
+</span></span><span class="line"><span class="cl">			<span class="k">if</span> <span class="nx">sz</span> <span class="p">&gt;</span> <span class="nx">maxAllocSize</span><span class="o">-</span><span class="mi">1</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">				<span class="nx">sz</span> <span class="p">=</span> <span class="nx">maxAllocSize</span> <span class="o">-</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">			<span class="c1">// Write chunk to disk.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>			<span class="nx">buf</span> <span class="o">:=</span> <span class="nx">ptr</span><span class="p">[:</span><span class="nx">sz</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">			<span class="k">if</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">ops</span><span class="p">.</span><span class="nf">writeAt</span><span class="p">(</span><span class="nx">buf</span><span class="p">,</span> <span class="nx">offset</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">				<span class="k">return</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl">			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">			<span class="c1">// Update statistics.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>			<span class="nx">tx</span><span class="p">.</span><span class="nx">stats</span><span class="p">.</span><span class="nx">Write</span><span class="o">++</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">			<span class="c1">// Exit inner for loop if we&#39;ve written all the chunks.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>			<span class="nx">size</span> <span class="o">-=</span> <span class="nx">sz</span>
+</span></span><span class="line"><span class="cl">			<span class="k">if</span> <span class="nx">size</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">				<span class="k">break</span>
+</span></span><span class="line"><span class="cl">			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">			<span class="c1">// Otherwise move offset forward and move pointer to next chunk.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>			<span class="nx">offset</span> <span class="o">+=</span> <span class="nb">int64</span><span class="p">(</span><span class="nx">sz</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">ptr</span> <span class="p">=</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">ptr</span><span class="p">[</span><span class="nx">sz</span><span class="p">]))</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Ignore file sync if flag is set on DB.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">if</span> <span class="p">!</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">NoSync</span> <span class="o">||</span> <span class="nx">IgnoreNoSync</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nf">fdatasync</span><span class="p">(</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="k">return</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Put small pages back to page pool.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">for</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">p</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">pages</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="c1">// Ignore page sizes over 1 page.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="c1">// These are allocated using make() instead of the page pool.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">overflow</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="k">continue</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="nx">buf</span> <span class="o">:=</span> <span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nx">maxAllocSize</span><span class="p">]</span><span class="kt">byte</span><span class="p">)(</span><span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span><span class="nx">p</span><span class="p">))[:</span><span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">pageSize</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="c1">// See https://go.googlesource.com/go/+/f03c9202c43e0abb130669852082117ca50aa9b1
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">buf</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">buf</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="p">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">tx</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">pagePool</span><span class="p">.</span><span class="nf">Put</span><span class="p">(</span><span class="nx">buf</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>从上面这段来自<code>tx.go</code>的代码中，我们可以看到：在事务提交写入磁盘时，boltdb会先将事务使用的page buffer按照页id排序，然后将page buffer中的内容通过文件的<code>WriteAt</code>方法（go语言通过<code>pwrite</code>系统调用实现）写入到底层数据库文件中。在完成所有<code>pwrite</code>的调用后，boltdb通过<code>fdatasync</code>系统调用等待数据安全地同步到磁盘中。最后，boltdb将待释放的长度为1的page buffer放回到<code>pagePool</code>中，以复用这些单页，减少内存碎片的影响。</p>
 <h2 id="4-总结">4. 总结</h2>
 <p>总的来说，boltdb的读写操作与缓存策略可以概括如下：</p>
 <ul>
@@ -940,7 +929,7 @@
 </div>
 </article></div>
         </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.101.0">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2022</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank" rel="noopener noreferrer">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div></footer></div>
 

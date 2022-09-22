@@ -37,7 +37,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/etcdraft-made-simple\/1-raftexample\/etcd-raft.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "etcd, Raft","wordcount":  11317 ,
+                        }],"genre": "posts","keywords": "etcd, Raft","wordcount":  11288 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/etcdraft-made-simple\/1-raftexample\/","datePublished": "2020-12-10T22:04:04+08:00","dateModified": "2020-12-14T12:48:52+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -123,7 +123,7 @@
             <div class="post-meta-line">
                 <span class="post-author"><i class="author fas fa-user-circle fa-fw"></i><a href="about" title="Author" rel=" author" class="author">叉鸽</a>
                 </span>&nbsp;<span class="post-category">收录于 </span>&nbsp;<span class="post-category">类别 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAetcd/raft/"><i class="far fa-folder fa-fw"></i>深入浅出etcd/raft</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-12-10">2020-12-10</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2020-12-14">2020-12-14</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 11317 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-12-10">2020-12-10</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2020-12-14">2020-12-14</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 11288 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 23 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
@@ -198,41 +198,41 @@
 <p>接下来，我们自下而上地学习raftexample的实现。</p>
 <h2 id="2-httpapi">2. httpapi</h2>
 <p><code>httpapi.go</code>是REST服务器的实现。这并不是我们关注的重点。我们需要关注的只是其通过<code>kvstore</code>中的哪些方法来提供服务。</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">h</span> <span class="o">*</span><span class="nx">httpKVAPI</span><span class="p">)</span> <span class="nf">ServeHTTP</span><span class="p">(</span><span class="nx">w</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span> <span class="p">{</span>
-	<span class="c1">//... ...
-</span><span class="c1"></span>	<span class="k">switch</span> <span class="p">{</span>
-	<span class="k">case</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Method</span> <span class="o">==</span> <span class="s">&#34;PUT&#34;</span><span class="p">:</span>
-		<span class="c1">// ... ...
-</span><span class="c1"></span>		<span class="nx">h</span><span class="p">.</span><span class="nx">store</span><span class="p">.</span><span class="nf">Propose</span><span class="p">(</span><span class="nx">key</span><span class="p">,</span> <span class="nb">string</span><span class="p">(</span><span class="nx">v</span><span class="p">))</span>    
-		<span class="c1">// ... ...
-</span><span class="c1"></span>	<span class="k">case</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Method</span> <span class="o">==</span> <span class="s">&#34;GET&#34;</span><span class="p">:</span>
-		<span class="k">if</span> <span class="nx">v</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">h</span><span class="p">.</span><span class="nx">store</span><span class="p">.</span><span class="nf">Lookup</span><span class="p">(</span><span class="nx">key</span><span class="p">);</span> <span class="nx">ok</span> <span class="p">{</span>
-			<span class="c1">// ... ...
-</span><span class="c1"></span>		<span class="p">}</span>
-		<span class="c1">// ... ...
-</span><span class="c1"></span>	<span class="k">case</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Method</span> <span class="o">==</span> <span class="s">&#34;POST&#34;</span><span class="p">:</span>
-		<span class="nx">url</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">ioutil</span><span class="p">.</span><span class="nf">ReadAll</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">Body</span><span class="p">)</span>
-		<span class="c1">// ... ...
-</span><span class="c1"></span>		<span class="nx">cc</span> <span class="o">:=</span> <span class="nx">raftpb</span><span class="p">.</span><span class="nx">ConfChange</span><span class="p">{</span>
-			<span class="nx">Type</span><span class="p">:</span>    <span class="nx">raftpb</span><span class="p">.</span><span class="nx">ConfChangeAddNode</span><span class="p">,</span>
-			<span class="nx">NodeID</span><span class="p">:</span>  <span class="nx">nodeId</span><span class="p">,</span>
-			<span class="nx">Context</span><span class="p">:</span> <span class="nx">url</span><span class="p">,</span>
-		<span class="p">}</span>
-		<span class="nx">h</span><span class="p">.</span><span class="nx">confChangeC</span> <span class="o">&lt;-</span> <span class="nx">cc</span>
-		<span class="c1">// ... ...
-</span><span class="c1"></span>	<span class="k">case</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Method</span> <span class="o">==</span> <span class="s">&#34;DELETE&#34;</span><span class="p">:</span>
-		<span class="c1">// ... ...
-</span><span class="c1"></span>		<span class="nx">cc</span> <span class="o">:=</span> <span class="nx">raftpb</span><span class="p">.</span><span class="nx">ConfChange</span><span class="p">{</span>
-			<span class="nx">Type</span><span class="p">:</span>   <span class="nx">raftpb</span><span class="p">.</span><span class="nx">ConfChangeRemoveNode</span><span class="p">,</span>
-			<span class="nx">NodeID</span><span class="p">:</span> <span class="nx">nodeId</span><span class="p">,</span>
-		<span class="p">}</span>
-		<span class="nx">h</span><span class="p">.</span><span class="nx">confChangeC</span> <span class="o">&lt;-</span> <span class="nx">cc</span>
-		<span class="c1">// ... ...
-</span><span class="c1"></span>	<span class="k">default</span><span class="p">:</span>
-		<span class="c1">// ... ...
-</span><span class="c1"></span>	<span class="p">}</span>
-<span class="p">}</span>
-</code></pre></div><p>上面的代码中，省略的一些对消息的序列化与反序列化及对性能的小优化，我们主要关注其通过哪些方法为请求提供服务。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">h</span> <span class="o">*</span><span class="nx">httpKVAPI</span><span class="p">)</span> <span class="nf">ServeHTTP</span><span class="p">(</span><span class="nx">w</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">//... ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">switch</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="k">case</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Method</span> <span class="o">==</span> <span class="s">&#34;PUT&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">		<span class="c1">// ... ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">h</span><span class="p">.</span><span class="nx">store</span><span class="p">.</span><span class="nf">Propose</span><span class="p">(</span><span class="nx">key</span><span class="p">,</span> <span class="nb">string</span><span class="p">(</span><span class="nx">v</span><span class="p">))</span>    
+</span></span><span class="line"><span class="cl">		<span class="c1">// ... ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">case</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Method</span> <span class="o">==</span> <span class="s">&#34;GET&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="nx">v</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">h</span><span class="p">.</span><span class="nx">store</span><span class="p">.</span><span class="nf">Lookup</span><span class="p">(</span><span class="nx">key</span><span class="p">);</span> <span class="nx">ok</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="c1">// ... ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="c1">// ... ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">case</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Method</span> <span class="o">==</span> <span class="s">&#34;POST&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">url</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">ioutil</span><span class="p">.</span><span class="nf">ReadAll</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">Body</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="c1">// ... ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">cc</span> <span class="o">:=</span> <span class="nx">raftpb</span><span class="p">.</span><span class="nx">ConfChange</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Type</span><span class="p">:</span>    <span class="nx">raftpb</span><span class="p">.</span><span class="nx">ConfChangeAddNode</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">NodeID</span><span class="p">:</span>  <span class="nx">nodeId</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Context</span><span class="p">:</span> <span class="nx">url</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">h</span><span class="p">.</span><span class="nx">confChangeC</span> <span class="o">&lt;-</span> <span class="nx">cc</span>
+</span></span><span class="line"><span class="cl">		<span class="c1">// ... ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">case</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Method</span> <span class="o">==</span> <span class="s">&#34;DELETE&#34;</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">		<span class="c1">// ... ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">cc</span> <span class="o">:=</span> <span class="nx">raftpb</span><span class="p">.</span><span class="nx">ConfChange</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">Type</span><span class="p">:</span>   <span class="nx">raftpb</span><span class="p">.</span><span class="nx">ConfChangeRemoveNode</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">NodeID</span><span class="p">:</span> <span class="nx">nodeId</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">h</span><span class="p">.</span><span class="nx">confChangeC</span> <span class="o">&lt;-</span> <span class="nx">cc</span>
+</span></span><span class="line"><span class="cl">		<span class="c1">// ... ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">default</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">		<span class="c1">// ... ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>上面的代码中，省略的一些对消息的序列化与反序列化及对性能的小优化，我们主要关注其通过哪些方法为请求提供服务。</p>
 <table>
 <thead>
 <tr>
@@ -268,91 +268,91 @@
 <h2 id="3-kvstore">3. kvstore</h2>
 <p><code>kvstore</code>是连接raft服务器与REST服务器的桥梁，是实现键值存储功能的重要组件，但是其实现很简单。接下来，我们来看看<code>kvstore.go</code>中的实现。</p>
 <p><code>kvstore.go</code>中<code>kvstore</code>结构体非常简单，其只有4个字段。</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="c1">// a key-value store backed by raft
-</span><span class="c1"></span><span class="kd">type</span> <span class="nx">kvstore</span> <span class="kd">struct</span> <span class="p">{</span>
-	<span class="nx">proposeC</span>    <span class="kd">chan</span><span class="o">&lt;-</span> <span class="kt">string</span> <span class="c1">// channel for proposing updates
-</span><span class="c1"></span>	<span class="nx">mu</span>          <span class="nx">sync</span><span class="p">.</span><span class="nx">RWMutex</span>
-	<span class="nx">kvStore</span>     <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span> <span class="c1">// current committed key-value pairs
-</span><span class="c1"></span>	<span class="nx">snapshotter</span> <span class="o">*</span><span class="nx">snap</span><span class="p">.</span><span class="nx">Snapshotter</span>
-<span class="p">}</span>
-</code></pre></div><p>其中，<code>proposeC</code>信道我们将在之后讲解。除此之外，该结构体中只有一个读写锁<code>mu</code>、一个由map实现的键值存储<code>kvStore</code>，和一个etcd提供的默认快照管理模块实现的指针<code>snapshotter</code>。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// a key-value store backed by raft
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">kvstore</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">proposeC</span>    <span class="kd">chan</span><span class="o">&lt;-</span> <span class="kt">string</span> <span class="c1">// channel for proposing updates
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">mu</span>          <span class="nx">sync</span><span class="p">.</span><span class="nx">RWMutex</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">kvStore</span>     <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span> <span class="c1">// current committed key-value pairs
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">snapshotter</span> <span class="o">*</span><span class="nx">snap</span><span class="p">.</span><span class="nx">Snapshotter</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>其中，<code>proposeC</code>信道我们将在之后讲解。除此之外，该结构体中只有一个读写锁<code>mu</code>、一个由map实现的键值存储<code>kvStore</code>，和一个etcd提供的默认快照管理模块实现的指针<code>snapshotter</code>。</p>
 <p>目前，从<code>kvstore</code>中，我们看不到多少有用的信息。接下来，我们关注一下创建kv存储的函数。</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">newKVStore</span><span class="p">(</span><span class="nx">snapshotter</span> <span class="o">*</span><span class="nx">snap</span><span class="p">.</span><span class="nx">Snapshotter</span><span class="p">,</span> <span class="nx">proposeC</span> <span class="kd">chan</span><span class="o">&lt;-</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">commitC</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="o">*</span><span class="kt">string</span><span class="p">,</span> <span class="nx">errorC</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="kt">error</span><span class="p">)</span> <span class="o">*</span><span class="nx">kvstore</span> <span class="p">{</span>
-	<span class="nx">s</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">kvstore</span><span class="p">{</span><span class="nx">proposeC</span><span class="p">:</span> <span class="nx">proposeC</span><span class="p">,</span> <span class="nx">kvStore</span><span class="p">:</span> <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="p">),</span> <span class="nx">snapshotter</span><span class="p">:</span> <span class="nx">snapshotter</span><span class="p">}</span>
-	<span class="c1">// replay log into key-value map
-</span><span class="c1"></span>	<span class="nx">s</span><span class="p">.</span><span class="nf">readCommits</span><span class="p">(</span><span class="nx">commitC</span><span class="p">,</span> <span class="nx">errorC</span><span class="p">)</span>
-	<span class="c1">// read commits from raft into kvStore map until error
-</span><span class="c1"></span>	<span class="k">go</span> <span class="nx">s</span><span class="p">.</span><span class="nf">readCommits</span><span class="p">(</span><span class="nx">commitC</span><span class="p">,</span> <span class="nx">errorC</span><span class="p">)</span>
-	<span class="k">return</span> <span class="nx">s</span>
-<span class="p">}</span>
-</code></pre></div><p><code>newKVStore</code>函数的参数除了<code>snapshotter</code>外，<code>proposeC</code>、<code>commitC</code>、<code>errorC</code>均为信道。其中<code>propseC</code>为输入信道，<code>commitC</code>和<code>errorC</code>为输出信道。我们可以推断出，<code>kvstore</code>会通过<code>proposeC</code>与raft模块交互，并通过<code>commitC</code>与<code>errorC</code>接收来自raft模块的消息。（可以在<code>main.go</code>中证实，这里不再赘述。）这种方式在etcd的实现中随处可见，因此对于go语言和channel不是很熟悉的小伙伴建议预先学习一下相关概念与使用方法。（当熟悉了这种设计后，便会发现go语言并发编程的魅力所在。）</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">newKVStore</span><span class="p">(</span><span class="nx">snapshotter</span> <span class="o">*</span><span class="nx">snap</span><span class="p">.</span><span class="nx">Snapshotter</span><span class="p">,</span> <span class="nx">proposeC</span> <span class="kd">chan</span><span class="o">&lt;-</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">commitC</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="o">*</span><span class="kt">string</span><span class="p">,</span> <span class="nx">errorC</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="kt">error</span><span class="p">)</span> <span class="o">*</span><span class="nx">kvstore</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">s</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">kvstore</span><span class="p">{</span><span class="nx">proposeC</span><span class="p">:</span> <span class="nx">proposeC</span><span class="p">,</span> <span class="nx">kvStore</span><span class="p">:</span> <span class="nb">make</span><span class="p">(</span><span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span><span class="p">),</span> <span class="nx">snapshotter</span><span class="p">:</span> <span class="nx">snapshotter</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// replay log into key-value map
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">s</span><span class="p">.</span><span class="nf">readCommits</span><span class="p">(</span><span class="nx">commitC</span><span class="p">,</span> <span class="nx">errorC</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// read commits from raft into kvStore map until error
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">go</span> <span class="nx">s</span><span class="p">.</span><span class="nf">readCommits</span><span class="p">(</span><span class="nx">commitC</span><span class="p">,</span> <span class="nx">errorC</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">s</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p><code>newKVStore</code>函数的参数除了<code>snapshotter</code>外，<code>proposeC</code>、<code>commitC</code>、<code>errorC</code>均为信道。其中<code>propseC</code>为输入信道，<code>commitC</code>和<code>errorC</code>为输出信道。我们可以推断出，<code>kvstore</code>会通过<code>proposeC</code>与raft模块交互，并通过<code>commitC</code>与<code>errorC</code>接收来自raft模块的消息。（可以在<code>main.go</code>中证实，这里不再赘述。）这种方式在etcd的实现中随处可见，因此对于go语言和channel不是很熟悉的小伙伴建议预先学习一下相关概念与使用方法。（当熟悉了这种设计后，便会发现go语言并发编程的魅力所在。）</p>
 <p><code>newKVStore</code>中的逻辑也非常简单，将传入的参数写入<code>kvstore</code>结构体相应的字段中。然后先调用一次<code>kvstore</code>的<code>readCommits</code>方法，等待raft模块重放日志完成的信号；然后启动一个goroutine来循环处理来自raft模块发送过来的消息。</p>
 <p><code>readCommits</code>方法稍有些复杂，我们先来看看其它较为简单的部分。</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">kvstore</span><span class="p">)</span> <span class="nf">Lookup</span><span class="p">(</span><span class="nx">key</span> <span class="kt">string</span><span class="p">)</span> <span class="p">(</span><span class="kt">string</span><span class="p">,</span> <span class="kt">bool</span><span class="p">)</span> <span class="p">{</span>
-	<span class="nx">s</span><span class="p">.</span><span class="nx">mu</span><span class="p">.</span><span class="nf">RLock</span><span class="p">()</span>
-	<span class="k">defer</span> <span class="nx">s</span><span class="p">.</span><span class="nx">mu</span><span class="p">.</span><span class="nf">RUnlock</span><span class="p">()</span>
-	<span class="nx">v</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">kvStore</span><span class="p">[</span><span class="nx">key</span><span class="p">]</span>
-	<span class="k">return</span> <span class="nx">v</span><span class="p">,</span> <span class="nx">ok</span>
-<span class="p">}</span>
-
-<span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">kvstore</span><span class="p">)</span> <span class="nf">Propose</span><span class="p">(</span><span class="nx">k</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">v</span> <span class="kt">string</span><span class="p">)</span> <span class="p">{</span>
-	<span class="kd">var</span> <span class="nx">buf</span> <span class="nx">bytes</span><span class="p">.</span><span class="nx">Buffer</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">gob</span><span class="p">.</span><span class="nf">NewEncoder</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">buf</span><span class="p">).</span><span class="nf">Encode</span><span class="p">(</span><span class="nx">kv</span><span class="p">{</span><span class="nx">k</span><span class="p">,</span> <span class="nx">v</span><span class="p">});</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
-	<span class="p">}</span>
-	<span class="nx">s</span><span class="p">.</span><span class="nx">proposeC</span> <span class="o">&lt;-</span> <span class="nx">buf</span><span class="p">.</span><span class="nf">String</span><span class="p">()</span>
-<span class="p">}</span>
-
-<span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">kvstore</span><span class="p">)</span> <span class="nf">getSnapshot</span><span class="p">()</span> <span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
-	<span class="nx">s</span><span class="p">.</span><span class="nx">mu</span><span class="p">.</span><span class="nf">RLock</span><span class="p">()</span>
-	<span class="k">defer</span> <span class="nx">s</span><span class="p">.</span><span class="nx">mu</span><span class="p">.</span><span class="nf">RUnlock</span><span class="p">()</span>
-	<span class="k">return</span> <span class="nx">json</span><span class="p">.</span><span class="nf">Marshal</span><span class="p">(</span><span class="nx">s</span><span class="p">.</span><span class="nx">kvStore</span><span class="p">)</span>
-<span class="p">}</span>
-
-<span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">kvstore</span><span class="p">)</span> <span class="nf">recoverFromSnapshot</span><span class="p">(</span><span class="nx">snapshot</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
-	<span class="kd">var</span> <span class="nx">store</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">Unmarshal</span><span class="p">(</span><span class="nx">snapshot</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">store</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="k">return</span> <span class="nx">err</span>
-	<span class="p">}</span>
-	<span class="nx">s</span><span class="p">.</span><span class="nx">mu</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
-	<span class="k">defer</span> <span class="nx">s</span><span class="p">.</span><span class="nx">mu</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
-	<span class="nx">s</span><span class="p">.</span><span class="nx">kvStore</span> <span class="p">=</span> <span class="nx">store</span>
-	<span class="k">return</span> <span class="kc">nil</span>
-<span class="p">}</span>
-</code></pre></div><p><code>Lookup</code>方法会通过读锁来访问其用来记录键值的map，防止查找时数据被修改返回错误的结果。<code>Propose</code>方法将要更新的键值对编码为string，并传入<code>proposeC</code>信道，交给raft模块处理。<code>getSnapshot</code>和<code>recoverFromSnapshot</code>方法分别将记录键值的map序列化与反序列化，并加锁防止争用。</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">kvstore</span><span class="p">)</span> <span class="nf">readCommits</span><span class="p">(</span><span class="nx">commitC</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="o">*</span><span class="kt">string</span><span class="p">,</span> <span class="nx">errorC</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
-	<span class="k">for</span> <span class="nx">data</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">commitC</span> <span class="p">{</span>
-		<span class="k">if</span> <span class="nx">data</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
-			<span class="c1">// done replaying log; new data incoming
-</span><span class="c1"></span>			<span class="c1">// OR signaled to load snapshot
-</span><span class="c1"></span>			<span class="nx">snapshot</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">snapshotter</span><span class="p">.</span><span class="nf">Load</span><span class="p">()</span>
-			<span class="k">if</span> <span class="nx">err</span> <span class="o">==</span> <span class="nx">snap</span><span class="p">.</span><span class="nx">ErrNoSnapshot</span> <span class="p">{</span>
-				<span class="k">return</span>
-			<span class="p">}</span>
-			<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-				<span class="nx">log</span><span class="p">.</span><span class="nf">Panic</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
-			<span class="p">}</span>
-			<span class="nx">log</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;loading snapshot at term %d and index %d&#34;</span><span class="p">,</span> <span class="nx">snapshot</span><span class="p">.</span><span class="nx">Metadata</span><span class="p">.</span><span class="nx">Term</span><span class="p">,</span> <span class="nx">snapshot</span><span class="p">.</span><span class="nx">Metadata</span><span class="p">.</span><span class="nx">Index</span><span class="p">)</span>
-			<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">s</span><span class="p">.</span><span class="nf">recoverFromSnapshot</span><span class="p">(</span><span class="nx">snapshot</span><span class="p">.</span><span class="nx">Data</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-				<span class="nx">log</span><span class="p">.</span><span class="nf">Panic</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
-			<span class="p">}</span>
-			<span class="k">continue</span>
-		<span class="p">}</span>
-
-		<span class="kd">var</span> <span class="nx">dataKv</span> <span class="nx">kv</span>
-		<span class="nx">dec</span> <span class="o">:=</span> <span class="nx">gob</span><span class="p">.</span><span class="nf">NewDecoder</span><span class="p">(</span><span class="nx">bytes</span><span class="p">.</span><span class="nf">NewBufferString</span><span class="p">(</span><span class="o">*</span><span class="nx">data</span><span class="p">))</span>
-		<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">dec</span><span class="p">.</span><span class="nf">Decode</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">dataKv</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-			<span class="nx">log</span><span class="p">.</span><span class="nf">Fatalf</span><span class="p">(</span><span class="s">&#34;raftexample: could not decode message (%v)&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="p">}</span>
-		<span class="nx">s</span><span class="p">.</span><span class="nx">mu</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
-		<span class="nx">s</span><span class="p">.</span><span class="nx">kvStore</span><span class="p">[</span><span class="nx">dataKv</span><span class="p">.</span><span class="nx">Key</span><span class="p">]</span> <span class="p">=</span> <span class="nx">dataKv</span><span class="p">.</span><span class="nx">Val</span>
-		<span class="nx">s</span><span class="p">.</span><span class="nx">mu</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
-	<span class="p">}</span>
-	<span class="k">if</span> <span class="nx">err</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">errorC</span><span class="p">;</span> <span class="nx">ok</span> <span class="p">{</span>
-		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
-	<span class="p">}</span>
-<span class="p">}</span>
-</code></pre></div><p>接下来，我们深入<code>readCommits</code>的实现。该方法会循环遍历<code>commitC</code>信道中raft模块传来的消息。从<code>commitC</code>中收到的消息可能为nil或非nil。因为raftexample功能简单，因此其通过nil表示raft模块完成重放日志的信号或用来通知<code>kvstore</code>从上一个快照恢复的信号。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">kvstore</span><span class="p">)</span> <span class="nf">Lookup</span><span class="p">(</span><span class="nx">key</span> <span class="kt">string</span><span class="p">)</span> <span class="p">(</span><span class="kt">string</span><span class="p">,</span> <span class="kt">bool</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">s</span><span class="p">.</span><span class="nx">mu</span><span class="p">.</span><span class="nf">RLock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">defer</span> <span class="nx">s</span><span class="p">.</span><span class="nx">mu</span><span class="p">.</span><span class="nf">RUnlock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">v</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">kvStore</span><span class="p">[</span><span class="nx">key</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">v</span><span class="p">,</span> <span class="nx">ok</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">kvstore</span><span class="p">)</span> <span class="nf">Propose</span><span class="p">(</span><span class="nx">k</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">v</span> <span class="kt">string</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="kd">var</span> <span class="nx">buf</span> <span class="nx">bytes</span><span class="p">.</span><span class="nx">Buffer</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">gob</span><span class="p">.</span><span class="nf">NewEncoder</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">buf</span><span class="p">).</span><span class="nf">Encode</span><span class="p">(</span><span class="nx">kv</span><span class="p">{</span><span class="nx">k</span><span class="p">,</span> <span class="nx">v</span><span class="p">});</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">s</span><span class="p">.</span><span class="nx">proposeC</span> <span class="o">&lt;-</span> <span class="nx">buf</span><span class="p">.</span><span class="nf">String</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">kvstore</span><span class="p">)</span> <span class="nf">getSnapshot</span><span class="p">()</span> <span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">s</span><span class="p">.</span><span class="nx">mu</span><span class="p">.</span><span class="nf">RLock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">defer</span> <span class="nx">s</span><span class="p">.</span><span class="nx">mu</span><span class="p">.</span><span class="nf">RUnlock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">json</span><span class="p">.</span><span class="nf">Marshal</span><span class="p">(</span><span class="nx">s</span><span class="p">.</span><span class="nx">kvStore</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">kvstore</span><span class="p">)</span> <span class="nf">recoverFromSnapshot</span><span class="p">(</span><span class="nx">snapshot</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="kt">error</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="kd">var</span> <span class="nx">store</span> <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kt">string</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">Unmarshal</span><span class="p">(</span><span class="nx">snapshot</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">store</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">return</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">s</span><span class="p">.</span><span class="nx">mu</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">defer</span> <span class="nx">s</span><span class="p">.</span><span class="nx">mu</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">s</span><span class="p">.</span><span class="nx">kvStore</span> <span class="p">=</span> <span class="nx">store</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p><code>Lookup</code>方法会通过读锁来访问其用来记录键值的map，防止查找时数据被修改返回错误的结果。<code>Propose</code>方法将要更新的键值对编码为string，并传入<code>proposeC</code>信道，交给raft模块处理。<code>getSnapshot</code>和<code>recoverFromSnapshot</code>方法分别将记录键值的map序列化与反序列化，并加锁防止争用。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">s</span> <span class="o">*</span><span class="nx">kvstore</span><span class="p">)</span> <span class="nf">readCommits</span><span class="p">(</span><span class="nx">commitC</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="o">*</span><span class="kt">string</span><span class="p">,</span> <span class="nx">errorC</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="kt">error</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="k">for</span> <span class="nx">data</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">commitC</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="nx">data</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="c1">// done replaying log; new data incoming
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>			<span class="c1">// OR signaled to load snapshot
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>			<span class="nx">snapshot</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">snapshotter</span><span class="p">.</span><span class="nf">Load</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">			<span class="k">if</span> <span class="nx">err</span> <span class="o">==</span> <span class="nx">snap</span><span class="p">.</span><span class="nx">ErrNoSnapshot</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">				<span class="k">return</span>
+</span></span><span class="line"><span class="cl">			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">			<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">				<span class="nx">log</span><span class="p">.</span><span class="nf">Panic</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">log</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;loading snapshot at term %d and index %d&#34;</span><span class="p">,</span> <span class="nx">snapshot</span><span class="p">.</span><span class="nx">Metadata</span><span class="p">.</span><span class="nx">Term</span><span class="p">,</span> <span class="nx">snapshot</span><span class="p">.</span><span class="nx">Metadata</span><span class="p">.</span><span class="nx">Index</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">			<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">s</span><span class="p">.</span><span class="nf">recoverFromSnapshot</span><span class="p">(</span><span class="nx">snapshot</span><span class="p">.</span><span class="nx">Data</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">				<span class="nx">log</span><span class="p">.</span><span class="nf">Panic</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">			<span class="k">continue</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="kd">var</span> <span class="nx">dataKv</span> <span class="nx">kv</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">dec</span> <span class="o">:=</span> <span class="nx">gob</span><span class="p">.</span><span class="nf">NewDecoder</span><span class="p">(</span><span class="nx">bytes</span><span class="p">.</span><span class="nf">NewBufferString</span><span class="p">(</span><span class="o">*</span><span class="nx">data</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">dec</span><span class="p">.</span><span class="nf">Decode</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">dataKv</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">log</span><span class="p">.</span><span class="nf">Fatalf</span><span class="p">(</span><span class="s">&#34;raftexample: could not decode message (%v)&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">s</span><span class="p">.</span><span class="nx">mu</span><span class="p">.</span><span class="nf">Lock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">s</span><span class="p">.</span><span class="nx">kvStore</span><span class="p">[</span><span class="nx">dataKv</span><span class="p">.</span><span class="nx">Key</span><span class="p">]</span> <span class="p">=</span> <span class="nx">dataKv</span><span class="p">.</span><span class="nx">Val</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">s</span><span class="p">.</span><span class="nx">mu</span><span class="p">.</span><span class="nf">Unlock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">errorC</span><span class="p">;</span> <span class="nx">ok</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatal</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>接下来，我们深入<code>readCommits</code>的实现。该方法会循环遍历<code>commitC</code>信道中raft模块传来的消息。从<code>commitC</code>中收到的消息可能为nil或非nil。因为raftexample功能简单，因此其通过nil表示raft模块完成重放日志的信号或用来通知<code>kvstore</code>从上一个快照恢复的信号。</p>
 <p>当<code>data</code>为nil时，该方法会通过<code>kvstore</code>的快照管理模块<code>snapshotter</code>尝试加载上一个快照。如果快照存在，说明这是通知其恢复快照的信号，接下来会调用<code>recoverFromSnapshot</code>方法从该快照中恢复，随后进入下一次循环，等待日志重放完成的信号；如果没找到快照，那么说明这是raft模块通知其日志重放完成的信号，因此直接返回。</p>
 <div class="details admonition warning open">
         <div class="details-summary admonition-title">
@@ -371,40 +371,40 @@
 <p>raft服务器的实现在<code>raft.go</code>中，其对etcd/raft提供的接口进行了一层封装，以便于<code>kvstore</code>使用。</p>
 <h3 id="41-raftnode结构体">4.1 raftNode结构体</h3>
 <p>在raftexample中，raft服务器被封装成了一个<code>raftNode</code>结构体。我们先来看看该结构体中的字段内容。</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="c1">// A key-value stream backed by raft
-</span><span class="c1"></span><span class="kd">type</span> <span class="nx">raftNode</span> <span class="kd">struct</span> <span class="p">{</span>
-	<span class="nx">proposeC</span>    <span class="o">&lt;-</span><span class="kd">chan</span> <span class="kt">string</span>            <span class="c1">// proposed messages (k,v)
-</span><span class="c1"></span>	<span class="nx">confChangeC</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="nx">raftpb</span><span class="p">.</span><span class="nx">ConfChange</span> <span class="c1">// proposed cluster config changes
-</span><span class="c1"></span>	<span class="nx">commitC</span>     <span class="kd">chan</span><span class="o">&lt;-</span> <span class="o">*</span><span class="kt">string</span>           <span class="c1">// entries committed to log (k,v)
-</span><span class="c1"></span>	<span class="nx">errorC</span>      <span class="kd">chan</span><span class="o">&lt;-</span> <span class="kt">error</span>             <span class="c1">// errors from raft session
-</span><span class="c1"></span>
-	<span class="nx">id</span>          <span class="kt">int</span>      <span class="c1">// client ID for raft session
-</span><span class="c1"></span>	<span class="nx">peers</span>       <span class="p">[]</span><span class="kt">string</span> <span class="c1">// raft peer URLs
-</span><span class="c1"></span>	<span class="nx">join</span>        <span class="kt">bool</span>     <span class="c1">// node is joining an existing cluster
-</span><span class="c1"></span>	<span class="nx">waldir</span>      <span class="kt">string</span>   <span class="c1">// path to WAL directory
-</span><span class="c1"></span>	<span class="nx">snapdir</span>     <span class="kt">string</span>   <span class="c1">// path to snapshot directory
-</span><span class="c1"></span>	<span class="nx">getSnapshot</span> <span class="kd">func</span><span class="p">()</span> <span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span>
-	<span class="nx">lastIndex</span>   <span class="kt">uint64</span> <span class="c1">// index of log at start
-</span><span class="c1"></span>
-	<span class="nx">confState</span>     <span class="nx">raftpb</span><span class="p">.</span><span class="nx">ConfState</span>
-	<span class="nx">snapshotIndex</span> <span class="kt">uint64</span>
-	<span class="nx">appliedIndex</span>  <span class="kt">uint64</span>
-
-	<span class="c1">// raft backing for the commit/error channel
-</span><span class="c1"></span>	<span class="nx">node</span>        <span class="nx">raft</span><span class="p">.</span><span class="nx">Node</span>
-	<span class="nx">raftStorage</span> <span class="o">*</span><span class="nx">raft</span><span class="p">.</span><span class="nx">MemoryStorage</span>
-	<span class="nx">wal</span>         <span class="o">*</span><span class="nx">wal</span><span class="p">.</span><span class="nx">WAL</span>
-
-	<span class="nx">snapshotter</span>      <span class="o">*</span><span class="nx">snap</span><span class="p">.</span><span class="nx">Snapshotter</span>
-	<span class="nx">snapshotterReady</span> <span class="kd">chan</span> <span class="o">*</span><span class="nx">snap</span><span class="p">.</span><span class="nx">Snapshotter</span> <span class="c1">// signals when snapshotter is ready
-</span><span class="c1"></span>
-	<span class="nx">snapCount</span> <span class="kt">uint64</span>
-	<span class="nx">transport</span> <span class="o">*</span><span class="nx">rafthttp</span><span class="p">.</span><span class="nx">Transport</span>
-	<span class="nx">stopc</span>     <span class="kd">chan</span> <span class="kd">struct</span><span class="p">{}</span> <span class="c1">// signals proposal channel closed
-</span><span class="c1"></span>	<span class="nx">httpstopc</span> <span class="kd">chan</span> <span class="kd">struct</span><span class="p">{}</span> <span class="c1">// signals http server to shutdown
-</span><span class="c1"></span>	<span class="nx">httpdonec</span> <span class="kd">chan</span> <span class="kd">struct</span><span class="p">{}</span> <span class="c1">// signals http server shutdown complete
-</span><span class="c1"></span><span class="p">}</span>
-</code></pre></div><p>在结构体中，有4个用于与其它组件交互的信道：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// A key-value stream backed by raft
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">raftNode</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">proposeC</span>    <span class="o">&lt;-</span><span class="kd">chan</span> <span class="kt">string</span>            <span class="c1">// proposed messages (k,v)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">confChangeC</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="nx">raftpb</span><span class="p">.</span><span class="nx">ConfChange</span> <span class="c1">// proposed cluster config changes
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">commitC</span>     <span class="kd">chan</span><span class="o">&lt;-</span> <span class="o">*</span><span class="kt">string</span>           <span class="c1">// entries committed to log (k,v)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">errorC</span>      <span class="kd">chan</span><span class="o">&lt;-</span> <span class="kt">error</span>             <span class="c1">// errors from raft session
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">	<span class="nx">id</span>          <span class="kt">int</span>      <span class="c1">// client ID for raft session
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">peers</span>       <span class="p">[]</span><span class="kt">string</span> <span class="c1">// raft peer URLs
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">join</span>        <span class="kt">bool</span>     <span class="c1">// node is joining an existing cluster
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">waldir</span>      <span class="kt">string</span>   <span class="c1">// path to WAL directory
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">snapdir</span>     <span class="kt">string</span>   <span class="c1">// path to snapshot directory
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">getSnapshot</span> <span class="kd">func</span><span class="p">()</span> <span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="kt">error</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">lastIndex</span>   <span class="kt">uint64</span> <span class="c1">// index of log at start
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">	<span class="nx">confState</span>     <span class="nx">raftpb</span><span class="p">.</span><span class="nx">ConfState</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">snapshotIndex</span> <span class="kt">uint64</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">appliedIndex</span>  <span class="kt">uint64</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// raft backing for the commit/error channel
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">node</span>        <span class="nx">raft</span><span class="p">.</span><span class="nx">Node</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">raftStorage</span> <span class="o">*</span><span class="nx">raft</span><span class="p">.</span><span class="nx">MemoryStorage</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">wal</span>         <span class="o">*</span><span class="nx">wal</span><span class="p">.</span><span class="nx">WAL</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">snapshotter</span>      <span class="o">*</span><span class="nx">snap</span><span class="p">.</span><span class="nx">Snapshotter</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">snapshotterReady</span> <span class="kd">chan</span> <span class="o">*</span><span class="nx">snap</span><span class="p">.</span><span class="nx">Snapshotter</span> <span class="c1">// signals when snapshotter is ready
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">	<span class="nx">snapCount</span> <span class="kt">uint64</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">transport</span> <span class="o">*</span><span class="nx">rafthttp</span><span class="p">.</span><span class="nx">Transport</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">stopc</span>     <span class="kd">chan</span> <span class="kd">struct</span><span class="p">{}</span> <span class="c1">// signals proposal channel closed
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">httpstopc</span> <span class="kd">chan</span> <span class="kd">struct</span><span class="p">{}</span> <span class="c1">// signals http server to shutdown
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">httpdonec</span> <span class="kd">chan</span> <span class="kd">struct</span><span class="p">{}</span> <span class="c1">// signals http server shutdown complete
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></div><p>在结构体中，有4个用于与其它组件交互的信道：</p>
 <table>
 <thead>
 <tr>
@@ -558,282 +558,280 @@
 <h3 id="42-go语言中将struct信道用作信号的tips">4.2 go语言中将struct{}信道用作信号的tips</h3>
 <p>这里为那些对go语言并发编程或channel使用不熟悉的读者简单介绍一下这种信号设计的使用方式。</p>
 <p>首先，我们需要了解的是，在go语言中，无缓冲信道的读写是阻塞的。只有当在不同goroutine的生产者和消费者分别通过信道写入和读取时，它们所在的goroutine才能继续执行：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
-<span class="nx">c</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="kt">int</span><span class="p">)</span>
-
-<span class="k">go</span> <span class="kd">func</span><span class="p">(){</span>
-  <span class="nx">c</span> <span class="o">&lt;-</span> <span class="mi">1</span> <span class="c1">// block until there is a consumer
-</span><span class="c1"></span><span class="p">}()</span>
-
-<span class="k">go</span> <span class="kd">func</span><span class="p">(){</span>
-  <span class="o">&lt;-</span> <span class="nx">c</span> <span class="c1">// block until there is a producer
-</span><span class="c1"></span><span class="p">}</span>
-
-</code></pre></div><p>然而，在读取被关闭的信道时，该信道会立即返回空值（如果采用两个变量接收信道的值，第二个布尔变量的值为false）。</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="nb">close</span><span class="p">(</span><span class="nx">c</span><span class="p">)</span>
-<span class="nx">msg</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="o">&lt;-</span> <span class="nx">c</span> <span class="c1">// return immediately, msg is a empty value, ok is false
-</span></code></pre></div><p>假设我们需要循环等待来自一个或多个无缓冲信道的消息，且需要在想要关闭程序时能够退出循环。如果我们通过基于一个标识符的方式判断是否需要退出循环，我们需要这样编写代码：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="c1">// flag : false -&gt; break loop
-</span><span class="c1"></span>
-<span class="k">for</span> <span class="p">{</span>
-  <span class="k">if</span> <span class="p">!</span><span class="nx">flag</span> <span class="p">{</span>
-    <span class="k">break</span>
-  <span class="p">}</span>
-  <span class="k">select</span> <span class="p">{</span>
-  <span class="k">case</span> <span class="o">&lt;-</span> <span class="nx">c1</span><span class="p">:</span>
-    <span class="c1">// ... ...
-</span><span class="c1"></span>  <span class="k">case</span> <span class="o">&lt;-</span> <span class="nx">c2</span><span class="p">:</span>
-    <span class="c1">// ... ...
-</span><span class="c1"></span>  <span class="p">}</span>
-<span class="p">}</span>
-</code></pre></div><p>这种写法实际上是有问题的。在每次循环中，当if判断后会执行select，此时当前goroutine会阻塞，直到有一个信道可以操作。假如在当前goroutine进入select时将flag置为了false，此时，该goroutine无法立刻检测到flag的变化，因此需要等到下一次循环后才能退出循环。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nx">c</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="kt">int</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">go</span> <span class="kd">func</span><span class="p">(){</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">c</span> <span class="o">&lt;-</span> <span class="mi">1</span> <span class="c1">// block until there is a consumer
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">go</span> <span class="kd">func</span><span class="p">(){</span>
+</span></span><span class="line"><span class="cl">  <span class="o">&lt;-</span> <span class="nx">c</span> <span class="c1">// block until there is a producer
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></div><p>然而，在读取被关闭的信道时，该信道会立即返回空值（如果采用两个变量接收信道的值，第二个布尔变量的值为false）。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="nb">close</span><span class="p">(</span><span class="nx">c</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="nx">msg</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="o">&lt;-</span> <span class="nx">c</span> <span class="c1">// return immediately, msg is a empty value, ok is false
+</span></span></span></code></pre></div><p>假设我们需要循环等待来自一个或多个无缓冲信道的消息，且需要在想要关闭程序时能够退出循环。如果我们通过基于一个标识符的方式判断是否需要退出循环，我们需要这样编写代码：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// flag : false -&gt; break loop
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">!</span><span class="nx">flag</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">break</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="k">select</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="o">&lt;-</span> <span class="nx">c1</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ... ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">case</span> <span class="o">&lt;-</span> <span class="nx">c2</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ... ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>这种写法实际上是有问题的。在每次循环中，当if判断后会执行select，此时当前goroutine会阻塞，直到有一个信道可以操作。假如在当前goroutine进入select时将flag置为了false，此时，该goroutine无法立刻检测到flag的变化，因此需要等到下一次循环后才能退出循环。</p>
 <p>显然，这不是我们想要的行为。我们希望当我们想要关闭时，如果该goroutine正阻塞在select中时，能够立即退出。此时，我们只需要通过一个<code>chan struct{}</code>信道来表示该信号接收器。上面这段代码可以改写为：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
-<span class="c1">// doneC : chan struct{}
-</span><span class="c1"></span>
-<span class="k">for</span> <span class="p">{</span>
-  <span class="k">select</span> <span class="p">{</span>
-  <span class="k">case</span> <span class="o">&lt;-</span> <span class="nx">doneC</span><span class="p">:</span>
-    <span class="k">break</span>
-  <span class="k">case</span> <span class="o">&lt;-</span> <span class="nx">c1</span><span class="p">:</span>
-    <span class="c1">// ... ...
-</span><span class="c1"></span>  <span class="k">case</span> <span class="o">&lt;-</span> <span class="nx">c2</span><span class="p">:</span>
-    <span class="c1">// ... ...
-</span><span class="c1"></span>  <span class="p">}</span>
-<span class="p">}</span>
-</code></pre></div><p>此时，如想要通知该goroutine退出循环，只需要关闭<code>doneC</code>。在前文中我们提到，当读取已关闭的信道时，其会立即返回一个空值。因此，即使当前的goroutine阻塞在select中，一旦<code>doneC</code>被关闭，该select会进入<code>case &lt;- doneC</code>的分支中，退出循环。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// doneC : chan struct{}
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">select</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="o">&lt;-</span> <span class="nx">doneC</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="k">break</span>
+</span></span><span class="line"><span class="cl">  <span class="k">case</span> <span class="o">&lt;-</span> <span class="nx">c1</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ... ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">case</span> <span class="o">&lt;-</span> <span class="nx">c2</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// ... ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>此时，如想要通知该goroutine退出循环，只需要关闭<code>doneC</code>。在前文中我们提到，当读取已关闭的信道时，其会立即返回一个空值。因此，即使当前的goroutine阻塞在select中，一旦<code>doneC</code>被关闭，该select会进入<code>case &lt;- doneC</code>的分支中，退出循环。</p>
 <p>在<code>raft.go</code>中和etcd中，都有很多这种传递信号的方式。这一方式的另一个好处是，只要关闭一次信道，所有等待该信号的select语句都会进入该信号对应的分支。我们会在后文的例子中看到将<code>chan struct{}</code>信道作为信号使用的例子。</p>
 <h3 id="43-raftnode的创建与启动">4.3 raftNode的创建与启动</h3>
 <p>在创建raftNode时，需要提供节点<code>id</code>、对等节点url<code>peers</code>、是否是要加入已存在的集群<code>join</code>、获取快照的函数签名<code>getSnapshot</code>、提议信道<code>proposeC</code>、配置变更提议信道<code>confChangeC</code>这些参数。</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="c1">// newRaftNode initiates a raft instance and returns a committed log entry
-</span><span class="c1">// channel and error channel. Proposals for log updates are sent over the
-</span><span class="c1">// provided the proposal channel. All log entries are replayed over the
-</span><span class="c1">// commit channel, followed by a nil message (to indicate the channel is
-</span><span class="c1">// current), then new log entries. To shutdown, close proposeC and read errorC.
-</span><span class="c1"></span><span class="kd">func</span> <span class="nf">newRaftNode</span><span class="p">(</span><span class="nx">id</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">peers</span> <span class="p">[]</span><span class="kt">string</span><span class="p">,</span> <span class="nx">join</span> <span class="kt">bool</span><span class="p">,</span> <span class="nx">getSnapshot</span> <span class="kd">func</span><span class="p">()</span> <span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="kt">error</span><span class="p">),</span> <span class="nx">proposeC</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="kt">string</span><span class="p">,</span>
-	<span class="nx">confChangeC</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="nx">raftpb</span><span class="p">.</span><span class="nx">ConfChange</span><span class="p">)</span> <span class="p">(</span><span class="o">&lt;-</span><span class="kd">chan</span> <span class="o">*</span><span class="kt">string</span><span class="p">,</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="kt">error</span><span class="p">,</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="o">*</span><span class="nx">snap</span><span class="p">.</span><span class="nx">Snapshotter</span><span class="p">)</span> <span class="p">{</span>
-
-	<span class="nx">commitC</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="o">*</span><span class="kt">string</span><span class="p">)</span>
-	<span class="nx">errorC</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="kt">error</span><span class="p">)</span>
-
-	<span class="nx">rc</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">raftNode</span><span class="p">{</span>
-		<span class="nx">proposeC</span><span class="p">:</span>    <span class="nx">proposeC</span><span class="p">,</span>
-		<span class="nx">confChangeC</span><span class="p">:</span> <span class="nx">confChangeC</span><span class="p">,</span>
-		<span class="nx">commitC</span><span class="p">:</span>     <span class="nx">commitC</span><span class="p">,</span>
-		<span class="nx">errorC</span><span class="p">:</span>      <span class="nx">errorC</span><span class="p">,</span>
-		<span class="nx">id</span><span class="p">:</span>          <span class="nx">id</span><span class="p">,</span>
-		<span class="nx">peers</span><span class="p">:</span>       <span class="nx">peers</span><span class="p">,</span>
-		<span class="nx">join</span><span class="p">:</span>        <span class="nx">join</span><span class="p">,</span>
-		<span class="nx">waldir</span><span class="p">:</span>      <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;raftexample-%d&#34;</span><span class="p">,</span> <span class="nx">id</span><span class="p">),</span>
-		<span class="nx">snapdir</span><span class="p">:</span>     <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;raftexample-%d-snap&#34;</span><span class="p">,</span> <span class="nx">id</span><span class="p">),</span>
-		<span class="nx">getSnapshot</span><span class="p">:</span> <span class="nx">getSnapshot</span><span class="p">,</span>
-		<span class="nx">snapCount</span><span class="p">:</span>   <span class="nx">defaultSnapshotCount</span><span class="p">,</span>
-		<span class="nx">stopc</span><span class="p">:</span>       <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="kd">struct</span><span class="p">{}),</span>
-		<span class="nx">httpstopc</span><span class="p">:</span>   <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="kd">struct</span><span class="p">{}),</span>
-		<span class="nx">httpdonec</span><span class="p">:</span>   <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="kd">struct</span><span class="p">{}),</span>
-
-		<span class="nx">snapshotterReady</span><span class="p">:</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="o">*</span><span class="nx">snap</span><span class="p">.</span><span class="nx">Snapshotter</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
-		<span class="c1">// rest of structure populated after WAL replay
-</span><span class="c1"></span>	<span class="p">}</span>
-	<span class="k">go</span> <span class="nx">rc</span><span class="p">.</span><span class="nf">startRaft</span><span class="p">()</span>
-	<span class="k">return</span> <span class="nx">commitC</span><span class="p">,</span> <span class="nx">errorC</span><span class="p">,</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">snapshotterReady</span>
-<span class="p">}</span>
-</code></pre></div><p>在<code>newRaftNode</code>函数中，仅初始化了<code>raftNode</code>的部分参数，其余的参数会在重放预写日志后配置。随后，该函数启动了一个协程，该协程调用了<code>raftNode</code>的<code>startRaft()</code>方法来启动raft节点。当前函数会将raft模块用来通知已提交的提议的信道、报错信道、和快照管理器加载完成信号的信道返回给调用者。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// newRaftNode initiates a raft instance and returns a committed log entry
+</span></span></span><span class="line"><span class="cl"><span class="c1">// channel and error channel. Proposals for log updates are sent over the
+</span></span></span><span class="line"><span class="cl"><span class="c1">// provided the proposal channel. All log entries are replayed over the
+</span></span></span><span class="line"><span class="cl"><span class="c1">// commit channel, followed by a nil message (to indicate the channel is
+</span></span></span><span class="line"><span class="cl"><span class="c1">// current), then new log entries. To shutdown, close proposeC and read errorC.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="nf">newRaftNode</span><span class="p">(</span><span class="nx">id</span> <span class="kt">int</span><span class="p">,</span> <span class="nx">peers</span> <span class="p">[]</span><span class="kt">string</span><span class="p">,</span> <span class="nx">join</span> <span class="kt">bool</span><span class="p">,</span> <span class="nx">getSnapshot</span> <span class="kd">func</span><span class="p">()</span> <span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="kt">error</span><span class="p">),</span> <span class="nx">proposeC</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="kt">string</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">confChangeC</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="nx">raftpb</span><span class="p">.</span><span class="nx">ConfChange</span><span class="p">)</span> <span class="p">(</span><span class="o">&lt;-</span><span class="kd">chan</span> <span class="o">*</span><span class="kt">string</span><span class="p">,</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="kt">error</span><span class="p">,</span> <span class="o">&lt;-</span><span class="kd">chan</span> <span class="o">*</span><span class="nx">snap</span><span class="p">.</span><span class="nx">Snapshotter</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">commitC</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="o">*</span><span class="kt">string</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">errorC</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="kt">error</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">rc</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">raftNode</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">proposeC</span><span class="p">:</span>    <span class="nx">proposeC</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">confChangeC</span><span class="p">:</span> <span class="nx">confChangeC</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">commitC</span><span class="p">:</span>     <span class="nx">commitC</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">errorC</span><span class="p">:</span>      <span class="nx">errorC</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">id</span><span class="p">:</span>          <span class="nx">id</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">peers</span><span class="p">:</span>       <span class="nx">peers</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">join</span><span class="p">:</span>        <span class="nx">join</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">waldir</span><span class="p">:</span>      <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;raftexample-%d&#34;</span><span class="p">,</span> <span class="nx">id</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">snapdir</span><span class="p">:</span>     <span class="nx">fmt</span><span class="p">.</span><span class="nf">Sprintf</span><span class="p">(</span><span class="s">&#34;raftexample-%d-snap&#34;</span><span class="p">,</span> <span class="nx">id</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">getSnapshot</span><span class="p">:</span> <span class="nx">getSnapshot</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">snapCount</span><span class="p">:</span>   <span class="nx">defaultSnapshotCount</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">stopc</span><span class="p">:</span>       <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="kd">struct</span><span class="p">{}),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">httpstopc</span><span class="p">:</span>   <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="kd">struct</span><span class="p">{}),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">httpdonec</span><span class="p">:</span>   <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="kd">struct</span><span class="p">{}),</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="nx">snapshotterReady</span><span class="p">:</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="o">*</span><span class="nx">snap</span><span class="p">.</span><span class="nx">Snapshotter</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">		<span class="c1">// rest of structure populated after WAL replay
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">go</span> <span class="nx">rc</span><span class="p">.</span><span class="nf">startRaft</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">commitC</span><span class="p">,</span> <span class="nx">errorC</span><span class="p">,</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">snapshotterReady</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>在<code>newRaftNode</code>函数中，仅初始化了<code>raftNode</code>的部分参数，其余的参数会在重放预写日志后配置。随后，该函数启动了一个协程，该协程调用了<code>raftNode</code>的<code>startRaft()</code>方法来启动raft节点。当前函数会将raft模块用来通知已提交的提议的信道、报错信道、和快照管理器加载完成信号的信道返回给调用者。</p>
 <p>接下来，我们跟随该方法进入<code>raftNode.startRaft()</code>方法中。</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">rc</span> <span class="o">*</span><span class="nx">raftNode</span><span class="p">)</span> <span class="nf">startRaft</span><span class="p">()</span> <span class="p">{</span>
-	<span class="k">if</span> <span class="p">!</span><span class="nx">fileutil</span><span class="p">.</span><span class="nf">Exist</span><span class="p">(</span><span class="nx">rc</span><span class="p">.</span><span class="nx">snapdir</span><span class="p">)</span> <span class="p">{</span>
-		<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">os</span><span class="p">.</span><span class="nf">Mkdir</span><span class="p">(</span><span class="nx">rc</span><span class="p">.</span><span class="nx">snapdir</span><span class="p">,</span> <span class="mo">0750</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-			<span class="nx">log</span><span class="p">.</span><span class="nf">Fatalf</span><span class="p">(</span><span class="s">&#34;raftexample: cannot create dir for snapshot (%v)&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-		<span class="p">}</span>
-	<span class="p">}</span>
-	<span class="nx">rc</span><span class="p">.</span><span class="nx">snapshotter</span> <span class="p">=</span> <span class="nx">snap</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">zap</span><span class="p">.</span><span class="nf">NewExample</span><span class="p">(),</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">snapdir</span><span class="p">)</span>
-	<span class="nx">rc</span><span class="p">.</span><span class="nx">snapshotterReady</span> <span class="o">&lt;-</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">snapshotter</span>
-
-	<span class="nx">oldwal</span> <span class="o">:=</span> <span class="nx">wal</span><span class="p">.</span><span class="nf">Exist</span><span class="p">(</span><span class="nx">rc</span><span class="p">.</span><span class="nx">waldir</span><span class="p">)</span>
-	<span class="nx">rc</span><span class="p">.</span><span class="nx">wal</span> <span class="p">=</span> <span class="nx">rc</span><span class="p">.</span><span class="nf">replayWAL</span><span class="p">()</span>
-
-	<span class="nx">rpeers</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">([]</span><span class="nx">raft</span><span class="p">.</span><span class="nx">Peer</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nx">rc</span><span class="p">.</span><span class="nx">peers</span><span class="p">))</span>
-	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">rpeers</span> <span class="p">{</span>
-		<span class="nx">rpeers</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="p">=</span> <span class="nx">raft</span><span class="p">.</span><span class="nx">Peer</span><span class="p">{</span><span class="nx">ID</span><span class="p">:</span> <span class="nb">uint64</span><span class="p">(</span><span class="nx">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)}</span>
-	<span class="p">}</span>
-	<span class="nx">c</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">raft</span><span class="p">.</span><span class="nx">Config</span><span class="p">{</span>
-		<span class="nx">ID</span><span class="p">:</span>                        <span class="nb">uint64</span><span class="p">(</span><span class="nx">rc</span><span class="p">.</span><span class="nx">id</span><span class="p">),</span>
-		<span class="nx">ElectionTick</span><span class="p">:</span>              <span class="mi">10</span><span class="p">,</span>
-		<span class="nx">HeartbeatTick</span><span class="p">:</span>             <span class="mi">1</span><span class="p">,</span>
-		<span class="nx">Storage</span><span class="p">:</span>                   <span class="nx">rc</span><span class="p">.</span><span class="nx">raftStorage</span><span class="p">,</span>
-		<span class="nx">MaxSizePerMsg</span><span class="p">:</span>             <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">,</span>
-		<span class="nx">MaxInflightMsgs</span><span class="p">:</span>           <span class="mi">256</span><span class="p">,</span>
-		<span class="nx">MaxUncommittedEntriesSize</span><span class="p">:</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">30</span><span class="p">,</span>
-	<span class="p">}</span>
-
-	<span class="k">if</span> <span class="nx">oldwal</span> <span class="p">{</span>
-		<span class="nx">rc</span><span class="p">.</span><span class="nx">node</span> <span class="p">=</span> <span class="nx">raft</span><span class="p">.</span><span class="nf">RestartNode</span><span class="p">(</span><span class="nx">c</span><span class="p">)</span>
-	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-		<span class="nx">startPeers</span> <span class="o">:=</span> <span class="nx">rpeers</span>
-		<span class="k">if</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">join</span> <span class="p">{</span>
-			<span class="nx">startPeers</span> <span class="p">=</span> <span class="kc">nil</span>
-		<span class="p">}</span>
-		<span class="nx">rc</span><span class="p">.</span><span class="nx">node</span> <span class="p">=</span> <span class="nx">raft</span><span class="p">.</span><span class="nf">StartNode</span><span class="p">(</span><span class="nx">c</span><span class="p">,</span> <span class="nx">startPeers</span><span class="p">)</span>
-	<span class="p">}</span>
-
-	<span class="nx">rc</span><span class="p">.</span><span class="nx">transport</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">rafthttp</span><span class="p">.</span><span class="nx">Transport</span><span class="p">{</span>
-		<span class="nx">Logger</span><span class="p">:</span>      <span class="nx">zap</span><span class="p">.</span><span class="nf">NewExample</span><span class="p">(),</span>
-		<span class="nx">ID</span><span class="p">:</span>          <span class="nx">types</span><span class="p">.</span><span class="nf">ID</span><span class="p">(</span><span class="nx">rc</span><span class="p">.</span><span class="nx">id</span><span class="p">),</span>
-		<span class="nx">ClusterID</span><span class="p">:</span>   <span class="mh">0x1000</span><span class="p">,</span>
-		<span class="nx">Raft</span><span class="p">:</span>        <span class="nx">rc</span><span class="p">,</span>
-		<span class="nx">ServerStats</span><span class="p">:</span> <span class="nx">stats</span><span class="p">.</span><span class="nf">NewServerStats</span><span class="p">(</span><span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">),</span>
-		<span class="nx">LeaderStats</span><span class="p">:</span> <span class="nx">stats</span><span class="p">.</span><span class="nf">NewLeaderStats</span><span class="p">(</span><span class="nx">zap</span><span class="p">.</span><span class="nf">NewExample</span><span class="p">(),</span> <span class="nx">strconv</span><span class="p">.</span><span class="nf">Itoa</span><span class="p">(</span><span class="nx">rc</span><span class="p">.</span><span class="nx">id</span><span class="p">)),</span>
-		<span class="nx">ErrorC</span><span class="p">:</span>      <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="kt">error</span><span class="p">),</span>
-	<span class="p">}</span>
-
-	<span class="nx">rc</span><span class="p">.</span><span class="nx">transport</span><span class="p">.</span><span class="nf">Start</span><span class="p">()</span>
-	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">peers</span> <span class="p">{</span>
-		<span class="k">if</span> <span class="nx">i</span><span class="o">+</span><span class="mi">1</span> <span class="o">!=</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">id</span> <span class="p">{</span>
-			<span class="nx">rc</span><span class="p">.</span><span class="nx">transport</span><span class="p">.</span><span class="nf">AddPeer</span><span class="p">(</span><span class="nx">types</span><span class="p">.</span><span class="nf">ID</span><span class="p">(</span><span class="nx">i</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="nx">rc</span><span class="p">.</span><span class="nx">peers</span><span class="p">[</span><span class="nx">i</span><span class="p">]})</span>
-		<span class="p">}</span>
-	<span class="p">}</span>
-
-	<span class="k">go</span> <span class="nx">rc</span><span class="p">.</span><span class="nf">serveRaft</span><span class="p">()</span>
-	<span class="k">go</span> <span class="nx">rc</span><span class="p">.</span><span class="nf">serveChannels</span><span class="p">()</span>
-<span class="p">}</span>
-</code></pre></div><p><code>startRaft</code>方法虽然看上去很长，但是实现的功能很简单。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">rc</span> <span class="o">*</span><span class="nx">raftNode</span><span class="p">)</span> <span class="nf">startRaft</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="p">!</span><span class="nx">fileutil</span><span class="p">.</span><span class="nf">Exist</span><span class="p">(</span><span class="nx">rc</span><span class="p">.</span><span class="nx">snapdir</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">os</span><span class="p">.</span><span class="nf">Mkdir</span><span class="p">(</span><span class="nx">rc</span><span class="p">.</span><span class="nx">snapdir</span><span class="p">,</span> <span class="mo">0750</span><span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">log</span><span class="p">.</span><span class="nf">Fatalf</span><span class="p">(</span><span class="s">&#34;raftexample: cannot create dir for snapshot (%v)&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">rc</span><span class="p">.</span><span class="nx">snapshotter</span> <span class="p">=</span> <span class="nx">snap</span><span class="p">.</span><span class="nf">New</span><span class="p">(</span><span class="nx">zap</span><span class="p">.</span><span class="nf">NewExample</span><span class="p">(),</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">snapdir</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">rc</span><span class="p">.</span><span class="nx">snapshotterReady</span> <span class="o">&lt;-</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">snapshotter</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">oldwal</span> <span class="o">:=</span> <span class="nx">wal</span><span class="p">.</span><span class="nf">Exist</span><span class="p">(</span><span class="nx">rc</span><span class="p">.</span><span class="nx">waldir</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">rc</span><span class="p">.</span><span class="nx">wal</span> <span class="p">=</span> <span class="nx">rc</span><span class="p">.</span><span class="nf">replayWAL</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">rpeers</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">([]</span><span class="nx">raft</span><span class="p">.</span><span class="nx">Peer</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="nx">rc</span><span class="p">.</span><span class="nx">peers</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">rpeers</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">rpeers</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="p">=</span> <span class="nx">raft</span><span class="p">.</span><span class="nx">Peer</span><span class="p">{</span><span class="nx">ID</span><span class="p">:</span> <span class="nb">uint64</span><span class="p">(</span><span class="nx">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">c</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">raft</span><span class="p">.</span><span class="nx">Config</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">ID</span><span class="p">:</span>                        <span class="nb">uint64</span><span class="p">(</span><span class="nx">rc</span><span class="p">.</span><span class="nx">id</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">ElectionTick</span><span class="p">:</span>              <span class="mi">10</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">HeartbeatTick</span><span class="p">:</span>             <span class="mi">1</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Storage</span><span class="p">:</span>                   <span class="nx">rc</span><span class="p">.</span><span class="nx">raftStorage</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">MaxSizePerMsg</span><span class="p">:</span>             <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">MaxInflightMsgs</span><span class="p">:</span>           <span class="mi">256</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">MaxUncommittedEntriesSize</span><span class="p">:</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">30</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">oldwal</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">rc</span><span class="p">.</span><span class="nx">node</span> <span class="p">=</span> <span class="nx">raft</span><span class="p">.</span><span class="nf">RestartNode</span><span class="p">(</span><span class="nx">c</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">startPeers</span> <span class="o">:=</span> <span class="nx">rpeers</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">join</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">startPeers</span> <span class="p">=</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">rc</span><span class="p">.</span><span class="nx">node</span> <span class="p">=</span> <span class="nx">raft</span><span class="p">.</span><span class="nf">StartNode</span><span class="p">(</span><span class="nx">c</span><span class="p">,</span> <span class="nx">startPeers</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">rc</span><span class="p">.</span><span class="nx">transport</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">rafthttp</span><span class="p">.</span><span class="nx">Transport</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Logger</span><span class="p">:</span>      <span class="nx">zap</span><span class="p">.</span><span class="nf">NewExample</span><span class="p">(),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">ID</span><span class="p">:</span>          <span class="nx">types</span><span class="p">.</span><span class="nf">ID</span><span class="p">(</span><span class="nx">rc</span><span class="p">.</span><span class="nx">id</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">ClusterID</span><span class="p">:</span>   <span class="mh">0x1000</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">Raft</span><span class="p">:</span>        <span class="nx">rc</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">ServerStats</span><span class="p">:</span> <span class="nx">stats</span><span class="p">.</span><span class="nf">NewServerStats</span><span class="p">(</span><span class="s">&#34;&#34;</span><span class="p">,</span> <span class="s">&#34;&#34;</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">LeaderStats</span><span class="p">:</span> <span class="nx">stats</span><span class="p">.</span><span class="nf">NewLeaderStats</span><span class="p">(</span><span class="nx">zap</span><span class="p">.</span><span class="nf">NewExample</span><span class="p">(),</span> <span class="nx">strconv</span><span class="p">.</span><span class="nf">Itoa</span><span class="p">(</span><span class="nx">rc</span><span class="p">.</span><span class="nx">id</span><span class="p">)),</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">ErrorC</span><span class="p">:</span>      <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="kt">error</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">rc</span><span class="p">.</span><span class="nx">transport</span><span class="p">.</span><span class="nf">Start</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">peers</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">if</span> <span class="nx">i</span><span class="o">+</span><span class="mi">1</span> <span class="o">!=</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">id</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">rc</span><span class="p">.</span><span class="nx">transport</span><span class="p">.</span><span class="nf">AddPeer</span><span class="p">(</span><span class="nx">types</span><span class="p">.</span><span class="nf">ID</span><span class="p">(</span><span class="nx">i</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="nx">rc</span><span class="p">.</span><span class="nx">peers</span><span class="p">[</span><span class="nx">i</span><span class="p">]})</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">go</span> <span class="nx">rc</span><span class="p">.</span><span class="nf">serveRaft</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">go</span> <span class="nx">rc</span><span class="p">.</span><span class="nf">serveChannels</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p><code>startRaft</code>方法虽然看上去很长，但是实现的功能很简单。</p>
 <p>首先，<code>startRaft</code>方法检查快照目录是否存在，如果不存在为其创建目录。然后创建基于该目录的快照管理器。创建完成后，向<code>snapshotterReady</code>信道写入该快照管理器，通知其快照管理器已经创建完成。</p>
 <p>接着，程序检查是否有旧的预写日志存在，并重放旧的预写日志，重放代码在下文中会进一步分析。</p>
 <p>在重放完成后，程序设置了etcd/raft模块所需的配置，并从该配置上启动或重启节点（取决于有没有旧的预写日志文件）。<code>etcd/raft</code>中的<code>raft.StartNode</code>和<code>raft.RestartNode</code>函数分别会根据配置启动或重启raft服务器节点，并返回一个<code>Node</code>接口的实例。正如前文中提到的，<code>Node</code>接口是开发者依赖etcd/raft实现时唯一需要与其打交道的接口。程序将<code>Node</code>接口的实例记录在了<code>raftNode</code>的<code>node</code>字段中。</p>
 <p>在<code>node</code>创建完成后，程序配置并开启了通信模块，开始与集群中的其它raft节点通信。</p>
 <p>在一切接续后，程序启动了两个goroutine，分别是<code>raftNode.serveRaft()</code>和<code>raftNode.serveChannels()</code>。其中<code>raftNode.serveRaft()</code>用来监听来自其它raft节点的消息，消息的处理主要在<code>Transport</code>接口的实现中编写，因此在这里不对其进行详细的分析，感兴趣的读者可以自行参考源码中的实现；<code>raftNode.serveChannels()</code>用来处理<code>raftNode</code>中各种信道，后文会对其进行详细分析。</p>
 <p>下面，我们先来分析一下重放预写日志的逻辑。</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
-<span class="c1">// replayWAL replays WAL entries into the raft instance.
-</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">rc</span> <span class="o">*</span><span class="nx">raftNode</span><span class="p">)</span> <span class="nf">replayWAL</span><span class="p">()</span> <span class="o">*</span><span class="nx">wal</span><span class="p">.</span><span class="nx">WAL</span> <span class="p">{</span>
-	<span class="nx">log</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;replaying WAL of member %d&#34;</span><span class="p">,</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">id</span><span class="p">)</span>
-	<span class="nx">snapshot</span> <span class="o">:=</span> <span class="nx">rc</span><span class="p">.</span><span class="nf">loadSnapshot</span><span class="p">()</span>
-	<span class="nx">w</span> <span class="o">:=</span> <span class="nx">rc</span><span class="p">.</span><span class="nf">openWAL</span><span class="p">(</span><span class="nx">snapshot</span><span class="p">)</span>
-	<span class="nx">_</span><span class="p">,</span> <span class="nx">st</span><span class="p">,</span> <span class="nx">ents</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">w</span><span class="p">.</span><span class="nf">ReadAll</span><span class="p">()</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatalf</span><span class="p">(</span><span class="s">&#34;raftexample: failed to read WAL (%v)&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
-	<span class="p">}</span>
-	<span class="nx">rc</span><span class="p">.</span><span class="nx">raftStorage</span> <span class="p">=</span> <span class="nx">raft</span><span class="p">.</span><span class="nf">NewMemoryStorage</span><span class="p">()</span>
-	<span class="k">if</span> <span class="nx">snapshot</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nx">rc</span><span class="p">.</span><span class="nx">raftStorage</span><span class="p">.</span><span class="nf">ApplySnapshot</span><span class="p">(</span><span class="o">*</span><span class="nx">snapshot</span><span class="p">)</span>
-	<span class="p">}</span>
-	<span class="nx">rc</span><span class="p">.</span><span class="nx">raftStorage</span><span class="p">.</span><span class="nf">SetHardState</span><span class="p">(</span><span class="nx">st</span><span class="p">)</span>
-
-	<span class="c1">// append to storage so raft starts at the right place in log
-</span><span class="c1"></span>	<span class="nx">rc</span><span class="p">.</span><span class="nx">raftStorage</span><span class="p">.</span><span class="nf">Append</span><span class="p">(</span><span class="nx">ents</span><span class="p">)</span>
-	<span class="c1">// send nil once lastIndex is published so client knows commit channel is current
-</span><span class="c1"></span>	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">ents</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
-		<span class="nx">rc</span><span class="p">.</span><span class="nx">lastIndex</span> <span class="p">=</span> <span class="nx">ents</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="nx">ents</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">].</span><span class="nx">Index</span>
-	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-		<span class="nx">rc</span><span class="p">.</span><span class="nx">commitC</span> <span class="o">&lt;-</span> <span class="kc">nil</span>
-	<span class="p">}</span>
-	<span class="k">return</span> <span class="nx">w</span>
-<span class="p">}</span>
-
-</code></pre></div><p><code>replayWAL</code>方法为<code>raftNode</code>重放其预写日志并返回日志文件。首先该方法会通过<code>raftNode.loadSnapshot()</code>方法加载快照，如果快照该方法不存在会返回<code>nil</code>。接着，通过<code>raftNode.openWAL(snapshot)</code>方法打开预写日志。该方法会根据快照中的日志元数据（这里的元数据与论文中的一样，记录了快照覆盖的最后一个日志条目的index和term）打开相应的预写日志，如果快照不存在，则会为打开或创建一个从初始状态开始的预写日志（当节点第一次启动时，既没有快照文件又没有预写日志文件，此时会为其创建预写日志文件；而节点是重启但重启前没有记录过日志，则会为其打开已有的从初始状态开始的预写日志）。之后，程序将快照应用到raft的存储（<code>MemoryStorage</code>）中，并将预写日志中记录的硬状态（<code>HardState</code>）应用到存储中（硬状态是会被持久化的状态，etcd/raft对论文中的实现进行了优化，因此保存的状态稍有不同。本文目的是通过示例介绍etcd/raft模块的简单使用方式，给读者对etcd中raft实现的基本印象，其实现机制会在后续的文章中分析）。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// replayWAL replays WAL entries into the raft instance.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">rc</span> <span class="o">*</span><span class="nx">raftNode</span><span class="p">)</span> <span class="nf">replayWAL</span><span class="p">()</span> <span class="o">*</span><span class="nx">wal</span><span class="p">.</span><span class="nx">WAL</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">log</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span><span class="s">&#34;replaying WAL of member %d&#34;</span><span class="p">,</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">id</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">snapshot</span> <span class="o">:=</span> <span class="nx">rc</span><span class="p">.</span><span class="nf">loadSnapshot</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">w</span> <span class="o">:=</span> <span class="nx">rc</span><span class="p">.</span><span class="nf">openWAL</span><span class="p">(</span><span class="nx">snapshot</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">_</span><span class="p">,</span> <span class="nx">st</span><span class="p">,</span> <span class="nx">ents</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">w</span><span class="p">.</span><span class="nf">ReadAll</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">log</span><span class="p">.</span><span class="nf">Fatalf</span><span class="p">(</span><span class="s">&#34;raftexample: failed to read WAL (%v)&#34;</span><span class="p">,</span> <span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">rc</span><span class="p">.</span><span class="nx">raftStorage</span> <span class="p">=</span> <span class="nx">raft</span><span class="p">.</span><span class="nf">NewMemoryStorage</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">snapshot</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">rc</span><span class="p">.</span><span class="nx">raftStorage</span><span class="p">.</span><span class="nf">ApplySnapshot</span><span class="p">(</span><span class="o">*</span><span class="nx">snapshot</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">rc</span><span class="p">.</span><span class="nx">raftStorage</span><span class="p">.</span><span class="nf">SetHardState</span><span class="p">(</span><span class="nx">st</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// append to storage so raft starts at the right place in log
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">rc</span><span class="p">.</span><span class="nx">raftStorage</span><span class="p">.</span><span class="nf">Append</span><span class="p">(</span><span class="nx">ents</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// send nil once lastIndex is published so client knows commit channel is current
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">ents</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">rc</span><span class="p">.</span><span class="nx">lastIndex</span> <span class="p">=</span> <span class="nx">ents</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="nx">ents</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">].</span><span class="nx">Index</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">rc</span><span class="p">.</span><span class="nx">commitC</span> <span class="o">&lt;-</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="nx">w</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p><code>replayWAL</code>方法为<code>raftNode</code>重放其预写日志并返回日志文件。首先该方法会通过<code>raftNode.loadSnapshot()</code>方法加载快照，如果快照该方法不存在会返回<code>nil</code>。接着，通过<code>raftNode.openWAL(snapshot)</code>方法打开预写日志。该方法会根据快照中的日志元数据（这里的元数据与论文中的一样，记录了快照覆盖的最后一个日志条目的index和term）打开相应的预写日志，如果快照不存在，则会为打开或创建一个从初始状态开始的预写日志（当节点第一次启动时，既没有快照文件又没有预写日志文件，此时会为其创建预写日志文件；而节点是重启但重启前没有记录过日志，则会为其打开已有的从初始状态开始的预写日志）。之后，程序将快照应用到raft的存储（<code>MemoryStorage</code>）中，并将预写日志中记录的硬状态（<code>HardState</code>）应用到存储中（硬状态是会被持久化的状态，etcd/raft对论文中的实现进行了优化，因此保存的状态稍有不同。本文目的是通过示例介绍etcd/raft模块的简单使用方式，给读者对etcd中raft实现的基本印象，其实现机制会在后续的文章中分析）。</p>
 <p>除了快照之外，重放时还需要将预写日志中的日志条目应用到存储中（快照之后的持久化状态）。如果预写日志中没有条目，说明节点重启前的最终状态就是快照的状态（对于第一次启动的来说则为初始状态），此时会通过向<code>commitC</code>信道写入<code>nil</code>值通知<code>kvstore</code>已经完成日志的重放；而如果预写日志中有条目，则这些日志需要被重放，为了复用代码，这部分日志的重放逻辑没有在<code>replayWAL</code>中实现，在<code>replayWAL</code>中仅将这部分日志的最后一个日志条目的<code>Index</code>记录到<code>raftNode.lastIndex</code>中。在应用日志条目的代码中，程序会检查应用的日志的<code>Index</code>是否等于<code>raftNode.lastIndex</code>，如果相等，说明旧日志重放完毕，然后<code>commitC</code>信道写入<code>nil</code>值通知<code>kvstore</code>已经完成日志的重放。</p>
 <h3 id="44-信道的处理">4.4 信道的处理</h3>
 <p><code>raftNode.serveChannels()</code>是raft服务器用来处理各种信道的输入输出的方法，也是与etcd/raft模块中<code>Node</code>接口的实现交互的方法。</p>
 <p><code>serverChannels()</code>方法可以分为两个部分，该方法本身会循环处理raft有关的逻辑，如处理定时器信号驱动<code>Node</code>、处理<code>Node</code>传入的<code>Ready</code>结构体、处理通信模块报告的错误或停止信号灯等；该方法还启动了一个goroutine，该goroutine中循环处理来自<code>proposeC</code>和<code>confChangeC</code>两个信道的消息。</p>
 <p>在这两部分开始前，该方法先做了一些初始化。</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
-<span class="kd">func</span> <span class="p">(</span><span class="nx">rc</span> <span class="o">*</span><span class="nx">raftNode</span><span class="p">)</span> <span class="nf">serveChannels</span><span class="p">()</span> <span class="p">{</span>
-	<span class="nx">snap</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">raftStorage</span><span class="p">.</span><span class="nf">Snapshot</span><span class="p">()</span>
-	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-		<span class="nb">panic</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
-	<span class="p">}</span>
-	<span class="nx">rc</span><span class="p">.</span><span class="nx">confState</span> <span class="p">=</span> <span class="nx">snap</span><span class="p">.</span><span class="nx">Metadata</span><span class="p">.</span><span class="nx">ConfState</span>
-	<span class="nx">rc</span><span class="p">.</span><span class="nx">snapshotIndex</span> <span class="p">=</span> <span class="nx">snap</span><span class="p">.</span><span class="nx">Metadata</span><span class="p">.</span><span class="nx">Index</span>
-	<span class="nx">rc</span><span class="p">.</span><span class="nx">appliedIndex</span> <span class="p">=</span> <span class="nx">snap</span><span class="p">.</span><span class="nx">Metadata</span><span class="p">.</span><span class="nx">Index</span>
-
-	<span class="k">defer</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">wal</span><span class="p">.</span><span class="nf">Close</span><span class="p">()</span>
-
-	<span class="nx">ticker</span> <span class="o">:=</span> <span class="nx">time</span><span class="p">.</span><span class="nf">NewTicker</span><span class="p">(</span><span class="mi">100</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Millisecond</span><span class="p">)</span>
-	<span class="k">defer</span> <span class="nx">ticker</span><span class="p">.</span><span class="nf">Stop</span><span class="p">()</span>
-
-	<span class="c1">// ... ...
-</span><span class="c1"></span>
-<span class="p">}</span>
-</code></pre></div><p>首先，该方法从当前的快照的元数据设置<code>raftNode</code>的相关字段，并设置一个每100毫秒产生一个信号的循环定时器。<code>serveChannels</code>的循环会根据这个信号调用<code>Node</code>接口的<code>Tick()</code>方法，驱动<code>Node</code>执行。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">rc</span> <span class="o">*</span><span class="nx">raftNode</span><span class="p">)</span> <span class="nf">serveChannels</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">snap</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">raftStorage</span><span class="p">.</span><span class="nf">Snapshot</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">	<span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nb">panic</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">rc</span><span class="p">.</span><span class="nx">confState</span> <span class="p">=</span> <span class="nx">snap</span><span class="p">.</span><span class="nx">Metadata</span><span class="p">.</span><span class="nx">ConfState</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">rc</span><span class="p">.</span><span class="nx">snapshotIndex</span> <span class="p">=</span> <span class="nx">snap</span><span class="p">.</span><span class="nx">Metadata</span><span class="p">.</span><span class="nx">Index</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">rc</span><span class="p">.</span><span class="nx">appliedIndex</span> <span class="p">=</span> <span class="nx">snap</span><span class="p">.</span><span class="nx">Metadata</span><span class="p">.</span><span class="nx">Index</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="k">defer</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">wal</span><span class="p">.</span><span class="nf">Close</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="nx">ticker</span> <span class="o">:=</span> <span class="nx">time</span><span class="p">.</span><span class="nf">NewTicker</span><span class="p">(</span><span class="mi">100</span> <span class="o">*</span> <span class="nx">time</span><span class="p">.</span><span class="nx">Millisecond</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="k">defer</span> <span class="nx">ticker</span><span class="p">.</span><span class="nf">Stop</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// ... ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>首先，该方法从当前的快照的元数据设置<code>raftNode</code>的相关字段，并设置一个每100毫秒产生一个信号的循环定时器。<code>serveChannels</code>的循环会根据这个信号调用<code>Node</code>接口的<code>Tick()</code>方法，驱动<code>Node</code>执行。</p>
 <p>接下来，我们先来看<code>serveChannels</code>中启动的用来处理来自<code>proposeC</code>和<code>confChangeC</code>两个信道的消息的goroutine。</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">rc</span> <span class="o">*</span><span class="nx">raftNode</span><span class="p">)</span> <span class="nf">serveChannels</span><span class="p">()</span> <span class="p">{</span>
-
-	<span class="c1">// ... ...
-</span><span class="c1"></span>
-	<span class="c1">// send proposals over raft
-</span><span class="c1"></span>	<span class="k">go</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
-		<span class="nx">confChangeCount</span> <span class="o">:=</span> <span class="nb">uint64</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-
-		<span class="k">for</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">proposeC</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">confChangeC</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
-			<span class="k">select</span> <span class="p">{</span>
-			<span class="k">case</span> <span class="nx">prop</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">rc</span><span class="p">.</span><span class="nx">proposeC</span><span class="p">:</span>
-				<span class="k">if</span> <span class="p">!</span><span class="nx">ok</span> <span class="p">{</span>
-					<span class="nx">rc</span><span class="p">.</span><span class="nx">proposeC</span> <span class="p">=</span> <span class="kc">nil</span>
-				<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-					<span class="c1">// blocks until accepted by raft state machine
-</span><span class="c1"></span>					<span class="nx">rc</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nf">Propose</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nf">TODO</span><span class="p">(),</span> <span class="p">[]</span><span class="nb">byte</span><span class="p">(</span><span class="nx">prop</span><span class="p">))</span>
-				<span class="p">}</span>
-
-			<span class="k">case</span> <span class="nx">cc</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">rc</span><span class="p">.</span><span class="nx">confChangeC</span><span class="p">:</span>
-				<span class="k">if</span> <span class="p">!</span><span class="nx">ok</span> <span class="p">{</span>
-					<span class="nx">rc</span><span class="p">.</span><span class="nx">confChangeC</span> <span class="p">=</span> <span class="kc">nil</span>
-				<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-					<span class="nx">confChangeCount</span><span class="o">++</span>
-					<span class="nx">cc</span><span class="p">.</span><span class="nx">ID</span> <span class="p">=</span> <span class="nx">confChangeCount</span>
-					<span class="nx">rc</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nf">ProposeConfChange</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nf">TODO</span><span class="p">(),</span> <span class="nx">cc</span><span class="p">)</span>
-				<span class="p">}</span>
-			<span class="p">}</span>
-		<span class="p">}</span>
-		<span class="c1">// client closed channel; shutdown raft if not already
-</span><span class="c1"></span>		<span class="nb">close</span><span class="p">(</span><span class="nx">rc</span><span class="p">.</span><span class="nx">stopc</span><span class="p">)</span>
-	<span class="p">}()</span>
-
-	<span class="c1">// ... ...
-</span><span class="c1"></span>
-<span class="p">}</span>
-</code></pre></div><p>这部分逻辑很简单。因为在循环中，如果<code>proposeC</code>或<code>confChangeC</code>中的一个被关闭，程序会将其置为<code>nil</code>，所以只有二者均不是<code>nil</code>时才执行循环。每次循环会通过select选取一个有消息传入的信道，通过<code>Node</code>接口提交给raft服务器。当循环结束后，关闭<code>stopc</code>信道，即发送关闭信号。这种方式在<a href="#42-go%e8%af%ad%e8%a8%80%e4%b8%ad%e5%b0%86struct%e4%bf%a1%e9%81%93%e7%94%a8%e4%bd%9c%e4%bf%a1%e5%8f%b7%e7%9a%84tips" rel="">4.2-go语言中将struct{}信道用作信号的tips</a>中介绍过。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">rc</span> <span class="o">*</span><span class="nx">raftNode</span><span class="p">)</span> <span class="nf">serveChannels</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// ... ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// send proposals over raft
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">go</span> <span class="kd">func</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="nx">confChangeCount</span> <span class="o">:=</span> <span class="nb">uint64</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="k">for</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">proposeC</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="o">&amp;&amp;</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">confChangeC</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="k">select</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="k">case</span> <span class="nx">prop</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">rc</span><span class="p">.</span><span class="nx">proposeC</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">				<span class="k">if</span> <span class="p">!</span><span class="nx">ok</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">					<span class="nx">rc</span><span class="p">.</span><span class="nx">proposeC</span> <span class="p">=</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl">				<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">					<span class="c1">// blocks until accepted by raft state machine
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>					<span class="nx">rc</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nf">Propose</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nf">TODO</span><span class="p">(),</span> <span class="p">[]</span><span class="nb">byte</span><span class="p">(</span><span class="nx">prop</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">				<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">			<span class="k">case</span> <span class="nx">cc</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">rc</span><span class="p">.</span><span class="nx">confChangeC</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">				<span class="k">if</span> <span class="p">!</span><span class="nx">ok</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">					<span class="nx">rc</span><span class="p">.</span><span class="nx">confChangeC</span> <span class="p">=</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl">				<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">					<span class="nx">confChangeCount</span><span class="o">++</span>
+</span></span><span class="line"><span class="cl">					<span class="nx">cc</span><span class="p">.</span><span class="nx">ID</span> <span class="p">=</span> <span class="nx">confChangeCount</span>
+</span></span><span class="line"><span class="cl">					<span class="nx">rc</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nf">ProposeConfChange</span><span class="p">(</span><span class="nx">context</span><span class="p">.</span><span class="nf">TODO</span><span class="p">(),</span> <span class="nx">cc</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">				<span class="p">}</span>
+</span></span><span class="line"><span class="cl">			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="c1">// client closed channel; shutdown raft if not already
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nb">close</span><span class="p">(</span><span class="nx">rc</span><span class="p">.</span><span class="nx">stopc</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// ... ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>这部分逻辑很简单。因为在循环中，如果<code>proposeC</code>或<code>confChangeC</code>中的一个被关闭，程序会将其置为<code>nil</code>，所以只有二者均不是<code>nil</code>时才执行循环。每次循环会通过select选取一个有消息传入的信道，通过<code>Node</code>接口提交给raft服务器。当循环结束后，关闭<code>stopc</code>信道，即发送关闭信号。这种方式在<a href="#42-go%e8%af%ad%e8%a8%80%e4%b8%ad%e5%b0%86struct%e4%bf%a1%e9%81%93%e7%94%a8%e4%bd%9c%e4%bf%a1%e5%8f%b7%e7%9a%84tips" rel="">4.2-go语言中将struct{}信道用作信号的tips</a>中介绍过。</p>
 <p><code>serveChannels</code>中的循环是与<code>Node</code>接口交互的重要逻辑。</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">rc</span> <span class="o">*</span><span class="nx">raftNode</span><span class="p">)</span> <span class="nf">serveChannels</span><span class="p">()</span> <span class="p">{</span>
-
-	<span class="c1">// ... ...
-</span><span class="c1"></span>
-	<span class="c1">// event loop on raft state machine updates
-</span><span class="c1"></span>	<span class="k">for</span> <span class="p">{</span>
-		<span class="k">select</span> <span class="p">{</span>
-		<span class="k">case</span> <span class="o">&lt;-</span><span class="nx">ticker</span><span class="p">.</span><span class="nx">C</span><span class="p">:</span>
-			<span class="nx">rc</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nf">Tick</span><span class="p">()</span>
-
-		<span class="c1">// store raft entries to wal, then publish over commit channel
-</span><span class="c1"></span>		<span class="k">case</span> <span class="nx">rd</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">rc</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nf">Ready</span><span class="p">():</span>
-			<span class="nx">rc</span><span class="p">.</span><span class="nx">wal</span><span class="p">.</span><span class="nf">Save</span><span class="p">(</span><span class="nx">rd</span><span class="p">.</span><span class="nx">HardState</span><span class="p">,</span> <span class="nx">rd</span><span class="p">.</span><span class="nx">Entries</span><span class="p">)</span>
-			<span class="k">if</span> <span class="p">!</span><span class="nx">raft</span><span class="p">.</span><span class="nf">IsEmptySnap</span><span class="p">(</span><span class="nx">rd</span><span class="p">.</span><span class="nx">Snapshot</span><span class="p">)</span> <span class="p">{</span>
-				<span class="nx">rc</span><span class="p">.</span><span class="nf">saveSnap</span><span class="p">(</span><span class="nx">rd</span><span class="p">.</span><span class="nx">Snapshot</span><span class="p">)</span>
-				<span class="nx">rc</span><span class="p">.</span><span class="nx">raftStorage</span><span class="p">.</span><span class="nf">ApplySnapshot</span><span class="p">(</span><span class="nx">rd</span><span class="p">.</span><span class="nx">Snapshot</span><span class="p">)</span>
-				<span class="nx">rc</span><span class="p">.</span><span class="nf">publishSnapshot</span><span class="p">(</span><span class="nx">rd</span><span class="p">.</span><span class="nx">Snapshot</span><span class="p">)</span>
-			<span class="p">}</span>
-			<span class="nx">rc</span><span class="p">.</span><span class="nx">raftStorage</span><span class="p">.</span><span class="nf">Append</span><span class="p">(</span><span class="nx">rd</span><span class="p">.</span><span class="nx">Entries</span><span class="p">)</span>
-			<span class="nx">rc</span><span class="p">.</span><span class="nx">transport</span><span class="p">.</span><span class="nf">Send</span><span class="p">(</span><span class="nx">rd</span><span class="p">.</span><span class="nx">Messages</span><span class="p">)</span>
-			<span class="k">if</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">rc</span><span class="p">.</span><span class="nf">publishEntries</span><span class="p">(</span><span class="nx">rc</span><span class="p">.</span><span class="nf">entriesToApply</span><span class="p">(</span><span class="nx">rd</span><span class="p">.</span><span class="nx">CommittedEntries</span><span class="p">));</span> <span class="p">!</span><span class="nx">ok</span> <span class="p">{</span>
-				<span class="nx">rc</span><span class="p">.</span><span class="nf">stop</span><span class="p">()</span>
-				<span class="k">return</span>
-			<span class="p">}</span>
-			<span class="nx">rc</span><span class="p">.</span><span class="nf">maybeTriggerSnapshot</span><span class="p">()</span>
-			<span class="nx">rc</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nf">Advance</span><span class="p">()</span>
-
-		<span class="k">case</span> <span class="nx">err</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">rc</span><span class="p">.</span><span class="nx">transport</span><span class="p">.</span><span class="nx">ErrorC</span><span class="p">:</span>
-			<span class="nx">rc</span><span class="p">.</span><span class="nf">writeError</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
-			<span class="k">return</span>
-
-		<span class="k">case</span> <span class="o">&lt;-</span><span class="nx">rc</span><span class="p">.</span><span class="nx">stopc</span><span class="p">:</span>
-			<span class="nx">rc</span><span class="p">.</span><span class="nf">stop</span><span class="p">()</span>
-			<span class="k">return</span>
-		<span class="p">}</span>
-	<span class="p">}</span>
-
-	<span class="c1">// ... ...
-</span><span class="c1"></span>
-<span class="p">}</span>
-</code></pre></div><p>该循环同时监听4个信道：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">rc</span> <span class="o">*</span><span class="nx">raftNode</span><span class="p">)</span> <span class="nf">serveChannels</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// ... ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// event loop on raft state machine updates
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="k">for</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">select</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">case</span> <span class="o">&lt;-</span><span class="nx">ticker</span><span class="p">.</span><span class="nx">C</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">rc</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nf">Tick</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="c1">// store raft entries to wal, then publish over commit channel
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="k">case</span> <span class="nx">rd</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">rc</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nf">Ready</span><span class="p">():</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">rc</span><span class="p">.</span><span class="nx">wal</span><span class="p">.</span><span class="nf">Save</span><span class="p">(</span><span class="nx">rd</span><span class="p">.</span><span class="nx">HardState</span><span class="p">,</span> <span class="nx">rd</span><span class="p">.</span><span class="nx">Entries</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">			<span class="k">if</span> <span class="p">!</span><span class="nx">raft</span><span class="p">.</span><span class="nf">IsEmptySnap</span><span class="p">(</span><span class="nx">rd</span><span class="p">.</span><span class="nx">Snapshot</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">				<span class="nx">rc</span><span class="p">.</span><span class="nf">saveSnap</span><span class="p">(</span><span class="nx">rd</span><span class="p">.</span><span class="nx">Snapshot</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">				<span class="nx">rc</span><span class="p">.</span><span class="nx">raftStorage</span><span class="p">.</span><span class="nf">ApplySnapshot</span><span class="p">(</span><span class="nx">rd</span><span class="p">.</span><span class="nx">Snapshot</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">				<span class="nx">rc</span><span class="p">.</span><span class="nf">publishSnapshot</span><span class="p">(</span><span class="nx">rd</span><span class="p">.</span><span class="nx">Snapshot</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">rc</span><span class="p">.</span><span class="nx">raftStorage</span><span class="p">.</span><span class="nf">Append</span><span class="p">(</span><span class="nx">rd</span><span class="p">.</span><span class="nx">Entries</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">rc</span><span class="p">.</span><span class="nx">transport</span><span class="p">.</span><span class="nf">Send</span><span class="p">(</span><span class="nx">rd</span><span class="p">.</span><span class="nx">Messages</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">			<span class="k">if</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">rc</span><span class="p">.</span><span class="nf">publishEntries</span><span class="p">(</span><span class="nx">rc</span><span class="p">.</span><span class="nf">entriesToApply</span><span class="p">(</span><span class="nx">rd</span><span class="p">.</span><span class="nx">CommittedEntries</span><span class="p">));</span> <span class="p">!</span><span class="nx">ok</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">				<span class="nx">rc</span><span class="p">.</span><span class="nf">stop</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">				<span class="k">return</span>
+</span></span><span class="line"><span class="cl">			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">rc</span><span class="p">.</span><span class="nf">maybeTriggerSnapshot</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">rc</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nf">Advance</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="k">case</span> <span class="nx">err</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">rc</span><span class="p">.</span><span class="nx">transport</span><span class="p">.</span><span class="nx">ErrorC</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">rc</span><span class="p">.</span><span class="nf">writeError</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">			<span class="k">return</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="k">case</span> <span class="o">&lt;-</span><span class="nx">rc</span><span class="p">.</span><span class="nx">stopc</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">rc</span><span class="p">.</span><span class="nf">stop</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">			<span class="k">return</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// ... ...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>该循环同时监听4个信道：</p>
 <ol>
 <li>循环定时器的信道，每次收到信号后，调用<code>Node</code>接口的<code>Tick</code>函数驱动<code>Node</code>。</li>
 <li><code>Node.Ready()</code>返回的信道，每当<code>Node</code>准备好一批数据后，会将数据通过该信道发布。开发者需要对该信道收到的<code>Ready</code>结构体中的各字段进行处理。在处理完成一批数据后，开发者还需要调用<code>Node.Advance()</code>告知<code>Node</code>这批数据已处理完成，可以继续传入下一批数据。</li>
@@ -841,51 +839,50 @@
 <li>用来表示停止信号的信道，当该信道被关闭时，阻塞的逻辑会从该分支运行，关闭节点。</li>
 </ol>
 <p>其中，<code>Node.Ready()</code>返回的信道逻辑最为复杂。因为其需要处理raft状态机传入的各种数据，并交付给相应的模块处理。etcd/raft的<code>Ready</code>结构体中包含如下数据：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
-<span class="c1">// Ready encapsulates the entries and messages that are ready to read,
-</span><span class="c1">// be saved to stable storage, committed or sent to other peers.
-</span><span class="c1">// All fields in Ready are read-only.
-</span><span class="c1"></span><span class="kd">type</span> <span class="nx">Ready</span> <span class="kd">struct</span> <span class="p">{</span>
-	<span class="c1">// The current volatile state of a Node.
-</span><span class="c1"></span>	<span class="c1">// SoftState will be nil if there is no update.
-</span><span class="c1"></span>	<span class="c1">// It is not required to consume or store SoftState.
-</span><span class="c1"></span>	<span class="o">*</span><span class="nx">SoftState</span>
-
-	<span class="c1">// The current state of a Node to be saved to stable storage BEFORE
-</span><span class="c1"></span>	<span class="c1">// Messages are sent.
-</span><span class="c1"></span>	<span class="c1">// HardState will be equal to empty state if there is no update.
-</span><span class="c1"></span>	<span class="nx">pb</span><span class="p">.</span><span class="nx">HardState</span>
-
-	<span class="c1">// ReadStates can be used for node to serve linearizable read requests locally
-</span><span class="c1"></span>	<span class="c1">// when its applied index is greater than the index in ReadState.
-</span><span class="c1"></span>	<span class="c1">// Note that the readState will be returned when raft receives msgReadIndex.
-</span><span class="c1"></span>	<span class="c1">// The returned is only valid for the request that requested to read.
-</span><span class="c1"></span>	<span class="nx">ReadStates</span> <span class="p">[]</span><span class="nx">ReadState</span>
-
-	<span class="c1">// Entries specifies entries to be saved to stable storage BEFORE
-</span><span class="c1"></span>	<span class="c1">// Messages are sent.
-</span><span class="c1"></span>	<span class="nx">Entries</span> <span class="p">[]</span><span class="nx">pb</span><span class="p">.</span><span class="nx">Entry</span>
-
-	<span class="c1">// Snapshot specifies the snapshot to be saved to stable storage.
-</span><span class="c1"></span>	<span class="nx">Snapshot</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">Snapshot</span>
-
-	<span class="c1">// CommittedEntries specifies entries to be committed to a
-</span><span class="c1"></span>	<span class="c1">// store/state-machine. These have previously been committed to stable
-</span><span class="c1"></span>	<span class="c1">// store.
-</span><span class="c1"></span>	<span class="nx">CommittedEntries</span> <span class="p">[]</span><span class="nx">pb</span><span class="p">.</span><span class="nx">Entry</span>
-
-	<span class="c1">// Messages specifies outbound messages to be sent AFTER Entries are
-</span><span class="c1"></span>	<span class="c1">// committed to stable storage.
-</span><span class="c1"></span>	<span class="c1">// If it contains a MsgSnap message, the application MUST report back to raft
-</span><span class="c1"></span>	<span class="c1">// when the snapshot has been received or has failed by calling ReportSnapshot.
-</span><span class="c1"></span>	<span class="nx">Messages</span> <span class="p">[]</span><span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span>
-
-	<span class="c1">// MustSync indicates whether the HardState and Entries must be synchronously
-</span><span class="c1"></span>	<span class="c1">// written to disk or if an asynchronous write is permissible.
-</span><span class="c1"></span>	<span class="nx">MustSync</span> <span class="kt">bool</span>
-<span class="p">}</span>
-
-</code></pre></div><table>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Ready encapsulates the entries and messages that are ready to read,
+</span></span></span><span class="line"><span class="cl"><span class="c1">// be saved to stable storage, committed or sent to other peers.
+</span></span></span><span class="line"><span class="cl"><span class="c1">// All fields in Ready are read-only.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">Ready</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="c1">// The current volatile state of a Node.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// SoftState will be nil if there is no update.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// It is not required to consume or store SoftState.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="o">*</span><span class="nx">SoftState</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// The current state of a Node to be saved to stable storage BEFORE
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// Messages are sent.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// HardState will be equal to empty state if there is no update.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">pb</span><span class="p">.</span><span class="nx">HardState</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// ReadStates can be used for node to serve linearizable read requests locally
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// when its applied index is greater than the index in ReadState.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// Note that the readState will be returned when raft receives msgReadIndex.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// The returned is only valid for the request that requested to read.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">ReadStates</span> <span class="p">[]</span><span class="nx">ReadState</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Entries specifies entries to be saved to stable storage BEFORE
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// Messages are sent.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">Entries</span> <span class="p">[]</span><span class="nx">pb</span><span class="p">.</span><span class="nx">Entry</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Snapshot specifies the snapshot to be saved to stable storage.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">Snapshot</span> <span class="nx">pb</span><span class="p">.</span><span class="nx">Snapshot</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// CommittedEntries specifies entries to be committed to a
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// store/state-machine. These have previously been committed to stable
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// store.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">CommittedEntries</span> <span class="p">[]</span><span class="nx">pb</span><span class="p">.</span><span class="nx">Entry</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// Messages specifies outbound messages to be sent AFTER Entries are
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// committed to stable storage.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// If it contains a MsgSnap message, the application MUST report back to raft
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// when the snapshot has been received or has failed by calling ReportSnapshot.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">Messages</span> <span class="p">[]</span><span class="nx">pb</span><span class="p">.</span><span class="nx">Message</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">	<span class="c1">// MustSync indicates whether the HardState and Entries must be synchronously
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="c1">// written to disk or if an asynchronous write is permissible.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">MustSync</span> <span class="kt">bool</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><table>
 <thead>
 <tr>
 <th>字段</th>
@@ -938,58 +935,57 @@
 </ol>
 <p>虽然看上去步骤较多，但是处理逻辑都很简单。这里我们仅看一下第5步的逻辑。</p>
 <p>在第5步中，首先通过<code>entriesToApply</code>方法，从<code>Ready</code>结构体的<code>Entries</code>字段中找到还没有应用到本地状态机中的日志起点即后续日志条目。然后通过<code>publishEntries</code>方法发布这些日志条目。<code>publishEntries</code>方法实现方式如下：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go">
-<span class="c1">// publishEntries writes committed log entries to commit channel and returns
-</span><span class="c1">// whether all entries could be published.
-</span><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">rc</span> <span class="o">*</span><span class="nx">raftNode</span><span class="p">)</span> <span class="nf">publishEntries</span><span class="p">(</span><span class="nx">ents</span> <span class="p">[]</span><span class="nx">raftpb</span><span class="p">.</span><span class="nx">Entry</span><span class="p">)</span> <span class="kt">bool</span> <span class="p">{</span>
-	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">ents</span> <span class="p">{</span>
-		<span class="k">switch</span> <span class="nx">ents</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">Type</span> <span class="p">{</span>
-		<span class="k">case</span> <span class="nx">raftpb</span><span class="p">.</span><span class="nx">EntryNormal</span><span class="p">:</span>
-			<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">ents</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">Data</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
-				<span class="c1">// ignore empty messages
-</span><span class="c1"></span>				<span class="k">break</span>
-			<span class="p">}</span>
-			<span class="nx">s</span> <span class="o">:=</span> <span class="nb">string</span><span class="p">(</span><span class="nx">ents</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">Data</span><span class="p">)</span>
-			<span class="k">select</span> <span class="p">{</span>
-			<span class="k">case</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">commitC</span> <span class="o">&lt;-</span> <span class="o">&amp;</span><span class="nx">s</span><span class="p">:</span>
-			<span class="k">case</span> <span class="o">&lt;-</span><span class="nx">rc</span><span class="p">.</span><span class="nx">stopc</span><span class="p">:</span>
-				<span class="k">return</span> <span class="kc">false</span>
-			<span class="p">}</span>
-
-		<span class="k">case</span> <span class="nx">raftpb</span><span class="p">.</span><span class="nx">EntryConfChange</span><span class="p">:</span>
-			<span class="kd">var</span> <span class="nx">cc</span> <span class="nx">raftpb</span><span class="p">.</span><span class="nx">ConfChange</span>
-			<span class="nx">cc</span><span class="p">.</span><span class="nf">Unmarshal</span><span class="p">(</span><span class="nx">ents</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">Data</span><span class="p">)</span>
-			<span class="nx">rc</span><span class="p">.</span><span class="nx">confState</span> <span class="p">=</span> <span class="o">*</span><span class="nx">rc</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nf">ApplyConfChange</span><span class="p">(</span><span class="nx">cc</span><span class="p">)</span>
-			<span class="k">switch</span> <span class="nx">cc</span><span class="p">.</span><span class="nx">Type</span> <span class="p">{</span>
-			<span class="k">case</span> <span class="nx">raftpb</span><span class="p">.</span><span class="nx">ConfChangeAddNode</span><span class="p">:</span>
-				<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">cc</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
-					<span class="nx">rc</span><span class="p">.</span><span class="nx">transport</span><span class="p">.</span><span class="nf">AddPeer</span><span class="p">(</span><span class="nx">types</span><span class="p">.</span><span class="nf">ID</span><span class="p">(</span><span class="nx">cc</span><span class="p">.</span><span class="nx">NodeID</span><span class="p">),</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="nb">string</span><span class="p">(</span><span class="nx">cc</span><span class="p">.</span><span class="nx">Context</span><span class="p">)})</span>
-				<span class="p">}</span>
-			<span class="k">case</span> <span class="nx">raftpb</span><span class="p">.</span><span class="nx">ConfChangeRemoveNode</span><span class="p">:</span>
-				<span class="k">if</span> <span class="nx">cc</span><span class="p">.</span><span class="nx">NodeID</span> <span class="o">==</span> <span class="nb">uint64</span><span class="p">(</span><span class="nx">rc</span><span class="p">.</span><span class="nx">id</span><span class="p">)</span> <span class="p">{</span>
-					<span class="nx">log</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;I&#39;ve been removed from the cluster! Shutting down.&#34;</span><span class="p">)</span>
-					<span class="k">return</span> <span class="kc">false</span>
-				<span class="p">}</span>
-				<span class="nx">rc</span><span class="p">.</span><span class="nx">transport</span><span class="p">.</span><span class="nf">RemovePeer</span><span class="p">(</span><span class="nx">types</span><span class="p">.</span><span class="nf">ID</span><span class="p">(</span><span class="nx">cc</span><span class="p">.</span><span class="nx">NodeID</span><span class="p">))</span>
-			<span class="p">}</span>
-		<span class="p">}</span>
-
-		<span class="c1">// after commit, update appliedIndex
-</span><span class="c1"></span>		<span class="nx">rc</span><span class="p">.</span><span class="nx">appliedIndex</span> <span class="p">=</span> <span class="nx">ents</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">Index</span>
-
-		<span class="c1">// special nil commit to signal replay has finished
-</span><span class="c1"></span>		<span class="k">if</span> <span class="nx">ents</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">Index</span> <span class="o">==</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">lastIndex</span> <span class="p">{</span>
-			<span class="k">select</span> <span class="p">{</span>
-			<span class="k">case</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">commitC</span> <span class="o">&lt;-</span> <span class="kc">nil</span><span class="p">:</span>
-			<span class="k">case</span> <span class="o">&lt;-</span><span class="nx">rc</span><span class="p">.</span><span class="nx">stopc</span><span class="p">:</span>
-				<span class="k">return</span> <span class="kc">false</span>
-			<span class="p">}</span>
-		<span class="p">}</span>
-	<span class="p">}</span>
-	<span class="k">return</span> <span class="kc">true</span>
-<span class="p">}</span>
-
-</code></pre></div><p><code>publishEntries</code>会遍历传入的日志列表，对于普通的日志条目，先将其反序列化，通过<code>commitC</code>信道传给<code>kvstore</code>处理；对于用于变更集群配置的日志，则根据变更的内容（如增加或删除集群中的某个节点），修改通信模块中的相关记录。然后修改<code>appliedIndex</code>为当前日志的<code>Index</code>。除此之外，<code>publishEntries</code>还判断了日志<code>Index</code>是否为前文中提到的<code>lastIndex</code>。如果当前<code>Index</code>等于<code>lastIndex</code>，则说明之前的操作是在重放日志，且此时日志重放完成，因此需要向<code>commitC</code>信道写入<code>nil</code>以通知<code>kvstore</code>日志重放完成。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// publishEntries writes committed log entries to commit channel and returns
+</span></span></span><span class="line"><span class="cl"><span class="c1">// whether all entries could be published.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">func</span> <span class="p">(</span><span class="nx">rc</span> <span class="o">*</span><span class="nx">raftNode</span><span class="p">)</span> <span class="nf">publishEntries</span><span class="p">(</span><span class="nx">ents</span> <span class="p">[]</span><span class="nx">raftpb</span><span class="p">.</span><span class="nx">Entry</span><span class="p">)</span> <span class="kt">bool</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="k">for</span> <span class="nx">i</span> <span class="o">:=</span> <span class="k">range</span> <span class="nx">ents</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">switch</span> <span class="nx">ents</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">Type</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">		<span class="k">case</span> <span class="nx">raftpb</span><span class="p">.</span><span class="nx">EntryNormal</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">			<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">ents</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">Data</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">				<span class="c1">// ignore empty messages
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>				<span class="k">break</span>
+</span></span><span class="line"><span class="cl">			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">s</span> <span class="o">:=</span> <span class="nb">string</span><span class="p">(</span><span class="nx">ents</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">Data</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">			<span class="k">select</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="k">case</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">commitC</span> <span class="o">&lt;-</span> <span class="o">&amp;</span><span class="nx">s</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">			<span class="k">case</span> <span class="o">&lt;-</span><span class="nx">rc</span><span class="p">.</span><span class="nx">stopc</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">				<span class="k">return</span> <span class="kc">false</span>
+</span></span><span class="line"><span class="cl">			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="k">case</span> <span class="nx">raftpb</span><span class="p">.</span><span class="nx">EntryConfChange</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">			<span class="kd">var</span> <span class="nx">cc</span> <span class="nx">raftpb</span><span class="p">.</span><span class="nx">ConfChange</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">cc</span><span class="p">.</span><span class="nf">Unmarshal</span><span class="p">(</span><span class="nx">ents</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">Data</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">			<span class="nx">rc</span><span class="p">.</span><span class="nx">confState</span> <span class="p">=</span> <span class="o">*</span><span class="nx">rc</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nf">ApplyConfChange</span><span class="p">(</span><span class="nx">cc</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">			<span class="k">switch</span> <span class="nx">cc</span><span class="p">.</span><span class="nx">Type</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="k">case</span> <span class="nx">raftpb</span><span class="p">.</span><span class="nx">ConfChangeAddNode</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">				<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nx">cc</span><span class="p">.</span><span class="nx">Context</span><span class="p">)</span> <span class="p">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">					<span class="nx">rc</span><span class="p">.</span><span class="nx">transport</span><span class="p">.</span><span class="nf">AddPeer</span><span class="p">(</span><span class="nx">types</span><span class="p">.</span><span class="nf">ID</span><span class="p">(</span><span class="nx">cc</span><span class="p">.</span><span class="nx">NodeID</span><span class="p">),</span> <span class="p">[]</span><span class="kt">string</span><span class="p">{</span><span class="nb">string</span><span class="p">(</span><span class="nx">cc</span><span class="p">.</span><span class="nx">Context</span><span class="p">)})</span>
+</span></span><span class="line"><span class="cl">				<span class="p">}</span>
+</span></span><span class="line"><span class="cl">			<span class="k">case</span> <span class="nx">raftpb</span><span class="p">.</span><span class="nx">ConfChangeRemoveNode</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">				<span class="k">if</span> <span class="nx">cc</span><span class="p">.</span><span class="nx">NodeID</span> <span class="o">==</span> <span class="nb">uint64</span><span class="p">(</span><span class="nx">rc</span><span class="p">.</span><span class="nx">id</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">					<span class="nx">log</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span><span class="s">&#34;I&#39;ve been removed from the cluster! Shutting down.&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">					<span class="k">return</span> <span class="kc">false</span>
+</span></span><span class="line"><span class="cl">				<span class="p">}</span>
+</span></span><span class="line"><span class="cl">				<span class="nx">rc</span><span class="p">.</span><span class="nx">transport</span><span class="p">.</span><span class="nf">RemovePeer</span><span class="p">(</span><span class="nx">types</span><span class="p">.</span><span class="nf">ID</span><span class="p">(</span><span class="nx">cc</span><span class="p">.</span><span class="nx">NodeID</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="c1">// after commit, update appliedIndex
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="nx">rc</span><span class="p">.</span><span class="nx">appliedIndex</span> <span class="p">=</span> <span class="nx">ents</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">Index</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">		<span class="c1">// special nil commit to signal replay has finished
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>		<span class="k">if</span> <span class="nx">ents</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">Index</span> <span class="o">==</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">lastIndex</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="k">select</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">			<span class="k">case</span> <span class="nx">rc</span><span class="p">.</span><span class="nx">commitC</span> <span class="o">&lt;-</span> <span class="kc">nil</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">			<span class="k">case</span> <span class="o">&lt;-</span><span class="nx">rc</span><span class="p">.</span><span class="nx">stopc</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">				<span class="k">return</span> <span class="kc">false</span>
+</span></span><span class="line"><span class="cl">			<span class="p">}</span>
+</span></span><span class="line"><span class="cl">		<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="p">}</span>
+</span></span><span class="line"><span class="cl">	<span class="k">return</span> <span class="kc">true</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p><code>publishEntries</code>会遍历传入的日志列表，对于普通的日志条目，先将其反序列化，通过<code>commitC</code>信道传给<code>kvstore</code>处理；对于用于变更集群配置的日志，则根据变更的内容（如增加或删除集群中的某个节点），修改通信模块中的相关记录。然后修改<code>appliedIndex</code>为当前日志的<code>Index</code>。除此之外，<code>publishEntries</code>还判断了日志<code>Index</code>是否为前文中提到的<code>lastIndex</code>。如果当前<code>Index</code>等于<code>lastIndex</code>，则说明之前的操作是在重放日志，且此时日志重放完成，因此需要向<code>commitC</code>信道写入<code>nil</code>以通知<code>kvstore</code>日志重放完成。</p>
 <h2 id="5-总结">5. 总结</h2>
 <p>至此，我们已经分析了raftexample大部分的主要逻辑。在<code>main.go</code>中有raftexample中各模块的创建于初始化逻辑、<code>raft.go</code>中还有一些如关闭服务器的逻辑。</p>
 <p>raftexample是官方提供的使用了etcd/raft的最基本的功能的简单的kv存储的示例。通过分析学习这段代码，可以简单了解etcd/raft的基本使用方式。当然，etcd/raft还提供了很多高级功能，我们会在后续的文章中介绍与分析。</p>
@@ -1030,7 +1026,7 @@
 </div>
 </article></div>
         </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.101.0">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2022</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank" rel="noopener noreferrer">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div></footer></div>
 

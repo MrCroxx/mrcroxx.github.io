@@ -37,7 +37,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/gfs-sosp2003\/paper-reading.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "GFS, Translation","wordcount":  34019 ,
+                        }],"genre": "posts","keywords": "GFS, Translation","wordcount":  33809 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/gfs-sosp2003\/","datePublished": "2020-07-21T14:24:45+08:00","dateModified": "2020-08-07T00:40:45+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -123,7 +123,7 @@
             <div class="post-meta-line">
                 <span class="post-author"><i class="author fas fa-user-circle fa-fw"></i><a href="about" title="Author" rel=" author" class="author">叉鸽</a>
                 </span>&nbsp;<span class="post-category">收录于 </span>&nbsp;<span class="post-category">类别 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-07-21">2020-07-21</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2020-08-07">2020-08-07</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 34019 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-07-21">2020-07-21</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2020-08-07">2020-08-07</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 33809 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 68 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
@@ -409,7 +409,7 @@
 <p>快照操作几乎会在瞬间对一个文件或一个目录树（被称为源）完成拷贝，同时能够尽可能少地打断正在执行的变更。我们的用户使用快照操作来快速地对一个庞大的数据集的一个分支进行拷贝（或对其拷贝再进行拷贝等等），或者在实验前对当前状态创建检查点，这样就可以在试验后轻松地提交或回滚变更。</p>
 <p>我们使用类似AFS<sup>[5]</sup>的标准的写入时复制技术来实现快照。当master收到快照请求的时候，它首先会撤销快照涉及到的文件的chunk上所有未完成的租约。这确保了对这些chunk在后续的写入时都需要与master交互以查找租约的持有者。这会给master优先拷贝这些chunk的机会。</p>
 <p>在租约被收回或过期后，master会将快照操作记录到日志中，并写入到磁盘。随后，master会通过在内存中创建一个源文件或源目录树的元数据的副本的方式来进行快照操作。新创建的快照文件与源文件指向相同的chunk。</p>
-<p>在快照操作后，首次想要对chunk$C$进行write操作的client会向master发送一个请求以找到当前的租约持有者。master会检测到chunk$C$的引用数超过1个。master会推迟对client的响应，并选取一个新的chunk handler $C'$。接着，master请求每个当前持有chunk$C$副本的chunkserver去创建一个新chunk$C'$。通过在与源chunk相同的chunkserver上创建新chunk，可以保证数据只在本地拷贝，而不会通过网络拷贝（我们的磁盘大概比$100Mb$的以太网连接快3倍左右）。在这之后，请求的处理逻辑就与处理任何其他chunk的请求一样了：master向新chunk$C'$的一个副本授权租约并将其响应client的请求。这样，client就可以像平常一样对chunk进行write操作，且client并不知道这个chunk是刚刚从一个已有的chunk创建来的。</p>
+<p>在快照操作后，首次想要对chunk$C$进行write操作的client会向master发送一个请求以找到当前的租约持有者。master会检测到chunk$C$的引用数超过1个。master会推迟对client的响应，并选取一个新的chunk handler $C&rsquo;$。接着，master请求每个当前持有chunk$C$副本的chunkserver去创建一个新chunk$C&rsquo;$。通过在与源chunk相同的chunkserver上创建新chunk，可以保证数据只在本地拷贝，而不会通过网络拷贝（我们的磁盘大概比$100Mb$的以太网连接快3倍左右）。在这之后，请求的处理逻辑就与处理任何其他chunk的请求一样了：master向新chunk$C&rsquo;$的一个副本授权租约并将其响应client的请求。这样，client就可以像平常一样对chunk进行write操作，且client并不知道这个chunk是刚刚从一个已有的chunk创建来的。</p>
 <h2 id="4-master操作">4. master操作</h2>
 <p>master执行所有命名空间操作。除此之外，master还管理整个系统中chunk的副本：master做chunk分配（placement）决策、创建新chunk与副本、协调各种系统范围的活动以保持chunk副本数饱和、平衡所有chunkserver的负载并回收未使用的存储。现在我们将讨论这些主题。</p>
 <h3 id="41-命名空间管理与锁">4.1 命名空间管理与锁</h3>
@@ -885,7 +885,7 @@
 </div>
 </article></div>
         </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.101.0">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2022</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank" rel="noopener noreferrer">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div></footer></div>
 

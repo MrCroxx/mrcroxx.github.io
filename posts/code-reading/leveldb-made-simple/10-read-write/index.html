@@ -37,7 +37,7 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/10-read-write\/leveldb.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  5641 ,
+                        }],"genre": "posts","keywords": "LevelDB, LSM-Tree","wordcount":  5616 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/code-reading\/leveldb-made-simple\/10-read-write\/","datePublished": "2021-03-16T12:49:45+08:00","dateModified": "2021-03-16T12:49:48+08:00","publisher": {
             "@type": "Organization",
             "name": "叉鸽"},"author": {
@@ -123,7 +123,7 @@
             <div class="post-meta-line">
                 <span class="post-author"><i class="author fas fa-user-circle fa-fw"></i><a href="about" title="Author" rel=" author" class="author">叉鸽</a>
                 </span>&nbsp;<span class="post-category">收录于 </span>&nbsp;<span class="post-category">类别 <a href="/categories/%E6%B7%B1%E5%85%A5%E6%B5%85%E5%87%BAleveldb/"><i class="far fa-folder fa-fw"></i>深入浅出LevelDB</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-16">2021-03-16</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2021-03-16">2021-03-16</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 5641 字&nbsp;
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2021-03-16">2021-03-16</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2021-03-16">2021-03-16</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 5616 字&nbsp;
                 <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 12 分钟&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
@@ -164,50 +164,48 @@
 <h2 id="1-mutation">1. Mutation</h2>
 <h3 id="11-mutation接口">1.1 Mutation接口</h3>
 <p>LevelDB提供了3个Mutation类型的接口：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
-  <span class="c1">// Set the database entry for &#34;key&#34; to &#34;value&#34;.  Returns OK on success,
-</span><span class="c1"></span>  <span class="c1">// and a non-OK status on error.
-</span><span class="c1"></span>  <span class="c1">// Note: consider setting options.sync = true.
-</span><span class="c1"></span>  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Put</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span>
-                     <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-
-  <span class="c1">// Remove the database entry (if any) for &#34;key&#34;.  Returns OK on
-</span><span class="c1"></span>  <span class="c1">// success, and a non-OK status on error.  It is not an error if &#34;key&#34;
-</span><span class="c1"></span>  <span class="c1">// did not exist in the database.
-</span><span class="c1"></span>  <span class="c1">// Note: consider setting options.sync = true.
-</span><span class="c1"></span>  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Delete</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-
-  <span class="c1">// Apply the specified updates to the database.
-</span><span class="c1"></span>  <span class="c1">// Returns OK on success, non-OK on failure.
-</span><span class="c1"></span>  <span class="c1">// Note: consider setting options.sync = true.
-</span><span class="c1"></span>  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Write</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span> <span class="n">WriteBatch</span><span class="o">*</span> <span class="n">updates</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-
-</code></pre></div><p>其中<code>Put</code>接口用来插入或修改数据；<code>Delete</code>用来删除已有数据；而<code>Write</code>接口用来批量执行<code>Put</code>或<code>Delete</code>操作，在同一批（即同一个<code>WriteBatch</code>）中的操作，其插入的entry的SequenceNumber相同。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Set the database entry for &#34;key&#34; to &#34;value&#34;.  Returns OK on success,
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// and a non-OK status on error.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// Note: consider setting options.sync = true.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Put</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                     <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Remove the database entry (if any) for &#34;key&#34;.  Returns OK on
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// success, and a non-OK status on error.  It is not an error if &#34;key&#34;
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// did not exist in the database.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// Note: consider setting options.sync = true.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Delete</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Apply the specified updates to the database.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// Returns OK on success, non-OK on failure.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// Note: consider setting options.sync = true.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Write</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span> <span class="n">WriteBatch</span><span class="o">*</span> <span class="n">updates</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span></code></pre></div><p>其中<code>Put</code>接口用来插入或修改数据；<code>Delete</code>用来删除已有数据；而<code>Write</code>接口用来批量执行<code>Put</code>或<code>Delete</code>操作，在同一批（即同一个<code>WriteBatch</code>）中的操作，其插入的entry的SequenceNumber相同。</p>
 <p>虽然LevelDB为不同类型的Mutation操作提供了不同接口，但其实这些接口都是对<code>DBImpl::Write</code>方法的封装：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
-<span class="c1">// Convenience methods
-</span><span class="c1"></span><span class="n">Status</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">Put</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">o</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">val</span><span class="p">)</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="n">DB</span><span class="o">::</span><span class="n">Put</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">);</span>
-<span class="p">}</span>
-
-<span class="n">Status</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">Delete</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">)</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="n">DB</span><span class="o">::</span><span class="n">Delete</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">key</span><span class="p">);</span>
-<span class="p">}</span>
-
-<span class="c1">// Default implementations of convenience methods that subclasses of DB
-</span><span class="c1">// can call if they wish
-</span><span class="c1"></span><span class="n">Status</span> <span class="n">DB</span><span class="o">::</span><span class="n">Put</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">opt</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">WriteBatch</span> <span class="n">batch</span><span class="p">;</span>
-  <span class="n">batch</span><span class="p">.</span><span class="n">Put</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">);</span>
-  <span class="k">return</span> <span class="nf">Write</span><span class="p">(</span><span class="n">opt</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">batch</span><span class="p">);</span>
-<span class="p">}</span>
-
-<span class="n">Status</span> <span class="n">DB</span><span class="o">::</span><span class="n">Delete</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">opt</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">WriteBatch</span> <span class="n">batch</span><span class="p">;</span>
-  <span class="n">batch</span><span class="p">.</span><span class="n">Delete</span><span class="p">(</span><span class="n">key</span><span class="p">);</span>
-  <span class="n">retu</span>
-
-</code></pre></div><p>因此，本章后面的内容，主要介绍LevelDB中的WriteBatch及Write接口的实现。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Convenience methods
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">Status</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">Put</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">o</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">val</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="n">DB</span><span class="o">::</span><span class="n">Put</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">Status</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">Delete</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="n">DB</span><span class="o">::</span><span class="n">Delete</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">key</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// Default implementations of convenience methods that subclasses of DB
+</span></span></span><span class="line"><span class="cl"><span class="c1">// can call if they wish
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">Status</span> <span class="n">DB</span><span class="o">::</span><span class="n">Put</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">opt</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">WriteBatch</span> <span class="n">batch</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">batch</span><span class="p">.</span><span class="n">Put</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="nf">Write</span><span class="p">(</span><span class="n">opt</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">batch</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">Status</span> <span class="n">DB</span><span class="o">::</span><span class="n">Delete</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">opt</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">WriteBatch</span> <span class="n">batch</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">batch</span><span class="p">.</span><span class="n">Delete</span><span class="p">(</span><span class="n">key</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">retu</span>
+</span></span></code></pre></div><p>因此，本章后面的内容，主要介绍LevelDB中的WriteBatch及Write接口的实现。</p>
 <h3 id="12-writebatch">1.2 WriteBatch</h3>
 <p><code>WriteBatch</code>是用来记录需要批处理的若干个<code>Put</code>或<code>Delete</code>操作的结构体。LevelDB会为同一个<code>WriteBatch</code>中所有操作分配相同的SequenceNumber。<code>WriteBatch</code>的接口与实现位于<code>include/leveldb/write_batch.h</code>、<code>db/write_batch_internal.h</code>和<code>db/write_batch.cc</code>中，其实现非常简单，这里不再赘述。下面仅对<code>WriteBatch</code>的结构进行简要描述，<code>WriteBatch</code>的结构如下图所示：</p>
 <p><figure><a class="lightgallery" href="/posts/code-reading/leveldb-made-simple/10-read-write/assets/writebatch.svg" title="WriteBatch结构" data-thumbnail="/posts/code-reading/leveldb-made-simple/10-read-write/assets/writebatch.svg" data-sub-html="<h2>WriteBatch结构</h2><p>WriteBatch结构</p>">
@@ -228,86 +226,85 @@
 <p>LevelDB中，同时只有一个Write线程在向LevelDB中写入数据。在有Write线程正在写入LevelDB时，其它Write线程先将自己的<code>Writer</code>加入到队列<code>writers_</code>中并阻塞。当上一个向LevelDB中写入数据的Write线程执行完成时，其会唤醒队列中第一个Writer所在线程。该线程会将<code>writers_</code>队列中所有Writer待写入的数据写入到LevelDB中，并将这些Writer的<code>done</code>字段置为true。在<code>writers_</code>队列中的线程被唤醒后，其会检查自己的<code>done</code>字段是否已被置为<code>true</code>，如果是则说明其WriteBatch已经被队列前的Writer写入，直接返回即可；否则，说明当前Write线程为队列中第一个Writer所在线程，由该线程负责当前队列中所有Writer数据的写入。</p>
 <p>这样，<code>Write</code>方法只需要保证<code>writers_</code>队列的同步即可，在真正写入数据时，不会影响后续Write线程向<code>writers_</code>队列中写入任务。</p>
 <p><code>DBImpl::Write</code>方法的实现如下：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
-<span class="n">Status</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">Write</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span> <span class="n">WriteBatch</span><span class="o">*</span> <span class="n">updates</span><span class="p">)</span> <span class="p">{</span>
-  <span class="c1">// (1)
-</span><span class="c1"></span>  <span class="n">Writer</span> <span class="nf">w</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mutex_</span><span class="p">);</span>
-  <span class="n">w</span><span class="p">.</span><span class="n">batch</span> <span class="o">=</span> <span class="n">updates</span><span class="p">;</span>
-  <span class="n">w</span><span class="p">.</span><span class="n">sync</span> <span class="o">=</span> <span class="n">options</span><span class="p">.</span><span class="n">sync</span><span class="p">;</span>
-  <span class="n">w</span><span class="p">.</span><span class="n">done</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
-
-  <span class="c1">// (2)
-</span><span class="c1"></span>  <span class="n">MutexLock</span> <span class="nf">l</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mutex_</span><span class="p">);</span>
-  <span class="n">writers_</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="o">&amp;</span><span class="n">w</span><span class="p">);</span>
-  <span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">w</span><span class="p">.</span><span class="n">done</span> <span class="o">&amp;&amp;</span> <span class="o">&amp;</span><span class="n">w</span> <span class="o">!=</span> <span class="n">writers_</span><span class="p">.</span><span class="n">front</span><span class="p">())</span> <span class="p">{</span>
-    <span class="n">w</span><span class="p">.</span><span class="n">cv</span><span class="p">.</span><span class="n">Wait</span><span class="p">();</span>
-  <span class="p">}</span>
-  <span class="k">if</span> <span class="p">(</span><span class="n">w</span><span class="p">.</span><span class="n">done</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">w</span><span class="p">.</span><span class="n">status</span><span class="p">;</span>
-  <span class="p">}</span>
-
-  <span class="c1">// (3)
-</span><span class="c1"></span>  <span class="c1">// May temporarily unlock and wait.
-</span><span class="c1"></span>  <span class="n">Status</span> <span class="n">status</span> <span class="o">=</span> <span class="n">MakeRoomForWrite</span><span class="p">(</span><span class="n">updates</span> <span class="o">==</span> <span class="k">nullptr</span><span class="p">);</span>
-  <span class="kt">uint64_t</span> <span class="n">last_sequence</span> <span class="o">=</span> <span class="n">versions_</span><span class="o">-&gt;</span><span class="n">LastSequence</span><span class="p">();</span>
-  <span class="n">Writer</span><span class="o">*</span> <span class="n">last_writer</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">w</span><span class="p">;</span>
-  <span class="k">if</span> <span class="p">(</span><span class="n">status</span><span class="p">.</span><span class="n">ok</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">updates</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">)</span> <span class="p">{</span>  <span class="c1">// nullptr batch is for compactions
-</span><span class="c1"></span>    <span class="n">WriteBatch</span><span class="o">*</span> <span class="n">write_batch</span> <span class="o">=</span> <span class="n">BuildBatchGroup</span><span class="p">(</span><span class="o">&amp;</span><span class="n">last_writer</span><span class="p">);</span>
-    <span class="n">WriteBatchInternal</span><span class="o">::</span><span class="n">SetSequence</span><span class="p">(</span><span class="n">write_batch</span><span class="p">,</span> <span class="n">last_sequence</span> <span class="o">+</span> <span class="mi">1</span><span class="p">);</span>
-    <span class="n">last_sequence</span> <span class="o">+=</span> <span class="n">WriteBatchInternal</span><span class="o">::</span><span class="n">Count</span><span class="p">(</span><span class="n">write_batch</span><span class="p">);</span>
-
-    <span class="c1">// (4)
-</span><span class="c1"></span>    <span class="c1">// Add to log and apply to memtable.  We can release the lock
-</span><span class="c1"></span>    <span class="c1">// during this phase since &amp;w is currently responsible for logging
-</span><span class="c1"></span>    <span class="c1">// and protects against concurrent loggers and concurrent writes
-</span><span class="c1"></span>    <span class="c1">// into mem_.
-</span><span class="c1"></span>    <span class="p">{</span>
-      <span class="n">mutex_</span><span class="p">.</span><span class="n">Unlock</span><span class="p">();</span>
-      <span class="n">status</span> <span class="o">=</span> <span class="n">log_</span><span class="o">-&gt;</span><span class="n">AddRecord</span><span class="p">(</span><span class="n">WriteBatchInternal</span><span class="o">::</span><span class="n">Contents</span><span class="p">(</span><span class="n">write_batch</span><span class="p">));</span>
-      <span class="kt">bool</span> <span class="n">sync_error</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
-      <span class="k">if</span> <span class="p">(</span><span class="n">status</span><span class="p">.</span><span class="n">ok</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">options</span><span class="p">.</span><span class="n">sync</span><span class="p">)</span> <span class="p">{</span>
-        <span class="n">status</span> <span class="o">=</span> <span class="n">logfile_</span><span class="o">-&gt;</span><span class="n">Sync</span><span class="p">();</span>
-        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">status</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
-          <span class="n">sync_error</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
-        <span class="p">}</span>
-      <span class="p">}</span>
-      <span class="k">if</span> <span class="p">(</span><span class="n">status</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
-        <span class="n">status</span> <span class="o">=</span> <span class="n">WriteBatchInternal</span><span class="o">::</span><span class="n">InsertInto</span><span class="p">(</span><span class="n">write_batch</span><span class="p">,</span> <span class="n">mem_</span><span class="p">);</span>
-      <span class="p">}</span>
-      <span class="n">mutex_</span><span class="p">.</span><span class="n">Lock</span><span class="p">();</span>
-      <span class="k">if</span> <span class="p">(</span><span class="n">sync_error</span><span class="p">)</span> <span class="p">{</span>
-        <span class="c1">// The state of the log file is indeterminate: the log record we
-</span><span class="c1"></span>        <span class="c1">// just added may or may not show up when the DB is re-opened.
-</span><span class="c1"></span>        <span class="c1">// So we force the DB into a mode where all future writes fail.
-</span><span class="c1"></span>        <span class="n">RecordBackgroundError</span><span class="p">(</span><span class="n">status</span><span class="p">);</span>
-      <span class="p">}</span>
-    <span class="p">}</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">write_batch</span> <span class="o">==</span> <span class="n">tmp_batch_</span><span class="p">)</span> <span class="n">tmp_batch_</span><span class="o">-&gt;</span><span class="n">Clear</span><span class="p">();</span>
-
-    <span class="n">versions_</span><span class="o">-&gt;</span><span class="n">SetLastSequence</span><span class="p">(</span><span class="n">last_sequence</span><span class="p">);</span>
-  <span class="p">}</span>
-
-  <span class="c1">// (5)
-</span><span class="c1"></span>  <span class="k">while</span> <span class="p">(</span><span class="nb">true</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">Writer</span><span class="o">*</span> <span class="n">ready</span> <span class="o">=</span> <span class="n">writers_</span><span class="p">.</span><span class="n">front</span><span class="p">();</span>
-    <span class="n">writers_</span><span class="p">.</span><span class="n">pop_front</span><span class="p">();</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">ready</span> <span class="o">!=</span> <span class="o">&amp;</span><span class="n">w</span><span class="p">)</span> <span class="p">{</span>
-      <span class="n">ready</span><span class="o">-&gt;</span><span class="n">status</span> <span class="o">=</span> <span class="n">status</span><span class="p">;</span>
-      <span class="n">ready</span><span class="o">-&gt;</span><span class="n">done</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
-      <span class="n">ready</span><span class="o">-&gt;</span><span class="n">cv</span><span class="p">.</span><span class="n">Signal</span><span class="p">();</span>
-    <span class="p">}</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">ready</span> <span class="o">==</span> <span class="n">last_writer</span><span class="p">)</span> <span class="k">break</span><span class="p">;</span>
-  <span class="p">}</span>
-
-  <span class="c1">// Notify new head of write queue
-</span><span class="c1"></span>  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">writers_</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span> <span class="p">{</span>
-    <span class="n">writers_</span><span class="p">.</span><span class="n">front</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">cv</span><span class="p">.</span><span class="n">Signal</span><span class="p">();</span>
-  <span class="p">}</span>
-
-  <span class="k">return</span> <span class="n">status</span><span class="p">;</span>
-<span class="p">}</span>
-
-</code></pre></div><p>下面笔者分段介绍<code>Write</code>方法的设计与实现：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">Status</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">Write</span><span class="p">(</span><span class="k">const</span> <span class="n">WriteOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span> <span class="n">WriteBatch</span><span class="o">*</span> <span class="n">updates</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// (1)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">Writer</span> <span class="nf">w</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mutex_</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">w</span><span class="p">.</span><span class="n">batch</span> <span class="o">=</span> <span class="n">updates</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">w</span><span class="p">.</span><span class="n">sync</span> <span class="o">=</span> <span class="n">options</span><span class="p">.</span><span class="n">sync</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">w</span><span class="p">.</span><span class="n">done</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// (2)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">MutexLock</span> <span class="nf">l</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mutex_</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">writers_</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="o">&amp;</span><span class="n">w</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">w</span><span class="p">.</span><span class="n">done</span> <span class="o">&amp;&amp;</span> <span class="o">&amp;</span><span class="n">w</span> <span class="o">!=</span> <span class="n">writers_</span><span class="p">.</span><span class="n">front</span><span class="p">())</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">w</span><span class="p">.</span><span class="n">cv</span><span class="p">.</span><span class="n">Wait</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span><span class="n">w</span><span class="p">.</span><span class="n">done</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">w</span><span class="p">.</span><span class="n">status</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// (3)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// May temporarily unlock and wait.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">Status</span> <span class="n">status</span> <span class="o">=</span> <span class="n">MakeRoomForWrite</span><span class="p">(</span><span class="n">updates</span> <span class="o">==</span> <span class="k">nullptr</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">uint64_t</span> <span class="n">last_sequence</span> <span class="o">=</span> <span class="n">versions_</span><span class="o">-&gt;</span><span class="n">LastSequence</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">  <span class="n">Writer</span><span class="o">*</span> <span class="n">last_writer</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">w</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span><span class="n">status</span><span class="p">.</span><span class="n">ok</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">updates</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">)</span> <span class="p">{</span>  <span class="c1">// nullptr batch is for compactions
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">WriteBatch</span><span class="o">*</span> <span class="n">write_batch</span> <span class="o">=</span> <span class="n">BuildBatchGroup</span><span class="p">(</span><span class="o">&amp;</span><span class="n">last_writer</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">WriteBatchInternal</span><span class="o">::</span><span class="n">SetSequence</span><span class="p">(</span><span class="n">write_batch</span><span class="p">,</span> <span class="n">last_sequence</span> <span class="o">+</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">last_sequence</span> <span class="o">+=</span> <span class="n">WriteBatchInternal</span><span class="o">::</span><span class="n">Count</span><span class="p">(</span><span class="n">write_batch</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// (4)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// Add to log and apply to memtable.  We can release the lock
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// during this phase since &amp;w is currently responsible for logging
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// and protects against concurrent loggers and concurrent writes
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// into mem_.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="n">mutex_</span><span class="p">.</span><span class="n">Unlock</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">      <span class="n">status</span> <span class="o">=</span> <span class="n">log_</span><span class="o">-&gt;</span><span class="n">AddRecord</span><span class="p">(</span><span class="n">WriteBatchInternal</span><span class="o">::</span><span class="n">Contents</span><span class="p">(</span><span class="n">write_batch</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">      <span class="kt">bool</span> <span class="n">sync_error</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">      <span class="k">if</span> <span class="p">(</span><span class="n">status</span><span class="p">.</span><span class="n">ok</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">options</span><span class="p">.</span><span class="n">sync</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">status</span> <span class="o">=</span> <span class="n">logfile_</span><span class="o">-&gt;</span><span class="n">Sync</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">status</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">          <span class="n">sync_error</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">      <span class="p">}</span>
+</span></span><span class="line"><span class="cl">      <span class="k">if</span> <span class="p">(</span><span class="n">status</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">status</span> <span class="o">=</span> <span class="n">WriteBatchInternal</span><span class="o">::</span><span class="n">InsertInto</span><span class="p">(</span><span class="n">write_batch</span><span class="p">,</span> <span class="n">mem_</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">      <span class="p">}</span>
+</span></span><span class="line"><span class="cl">      <span class="n">mutex_</span><span class="p">.</span><span class="n">Lock</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">      <span class="k">if</span> <span class="p">(</span><span class="n">sync_error</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// The state of the log file is indeterminate: the log record we
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">// just added may or may not show up when the DB is re-opened.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">// So we force the DB into a mode where all future writes fail.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">RecordBackgroundError</span><span class="p">(</span><span class="n">status</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">      <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">write_batch</span> <span class="o">==</span> <span class="n">tmp_batch_</span><span class="p">)</span> <span class="n">tmp_batch_</span><span class="o">-&gt;</span><span class="n">Clear</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">versions_</span><span class="o">-&gt;</span><span class="n">SetLastSequence</span><span class="p">(</span><span class="n">last_sequence</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// (5)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">while</span> <span class="p">(</span><span class="nb">true</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">Writer</span><span class="o">*</span> <span class="n">ready</span> <span class="o">=</span> <span class="n">writers_</span><span class="p">.</span><span class="n">front</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="n">writers_</span><span class="p">.</span><span class="n">pop_front</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">ready</span> <span class="o">!=</span> <span class="o">&amp;</span><span class="n">w</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="n">ready</span><span class="o">-&gt;</span><span class="n">status</span> <span class="o">=</span> <span class="n">status</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">      <span class="n">ready</span><span class="o">-&gt;</span><span class="n">done</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">      <span class="n">ready</span><span class="o">-&gt;</span><span class="n">cv</span><span class="p">.</span><span class="n">Signal</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">ready</span> <span class="o">==</span> <span class="n">last_writer</span><span class="p">)</span> <span class="k">break</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Notify new head of write queue
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">writers_</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">writers_</span><span class="p">.</span><span class="n">front</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">cv</span><span class="p">.</span><span class="n">Signal</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="n">status</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>下面笔者分段介绍<code>Write</code>方法的设计与实现：</p>
 <p>段(1)部分，Write方法为当前线程分配<code>Writer</code>，此时每个Write线程互不影响，不需要锁。</p>
 <p>段(2)部分，Write方法加锁操作<code>writers_</code>队列，其将当前线程的Writer追加到<code>writers_</code>队列的最后。然后通过信号量循环等待被唤醒，直到当前线程的Writer的<code>done</code>字段被置为了<code>true</code>，或当前线程的Writer成为了队列中的第一个Writer。若干<code>done</code>被置为了<code>true</code>，说明当前线程的Writer需要写入的WriteBatch已经被队列中之前的Writer写入，可以直接返回；否则，当前线程的Writer作为队列的第一个Writer，负责写入此时队列中所有Writer的WriteBatch。</p>
 <p>段(3)部分我们先来关注持有锁时的操作（即非段(4)的部分）。在仍持有以锁时，当前Write线程需要通过<code>MakeRoomForWrite</code>方法为写入的数据留出足够的buffer。<code>MakeRoomForWrite</code>方法会根据当前MemTable的使用率来选择是否触发Minor Compaction（如果当前updates为空，则为Manual Compaction用来强制触发Minor Compaction的操作）。随后，Write线程会根据<code>writers_</code>队列和上一次写入的最新的SequenceNumber，构建需要写入的WriteBatchGroup。</p>
@@ -316,227 +313,222 @@
 <h2 id="2-readonly">2. ReadOnly</h2>
 <h3 id="21-readonly接口">2.1 ReadOnly接口</h3>
 <p>本章主要介绍与读取LevelDB中数据相关的接口，其包括<code>Get</code>、<code>GetSnapshot</code>、<code>ReleaseSnapshot</code>方法。除了这些方法外，LevelDB还提供了获取能够改变遍历方向遍历所有数据的Iterator的方法<code>NewIterator</code>和获取LevelDB统计量和估算占用量等方法，但本文主要介绍LevelDB读写流程的设计与实现，因此本章不会介绍这些方法。</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
-  <span class="c1">// If the database contains an entry for &#34;key&#34; store the
-</span><span class="c1"></span>  <span class="c1">// corresponding value in *value and return OK.
-</span><span class="c1"></span>  <span class="c1">//
-</span><span class="c1"></span>  <span class="c1">// If there is no entry for &#34;key&#34; leave *value unchanged and return
-</span><span class="c1"></span>  <span class="c1">// a status for which Status::IsNotFound() returns true.
-</span><span class="c1"></span>  <span class="c1">//
-</span><span class="c1"></span>  <span class="c1">// May return some other Status on an error.
-</span><span class="c1"></span>  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Get</span><span class="p">(</span><span class="k">const</span> <span class="n">ReadOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span>
-                     <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">*</span> <span class="n">value</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-
-  <span class="c1">// Return a handle to the current DB state.  Iterators created with
-</span><span class="c1"></span>  <span class="c1">// this handle will all observe a stable snapshot of the current DB
-</span><span class="c1"></span>  <span class="c1">// state.  The caller must call ReleaseSnapshot(result) when the
-</span><span class="c1"></span>  <span class="c1">// snapshot is no longer needed.
-</span><span class="c1"></span>  <span class="k">virtual</span> <span class="k">const</span> <span class="n">Snapshot</span><span class="o">*</span> <span class="nf">GetSnapshot</span><span class="p">()</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-
-  <span class="c1">// Release a previously acquired snapshot.  The caller must not
-</span><span class="c1"></span>  <span class="c1">// use &#34;snapshot&#34; after this call.
-</span><span class="c1"></span>  <span class="k">virtual</span> <span class="kt">void</span> <span class="nf">ReleaseSnapshot</span><span class="p">(</span><span class="k">const</span> <span class="n">Snapshot</span><span class="o">*</span> <span class="n">snapshot</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-
-</code></pre></div><h3 id="22-snapshot">2.2 Snapshot</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// If the database contains an entry for &#34;key&#34; store the
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// corresponding value in *value and return OK.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">//
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// If there is no entry for &#34;key&#34; leave *value unchanged and return
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// a status for which Status::IsNotFound() returns true.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">//
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// May return some other Status on an error.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">virtual</span> <span class="n">Status</span> <span class="nf">Get</span><span class="p">(</span><span class="k">const</span> <span class="n">ReadOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                     <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">*</span> <span class="n">value</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Return a handle to the current DB state.  Iterators created with
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// this handle will all observe a stable snapshot of the current DB
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// state.  The caller must call ReleaseSnapshot(result) when the
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// snapshot is no longer needed.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">virtual</span> <span class="k">const</span> <span class="n">Snapshot</span><span class="o">*</span> <span class="nf">GetSnapshot</span><span class="p">()</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Release a previously acquired snapshot.  The caller must not
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// use &#34;snapshot&#34; after this call.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">virtual</span> <span class="kt">void</span> <span class="nf">ReleaseSnapshot</span><span class="p">(</span><span class="k">const</span> <span class="n">Snapshot</span><span class="o">*</span> <span class="n">snapshot</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span></code></pre></div><h3 id="22-snapshot">2.2 Snapshot</h3>
 <p>LevelDB中与Snapshot相关的接口实现非常简单，其只需要在加锁的条件下，向<code>snapshot_</code>中加入最新的SequenceNumber的Snapshot即可。而Snapshot Read主要体现在LevelDB的Get方法与Compaction中（详见<a href="/posts/code-reading/leveldb-made-simple/9-compaction/" rel="">深入浅出LevelDB —— 09 Compaction</a>中介绍的Major Compaction中drop key/value的条件）。</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
-<span class="k">const</span> <span class="n">Snapshot</span><span class="o">*</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">GetSnapshot</span><span class="p">()</span> <span class="p">{</span>
-  <span class="n">MutexLock</span> <span class="nf">l</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mutex_</span><span class="p">);</span>
-  <span class="k">return</span> <span class="n">snapshots_</span><span class="p">.</span><span class="n">New</span><span class="p">(</span><span class="n">versions_</span><span class="o">-&gt;</span><span class="n">LastSequence</span><span class="p">());</span>
-<span class="p">}</span>
-
-<span class="kt">void</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">ReleaseSnapshot</span><span class="p">(</span><span class="k">const</span> <span class="n">Snapshot</span><span class="o">*</span> <span class="n">snapshot</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">MutexLock</span> <span class="nf">l</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mutex_</span><span class="p">);</span>
-  <span class="n">snapshots_</span><span class="p">.</span><span class="n">Delete</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">SnapshotImpl</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">snapshot</span><span class="p">));</span>
-<span class="p">}</span>
-
-</code></pre></div><h3 id="23-get">2.3 Get</h3>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">const</span> <span class="n">Snapshot</span><span class="o">*</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">GetSnapshot</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">MutexLock</span> <span class="nf">l</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mutex_</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="n">snapshots_</span><span class="p">.</span><span class="n">New</span><span class="p">(</span><span class="n">versions_</span><span class="o">-&gt;</span><span class="n">LastSequence</span><span class="p">());</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">ReleaseSnapshot</span><span class="p">(</span><span class="k">const</span> <span class="n">Snapshot</span><span class="o">*</span> <span class="n">snapshot</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">MutexLock</span> <span class="nf">l</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mutex_</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">snapshots_</span><span class="p">.</span><span class="n">Delete</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">SnapshotImpl</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">snapshot</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h3 id="23-get">2.3 Get</h3>
 <p>本节笔者将分段介绍并分析<code>DBImpl::Get</code>方法的设计与实现。虽然<code>Get</code>方法不会修改LevelDB中的数据，但是为了避免在读取期间MemTable、Immutable MemTable或Snapshot被释放，因此<code>Get</code>方法在真正读取数据前，还是需要通过锁来保护其所需的元数据。</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
-<span class="n">Status</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">Get</span><span class="p">(</span><span class="k">const</span> <span class="n">ReadOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span>
-                   <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">*</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
-
-  <span class="c1">// (1)                     
-</span><span class="c1"></span>  <span class="n">Status</span> <span class="n">s</span><span class="p">;</span>
-  <span class="n">MutexLock</span> <span class="nf">l</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mutex_</span><span class="p">);</span>
-  <span class="n">SequenceNumber</span> <span class="n">snapshot</span><span class="p">;</span>
-  <span class="k">if</span> <span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">snapshot</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">snapshot</span> <span class="o">=</span>
-        <span class="k">static_cast</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">SnapshotImpl</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">snapshot</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">sequence_number</span><span class="p">();</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-    <span class="n">snapshot</span> <span class="o">=</span> <span class="n">versions_</span><span class="o">-&gt;</span><span class="n">LastSequence</span><span class="p">();</span>
-  <span class="p">}</span>
-
-  <span class="n">MemTable</span><span class="o">*</span> <span class="n">mem</span> <span class="o">=</span> <span class="n">mem_</span><span class="p">;</span>
-  <span class="n">MemTable</span><span class="o">*</span> <span class="n">imm</span> <span class="o">=</span> <span class="n">imm_</span><span class="p">;</span>
-  <span class="n">Version</span><span class="o">*</span> <span class="n">current</span> <span class="o">=</span> <span class="n">versions_</span><span class="o">-&gt;</span><span class="n">current</span><span class="p">();</span>
-  <span class="n">mem</span><span class="o">-&gt;</span><span class="n">Ref</span><span class="p">();</span>
-  <span class="k">if</span> <span class="p">(</span><span class="n">imm</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">)</span> <span class="n">imm</span><span class="o">-&gt;</span><span class="n">Ref</span><span class="p">();</span>
-  <span class="n">current</span><span class="o">-&gt;</span><span class="n">Ref</span><span class="p">();</span>
-
-  <span class="kt">bool</span> <span class="n">have_stat_update</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
-  <span class="n">Version</span><span class="o">::</span><span class="n">GetStats</span> <span class="n">stats</span><span class="p">;</span>
-
-  <span class="c1">// (2)
-</span><span class="c1"></span>  <span class="c1">// Unlock while reading from files and memtables
-</span><span class="c1"></span>  <span class="p">{</span>
-    <span class="n">mutex_</span><span class="p">.</span><span class="n">Unlock</span><span class="p">();</span>
-    <span class="c1">// First look in the memtable, then in the immutable memtable (if any).
-</span><span class="c1"></span>    <span class="n">LookupKey</span> <span class="nf">lkey</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">snapshot</span><span class="p">);</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">mem</span><span class="o">-&gt;</span><span class="n">Get</span><span class="p">(</span><span class="n">lkey</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">s</span><span class="p">))</span> <span class="p">{</span>
-      <span class="c1">// Done
-</span><span class="c1"></span>    <span class="p">}</span> <span class="k">else</span> <span class="nf">if</span> <span class="p">(</span><span class="n">imm</span> <span class="o">!=</span> <span class="k">nullptr</span> <span class="o">&amp;&amp;</span> <span class="n">imm</span><span class="o">-&gt;</span><span class="n">Get</span><span class="p">(</span><span class="n">lkey</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">s</span><span class="p">))</span> <span class="p">{</span>
-      <span class="c1">// Done
-</span><span class="c1"></span>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-      <span class="n">s</span> <span class="o">=</span> <span class="n">current</span><span class="o">-&gt;</span><span class="n">Get</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">lkey</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">stats</span><span class="p">);</span>
-      <span class="n">have_stat_update</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="n">mutex_</span><span class="p">.</span><span class="n">Lock</span><span class="p">();</span>
-  <span class="p">}</span>
-
-  <span class="c1">// (3)
-</span><span class="c1"></span>  <span class="k">if</span> <span class="p">(</span><span class="n">have_stat_update</span> <span class="o">&amp;&amp;</span> <span class="n">current</span><span class="o">-&gt;</span><span class="n">UpdateStats</span><span class="p">(</span><span class="n">stats</span><span class="p">))</span> <span class="p">{</span>
-    <span class="n">MaybeScheduleCompaction</span><span class="p">();</span>
-  <span class="p">}</span>
-  <span class="n">mem</span><span class="o">-&gt;</span><span class="n">Unref</span><span class="p">();</span>
-  <span class="k">if</span> <span class="p">(</span><span class="n">imm</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">)</span> <span class="n">imm</span><span class="o">-&gt;</span><span class="n">Unref</span><span class="p">();</span>
-  <span class="n">current</span><span class="o">-&gt;</span><span class="n">Unref</span><span class="p">();</span>
-  <span class="k">return</span> <span class="n">s</span><span class="p">;</span>
-<span class="p">}</span>
-
-</code></pre></div><p>我们先来看<code>Get</code>方法持有锁时，即段(1)和(3)的操作：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">Status</span> <span class="n">DBImpl</span><span class="o">::</span><span class="n">Get</span><span class="p">(</span><span class="k">const</span> <span class="n">ReadOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span> <span class="k">const</span> <span class="n">Slice</span><span class="o">&amp;</span> <span class="n">key</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                   <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">*</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// (1)                     
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">Status</span> <span class="n">s</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">MutexLock</span> <span class="nf">l</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mutex_</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">SequenceNumber</span> <span class="n">snapshot</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">snapshot</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">snapshot</span> <span class="o">=</span>
+</span></span><span class="line"><span class="cl">        <span class="k">static_cast</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">SnapshotImpl</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">snapshot</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">sequence_number</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">snapshot</span> <span class="o">=</span> <span class="n">versions_</span><span class="o">-&gt;</span><span class="n">LastSequence</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="n">MemTable</span><span class="o">*</span> <span class="n">mem</span> <span class="o">=</span> <span class="n">mem_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">MemTable</span><span class="o">*</span> <span class="n">imm</span> <span class="o">=</span> <span class="n">imm_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">Version</span><span class="o">*</span> <span class="n">current</span> <span class="o">=</span> <span class="n">versions_</span><span class="o">-&gt;</span><span class="n">current</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">  <span class="n">mem</span><span class="o">-&gt;</span><span class="n">Ref</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span><span class="n">imm</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">)</span> <span class="n">imm</span><span class="o">-&gt;</span><span class="n">Ref</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">  <span class="n">current</span><span class="o">-&gt;</span><span class="n">Ref</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="kt">bool</span> <span class="n">have_stat_update</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">Version</span><span class="o">::</span><span class="n">GetStats</span> <span class="n">stats</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// (2)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="c1">// Unlock while reading from files and memtables
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">mutex_</span><span class="p">.</span><span class="n">Unlock</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// First look in the memtable, then in the immutable memtable (if any).
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">LookupKey</span> <span class="nf">lkey</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">snapshot</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">mem</span><span class="o">-&gt;</span><span class="n">Get</span><span class="p">(</span><span class="n">lkey</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">s</span><span class="p">))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="c1">// Done
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">}</span> <span class="k">else</span> <span class="nf">if</span> <span class="p">(</span><span class="n">imm</span> <span class="o">!=</span> <span class="k">nullptr</span> <span class="o">&amp;&amp;</span> <span class="n">imm</span><span class="o">-&gt;</span><span class="n">Get</span><span class="p">(</span><span class="n">lkey</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">s</span><span class="p">))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="c1">// Done
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="n">s</span> <span class="o">=</span> <span class="n">current</span><span class="o">-&gt;</span><span class="n">Get</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">lkey</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">stats</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">      <span class="n">have_stat_update</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="n">mutex_</span><span class="p">.</span><span class="n">Lock</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// (3)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">if</span> <span class="p">(</span><span class="n">have_stat_update</span> <span class="o">&amp;&amp;</span> <span class="n">current</span><span class="o">-&gt;</span><span class="n">UpdateStats</span><span class="p">(</span><span class="n">stats</span><span class="p">))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MaybeScheduleCompaction</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="n">mem</span><span class="o">-&gt;</span><span class="n">Unref</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span><span class="n">imm</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">)</span> <span class="n">imm</span><span class="o">-&gt;</span><span class="n">Unref</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">  <span class="n">current</span><span class="o">-&gt;</span><span class="n">Unref</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="n">s</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>我们先来看<code>Get</code>方法持有锁时，即段(1)和(3)的操作：</p>
 <p>在段(1)中，<code>Get</code>方法会根据<code>ReadOptions</code>获取其需要读取的Snapshot的SequenceNumber，对于非Snapshot Read，<code>Get</code>方法会将当前最新的SequenceNumber作为本次查找可见的最大SequenceNumber。随后，<code>Get</code>方法保存了此时MemTable和Immutable MemTable的引用及current Version，同时增加这些对象的引用计数避免其在读取阶段被其它线程回收。</p>
 <p>在段(3)中，<code>Get</code>方法按需更新current Version的统计量，并按需尝试触发Compaction。最后释放之前增加的引用计数，并返回查询状态。</p>
 <p><code>Get</code>的段(2)是真正执行查找的部分，因为当前线程已经持有了所需对象的引用，因此不需要再加锁。在这一部分中，<code>Get</code>方法首先根据caller传入的UserKey和Snapshot Read的SequenceNumber构造LookupKey。然后一次按照MemTable-&gt;Immutable MemTable-&gt;SSTable的顺序查找，如果中途找到所需key/value，则不需要继续查找。</p>
 <p>在MemTable和Immutable MemTable上的查找，都是在<code>SkipList</code>上的查找，这里不再赘述。下面我们关注一下在SSTable中查找的实现。</p>
 <p>在SSTable中查找给定UserKey是通过current Version的<code>Version::Get</code>方法实现的：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
-<span class="n">Status</span> <span class="n">Version</span><span class="o">::</span><span class="n">Get</span><span class="p">(</span><span class="k">const</span> <span class="n">ReadOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span> <span class="k">const</span> <span class="n">LookupKey</span><span class="o">&amp;</span> <span class="n">k</span><span class="p">,</span>
-                    <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">*</span> <span class="n">value</span><span class="p">,</span> <span class="n">GetStats</span><span class="o">*</span> <span class="n">stats</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">stats</span><span class="o">-&gt;</span><span class="n">seek_file</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">;</span>
-  <span class="n">stats</span><span class="o">-&gt;</span><span class="n">seek_file_level</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
-
-  <span class="k">struct</span> <span class="nc">State</span> <span class="p">{</span>
-    <span class="n">Saver</span> <span class="n">saver</span><span class="p">;</span>
-    <span class="n">GetStats</span><span class="o">*</span> <span class="n">stats</span><span class="p">;</span>
-    <span class="k">const</span> <span class="n">ReadOptions</span><span class="o">*</span> <span class="n">options</span><span class="p">;</span>
-    <span class="n">Slice</span> <span class="n">ikey</span><span class="p">;</span>
-    <span class="n">FileMetaData</span><span class="o">*</span> <span class="n">last_file_read</span><span class="p">;</span>
-    <span class="kt">int</span> <span class="n">last_file_read_level</span><span class="p">;</span>
-
-    <span class="n">VersionSet</span><span class="o">*</span> <span class="n">vset</span><span class="p">;</span>
-    <span class="n">Status</span> <span class="n">s</span><span class="p">;</span>
-    <span class="kt">bool</span> <span class="n">found</span><span class="p">;</span>
-
-    <span class="k">static</span> <span class="kt">bool</span> <span class="nf">Match</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span> <span class="n">arg</span><span class="p">,</span> <span class="kt">int</span> <span class="n">level</span><span class="p">,</span> <span class="n">FileMetaData</span><span class="o">*</span> <span class="n">f</span><span class="p">)</span> <span class="p">{</span>
-      <span class="n">State</span><span class="o">*</span> <span class="n">state</span> <span class="o">=</span> <span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="n">State</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">arg</span><span class="p">);</span>
-
-      <span class="k">if</span> <span class="p">(</span><span class="n">state</span><span class="o">-&gt;</span><span class="n">stats</span><span class="o">-&gt;</span><span class="n">seek_file</span> <span class="o">==</span> <span class="k">nullptr</span> <span class="o">&amp;&amp;</span>
-          <span class="n">state</span><span class="o">-&gt;</span><span class="n">last_file_read</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">)</span> <span class="p">{</span>
-        <span class="c1">// We have had more than one seek for this read.  Charge the 1st file.
-</span><span class="c1"></span>        <span class="n">state</span><span class="o">-&gt;</span><span class="n">stats</span><span class="o">-&gt;</span><span class="n">seek_file</span> <span class="o">=</span> <span class="n">state</span><span class="o">-&gt;</span><span class="n">last_file_read</span><span class="p">;</span>
-        <span class="n">state</span><span class="o">-&gt;</span><span class="n">stats</span><span class="o">-&gt;</span><span class="n">seek_file_level</span> <span class="o">=</span> <span class="n">state</span><span class="o">-&gt;</span><span class="n">last_file_read_level</span><span class="p">;</span>
-      <span class="p">}</span>
-
-      <span class="n">state</span><span class="o">-&gt;</span><span class="n">last_file_read</span> <span class="o">=</span> <span class="n">f</span><span class="p">;</span>
-      <span class="n">state</span><span class="o">-&gt;</span><span class="n">last_file_read_level</span> <span class="o">=</span> <span class="n">level</span><span class="p">;</span>
-
-      <span class="n">state</span><span class="o">-&gt;</span><span class="n">s</span> <span class="o">=</span> <span class="n">state</span><span class="o">-&gt;</span><span class="n">vset</span><span class="o">-&gt;</span><span class="n">table_cache_</span><span class="o">-&gt;</span><span class="n">Get</span><span class="p">(</span><span class="o">*</span><span class="n">state</span><span class="o">-&gt;</span><span class="n">options</span><span class="p">,</span> <span class="n">f</span><span class="o">-&gt;</span><span class="n">number</span><span class="p">,</span>
-                                                <span class="n">f</span><span class="o">-&gt;</span><span class="n">file_size</span><span class="p">,</span> <span class="n">state</span><span class="o">-&gt;</span><span class="n">ikey</span><span class="p">,</span>
-                                                <span class="o">&amp;</span><span class="n">state</span><span class="o">-&gt;</span><span class="n">saver</span><span class="p">,</span> <span class="n">SaveValue</span><span class="p">);</span>
-      <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">state</span><span class="o">-&gt;</span><span class="n">s</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
-        <span class="n">state</span><span class="o">-&gt;</span><span class="n">found</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
-        <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
-      <span class="p">}</span>
-      <span class="k">switch</span> <span class="p">(</span><span class="n">state</span><span class="o">-&gt;</span><span class="n">saver</span><span class="p">.</span><span class="n">state</span><span class="p">)</span> <span class="p">{</span>
-        <span class="k">case</span> <span class="nl">kNotFound</span><span class="p">:</span>
-          <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>  <span class="c1">// Keep searching in other files
-</span><span class="c1"></span>        <span class="k">case</span> <span class="nl">kFound</span><span class="p">:</span>
-          <span class="n">state</span><span class="o">-&gt;</span><span class="n">found</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
-          <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
-        <span class="k">case</span> <span class="nl">kDeleted</span><span class="p">:</span>
-          <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
-        <span class="k">case</span> <span class="nl">kCorrupt</span><span class="p">:</span>
-          <span class="n">state</span><span class="o">-&gt;</span><span class="n">s</span> <span class="o">=</span>
-              <span class="n">Status</span><span class="o">::</span><span class="n">Corruption</span><span class="p">(</span><span class="s">&#34;corrupted key for &#34;</span><span class="p">,</span> <span class="n">state</span><span class="o">-&gt;</span><span class="n">saver</span><span class="p">.</span><span class="n">user_key</span><span class="p">);</span>
-          <span class="n">state</span><span class="o">-&gt;</span><span class="n">found</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
-          <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
-      <span class="p">}</span>
-
-      <span class="c1">// Not reached. Added to avoid false compilation warnings of
-</span><span class="c1"></span>      <span class="c1">// &#34;control reaches end of non-void function&#34;.
-</span><span class="c1"></span>      <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
-    <span class="p">}</span>
-  <span class="p">};</span>
-
-  <span class="n">State</span> <span class="n">state</span><span class="p">;</span>
-  <span class="n">state</span><span class="p">.</span><span class="n">found</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
-  <span class="n">state</span><span class="p">.</span><span class="n">stats</span> <span class="o">=</span> <span class="n">stats</span><span class="p">;</span>
-  <span class="n">state</span><span class="p">.</span><span class="n">last_file_read</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">;</span>
-  <span class="n">state</span><span class="p">.</span><span class="n">last_file_read_level</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
-
-  <span class="n">state</span><span class="p">.</span><span class="n">options</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">options</span><span class="p">;</span>
-  <span class="n">state</span><span class="p">.</span><span class="n">ikey</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">internal_key</span><span class="p">();</span>
-  <span class="n">state</span><span class="p">.</span><span class="n">vset</span> <span class="o">=</span> <span class="n">vset_</span><span class="p">;</span>
-
-  <span class="n">state</span><span class="p">.</span><span class="n">saver</span><span class="p">.</span><span class="n">state</span> <span class="o">=</span> <span class="n">kNotFound</span><span class="p">;</span>
-  <span class="n">state</span><span class="p">.</span><span class="n">saver</span><span class="p">.</span><span class="n">ucmp</span> <span class="o">=</span> <span class="n">vset_</span><span class="o">-&gt;</span><span class="n">icmp_</span><span class="p">.</span><span class="n">user_comparator</span><span class="p">();</span>
-  <span class="n">state</span><span class="p">.</span><span class="n">saver</span><span class="p">.</span><span class="n">user_key</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">user_key</span><span class="p">();</span>
-  <span class="n">state</span><span class="p">.</span><span class="n">saver</span><span class="p">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="p">;</span>
-
-  <span class="n">ForEachOverlapping</span><span class="p">(</span><span class="n">state</span><span class="p">.</span><span class="n">saver</span><span class="p">.</span><span class="n">user_key</span><span class="p">,</span> <span class="n">state</span><span class="p">.</span><span class="n">ikey</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">state</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">State</span><span class="o">::</span><span class="n">Match</span><span class="p">);</span>
-
-  <span class="k">return</span> <span class="n">state</span><span class="p">.</span><span class="n">found</span> <span class="o">?</span> <span class="n">state</span><span class="p">.</span><span class="nl">s</span> <span class="p">:</span> <span class="n">Status</span><span class="o">::</span><span class="n">NotFound</span><span class="p">(</span><span class="n">Slice</span><span class="p">());</span>
-<span class="p">}</span>
-
-</code></pre></div><p>在介绍LevelDB中Compaction的实现时已经介绍过了<code>Match</code>方法，介绍过<code>Match</code>方法判断需要Seek Comapction的部分，而<code>Match</code>方法在查找SSTable时，是在TableCache上查找的。关于TableCache的部分，本系列也在<a href="posts/code-reading/leveldb-made-simple/7-cache/" rel="">深入浅出LevelDB —— 07 Cache</a>中介绍过，这里不再赘述。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">Status</span> <span class="n">Version</span><span class="o">::</span><span class="n">Get</span><span class="p">(</span><span class="k">const</span> <span class="n">ReadOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">,</span> <span class="k">const</span> <span class="n">LookupKey</span><span class="o">&amp;</span> <span class="n">k</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">*</span> <span class="n">value</span><span class="p">,</span> <span class="n">GetStats</span><span class="o">*</span> <span class="n">stats</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">stats</span><span class="o">-&gt;</span><span class="n">seek_file</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">stats</span><span class="o">-&gt;</span><span class="n">seek_file_level</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="k">struct</span> <span class="nc">State</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">Saver</span> <span class="n">saver</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">GetStats</span><span class="o">*</span> <span class="n">stats</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">const</span> <span class="n">ReadOptions</span><span class="o">*</span> <span class="n">options</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">Slice</span> <span class="n">ikey</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">FileMetaData</span><span class="o">*</span> <span class="n">last_file_read</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">last_file_read_level</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">VersionSet</span><span class="o">*</span> <span class="n">vset</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">Status</span> <span class="n">s</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">bool</span> <span class="n">found</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">static</span> <span class="kt">bool</span> <span class="nf">Match</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span> <span class="n">arg</span><span class="p">,</span> <span class="kt">int</span> <span class="n">level</span><span class="p">,</span> <span class="n">FileMetaData</span><span class="o">*</span> <span class="n">f</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="n">State</span><span class="o">*</span> <span class="n">state</span> <span class="o">=</span> <span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="n">State</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">arg</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      <span class="k">if</span> <span class="p">(</span><span class="n">state</span><span class="o">-&gt;</span><span class="n">stats</span><span class="o">-&gt;</span><span class="n">seek_file</span> <span class="o">==</span> <span class="k">nullptr</span> <span class="o">&amp;&amp;</span>
+</span></span><span class="line"><span class="cl">          <span class="n">state</span><span class="o">-&gt;</span><span class="n">last_file_read</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// We have had more than one seek for this read.  Charge the 1st file.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">state</span><span class="o">-&gt;</span><span class="n">stats</span><span class="o">-&gt;</span><span class="n">seek_file</span> <span class="o">=</span> <span class="n">state</span><span class="o">-&gt;</span><span class="n">last_file_read</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">state</span><span class="o">-&gt;</span><span class="n">stats</span><span class="o">-&gt;</span><span class="n">seek_file_level</span> <span class="o">=</span> <span class="n">state</span><span class="o">-&gt;</span><span class="n">last_file_read_level</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">      <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      <span class="n">state</span><span class="o">-&gt;</span><span class="n">last_file_read</span> <span class="o">=</span> <span class="n">f</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">      <span class="n">state</span><span class="o">-&gt;</span><span class="n">last_file_read_level</span> <span class="o">=</span> <span class="n">level</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      <span class="n">state</span><span class="o">-&gt;</span><span class="n">s</span> <span class="o">=</span> <span class="n">state</span><span class="o">-&gt;</span><span class="n">vset</span><span class="o">-&gt;</span><span class="n">table_cache_</span><span class="o">-&gt;</span><span class="n">Get</span><span class="p">(</span><span class="o">*</span><span class="n">state</span><span class="o">-&gt;</span><span class="n">options</span><span class="p">,</span> <span class="n">f</span><span class="o">-&gt;</span><span class="n">number</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                                                <span class="n">f</span><span class="o">-&gt;</span><span class="n">file_size</span><span class="p">,</span> <span class="n">state</span><span class="o">-&gt;</span><span class="n">ikey</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                                                <span class="o">&amp;</span><span class="n">state</span><span class="o">-&gt;</span><span class="n">saver</span><span class="p">,</span> <span class="n">SaveValue</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">      <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">state</span><span class="o">-&gt;</span><span class="n">s</span><span class="p">.</span><span class="n">ok</span><span class="p">())</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">state</span><span class="o">-&gt;</span><span class="n">found</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">      <span class="p">}</span>
+</span></span><span class="line"><span class="cl">      <span class="k">switch</span> <span class="p">(</span><span class="n">state</span><span class="o">-&gt;</span><span class="n">saver</span><span class="p">.</span><span class="n">state</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">case</span> <span class="nl">kNotFound</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">          <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>  <span class="c1">// Keep searching in other files
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="k">case</span> <span class="nl">kFound</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">          <span class="n">state</span><span class="o">-&gt;</span><span class="n">found</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">          <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">case</span> <span class="nl">kDeleted</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">          <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">case</span> <span class="nl">kCorrupt</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">          <span class="n">state</span><span class="o">-&gt;</span><span class="n">s</span> <span class="o">=</span>
+</span></span><span class="line"><span class="cl">              <span class="n">Status</span><span class="o">::</span><span class="n">Corruption</span><span class="p">(</span><span class="s">&#34;corrupted key for &#34;</span><span class="p">,</span> <span class="n">state</span><span class="o">-&gt;</span><span class="n">saver</span><span class="p">.</span><span class="n">user_key</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">          <span class="n">state</span><span class="o">-&gt;</span><span class="n">found</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">          <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">      <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      <span class="c1">// Not reached. Added to avoid false compilation warnings of
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>      <span class="c1">// &#34;control reaches end of non-void function&#34;.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>      <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="n">State</span> <span class="n">state</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">state</span><span class="p">.</span><span class="n">found</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">state</span><span class="p">.</span><span class="n">stats</span> <span class="o">=</span> <span class="n">stats</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">state</span><span class="p">.</span><span class="n">last_file_read</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">state</span><span class="p">.</span><span class="n">last_file_read_level</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="n">state</span><span class="p">.</span><span class="n">options</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">options</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">state</span><span class="p">.</span><span class="n">ikey</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">internal_key</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">  <span class="n">state</span><span class="p">.</span><span class="n">vset</span> <span class="o">=</span> <span class="n">vset_</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="n">state</span><span class="p">.</span><span class="n">saver</span><span class="p">.</span><span class="n">state</span> <span class="o">=</span> <span class="n">kNotFound</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">state</span><span class="p">.</span><span class="n">saver</span><span class="p">.</span><span class="n">ucmp</span> <span class="o">=</span> <span class="n">vset_</span><span class="o">-&gt;</span><span class="n">icmp_</span><span class="p">.</span><span class="n">user_comparator</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">  <span class="n">state</span><span class="p">.</span><span class="n">saver</span><span class="p">.</span><span class="n">user_key</span> <span class="o">=</span> <span class="n">k</span><span class="p">.</span><span class="n">user_key</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">  <span class="n">state</span><span class="p">.</span><span class="n">saver</span><span class="p">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="n">ForEachOverlapping</span><span class="p">(</span><span class="n">state</span><span class="p">.</span><span class="n">saver</span><span class="p">.</span><span class="n">user_key</span><span class="p">,</span> <span class="n">state</span><span class="p">.</span><span class="n">ikey</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">state</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">State</span><span class="o">::</span><span class="n">Match</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="n">state</span><span class="p">.</span><span class="n">found</span> <span class="o">?</span> <span class="n">state</span><span class="p">.</span><span class="nl">s</span> <span class="p">:</span> <span class="n">Status</span><span class="o">::</span><span class="n">NotFound</span><span class="p">(</span><span class="n">Slice</span><span class="p">());</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p>在介绍LevelDB中Compaction的实现时已经介绍过了<code>Match</code>方法，介绍过<code>Match</code>方法判断需要Seek Comapction的部分，而<code>Match</code>方法在查找SSTable时，是在TableCache上查找的。关于TableCache的部分，本系列也在<a href="posts/code-reading/leveldb-made-simple/7-cache/" rel="">深入浅出LevelDB —— 07 Cache</a>中介绍过，这里不再赘述。</p>
 <p><code>Version::Get</code>方法通过<code>ForEachOverlapping</code>方法，逐层扫描当前Version中的SSTable，并对其调用<code>Match</code>方法匹配LookupKey，直到LookupKey匹配或没有更多SSTable。</p>
 <p><code>Version::ForEachOverLapping</code>方法实现如下：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp">
-<span class="kt">void</span> <span class="n">Version</span><span class="o">::</span><span class="n">ForEachOverlapping</span><span class="p">(</span><span class="n">Slice</span> <span class="n">user_key</span><span class="p">,</span> <span class="n">Slice</span> <span class="n">internal_key</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">arg</span><span class="p">,</span>
-                                 <span class="kt">bool</span> <span class="p">(</span><span class="o">*</span><span class="n">func</span><span class="p">)(</span><span class="kt">void</span><span class="o">*</span><span class="p">,</span> <span class="kt">int</span><span class="p">,</span> <span class="n">FileMetaData</span><span class="o">*</span><span class="p">))</span> <span class="p">{</span>
-  <span class="k">const</span> <span class="n">Comparator</span><span class="o">*</span> <span class="n">ucmp</span> <span class="o">=</span> <span class="n">vset_</span><span class="o">-&gt;</span><span class="n">icmp_</span><span class="p">.</span><span class="n">user_comparator</span><span class="p">();</span>
-
-  <span class="c1">// Search level-0 in order from newest to oldest.
-</span><span class="c1"></span>  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">FileMetaData</span><span class="o">*&gt;</span> <span class="n">tmp</span><span class="p">;</span>
-  <span class="n">tmp</span><span class="p">.</span><span class="n">reserve</span><span class="p">(</span><span class="n">files_</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">size</span><span class="p">());</span>
-  <span class="k">for</span> <span class="p">(</span><span class="kt">uint32_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">files_</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">size</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">FileMetaData</span><span class="o">*</span> <span class="n">f</span> <span class="o">=</span> <span class="n">files_</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">];</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">ucmp</span><span class="o">-&gt;</span><span class="n">Compare</span><span class="p">(</span><span class="n">user_key</span><span class="p">,</span> <span class="n">f</span><span class="o">-&gt;</span><span class="n">smallest</span><span class="p">.</span><span class="n">user_key</span><span class="p">())</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span>
-        <span class="n">ucmp</span><span class="o">-&gt;</span><span class="n">Compare</span><span class="p">(</span><span class="n">user_key</span><span class="p">,</span> <span class="n">f</span><span class="o">-&gt;</span><span class="n">largest</span><span class="p">.</span><span class="n">user_key</span><span class="p">())</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-      <span class="n">tmp</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">f</span><span class="p">);</span>
-    <span class="p">}</span>
-  <span class="p">}</span>
-  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">tmp</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span> <span class="p">{</span>
-    <span class="n">std</span><span class="o">::</span><span class="n">sort</span><span class="p">(</span><span class="n">tmp</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span> <span class="n">tmp</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span> <span class="n">NewestFirst</span><span class="p">);</span>
-    <span class="k">for</span> <span class="p">(</span><span class="kt">uint32_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">tmp</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-      <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="o">*</span><span class="n">func</span><span class="p">)(</span><span class="n">arg</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">tmp</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span> <span class="p">{</span>
-        <span class="k">return</span><span class="p">;</span>
-      <span class="p">}</span>
-    <span class="p">}</span>
-  <span class="p">}</span>
-
-  <span class="c1">// Search other levels.
-</span><span class="c1"></span>  <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">level</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">level</span> <span class="o">&lt;</span> <span class="n">config</span><span class="o">::</span><span class="n">kNumLevels</span><span class="p">;</span> <span class="n">level</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">size_t</span> <span class="n">num_files</span> <span class="o">=</span> <span class="n">files_</span><span class="p">[</span><span class="n">level</span><span class="p">].</span><span class="n">size</span><span class="p">();</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">num_files</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="k">continue</span><span class="p">;</span>
-
-    <span class="c1">// Binary search to find earliest index whose largest key &gt;= internal_key.
-</span><span class="c1"></span>    <span class="kt">uint32_t</span> <span class="n">index</span> <span class="o">=</span> <span class="n">FindFile</span><span class="p">(</span><span class="n">vset_</span><span class="o">-&gt;</span><span class="n">icmp_</span><span class="p">,</span> <span class="n">files_</span><span class="p">[</span><span class="n">level</span><span class="p">],</span> <span class="n">internal_key</span><span class="p">);</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">index</span> <span class="o">&lt;</span> <span class="n">num_files</span><span class="p">)</span> <span class="p">{</span>
-      <span class="n">FileMetaData</span><span class="o">*</span> <span class="n">f</span> <span class="o">=</span> <span class="n">files_</span><span class="p">[</span><span class="n">level</span><span class="p">][</span><span class="n">index</span><span class="p">];</span>
-      <span class="k">if</span> <span class="p">(</span><span class="n">ucmp</span><span class="o">-&gt;</span><span class="n">Compare</span><span class="p">(</span><span class="n">user_key</span><span class="p">,</span> <span class="n">f</span><span class="o">-&gt;</span><span class="n">smallest</span><span class="p">.</span><span class="n">user_key</span><span class="p">())</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-        <span class="c1">// All of &#34;f&#34; is past any data for user_key
-</span><span class="c1"></span>      <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="o">*</span><span class="n">func</span><span class="p">)(</span><span class="n">arg</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="n">f</span><span class="p">))</span> <span class="p">{</span>
-          <span class="k">return</span><span class="p">;</span>
-        <span class="p">}</span>
-      <span class="p">}</span>
-    <span class="p">}</span>
-  <span class="p">}</span>
-<span class="p">}</span>
-
-</code></pre></div><p><code>ForEachOverlapping</code>方法在level-0中查找时，由于level-0 SSTable之间可能存在overlap，所以其按照level-0 SSTable的生成顺序，从新SSTable到旧SSTable匹配；而在level&gt;0中查找时，由于该层key全局有序，因此可以通过二分搜索的方式定位LookupKey所在的SSTable并匹配。</p></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="n">Version</span><span class="o">::</span><span class="n">ForEachOverlapping</span><span class="p">(</span><span class="n">Slice</span> <span class="n">user_key</span><span class="p">,</span> <span class="n">Slice</span> <span class="n">internal_key</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">arg</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                                 <span class="kt">bool</span> <span class="p">(</span><span class="o">*</span><span class="n">func</span><span class="p">)(</span><span class="kt">void</span><span class="o">*</span><span class="p">,</span> <span class="kt">int</span><span class="p">,</span> <span class="n">FileMetaData</span><span class="o">*</span><span class="p">))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">const</span> <span class="n">Comparator</span><span class="o">*</span> <span class="n">ucmp</span> <span class="o">=</span> <span class="n">vset_</span><span class="o">-&gt;</span><span class="n">icmp_</span><span class="p">.</span><span class="n">user_comparator</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Search level-0 in order from newest to oldest.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">FileMetaData</span><span class="o">*&gt;</span> <span class="n">tmp</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">tmp</span><span class="p">.</span><span class="n">reserve</span><span class="p">(</span><span class="n">files_</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">size</span><span class="p">());</span>
+</span></span><span class="line"><span class="cl">  <span class="k">for</span> <span class="p">(</span><span class="kt">uint32_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">files_</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">size</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">FileMetaData</span><span class="o">*</span> <span class="n">f</span> <span class="o">=</span> <span class="n">files_</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">ucmp</span><span class="o">-&gt;</span><span class="n">Compare</span><span class="p">(</span><span class="n">user_key</span><span class="p">,</span> <span class="n">f</span><span class="o">-&gt;</span><span class="n">smallest</span><span class="p">.</span><span class="n">user_key</span><span class="p">())</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">ucmp</span><span class="o">-&gt;</span><span class="n">Compare</span><span class="p">(</span><span class="n">user_key</span><span class="p">,</span> <span class="n">f</span><span class="o">-&gt;</span><span class="n">largest</span><span class="p">.</span><span class="n">user_key</span><span class="p">())</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="n">tmp</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">f</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">tmp</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">sort</span><span class="p">(</span><span class="n">tmp</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span> <span class="n">tmp</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span> <span class="n">NewestFirst</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">uint32_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">tmp</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="o">*</span><span class="n">func</span><span class="p">)(</span><span class="n">arg</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">tmp</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">      <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Search other levels.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">level</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">level</span> <span class="o">&lt;</span> <span class="n">config</span><span class="o">::</span><span class="n">kNumLevels</span><span class="p">;</span> <span class="n">level</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">size_t</span> <span class="n">num_files</span> <span class="o">=</span> <span class="n">files_</span><span class="p">[</span><span class="n">level</span><span class="p">].</span><span class="n">size</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">num_files</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="k">continue</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Binary search to find earliest index whose largest key &gt;= internal_key.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="kt">uint32_t</span> <span class="n">index</span> <span class="o">=</span> <span class="n">FindFile</span><span class="p">(</span><span class="n">vset_</span><span class="o">-&gt;</span><span class="n">icmp_</span><span class="p">,</span> <span class="n">files_</span><span class="p">[</span><span class="n">level</span><span class="p">],</span> <span class="n">internal_key</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">index</span> <span class="o">&lt;</span> <span class="n">num_files</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="n">FileMetaData</span><span class="o">*</span> <span class="n">f</span> <span class="o">=</span> <span class="n">files_</span><span class="p">[</span><span class="n">level</span><span class="p">][</span><span class="n">index</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">      <span class="k">if</span> <span class="p">(</span><span class="n">ucmp</span><span class="o">-&gt;</span><span class="n">Compare</span><span class="p">(</span><span class="n">user_key</span><span class="p">,</span> <span class="n">f</span><span class="o">-&gt;</span><span class="n">smallest</span><span class="p">.</span><span class="n">user_key</span><span class="p">())</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// All of &#34;f&#34; is past any data for user_key
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>      <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="o">*</span><span class="n">func</span><span class="p">)(</span><span class="n">arg</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="n">f</span><span class="p">))</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">          <span class="k">return</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">      <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><p><code>ForEachOverlapping</code>方法在level-0中查找时，由于level-0 SSTable之间可能存在overlap，所以其按照level-0 SSTable的生成顺序，从新SSTable到旧SSTable匹配；而在level&gt;0中查找时，由于该层key全局有序，因此可以通过二分搜索的方式定位LookupKey所在的SSTable并匹配。</p></div>
 
         <div class="post-footer" id="post-footer">
     <div class="post-info">
@@ -566,7 +558,7 @@
 </div>
 </article></div>
         </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.89.4">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.101.0">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
                 </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2022</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank" rel="noopener noreferrer">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div></footer></div>
 
