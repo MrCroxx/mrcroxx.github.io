@@ -1,23 +1,30 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noodp" />
-    <title class="pjax-title">《In Search of an Understandable Consensus Algorithm (Extended Version)》论文翻译 - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《In Search of an Understandable Consensus Algorithm (Extended Version)》论文翻译" />
-<meta property="og:description" content="本篇文章是对论文In Search of an Understandable Consensus Algorithm (Extended Version)的原创翻译，转载请严格遵守CC BY-NC-SA协议。" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/raft-extended/" /><meta property="og:image" content="https://mrcroxx.github.io/posts/paper-reading/raft-extended/paper-reading.jpg"/><meta property="article:section" content="posts" />
-<meta property="article:published_time" content="2020-09-27T19:26:30+08:00" />
-<meta property="article:modified_time" content="2020-10-01T13:53:47+08:00" />
+    <title class="pjax-title">《In Search of an Understandable Consensus Algorithm (Extended Version)》论文翻译 - 叉鸽的博客 | MrCroxx&#39;s Blog</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/raft-extended/">
+  <meta property="og:site_name" content="叉鸽的博客 | MrCroxx&#39;s Blog">
+  <meta property="og:title" content="《In Search of an Understandable Consensus Algorithm (Extended Version)》论文翻译">
+  <meta property="og:description" content="本篇文章是对论文In Search of an Understandable Consensus Algorithm (Extended Version)的原创翻译，转载请严格遵守CC BY-NC-SA协议。">
+  <meta property="og:locale" content="en">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2020-09-27T19:26:30+08:00">
+    <meta property="article:modified_time" content="2020-10-01T13:53:47+08:00">
+    <meta property="article:tag" content="Raft">
+    <meta property="article:tag" content="Translation">
+    <meta property="og:image" content="https://mrcroxx.github.io/posts/paper-reading/raft-extended/paper-reading.jpg">
 
-<meta name="twitter:card" content="summary_large_image"/>
-<meta name="twitter:image" content="https://mrcroxx.github.io/posts/paper-reading/raft-extended/paper-reading.jpg"/>
-<meta name="twitter:title" content="《In Search of an Understandable Consensus Algorithm (Extended Version)》论文翻译"/>
-<meta name="twitter:description" content="本篇文章是对论文In Search of an Understandable Consensus Algorithm (Extended Version)的原创翻译，转载请严格遵守CC BY-NC-SA协议。"/>
-<meta name="application-name" content="叉鸽 MrCroxx 的博客">
-<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://mrcroxx.github.io/posts/paper-reading/raft-extended/paper-reading.jpg">
+  <meta name="twitter:title" content="《In Search of an Understandable Consensus Algorithm (Extended Version)》论文翻译">
+  <meta name="twitter:description" content="本篇文章是对论文In Search of an Understandable Consensus Algorithm (Extended Version)的原创翻译，转载请严格遵守CC BY-NC-SA协议。">
+      <meta name="twitter:site" content="@CroxxMr">
+<meta name="application-name" content="叉鸽的博客 | MrCroxx&#39;s Blog">
+<meta name="apple-mobile-web-app-title" content="叉鸽的博客 | MrCroxx&#39;s Blog">
 
 <meta name="theme-color" content="#f8f8f8"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -28,7 +35,7 @@
         "@context": "http://schema.org",
         "@type": "BlogPosting",
         "headline": "《In Search of an Understandable Consensus Algorithm (Extended Version)》论文翻译",
-        "inLanguage": "zh-CN",
+        "inLanguage": "en",
         "mainEntityOfPage": {
             "@type": "WebPage",
             "@id": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/raft-extended\/"
@@ -37,12 +44,12 @@
                             "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/raft-extended\/paper-reading.jpg",
                             "width":  1200 ,
                             "height":  360 
-                        }],"genre": "posts","keywords": "Raft, Translation","wordcount":  29045 ,
+                        }],"genre": "posts","keywords": "Raft, Translation","wordcount":  29042 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/raft-extended\/","datePublished": "2020-09-27T19:26:30+08:00","dateModified": "2020-10-01T13:53:47+08:00","publisher": {
             "@type": "Organization",
-            "name": "叉鸽"},"author": {
+            "name": "叉鸽 | MrCroxx"},"author": {
                 "@type": "Person",
-                "name": "叉鸽"
+                "name": "叉鸽 | MrCroxx"
             },"description": ""
     }
     </script></head>
@@ -59,21 +66,21 @@
     <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
     <div class="header-wrapper">
         <div class="header-title">
-            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="desktop-header-typeit" class="typeit"></span></a>
+            <a href="/" title="叉鸽的博客 | MrCroxx&#39;s Blog"><span id="desktop-header-typeit" class="typeit"></span></a>
         </div>
         <div class="menu">
-            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/posts/about-me"> 关于我 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
-                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
-                        <a href="#" onclick="return false;" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 文章 | Archives </a><a class="menu-item" href="/categories/"> 分类 | Categories </a><a class="menu-item" href="/tags/"> 标签 | Tags </a><a class="menu-item" href="/posts/about"> 关于我 | About </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="Search titles or contents..." id="search-input-desktop">
+                        <a href="#" onclick="return false;" class="search-button search-toggle" id="search-toggle-desktop" title="Search">
                             <i class="fas fa-search fa-fw"></i>
                         </a>
-                        <a href="#" onclick="return false;" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                        <a href="#" onclick="return false;" class="search-button search-clear" id="search-clear-desktop" title="Clear">
                             <i class="fas fa-times-circle fa-fw"></i>
                         </a>
                         <span class="search-button search-loading" id="search-loading-desktop">
                             <i class="fas fa-spinner fa-fw fa-spin"></i>
                         </span>
-                    </span><a href="#" onclick="return false;" class="menu-item theme-switch" title="切换主题">
+                    </span><a href="#" onclick="return false;" class="menu-item theme-switch" title="Switch Theme">
                     <i class="fas fa-adjust fa-fw"></i>
                 </a></div>
         </div>
@@ -82,7 +89,7 @@
     <div class="header-container">
         <div class="header-wrapper">
             <div class="header-title">
-                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="mobile-header-typeit" class="typeit"></span></a>
+                <a href="/" title="叉鸽的博客 | MrCroxx&#39;s Blog"><span id="mobile-header-typeit" class="typeit"></span></a>
             </div>
             <div class="menu-toggle" id="menu-toggle-mobile">
                 <span></span><span></span><span></span>
@@ -90,11 +97,11 @@
         </div>
         <div class="menu" id="menu-mobile"><div class="search-wrapper">
                     <div class="search mobile" id="search-mobile">
-                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
-                        <a href="#" onclick="return false;" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                        <input type="text" placeholder="Search titles or contents..." id="search-input-mobile">
+                        <a href="#" onclick="return false;" class="search-button search-toggle" id="search-toggle-mobile" title="Search">
                             <i class="fas fa-search fa-fw"></i>
                         </a>
-                        <a href="#" onclick="return false;" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                        <a href="#" onclick="return false;" class="search-button search-clear" id="search-clear-mobile" title="Clear">
                             <i class="fas fa-times-circle fa-fw"></i>
                         </a>
                         <span class="search-button search-loading" id="search-loading-mobile">
@@ -102,9 +109,9 @@
                         </span>
                     </div>
                     <a href="#" onclick="return false;" class="search-cancel" id="search-cancel-mobile">
-                        取消
+                        Cancel
                     </a>
-                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/posts/about-me" title="">关于我</a><a href="#" onclick="return false;" class="menu-item theme-switch" title="切换主题">
+                </div><a class="menu-item" href="/posts/" title="">文章 | Archives</a><a class="menu-item" href="/categories/" title="">分类 | Categories</a><a class="menu-item" href="/tags/" title="">标签 | Tags</a><a class="menu-item" href="/posts/about" title="">关于我 | About</a><a href="#" onclick="return false;" class="menu-item theme-switch" title="Switch Theme">
                 <i class="fas fa-adjust fa-fw"></i>
             </a></div>
     </div>
@@ -117,14 +124,14 @@
 </div>
 <main class="main">
             <div class="container"><div class="toc" id="toc-auto">
-        <h2 class="toc-title">目录</h2>
+        <h2 class="toc-title">Contents</h2>
         <div class="toc-content" id="toc-content-auto"></div>
     </div><script>document.getElementsByTagName("main")[0].setAttribute("pageStyle", "normal")</script><script>document.getElementsByTagName("main")[0].setAttribute("autoTOC", "true")</script><article class="page single"><h1 class="single-title animate__animated animate__flipInX">《In Search of an Understandable Consensus Algorithm (Extended Version)》论文翻译</h1><div class="post-meta">
             <div class="post-meta-line">
-                <span class="post-author"><i class="author fas fa-user-circle fa-fw"></i><a href="about" title="Author" rel=" author" class="author">叉鸽</a>
-                </span>&nbsp;<span class="post-category">收录于 </span>&nbsp;<span class="post-category">类别 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-27">2020-09-27</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2020-10-01">2020-10-01</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 29045 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 58 分钟&nbsp;</div>
+                <span class="post-author"><i class="author fas fa-user-circle fa-fw"></i><a href="/posts/about" title="Author" rel=" author" class="author">叉鸽 | MrCroxx</a>
+                </span>&nbsp;<span class="post-category">included in </span>&nbsp;<span class="post-category">category <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-09-27">2020-09-27</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2020-10-01">2020-10-01</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;29042 words&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;58 minutes&nbsp;</div>
         </div><div class="featured-image"><img
         class="lazyload"
         data-src="/posts/paper-reading/raft-extended/paper-reading.jpg"
@@ -134,7 +141,7 @@
         title="/posts/paper-reading/raft-extended/paper-reading.jpg" height="360" width="1200"
     /></div><div class="details toc" id="toc-static"  kept="">
                 <div class="details-summary toc-title">
-                    <span>目录</span>
+                    <span>Contents</span>
                     <span><i class="details-icon fas fa-angle-right"></i></span>
                 </div>
                 <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
@@ -243,7 +250,7 @@
 <p>因此，使用系统与Paxos相似之处很少。每个实用系统的实现首先都会从Paxos开始，然后发现很难实现它，接着开发了一个非常复杂的架构。这很消耗时间且容易出错，且Paxos难以理解加剧了这一问题。Paxos的表达形式可能对于证明其理论正确性来说很好，但是因为其真实实现与Paxos太过不同，这样理论证明就失去了价值。来自Chubby的实现者的评论尤为典型：</p>
 <div class="details admonition quote open">
         <div class="details-summary admonition-title">
-            <i class="icon fas fa-quote-right fa-fw"></i>引用<i class="details-icon fas fa-angle-right fa-fw"></i>
+            <i class="icon fas fa-quote-right fa-fw"></i>Quote<i class="details-icon fas fa-angle-right fa-fw"></i>
         </div>
         <div class="details-content">
             <div class="admonition-content">现实系统的需求的与Paxos算法的描述之间有很大的隔阂。为了构建现实的系统，专家需要使用分散在各种文献中的许多思想，并作出一些较小的协议扩展。这些不断累积的扩展会非常多，最后系统会基于一个未被证明的协议。<sup>[4]</sup></div>
@@ -349,7 +356,7 @@
 </ul>
 <p>第一条性质基于“leader在给定term期间只会创建一条有给定index的日志条目，且日志条目在日志中的位置永远不会改变”的事实。第二条性质由AppendEntries提供的一个简单的一致性校验保证。当发送AppendEntries RPC时，leader会包含其日志中紧随新条目之前的index和term。如果follower在其日志中没有找到有相同index和term的条目，那么它会拒绝该新条目。一致性检验会以归纳的步骤执行：日志最初的空状态满足“日志匹配性质”，且每当日志被扩展时一致性检验会保证“日志匹配性质”。因此，每当AppendEntries成功返回，leader会得知follower的日志和它自己的日志直到新条目的位置都是相同的。</p>
 <p>在正常的操作中，leader的日志会和follower的日志保持一致，所以AppendEntries的一致性检验永远不会失败。然而，leader崩溃会使日志不一致（旧的leader可能没有完全复制它的日志中的所有条目）。这些不一致会随着一系列leader和follower的故障加剧。<strong>图7</strong>给出了follower可能与新leader不同的原因。follower可能丢失了leader有的一些条目，follower可能多出leader没有的一些条目，或者二者都有。日志中丢失或多出的条目可能垮了多个term。</p>
-<p><figure><a class="lightgallery" href="/posts/paper-reading/raft-extended/figure-7.png" title="图7 当最上面的leader开始当权时，a~f中的任意情况都可能在follower中发生。每个方框表示一个日志条目，方框中的条目是它的term。follower可能丢失条目（a~b），可能有额外的未被提交的条目（c~d），或者二者都有（e~f）。例如，在情况f中，该服务器是term 2的leader，其将一些条目添加到了它的日志中，然后它在将任意这些条目提交前崩溃了；该服务器快速地重启了并成了了term 3的leader，并又将更多条目添加到了它的日志中；在这些term 2和term 3的条目被提交前，该服务器再次崩溃，并在几个term期间保持离线状态。" data-thumbnail="/posts/paper-reading/raft-extended/figure-7.png" data-sub-html="<h2>图7 当最上面的leader开始当权时，a~f中的任意情况都可能在follower中发生。每个方框表示一个日志条目，方框中的条目是它的term。follower可能丢失条目（a~b），可能有额外的未被提交的条目（c~d），或者二者都有（e~f）。例如，在情况f中，该服务器是term 2的leader，其将一些条目添加到了它的日志中，然后它在将任意这些条目提交前崩溃了；该服务器快速地重启了并成了了term 3的leader，并又将更多条目添加到了它的日志中；在这些term 2和term 3的条目被提交前，该服务器再次崩溃，并在几个term期间保持离线状态。</h2><p>图7 当最上面的leader开始当权时，a~f中的任意情况都可能在follower中发生。每个方框表示一个日志条目，方框中的条目是它的term。follower可能丢失条目（a~b），可能有额外的未被提交的条目（c~d），或者二者都有（e~f）。例如，在情况f中，该服务器是term 2的leader，其将一些条目添加到了它的日志中，然后它在将任意这些条目提交前崩溃了；该服务器快速地重启了并成了了term 3的leader，并又将更多条目添加到了它的日志中；在这些term 2和term 3的条目被提交前，该服务器再次崩溃，并在几个term期间保持离线状态。</p>">
+<p><figure><a class="lightgallery" href="/posts/paper-reading/raft-extended/figure-7.png" title="图7 当最上面的leader开始当权时，a&lt;del&gt;f中的任意情况都可能在follower中发生。每个方框表示一个日志条目，方框中的条目是它的term。follower可能丢失条目（a&lt;/del&gt;b），可能有额外的未被提交的条目（c&lt;del&gt;d），或者二者都有（e&lt;/del&gt;f）。例如，在情况f中，该服务器是term 2的leader，其将一些条目添加到了它的日志中，然后它在将任意这些条目提交前崩溃了；该服务器快速地重启了并成了了term 3的leader，并又将更多条目添加到了它的日志中；在这些term 2和term 3的条目被提交前，该服务器再次崩溃，并在几个term期间保持离线状态。" data-thumbnail="/posts/paper-reading/raft-extended/figure-7.png" data-sub-html="<h2>图7 当最上面的leader开始当权时，a~f中的任意情况都可能在follower中发生。每个方框表示一个日志条目，方框中的条目是它的term。follower可能丢失条目（a~b），可能有额外的未被提交的条目（c~d），或者二者都有（e~f）。例如，在情况f中，该服务器是term 2的leader，其将一些条目添加到了它的日志中，然后它在将任意这些条目提交前崩溃了；该服务器快速地重启了并成了了term 3的leader，并又将更多条目添加到了它的日志中；在这些term 2和term 3的条目被提交前，该服务器再次崩溃，并在几个term期间保持离线状态。</h2><p>图7 当最上面的leader开始当权时，a&lt;del&gt;f中的任意情况都可能在follower中发生。每个方框表示一个日志条目，方框中的条目是它的term。follower可能丢失条目（a&lt;/del&gt;b），可能有额外的未被提交的条目（c&lt;del&gt;d），或者二者都有（e&lt;/del&gt;f）。例如，在情况f中，该服务器是term 2的leader，其将一些条目添加到了它的日志中，然后它在将任意这些条目提交前崩溃了；该服务器快速地重启了并成了了term 3的leader，并又将更多条目添加到了它的日志中；在这些term 2和term 3的条目被提交前，该服务器再次崩溃，并在几个term期间保持离线状态。</p>">
         <img
             class="lazyload"
             data-src="figure-7.png"
@@ -571,7 +578,7 @@
     </figure></p>
 <p>为了测量领导选举，我们反复地让5个服务器组成的leader崩溃，并测量集群多长时间能检测到崩溃并选举出新的leader（见图<strong>16</strong>）。为了保证最坏情况，每次考察中的日志长度都不同，所以一些candidate没有成为leader的资格。另外，为了提高投票决裂的产生，我们的测试脚本会在杀死leader的进程前触发一个同步的心跳RPC广播（这近似于leader在复制了新条目后崩溃的情况）。leader会在心跳时间内均匀且随机地崩溃，对于所有测试，心跳时间是最小electionTimeout的一半。因此，可能存在的最小停机事件大概是electionTimeout的一半。</p>
 <p><strong>图16</strong>的上图表明，electionTimeout只要小范围的随机化就足以在选举中避免投票决裂。在我们的测试中，如果没有随机化，领导选举会持续超过10秒，这是因为产生了许多的投票决裂。仅增加5ms的随机化也能显著改善这一问题，其平均停机时间为287ms。使用更大的随机范围能够改善最坏情况的表现：（在超过1000次实验中）50ms的随机范围的最坏完成时间为513ms。</p>
-<p><strong>图16</strong>的下图表明减小electionTimeout可以减少停机时间。当electionTimeout为12~24ms时，选举leader的平均时间仅为35ms（最长的一次为152ms）。然而，降低该超时时间可能会违背Raft的定时要求：leader在其它服务器开始新的选举前很难将心跳广播出去。这可能导致不必要的领导变更并降低整个系统的可用性。我们推荐使用保守的electionTimeout，如150~300ms；这样的超时不太可能造成不必要的领导变更，且仍能提供良好的可用性。</p>
+<p><strong>图16</strong>的下图表明减小electionTimeout可以减少停机时间。当electionTimeout为12<del>24ms时，选举leader的平均时间仅为35ms（最长的一次为152ms）。然而，降低该超时时间可能会违背Raft的定时要求：leader在其它服务器开始新的选举前很难将心跳广播出去。这可能导致不必要的领导变更并降低整个系统的可用性。我们推荐使用保守的electionTimeout，如150</del>300ms；这样的超时不太可能造成不必要的领导变更，且仍能提供良好的可用性。</p>
 <h2 id="10-相关工作">10. 相关工作</h2>
 <p>共识算法相关的出版物有很多，这些出版物大多都属于如下类别之一：</p>
 <ul>
@@ -648,7 +655,7 @@
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
-                <span>更新于 2020-10-01</span>
+                <span>Updated on 2020-10-01</span>
             </div>
             <div class="post-info-license"></div>
         </div>
@@ -663,7 +670,7 @@
     <div class="post-info-more">
         <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/raft/">Raft</a>,&nbsp;<a href="/tags/translation/">Translation</a></section>
         <section>
-            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">Back</a></span>&nbsp;|&nbsp;<span><a href="/">Home</a></span>
         </section>
     </div>
 
@@ -672,18 +679,18 @@
 </div>
 </article></div>
         </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.104.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
-                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2023</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank" rel="noopener noreferrer">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        <div class="footer-container"><div class="footer-line">Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.128.2">Hugo</a> | Theme - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2024</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/posts/about" target="_blank" rel="noopener noreferrer">叉鸽 | MrCroxx</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div></footer></div>
 
-    <div id="fixed-buttons"><a href="#back-to-top" id="back-to-top-button" class="fixed-button" title="回到顶部">
+    <div id="fixed-buttons"><a href="#back-to-top" id="back-to-top-button" class="fixed-button" title="Back to Top">
             <i class="fas fa-arrow-up fa-fw"></i>
-        </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+        </a><a href="#" id="view-comments" class="fixed-button" title="View Comments">
             <i class="fas fa-comment fa-fw"></i>
         </a>
-    </div><div class="assets"><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/topbar/topbar.min.js"></script><script type="text/javascript" src="/lib/pjax/pjax.min.js"></script><script type="text/javascript" src="/js/theme.min.js"></script></div>
+    </div><div class="assets"><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/topbar/topbar.min.js"></script><script type="text/javascript" src="/lib/pjax/pjax.min.js"></script><script type="text/javascript" src="/js/theme.min.js"></script></div>
 
-<div class="pjax-assets"><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"desktop-header-typeit":"叉鸽 | MrCroxx","mobile-header-typeit":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"desktop-header-typeit":["desktop-header-typeit"],"mobile-header-typeit":["mobile-header-typeit"]},"duration":null,"speed":null}};</script><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/lightgallery/lightgallery.min.css">
+<div class="pjax-assets"><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"Copy to clipboard","maxShownLines":10000},"comment":{},"data":{"desktop-header-typeit":"叉鸽 | MrCroxx","mobile-header-typeit":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","maxResultLength":10,"noResultsFound":"No results found","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"desktop-header-typeit":["desktop-header-typeit"],"mobile-header-typeit":["mobile-header-typeit"]},"duration":null,"speed":null}};</script><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/lightgallery/lightgallery.min.css">
     <noscript><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/katex/katex.min.css">
     <noscript><link rel="stylesheet" href="/lib/katex/katex.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/katex/copy-tex.min.css">
     <noscript><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"></noscript></div>

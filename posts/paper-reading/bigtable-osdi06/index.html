@@ -1,22 +1,28 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noodp" />
-    <title class="pjax-title">《Bigtable: A Distributed Storage System for Structured Data》论文翻译（BigTable-OSDI06） - 叉鸽 MrCroxx 的博客</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:title" content="《Bigtable: A Distributed Storage System for Structured Data》论文翻译（BigTable-OSDI06）" />
-<meta property="og:description" content="本篇文章是对论文Bigtable-OSDI06的原创翻译，转载请严格遵守CC BY-NC-SA协议。" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/bigtable-osdi06/" /><meta property="article:section" content="posts" />
-<meta property="article:published_time" content="2020-08-15T11:29:45+08:00" />
-<meta property="article:modified_time" content="2020-08-15T11:29:45+08:00" />
+    <title class="pjax-title">《Bigtable: A Distributed Storage System for Structured Data》论文翻译（BigTable-OSDI06） - 叉鸽的博客 | MrCroxx&#39;s Blog</title><meta name="Description" content="Welcome to MrCroxx&#39;s Blog."><meta property="og:url" content="https://mrcroxx.github.io/posts/paper-reading/bigtable-osdi06/">
+  <meta property="og:site_name" content="叉鸽的博客 | MrCroxx&#39;s Blog">
+  <meta property="og:title" content="《Bigtable: A Distributed Storage System for Structured Data》论文翻译（BigTable-OSDI06）">
+  <meta property="og:description" content="本篇文章是对论文Bigtable-OSDI06的原创翻译，转载请严格遵守CC BY-NC-SA协议。">
+  <meta property="og:locale" content="en">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="posts">
+    <meta property="article:published_time" content="2020-08-15T11:29:45+08:00">
+    <meta property="article:modified_time" content="2020-08-15T11:29:45+08:00">
+    <meta property="article:tag" content="Bigtable">
+    <meta property="article:tag" content="Translation">
 
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="《Bigtable: A Distributed Storage System for Structured Data》论文翻译（BigTable-OSDI06）"/>
-<meta name="twitter:description" content="本篇文章是对论文Bigtable-OSDI06的原创翻译，转载请严格遵守CC BY-NC-SA协议。"/>
-<meta name="application-name" content="叉鸽 MrCroxx 的博客">
-<meta name="apple-mobile-web-app-title" content="叉鸽 MrCroxx 的博客">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="《Bigtable: A Distributed Storage System for Structured Data》论文翻译（BigTable-OSDI06）">
+  <meta name="twitter:description" content="本篇文章是对论文Bigtable-OSDI06的原创翻译，转载请严格遵守CC BY-NC-SA协议。">
+      <meta name="twitter:site" content="@CroxxMr">
+<meta name="application-name" content="叉鸽的博客 | MrCroxx&#39;s Blog">
+<meta name="apple-mobile-web-app-title" content="叉鸽的博客 | MrCroxx&#39;s Blog">
 
 <meta name="theme-color" content="#f8f8f8"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -27,16 +33,16 @@
         "@context": "http://schema.org",
         "@type": "BlogPosting",
         "headline": "《Bigtable: A Distributed Storage System for Structured Data》论文翻译（BigTable-OSDI06）",
-        "inLanguage": "zh-CN",
+        "inLanguage": "en",
         "mainEntityOfPage": {
             "@type": "WebPage",
             "@id": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/bigtable-osdi06\/"
-        },"genre": "posts","keywords": "Bigtable, Translation","wordcount":  23815 ,
+        },"genre": "posts","keywords": "Bigtable, Translation","wordcount":  23813 ,
         "url": "https:\/\/mrcroxx.github.io\/posts\/paper-reading\/bigtable-osdi06\/","datePublished": "2020-08-15T11:29:45+08:00","dateModified": "2020-08-15T11:29:45+08:00","publisher": {
             "@type": "Organization",
-            "name": "叉鸽"},"author": {
+            "name": "叉鸽 | MrCroxx"},"author": {
                 "@type": "Person",
-                "name": "叉鸽"
+                "name": "叉鸽 | MrCroxx"
             },"description": ""
     }
     </script></head>
@@ -53,21 +59,21 @@
     <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
     <div class="header-wrapper">
         <div class="header-title">
-            <a href="/" title="叉鸽 MrCroxx 的博客"><span id="desktop-header-typeit" class="typeit"></span></a>
+            <a href="/" title="叉鸽的博客 | MrCroxx&#39;s Blog"><span id="desktop-header-typeit" class="typeit"></span></a>
         </div>
         <div class="menu">
-            <div class="menu-inner"><a class="menu-item" href="/posts/"> 所有文章 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/posts/about-me"> 关于我 </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
-                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-desktop">
-                        <a href="#" onclick="return false;" class="search-button search-toggle" id="search-toggle-desktop" title="搜索">
+            <div class="menu-inner"><a class="menu-item" href="/posts/"> 文章 | Archives </a><a class="menu-item" href="/categories/"> 分类 | Categories </a><a class="menu-item" href="/tags/"> 标签 | Tags </a><a class="menu-item" href="/posts/about"> 关于我 | About </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="Search titles or contents..." id="search-input-desktop">
+                        <a href="#" onclick="return false;" class="search-button search-toggle" id="search-toggle-desktop" title="Search">
                             <i class="fas fa-search fa-fw"></i>
                         </a>
-                        <a href="#" onclick="return false;" class="search-button search-clear" id="search-clear-desktop" title="清空">
+                        <a href="#" onclick="return false;" class="search-button search-clear" id="search-clear-desktop" title="Clear">
                             <i class="fas fa-times-circle fa-fw"></i>
                         </a>
                         <span class="search-button search-loading" id="search-loading-desktop">
                             <i class="fas fa-spinner fa-fw fa-spin"></i>
                         </span>
-                    </span><a href="#" onclick="return false;" class="menu-item theme-switch" title="切换主题">
+                    </span><a href="#" onclick="return false;" class="menu-item theme-switch" title="Switch Theme">
                     <i class="fas fa-adjust fa-fw"></i>
                 </a></div>
         </div>
@@ -76,7 +82,7 @@
     <div class="header-container">
         <div class="header-wrapper">
             <div class="header-title">
-                <a href="/" title="叉鸽 MrCroxx 的博客"><span id="mobile-header-typeit" class="typeit"></span></a>
+                <a href="/" title="叉鸽的博客 | MrCroxx&#39;s Blog"><span id="mobile-header-typeit" class="typeit"></span></a>
             </div>
             <div class="menu-toggle" id="menu-toggle-mobile">
                 <span></span><span></span><span></span>
@@ -84,11 +90,11 @@
         </div>
         <div class="menu" id="menu-mobile"><div class="search-wrapper">
                     <div class="search mobile" id="search-mobile">
-                        <input type="text" placeholder="搜索文章标题或内容..." id="search-input-mobile">
-                        <a href="#" onclick="return false;" class="search-button search-toggle" id="search-toggle-mobile" title="搜索">
+                        <input type="text" placeholder="Search titles or contents..." id="search-input-mobile">
+                        <a href="#" onclick="return false;" class="search-button search-toggle" id="search-toggle-mobile" title="Search">
                             <i class="fas fa-search fa-fw"></i>
                         </a>
-                        <a href="#" onclick="return false;" class="search-button search-clear" id="search-clear-mobile" title="清空">
+                        <a href="#" onclick="return false;" class="search-button search-clear" id="search-clear-mobile" title="Clear">
                             <i class="fas fa-times-circle fa-fw"></i>
                         </a>
                         <span class="search-button search-loading" id="search-loading-mobile">
@@ -96,9 +102,9 @@
                         </span>
                     </div>
                     <a href="#" onclick="return false;" class="search-cancel" id="search-cancel-mobile">
-                        取消
+                        Cancel
                     </a>
-                </div><a class="menu-item" href="/posts/" title="">所有文章</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/posts/about-me" title="">关于我</a><a href="#" onclick="return false;" class="menu-item theme-switch" title="切换主题">
+                </div><a class="menu-item" href="/posts/" title="">文章 | Archives</a><a class="menu-item" href="/categories/" title="">分类 | Categories</a><a class="menu-item" href="/tags/" title="">标签 | Tags</a><a class="menu-item" href="/posts/about" title="">关于我 | About</a><a href="#" onclick="return false;" class="menu-item theme-switch" title="Switch Theme">
                 <i class="fas fa-adjust fa-fw"></i>
             </a></div>
     </div>
@@ -111,17 +117,17 @@
 </div>
 <main class="main">
             <div class="container"><div class="toc" id="toc-auto">
-        <h2 class="toc-title">目录</h2>
+        <h2 class="toc-title">Contents</h2>
         <div class="toc-content" id="toc-content-auto"></div>
     </div><script>document.getElementsByTagName("main")[0].setAttribute("pageStyle", "normal")</script><script>document.getElementsByTagName("main")[0].setAttribute("autoTOC", "true")</script><article class="page single"><h1 class="single-title animate__animated animate__flipInX">《Bigtable: A Distributed Storage System for Structured Data》论文翻译（BigTable-OSDI06）</h1><div class="post-meta">
             <div class="post-meta-line">
-                <span class="post-author"><i class="author fas fa-user-circle fa-fw"></i><a href="about" title="Author" rel=" author" class="author">叉鸽</a>
-                </span>&nbsp;<span class="post-category">收录于 </span>&nbsp;<span class="post-category">类别 <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
-            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-08-15">2020-08-15</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2020-08-15">2020-08-15</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;约 23815 字&nbsp;
-                <i class="far fa-clock fa-fw"></i>&nbsp;预计阅读 48 分钟&nbsp;</div>
+                <span class="post-author"><i class="author fas fa-user-circle fa-fw"></i><a href="/posts/about" title="Author" rel=" author" class="author">叉鸽 | MrCroxx</a>
+                </span>&nbsp;<span class="post-category">included in </span>&nbsp;<span class="post-category">category <a href="/categories/paper-reading/"><i class="far fa-folder fa-fw"></i>Paper Reading</a></span></div>
+            <div class="post-meta-line"><i class="far fa-calendar-alt fa-fw"></i>&nbsp;<time datetime="2020-08-15">2020-08-15</time>&nbsp;<i class="far fa-edit fa-fw"></i>&nbsp;<time datetime="2020-08-15">2020-08-15</time>&nbsp;<i class="fas fa-pencil-alt fa-fw"></i>&nbsp;23813 words&nbsp;
+                <i class="far fa-clock fa-fw"></i>&nbsp;48 minutes&nbsp;</div>
         </div><div class="details toc" id="toc-static"  kept="">
                 <div class="details-summary toc-title">
-                    <span>目录</span>
+                    <span>Contents</span>
                     <span><i class="details-icon fas fa-angle-right"></i></span>
                 </div>
                 <div class="details-content toc-content" id="toc-content-static"><nav id="TableOfContents">
@@ -299,7 +305,7 @@
 <p>client可以将多个列族组合为一个局部组（locality group）。每个tablet中的每个局部组会生成一个独立的SSTable。通常，可以将不在一起访问的列族放到不同的局部组中，以提高读取效率。例如Webtable中的页面元数据（如语言和校验和）可以放在一个局部组中，页面的内容可以放在不同的局部组中。这样，想要读取元数据的应用程序就不需要读取所有页面内容了。</p>
 <p>除此之外，还可以为每个局部组指定不同的调优参数。例如，局部组可被声明为“内存型（in-memory）”。仅内存的局部组的SSTable会被懒式加载到tablet server的内存中。一旦加载完成，对这种局部组中的列族的访问就不需要访问磁盘。这个特性对被频繁访问的小规模数据非常有用。我们的<code>METADATA</code>表的位置列族的内部就使用了这一特性。</p>
 <h3 id="62-压缩">6.2 压缩</h3>
-<p>client可以控制是否要压缩局部组的SSTable及使用哪种压缩格式。用户指定的压缩格式会被应用到SSTable的每个块（其大小可通过局部组调参控制）。尽管分别压缩每个block会损失一些空间，但是当我们需要读取一个SSTable的一小部分时不需要解压缩整个文件。许多client采用自定义的二次压缩（two-pass compression）策略。第一次压缩使用Bentley and McIlroy<sup>[6]</sup>算法，其会压缩跨大窗口的相同的长字符串。第二次压缩使用更快的压缩算法，在16KB的小窗口周查找重复的数据。两次压缩都非常快，在现在机器上，可以以100~200MB/s的速度编码，以400~1000MB/s的速度解码。</p>
+<p>client可以控制是否要压缩局部组的SSTable及使用哪种压缩格式。用户指定的压缩格式会被应用到SSTable的每个块（其大小可通过局部组调参控制）。尽管分别压缩每个block会损失一些空间，但是当我们需要读取一个SSTable的一小部分时不需要解压缩整个文件。许多client采用自定义的二次压缩（two-pass compression）策略。第一次压缩使用Bentley and McIlroy<sup>[6]</sup>算法，其会压缩跨大窗口的相同的长字符串。第二次压缩使用更快的压缩算法，在16KB的小窗口周查找重复的数据。两次压缩都非常快，在现在机器上，可以以100<del>200MB/s的速度编码，以400</del>1000MB/s的速度解码。</p>
 <p>尽管我们在选择压缩算法时强调速度而不是空间的减少，这种二次压缩的策略实际表现还是出奇的好。例如，在Webtable中，我们使用这种压缩策略来存储网页的内容。在一次实验中，我们在一个局部组中存储了大量的文档。为了达到实验目的，我们限制仅对每个文档存储一个版本而不是所有可用的版本。通过这种策略压缩后仅占用原来的十分之一的空间。而通常使用的Gzip仅能将空间压缩到原来的三分之一到四分之一。对于HTML页面，二次压缩策略比Gzip的表现好很多，这归功于Webtable的行的布局：所有来自同一个主机的页面被就近存储。这使Bentley-McIlroy算法能够在同一主机下识别到大量的相同的模式。不只是Webtable，对很多应用程序来说，都可以通过挑选它们的行名的方式来使相似的数据聚堆，这样可以得到非常好的压缩比例。当我们在Bigtable中存储同一个值的多个版本时，压缩比例甚至会更好。</p>
 <h3 id="63-读取缓存">6.3 读取缓存</h3>
 <p>为了提高读取性能，tablet server使用了二级缓存。Scan Cache是高层缓存，其将SSTable接口返回的键值对缓存到tablet server的代码中。Block Cache是低层缓存，其缓存从GFS读取的SSTable的块。对于更倾向于反复读取相同数据的应用程序来说，Scan Cache的作用更大。对更倾向于读取其最近读取的位置附近数据的应用程序来说，Block Cache的作用更大（例如，顺序读取、某个局部组的热点行中对不同列的随机读取）。</p>
@@ -452,7 +458,7 @@
     <div class="post-info">
         <div class="post-info-line">
             <div class="post-info-mod">
-                <span>更新于 2020-08-15</span>
+                <span>Updated on 2020-08-15</span>
             </div>
             <div class="post-info-license"></div>
         </div>
@@ -467,7 +473,7 @@
     <div class="post-info-more">
         <section class="post-tags"><i class="fas fa-tags fa-fw"></i>&nbsp;<a href="/tags/bigtable/">Bigtable</a>,&nbsp;<a href="/tags/translation/">Translation</a></section>
         <section>
-            <span><a href="javascript:void(0);" onclick="window.history.back();">返回</a></span>&nbsp;|&nbsp;<span><a href="/">主页</a></span>
+            <span><a href="javascript:void(0);" onclick="window.history.back();">Back</a></span>&nbsp;|&nbsp;<span><a href="/">Home</a></span>
         </section>
     </div>
 
@@ -476,18 +482,18 @@
 </div>
 </article></div>
         </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">由 <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.104.3">Hugo</a> 强力驱动 | 主题 - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
-                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2023</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="about" target="_blank" rel="noopener noreferrer">叉鸽</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        <div class="footer-container"><div class="footer-line">Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.128.2">Hugo</a> | Theme - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2024</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/posts/about" target="_blank" rel="noopener noreferrer">叉鸽 | MrCroxx</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div></footer></div>
 
-    <div id="fixed-buttons"><a href="#back-to-top" id="back-to-top-button" class="fixed-button" title="回到顶部">
+    <div id="fixed-buttons"><a href="#back-to-top" id="back-to-top-button" class="fixed-button" title="Back to Top">
             <i class="fas fa-arrow-up fa-fw"></i>
-        </a><a href="#" id="view-comments" class="fixed-button" title="查看评论">
+        </a><a href="#" id="view-comments" class="fixed-button" title="View Comments">
             <i class="fas fa-comment fa-fw"></i>
         </a>
-    </div><div class="assets"><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.stemmer.support.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.zh.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/topbar/topbar.min.js"></script><script type="text/javascript" src="/lib/pjax/pjax.min.js"></script><script type="text/javascript" src="/js/theme.min.js"></script></div>
+    </div><div class="assets"><script type="text/javascript" src="/lib/autocomplete/autocomplete.min.js"></script><script type="text/javascript" src="/lib/lunr/lunr.min.js"></script><script type="text/javascript" src="/lib/lazysizes/lazysizes.min.js"></script><script type="text/javascript" src="/lib/topbar/topbar.min.js"></script><script type="text/javascript" src="/lib/pjax/pjax.min.js"></script><script type="text/javascript" src="/js/theme.min.js"></script></div>
 
-<div class="pjax-assets"><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"复制到剪贴板","maxShownLines":10000},"comment":{},"data":{"desktop-header-typeit":"叉鸽 | MrCroxx","mobile-header-typeit":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","lunrLanguageCode":"zh","lunrSegmentitURL":"/lib/lunr/lunr.segmentit.js","maxResultLength":10,"noResultsFound":"没有找到结果","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"desktop-header-typeit":["desktop-header-typeit"],"mobile-header-typeit":["mobile-header-typeit"]},"duration":null,"speed":null}};</script><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/lightgallery/lightgallery.min.css">
+<div class="pjax-assets"><script type="text/javascript" src="/lib/twemoji/twemoji.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lightgallery.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-thumbnail.min.js"></script><script type="text/javascript" src="/lib/lightgallery/lg-zoom.min.js"></script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/typeit/typeit.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js"></script><script type="text/javascript" src="/lib/katex/auto-render.min.js"></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js"></script><script type="text/javascript" src="/lib/katex/mhchem.min.js"></script><script type="text/javascript">window.config={"code":{"copyTitle":"Copy to clipboard","maxShownLines":10000},"comment":{},"data":{"desktop-header-typeit":"叉鸽 | MrCroxx","mobile-header-typeit":"叉鸽 | MrCroxx"},"lightGallery":{"actualSize":false,"exThumbImage":"data-thumbnail","hideBarsDelay":2000,"selector":".lightgallery","speed":400,"thumbContHeight":80,"thumbWidth":80,"thumbnail":true},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"highlightTag":"em","lunrIndexURL":"/index.json","maxResultLength":10,"noResultsFound":"No results found","snippetLength":50,"type":"lunr"},"twemoji":true,"typeit":{"cursorChar":null,"cursorSpeed":null,"data":{"desktop-header-typeit":["desktop-header-typeit"],"mobile-header-typeit":["mobile-header-typeit"]},"duration":null,"speed":null}};</script><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/lightgallery/lightgallery.min.css">
     <noscript><link rel="stylesheet" href="/lib/lightgallery/lightgallery.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/katex/katex.min.css">
     <noscript><link rel="stylesheet" href="/lib/katex/katex.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/katex/copy-tex.min.css">
     <noscript><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"></noscript></div>

@@ -1,14 +1,14 @@
 <rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
     <channel>
-        <title>Docker - 分类 - 叉鸽 MrCroxx 的博客</title>
+        <title>Docker - Category - 叉鸽的博客 | MrCroxx&#39;s Blog</title>
         <link>https://mrcroxx.github.io/categories/docker/</link>
-        <description>Docker - 分类 - 叉鸽 MrCroxx 的博客</description>
-        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>mrcroxx@outlook.com (叉鸽)</managingEditor>
-            <webMaster>mrcroxx@outlook.com (叉鸽)</webMaster><lastBuildDate>Mon, 22 Jul 2019 16:37:55 &#43;0800</lastBuildDate><atom:link href="https://mrcroxx.github.io/categories/docker/" rel="self" type="application/rss+xml" /><item>
+        <description>Docker - Category - 叉鸽的博客 | MrCroxx&#39;s Blog</description>
+        <generator>Hugo -- gohugo.io</generator><language>en</language><managingEditor>mrcroxx@outlook.com (叉鸽 | MrCroxx)</managingEditor>
+            <webMaster>mrcroxx@outlook.com (叉鸽 | MrCroxx)</webMaster><lastBuildDate>Mon, 22 Jul 2019 16:37:55 &#43;0800</lastBuildDate><atom:link href="https://mrcroxx.github.io/categories/docker/" rel="self" type="application/rss+xml" /><item>
     <title>带LDAP认证与WebUI的Docker私有仓库搭建</title>
     <link>https://mrcroxx.github.io/posts/deployment/private-docker-registry-with-ldap-auth-and-webui/</link>
     <pubDate>Mon, 22 Jul 2019 16:37:55 &#43;0800</pubDate><author>
-        <name>叉鸽</name>
+        <name>叉鸽 | MrCroxx</name>
     </author><guid>https://mrcroxx.github.io/posts/deployment/private-docker-registry-with-ldap-auth-and-webui/</guid>
     <description><![CDATA[带LDAP认证与WebUI的Docker私有仓库搭建 1. 获取docker仓库并运行 docker pull registry:latest docker run -d -p 127.0.0.1:5000:5000 --name registry-localhost -v /opt/docker-registry:/var/lib/registry --restart=always registry:latest 2. 获取WebUI并运行 Docker Regi]]></description>
 </item></channel>
