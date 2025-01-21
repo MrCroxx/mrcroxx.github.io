@@ -236,34 +236,34 @@
 </span></span><span class="line"><span class="cl">	<span class="nx">ptr</span>      <span class="kt">uintptr</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span></code></pre></div><table>
-<thead>
-<tr>
-<th style="text-align:center">字段</th>
-<th style="text-align:left">描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center">id</td>
-<td style="text-align:left">页id。页id从0开始，随地址空间单调递增。</td>
-</tr>
-<tr>
-<td style="text-align:center">flags</td>
-<td style="text-align:left">页标识，用来表示页的类型（用途）。</td>
-</tr>
-<tr>
-<td style="text-align:center">count</td>
-<td style="text-align:left">页中元素个数。</td>
-</tr>
-<tr>
-<td style="text-align:center">overflow</td>
-<td style="text-align:left">溢出页个数。当单页无法容纳数据时，可以用与该页相邻的页保存溢出的数据（详见后文中介绍）。</td>
-</tr>
-<tr>
-<td style="text-align:center">ptr</td>
-<td style="text-align:left">页的数据（<em>Page Body</em>）的起始位置。</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center">字段</th>
+          <th style="text-align: left">描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center">id</td>
+          <td style="text-align: left">页id。页id从0开始，随地址空间单调递增。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">flags</td>
+          <td style="text-align: left">页标识，用来表示页的类型（用途）。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">count</td>
+          <td style="text-align: left">页中元素个数。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">overflow</td>
+          <td style="text-align: left">溢出页个数。当单页无法容纳数据时，可以用与该页相邻的页保存溢出的数据（详见后文中介绍）。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">ptr</td>
+          <td style="text-align: left">页的数据（<em>Page Body</em>）的起始位置。</td>
+      </tr>
+  </tbody>
 </table>
 <p>boltdb中的页共有三种用途：保存数据库的元数据（<em>meta page</em>）1、保存空闲页列表(<em>freelist page</em>)、保存数据，因为boltdb中数据是按照B+树组织的，因此保存数据的页又可分为分支节点（<em>branch page</em>）和叶子节点（<em>leaf page</em>）两种。也就是说，boltdb中页的类型共有4种。</p>
 <h3 id="12-page的数据结构">1.2 page的数据结构</h3>
@@ -290,50 +290,50 @@
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">sequence</span> <span class="kt">uint64</span> <span class="c1">// monotonically incrementing, used by NextSequence()
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
 </span></span></code></pre></div><table>
-<thead>
-<tr>
-<th style="text-align:center">字段</th>
-<th style="text-align:left">描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center">magic</td>
-<td style="text-align:left">一个固定值，用来标识该文件为boltdb数据库文件。</td>
-</tr>
-<tr>
-<td style="text-align:center">version</td>
-<td style="text-align:left">用来标识该文件采用的数据库版本号。</td>
-</tr>
-<tr>
-<td style="text-align:center">pageSize</td>
-<td style="text-align:left">用来标识改文件采用的页大小。</td>
-</tr>
-<tr>
-<td style="text-align:center">flags</td>
-<td style="text-align:left">保留字段，未使用。</td>
-</tr>
-<tr>
-<td style="text-align:center">root</td>
-<td style="text-align:left">boltdb记录根bucket的结构体，其包含了该bucket的根页id与bucket编号（单调递增）。</td>
-</tr>
-<tr>
-<td style="text-align:center">freelist</td>
-<td style="text-align:left">空闲页列表的首页id。</td>
-</tr>
-<tr>
-<td style="text-align:center">pgid</td>
-<td style="text-align:left">下一个分配的页id，即当前最大页id+1，用于mmap扩容时为新页编号。</td>
-</tr>
-<tr>
-<td style="text-align:center">txid</td>
-<td style="text-align:left">下一个事务的id，全局单调递增。</td>
-</tr>
-<tr>
-<td style="text-align:center">checksum</td>
-<td style="text-align:left">meta页的校验和。</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center">字段</th>
+          <th style="text-align: left">描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center">magic</td>
+          <td style="text-align: left">一个固定值，用来标识该文件为boltdb数据库文件。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">version</td>
+          <td style="text-align: left">用来标识该文件采用的数据库版本号。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">pageSize</td>
+          <td style="text-align: left">用来标识改文件采用的页大小。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">flags</td>
+          <td style="text-align: left">保留字段，未使用。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">root</td>
+          <td style="text-align: left">boltdb记录根bucket的结构体，其包含了该bucket的根页id与bucket编号（单调递增）。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">freelist</td>
+          <td style="text-align: left">空闲页列表的首页id。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">pgid</td>
+          <td style="text-align: left">下一个分配的页id，即当前最大页id+1，用于mmap扩容时为新页编号。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">txid</td>
+          <td style="text-align: left">下一个事务的id，全局单调递增。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">checksum</td>
+          <td style="text-align: left">meta页的校验和。</td>
+      </tr>
+  </tbody>
 </table>
 <h4 id="122-branch-page--leaf-page">1.2.2 branch page &amp; leaf page</h4>
 <p><em>branch page</em>与<em>leaf page</em>是boltdb中用来保存B+树节点的页。B+树的分支节点仅用来保存索引（key），而叶子节点既保存索引，又保存值（value）。boltdb支持任意长度的key和value，因此无法直接结构化保存key和value的列表。为了解决这一问题，<em>branch page</em>和<em>leaf page</em>的<em>Page Body</em>起始处是一个由定长的索引（<code>branchPageElement</code>或<code>leafPageElement</code>）组成的列表，第$i$个索引记录了第$i$个key或key/value的起始位置与key的长度或key/value各自的长度：</p>
@@ -416,26 +416,26 @@
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">cache</span>   <span class="kd">map</span><span class="p">[</span><span class="nx">pgid</span><span class="p">]</span><span class="kt">bool</span>   <span class="c1">// fast lookup of all free and pending page ids.
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
 </span></span></code></pre></div><table>
-<thead>
-<tr>
-<th style="text-align:center">字段<div style="width: 14em"></th>
-<th style="text-align:left">描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center"><code>ids []pgid</code></td>
-<td style="text-align:left">记录已释放的页id的有序列表。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>pending map[txid][]pgid</code></td>
-<td style="text-align:left">事务id到事务待释放的页id。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>cache map[pgid]bool</code></td>
-<td style="text-align:left">用来快速查找给定id的页是否被释放的缓存。出现在<code>ids</code>和<code>pending</code>中的页id均为true。</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center">字段<div style="width: 14em"></th>
+          <th style="text-align: left">描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center"><code>ids []pgid</code></td>
+          <td style="text-align: left">记录已释放的页id的有序列表。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>pending map[txid][]pgid</code></td>
+          <td style="text-align: left">事务id到事务待释放的页id。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>cache map[pgid]bool</code></td>
+          <td style="text-align: left">用来快速查找给定id的页是否被释放的缓存。出现在<code>ids</code>和<code>pending</code>中的页id均为true。</td>
+      </tr>
+  </tbody>
 </table>
 <p>由于boltdb是通过copy-on-write的方式实现的读写事务并发的隔离性，因此当事务可写事务更新页时，其会复制已有的页，并将旧页加入到<code>pending</code>中该事务id下的待释放页的列表中。因为此时可能还有读事务在读取旧页，所以不能立刻释放该页，而是要等到所有事务都不再依赖该页时，才能将<code>pending</code>中的页加入到<code>ids</code>中。对于boltdb中事务的实现笔者会在本系列后面的文章中介绍，这里不再赘述，这里读者只需要了解<code>pending</code>的作用即可。</p>
 <p>这样做的好处还有，当事务回滚时，可以重用<code>pending</code>中还未释放的页（由于该事务还未提交，因此其之前释放的所有页都可被重用）。而且，重用页时对freelist的操作十分简单，只需要将<code>pending</code>中该事务id对应的列表清空即可。</p>
@@ -519,70 +519,70 @@
 </span></span></code></pre></div><h3 id="23-freelist的方法">2.3 freelist的方法</h3>
 <p>本节简单介绍freelist提供的方法，以便读者阅读源码时参考。</p>
 <table>
-<thead>
-<tr>
-<th style="text-align:center">方法<div style="width: 14em"></th>
-<th style="text-align:left">描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center"><code>size() int</code></td>
-<td style="text-align:left">获取freelist序列化为page后的数据大小。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>count() int</code></td>
-<td style="text-align:left">获取freelist中页的个数。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>free_count() int</code></td>
-<td style="text-align:left"><code>ids</code>中的空闲页数。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>pending_count() int</code></td>
-<td style="text-align:left"><code>pending</code>中待释放的空闲页数。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>copyall(dst []pgid)</code></td>
-<td style="text-align:left">将<code>ids</code>与<code>pending</code>中的所有空闲页id合并、排序并写入目标位置。该方法在将freelist写入到page时使用。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>allocate(n int) pgid</code></td>
-<td style="text-align:left">尝试从freelist中分配n个连续的页，返回首页的页id。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>free(txid txid, p *page)</code></td>
-<td style="text-align:left">将页加入给定事务的<code>pending</code>列表中。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>release(txid txid)</code></td>
-<td style="text-align:left">释放给定事务及其之前事务的<code>pending</code>列表中的所有待释放页，将其合并到<code>ids</code>中。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>rollback(txid txid)</code></td>
-<td style="text-align:left">当事务回滚时调用该方法，删除该事务的<code>pending</code>列表记录的页id以复用。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>freed(pgid pgid) bool</code></td>
-<td style="text-align:left">返回给定页是否在freelist中。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>read(p *page)</code></td>
-<td style="text-align:left">从page中读取并构建freelist。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>write(p *page) error</code></td>
-<td style="text-align:left">将freelist写入到page中。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>reload(p *page)</code></td>
-<td style="text-align:left">从page中重新加载freelist，该方法先调用<code>read</code>方法，接下来从<code>ids</code>中过滤掉<code>pengding</code>中的页。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>reindex()</code></td>
-<td style="text-align:left">重建freelist的缓存。</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center">方法<div style="width: 14em"></th>
+          <th style="text-align: left">描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center"><code>size() int</code></td>
+          <td style="text-align: left">获取freelist序列化为page后的数据大小。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>count() int</code></td>
+          <td style="text-align: left">获取freelist中页的个数。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>free_count() int</code></td>
+          <td style="text-align: left"><code>ids</code>中的空闲页数。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>pending_count() int</code></td>
+          <td style="text-align: left"><code>pending</code>中待释放的空闲页数。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>copyall(dst []pgid)</code></td>
+          <td style="text-align: left">将<code>ids</code>与<code>pending</code>中的所有空闲页id合并、排序并写入目标位置。该方法在将freelist写入到page时使用。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>allocate(n int) pgid</code></td>
+          <td style="text-align: left">尝试从freelist中分配n个连续的页，返回首页的页id。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>free(txid txid, p *page)</code></td>
+          <td style="text-align: left">将页加入给定事务的<code>pending</code>列表中。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>release(txid txid)</code></td>
+          <td style="text-align: left">释放给定事务及其之前事务的<code>pending</code>列表中的所有待释放页，将其合并到<code>ids</code>中。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>rollback(txid txid)</code></td>
+          <td style="text-align: left">当事务回滚时调用该方法，删除该事务的<code>pending</code>列表记录的页id以复用。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>freed(pgid pgid) bool</code></td>
+          <td style="text-align: left">返回给定页是否在freelist中。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>read(p *page)</code></td>
+          <td style="text-align: left">从page中读取并构建freelist。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>write(p *page) error</code></td>
+          <td style="text-align: left">将freelist写入到page中。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>reload(p *page)</code></td>
+          <td style="text-align: left">从page中重新加载freelist，该方法先调用<code>read</code>方法，接下来从<code>ids</code>中过滤掉<code>pengding</code>中的页。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>reindex()</code></td>
+          <td style="text-align: left">重建freelist的缓存。</td>
+      </tr>
+  </tbody>
 </table>
 <p>其中，<code>release</code>调用的时机为新读写事务启动时。在启动新的读写事务时，boltdb会根据事务id释放所有已完成的事务在<code>pending</code>中的页：</p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">
@@ -628,26 +628,26 @@
 <h4 id="312-mmap">3.1.2 mmap</h4>
 <p>mmap是boltdb的主要缓存策略。与mmap相关的方法主要有<code>mmap</code>、<code>munmap</code>、<code>mmapSize</code>(位于<code>db.go</code>中)：</p>
 <table>
-<thead>
-<tr>
-<th style="text-align:center">方法<div style="width: 14em"></th>
-<th style="text-align:left">描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center"><code>mmap(minsz int) error</code></td>
-<td style="text-align:left">以内存映射文件的方式打开数据库文件并初始化meta引用。参数<code>minsz</code>是最小的mmap大小，其实际mmap大小是通过<code>mmapSize</code>方法获取的。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>munmap() error</code></td>
-<td style="text-align:left">取消文件的内存映射。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>mmapSize(size int) (int, error)</code></td>
-<td style="text-align:left">计算mmap大小，参数<code>size</code>是最小大小。</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center">方法<div style="width: 14em"></th>
+          <th style="text-align: left">描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center"><code>mmap(minsz int) error</code></td>
+          <td style="text-align: left">以内存映射文件的方式打开数据库文件并初始化meta引用。参数<code>minsz</code>是最小的mmap大小，其实际mmap大小是通过<code>mmapSize</code>方法获取的。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>munmap() error</code></td>
+          <td style="text-align: left">取消文件的内存映射。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>mmapSize(size int) (int, error)</code></td>
+          <td style="text-align: left">计算mmap大小，参数<code>size</code>是最小大小。</td>
+      </tr>
+  </tbody>
 </table>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl"><span class="c1">// mmap opens the underlying memory-mapped file and initializes the meta references.
@@ -935,8 +935,8 @@
 </div>
 </article></div>
         </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.128.2">Hugo</a> | Theme - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
-                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2024</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/posts/about" target="_blank" rel="noopener noreferrer">叉鸽 | MrCroxx</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        <div class="footer-container"><div class="footer-line">Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.139.2">Hugo</a> | Theme - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/posts/about" target="_blank" rel="noopener noreferrer">叉鸽 | MrCroxx</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div></footer></div>
 
     <div id="fixed-buttons"><a href="#back-to-top" id="back-to-top-button" class="fixed-button" title="Back to Top">

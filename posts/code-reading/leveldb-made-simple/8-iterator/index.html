@@ -248,35 +248,35 @@
 <h3 id="21-基本集合的迭代器">2.1 基本集合的迭代器</h3>
 <p>本文提到的“基本迭代器”指直接在集合类上实现的迭代器，是用来顺序访问或随机查找集合类中数据的游标结构。LevelDB中每个重要的集合类上几乎都实现了相应的迭代器。下表给出了有关这些迭代器的信息：</p>
 <table>
-<thead>
-<tr>
-<th style="text-align:center">Collection<div style='width:8em'></div></th>
-<th style="text-align:center">Target<div style='width:16em'></div></th>
-<th style="text-align:left">Creator<div style='width:60em'></div></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center"><code>SkipList</code></td>
-<td style="text-align:center">SkipList中的Node</td>
-<td style="text-align:left"><code>SkipList</code>::<code>Iterator(const SkipList* list)</code></td>
-</tr>
-<tr>
-<td style="text-align:center"><code>MemTable</code></td>
-<td style="text-align:center">MemTable中的key/value</td>
-<td style="text-align:left"><code>MemTable</code>.<code>Iterator* NewIterator();</code></td>
-</tr>
-<tr>
-<td style="text-align:center"><code>Block</code></td>
-<td style="text-align:center">Block中的Entry（按restart拼接）</td>
-<td style="text-align:left"><code>Block</code>.<code>Iterator* NewIterator(const Comparator* comparator)</code></td>
-</tr>
-<tr>
-<td style="text-align:center"><code>FileMetaData*</code></td>
-<td style="text-align:center">每层SSTable的编号（按key顺序）</td>
-<td style="text-align:left"><code>Version</code>::<code>LevelFileNumIterator(const InternalKeyComparator&amp; icmp, const std::vector&lt;FileMetaData*&gt;* flist)</code></td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center">Collection<div style='width:8em'></div></th>
+          <th style="text-align: center">Target<div style='width:16em'></div></th>
+          <th style="text-align: left">Creator<div style='width:60em'></div></th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center"><code>SkipList</code></td>
+          <td style="text-align: center">SkipList中的Node</td>
+          <td style="text-align: left"><code>SkipList</code>::<code>Iterator(const SkipList* list)</code></td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>MemTable</code></td>
+          <td style="text-align: center">MemTable中的key/value</td>
+          <td style="text-align: left"><code>MemTable</code>.<code>Iterator* NewIterator();</code></td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>Block</code></td>
+          <td style="text-align: center">Block中的Entry（按restart拼接）</td>
+          <td style="text-align: left"><code>Block</code>.<code>Iterator* NewIterator(const Comparator* comparator)</code></td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>FileMetaData*</code></td>
+          <td style="text-align: center">每层SSTable的编号（按key顺序）</td>
+          <td style="text-align: left"><code>Version</code>::<code>LevelFileNumIterator(const InternalKeyComparator&amp; icmp, const std::vector&lt;FileMetaData*&gt;* flist)</code></td>
+      </tr>
+  </tbody>
 </table>
 <p>其中，<code>MemTable</code>的iterator是对<code>SkipList</code>的iterator的封装，因为<code>SkipList</code>的iterator只需要关注<code>Node</code>即可，而<code>MemTable</code>的iterator需要关注<code>Node</code>中保存的key/value。这种封装在LevelDB的iterator中还有，下文不再赘述。</p>
 <h3 id="22-复杂集合的迭代器">2.2 复杂集合的迭代器</h3>
@@ -306,25 +306,25 @@
 <p>其一是level&gt;0的SSTable，其每层SSTable可以按照key排序，每个SSTable内也按照key排序，且每层SSTable中的key没有overlap且全局有序。因此LevelDB中Version的Concaterating Iterator实际上就是一个<code>TwoLevelIterator</code>，其第一级iterator是<code>LevelFileNumIterator</code>，该iterator按照key的顺序遍历每层SSTable；其第二级iterator是Table Iterator，该iterator可以按照key的顺序遍历SSTable中的key/value。Table Iterator本身也是一个<code>TwoLevelIterator</code>，这也是LevelDB中第二个符合该结构的部分。</p>
 <p>其二即为SSTable内部的index与data。Table Iterator作为<code>TwoLevelIterator</code>，其第一级iterator遍历SSTable中的index，第二级iterator遍历index相应的data block中的key/value。</p>
 <table>
-<thead>
-<tr>
-<th style="text-align:center">Collection<div style='width:8em'></div></th>
-<th style="text-align:center">Iterator[0]<div style='width:12em'></div></th>
-<th style="text-align:center">Iterator[1]<div style='width:12em'></div></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center"><code>SSTable</code></td>
-<td style="text-align:center">IndexBlock的BlockIterator</td>
-<td style="text-align:center">DataBlock的BlockIterator</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>SSTable*</code> (level&gt;0)</td>
-<td style="text-align:center">LevelFileNumIterator</td>
-<td style="text-align:center">Table Iterator</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center">Collection<div style='width:8em'></div></th>
+          <th style="text-align: center">Iterator[0]<div style='width:12em'></div></th>
+          <th style="text-align: center">Iterator[1]<div style='width:12em'></div></th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center"><code>SSTable</code></td>
+          <td style="text-align: center">IndexBlock的BlockIterator</td>
+          <td style="text-align: center">DataBlock的BlockIterator</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>SSTable*</code> (level&gt;0)</td>
+          <td style="text-align: center">LevelFileNumIterator</td>
+          <td style="text-align: center">Table Iterator</td>
+      </tr>
+  </tbody>
 </table>
 <p>然而，如果每个iterator中的key有序，但是所有iterator中的所有key全局无序，就不能使用<code>TwoLevelIterator</code>来组装多个iterator。此时，需要一种能够“归并”多路有序iterator的结构。下一节中，笔者将介绍这一结构。</p>
 <h4 id="222-mergingiterator">2.2.2 MergingIterator</h4>
@@ -345,22 +345,22 @@
 <p>其一是用来访问整个LevelDB中数据的迭代器<code>InternalIterator</code>。该迭代器组合了MemTable Iterator、Immutable MemTable Iterator、每个Level-0 SSTable的Iterator，和level&gt;1的所有SSTable的Concatenating Iterator。</p>
 <p>其二是执行Major Compaction时访问需要Compact的所有SSTable的迭代器<code>InputIterator</code>。对于level-0的SSTable，其直接组装了所有SSTable的Table Iterator，因为level-0中每个SSTable的key空间不保证全局有序；而对于其它level的SSTable，其通过Concatenating Iterator（即组装了LevelFileNumIterator和Table Iterator的TwoLevelIterator），该Concatenating Iterator中组装了该层需要参与Major Compaction的SSTable。</p>
 <table>
-<thead>
-<tr>
-<th style="text-align:center">Collection<div style='width:8em'></div></th>
-<th style="text-align:center">Iterators<div style='width:60em'></div></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center">InternalIterator</td>
-<td style="text-align:center">MemTatble Iterator、Immutable MemTable Iterator、level-0 SSTavke Iterators、level&gt;0 SSTable Concatenating Iterator</td>
-</tr>
-<tr>
-<td style="text-align:center">InputIterator</td>
-<td style="text-align:center">level-0 Table Iterator、level&gt;0 Concatenating Iterator (if necessary)</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center">Collection<div style='width:8em'></div></th>
+          <th style="text-align: center">Iterators<div style='width:60em'></div></th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center">InternalIterator</td>
+          <td style="text-align: center">MemTatble Iterator、Immutable MemTable Iterator、level-0 SSTavke Iterators、level&gt;0 SSTable Concatenating Iterator</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">InputIterator</td>
+          <td style="text-align: center">level-0 Table Iterator、level&gt;0 Concatenating Iterator (if necessary)</td>
+      </tr>
+  </tbody>
 </table>
 <h3 id="223-通过cache优化twoleveliterator与mergingiterator">2.2.3 通过cache优化TwoLevelIterator与MergingIterator</h3>
 <p>无论是<code>TwoLevelIterator</code>还是<code>MergingIterator</code>，在使用时都反复需要获取其中iterator是否为valid或获取其value。比如在<code>MergingIterator</code>获取下一个key时，其需要比较所有iterator的key，但最终只会修改一个iterator的位置。</p>
@@ -473,8 +473,8 @@
 </div>
 </article></div>
         </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.128.2">Hugo</a> | Theme - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
-                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2024</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/posts/about" target="_blank" rel="noopener noreferrer">叉鸽 | MrCroxx</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        <div class="footer-container"><div class="footer-line">Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.139.2">Hugo</a> | Theme - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/posts/about" target="_blank" rel="noopener noreferrer">叉鸽 | MrCroxx</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div></footer></div>
 
     <div id="fixed-buttons"><a href="#back-to-top" id="back-to-top-button" class="fixed-button" title="Back to Top">

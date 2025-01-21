@@ -333,26 +333,26 @@
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
 </span></span></code></pre></div><p><code>Step</code>方法在处理<code>MsgHup</code>消息时，会根据当前配置中是否开启了<code>Pre-Vote</code>机制，以不同的<code>CampaignType</code>调用<code>hup</code>方法。<code>CampaignType</code>是一种枚举类型（go语言的枚举实现方式），其可能值如下表所示。</p>
 <table>
-<thead>
-<tr>
-<th>值</th>
-<th>描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>campaignPreElection</code></td>
-<td>表示<strong>Pre-Vote</strong>的预选举阶段。</td>
-</tr>
-<tr>
-<td><code>campaignElection</code></td>
-<td>表示正常的选举阶段（仅超时选举，不包括<strong>Leader Transfer</strong>）。</td>
-</tr>
-<tr>
-<td><code>campaignTransfer</code></td>
-<td>表示<strong>Leader Transfer</strong>阶段。</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th>值</th>
+          <th>描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>campaignPreElection</code></td>
+          <td>表示<strong>Pre-Vote</strong>的预选举阶段。</td>
+      </tr>
+      <tr>
+          <td><code>campaignElection</code></td>
+          <td>表示正常的选举阶段（仅超时选举，不包括<strong>Leader Transfer</strong>）。</td>
+      </tr>
+      <tr>
+          <td><code>campaignTransfer</code></td>
+          <td>表示<strong>Leader Transfer</strong>阶段。</td>
+      </tr>
+  </tbody>
 </table>
 <p>接下来对<code>hup</code>的实现进行分析。</p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">
@@ -748,52 +748,52 @@
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span></code></pre></div><p>预选举与选举的区别在主要在于预选举不会改变状态机的term也不会修改当前term的该节点投出的选票。下表列出了<code>becomePreCandidate</code>和<code>becomeCandidate</code>修改或未修改的与选举相关的重要字段：</p>
 <table>
-<thead>
-<tr>
-<th style="text-align:center">重要字段<div style="width: 6em"></div></th>
-<th style="text-align:center">becomePreCandidate</th>
-<th style="text-align:center">becomCandidate</th>
-<th style="text-align:left">描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center"><code>step</code></td>
-<td style="text-align:center"><code>stepCandidate</code></td>
-<td style="text-align:center"><code>stepCandidate</code></td>
-<td style="text-align:left"><code>step</code>行为</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>tick</code></td>
-<td style="text-align:center"><code>tickElection</code></td>
-<td style="text-align:center"><code>tickElection</code></td>
-<td style="text-align:left"><code>tick</code>行为</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>Vote</code></td>
-<td style="text-align:center"><em>mot modified</em></td>
-<td style="text-align:center"><em>current node</em>.<code>id</code></td>
-<td style="text-align:left">当前term将选票投给谁</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>state</code></td>
-<td style="text-align:center"><code>StatePreCandidate</code></td>
-<td style="text-align:center"><code>StateCandidate</code></td>
-<td style="text-align:left">状态机角色</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>lead</code></td>
-<td style="text-align:center">None</td>
-<td style="text-align:center">None</td>
-<td style="text-align:left">当前term的leader</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>prs.Votes</code></td>
-<td style="text-align:center"><em>rest</em></td>
-<td style="text-align:center"><em>reset</em></td>
-<td style="text-align:left">收到的选票</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center">重要字段<div style="width: 6em"></div></th>
+          <th style="text-align: center">becomePreCandidate</th>
+          <th style="text-align: center">becomCandidate</th>
+          <th style="text-align: left">描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center"><code>step</code></td>
+          <td style="text-align: center"><code>stepCandidate</code></td>
+          <td style="text-align: center"><code>stepCandidate</code></td>
+          <td style="text-align: left"><code>step</code>行为</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>tick</code></td>
+          <td style="text-align: center"><code>tickElection</code></td>
+          <td style="text-align: center"><code>tickElection</code></td>
+          <td style="text-align: left"><code>tick</code>行为</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>Vote</code></td>
+          <td style="text-align: center"><em>mot modified</em></td>
+          <td style="text-align: center"><em>current node</em>.<code>id</code></td>
+          <td style="text-align: left">当前term将选票投给谁</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>state</code></td>
+          <td style="text-align: center"><code>StatePreCandidate</code></td>
+          <td style="text-align: center"><code>StateCandidate</code></td>
+          <td style="text-align: left">状态机角色</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>lead</code></td>
+          <td style="text-align: center">None</td>
+          <td style="text-align: center">None</td>
+          <td style="text-align: left">当前term的leader</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>prs.Votes</code></td>
+          <td style="text-align: center"><em>rest</em></td>
+          <td style="text-align: center"><em>reset</em></td>
+          <td style="text-align: left">收到的选票</td>
+      </tr>
+  </tbody>
 </table>
 <p>无论是<code>PreCandidate</code>还是<code>PreCandidate</code>，其行为都是<code>stepCandidate</code>。其中，部分字段是通过<code>reset</code>函数修改的。<code>reset</code>方法用于状态机切换角色时初始化相关字段。因为切换到<code>PreCandidate</code>严格来说并不算真正地切换角色，因此<code>becomePreCandidate</code>中没有调用<code>reset</code>方法，而<code>becomeCandidate</code>、<code>becomeLeader</code>、<code>becomeFollower</code>都调用了<code>reset</code>方法。本文仅关注<code>reset</code>中与选举有关的部分，<code>reset</code>中还有一些与日志复制相关的逻辑，笔者会在后续的文章中分析。</p>
 <p>接下来分析<code>stepCandiate</code>中与选举相关的逻辑：</p>
@@ -878,52 +878,52 @@
 </span></span><span class="line"><span class="cl">	<span class="c1">// ... ...
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
 </span></span></code></pre></div><table>
-<thead>
-<tr>
-<th style="text-align:center">重要字段<div style="width: 6em"></div></th>
-<th style="text-align:center">becomeLeader</th>
-<th style="text-align:center">描述</th>
-<th></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center"><code>step</code></td>
-<td style="text-align:center"><code>stepLeader</code></td>
-<td style="text-align:center"><code>step</code>行为</td>
-<td></td>
-</tr>
-<tr>
-<td style="text-align:center"><code>tick</code></td>
-<td style="text-align:center"><code>tickHeartbeat</code></td>
-<td style="text-align:center"><code>tick</code>行为</td>
-<td></td>
-</tr>
-<tr>
-<td style="text-align:center"><code>Vote</code></td>
-<td style="text-align:center">None or <em>not modified</em></td>
-<td style="text-align:center">当前term将选票投给谁，如果term没有更新，那么不会修改该字段。</td>
-<td></td>
-</tr>
-<tr>
-<td style="text-align:center"><code>state</code></td>
-<td style="text-align:center"><code>StateLeader</code></td>
-<td style="text-align:center">状态机角色</td>
-<td></td>
-</tr>
-<tr>
-<td style="text-align:center"><code>lead</code></td>
-<td style="text-align:center"><em>current node</em>.id</td>
-<td style="text-align:center">当前term的leader</td>
-<td></td>
-</tr>
-<tr>
-<td style="text-align:center"><code>prs.Votes</code></td>
-<td style="text-align:center"><em>rest</em></td>
-<td style="text-align:center">收到的选票</td>
-<td></td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center">重要字段<div style="width: 6em"></div></th>
+          <th style="text-align: center">becomeLeader</th>
+          <th style="text-align: center">描述</th>
+          <th></th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center"><code>step</code></td>
+          <td style="text-align: center"><code>stepLeader</code></td>
+          <td style="text-align: center"><code>step</code>行为</td>
+          <td></td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>tick</code></td>
+          <td style="text-align: center"><code>tickHeartbeat</code></td>
+          <td style="text-align: center"><code>tick</code>行为</td>
+          <td></td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>Vote</code></td>
+          <td style="text-align: center">None or <em>not modified</em></td>
+          <td style="text-align: center">当前term将选票投给谁，如果term没有更新，那么不会修改该字段。</td>
+          <td></td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>state</code></td>
+          <td style="text-align: center"><code>StateLeader</code></td>
+          <td style="text-align: center">状态机角色</td>
+          <td></td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>lead</code></td>
+          <td style="text-align: center"><em>current node</em>.id</td>
+          <td style="text-align: center">当前term的leader</td>
+          <td></td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>prs.Votes</code></td>
+          <td style="text-align: center"><em>rest</em></td>
+          <td style="text-align: center">收到的选票</td>
+          <td></td>
+      </tr>
+  </tbody>
 </table>
 <p>接下来，分析<code>stepLeader</code>中与选举相关的逻辑：</p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">
@@ -1034,40 +1034,40 @@
 </span></span><span class="line"><span class="cl">	<span class="nx">r</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nf">Infof</span><span class="p">(</span><span class="s">&#34;%x became follower at term %d&#34;</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">Term</span><span class="p">)</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span></code></pre></div><table>
-<thead>
-<tr>
-<th style="text-align:center">重要字段<div style="width: 6em"></div></th>
-<th style="text-align:center">becomeFollower</th>
-<th style="text-align:center">描述</th>
-<th></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center"><code>step</code></td>
-<td style="text-align:center"><code>stepFollower</code></td>
-<td style="text-align:center"><code>step</code>行为</td>
-<td></td>
-</tr>
-<tr>
-<td style="text-align:center"><code>tick</code></td>
-<td style="text-align:center"><code>tickElection</code></td>
-<td style="text-align:center"><code>tick</code>行为</td>
-<td></td>
-</tr>
-<tr>
-<td style="text-align:center"><code>state</code></td>
-<td style="text-align:center"><code>StateFollower</code></td>
-<td style="text-align:center">状态机角色</td>
-<td></td>
-</tr>
-<tr>
-<td style="text-align:center"><code>lead</code></td>
-<td style="text-align:center">参数<code>lead</code></td>
-<td style="text-align:center">当前term的leader</td>
-<td></td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center">重要字段<div style="width: 6em"></div></th>
+          <th style="text-align: center">becomeFollower</th>
+          <th style="text-align: center">描述</th>
+          <th></th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center"><code>step</code></td>
+          <td style="text-align: center"><code>stepFollower</code></td>
+          <td style="text-align: center"><code>step</code>行为</td>
+          <td></td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>tick</code></td>
+          <td style="text-align: center"><code>tickElection</code></td>
+          <td style="text-align: center"><code>tick</code>行为</td>
+          <td></td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>state</code></td>
+          <td style="text-align: center"><code>StateFollower</code></td>
+          <td style="text-align: center">状态机角色</td>
+          <td></td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>lead</code></td>
+          <td style="text-align: center">参数<code>lead</code></td>
+          <td style="text-align: center">当前term的leader</td>
+          <td></td>
+      </tr>
+  </tbody>
 </table>
 <p>接下来分析<code>stepFollower</code>中对与选举相关的消息的处理：</p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">
@@ -1143,8 +1143,8 @@
 </div>
 </article></div>
         </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.128.2">Hugo</a> | Theme - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
-                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2024</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/posts/about" target="_blank" rel="noopener noreferrer">叉鸽 | MrCroxx</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        <div class="footer-container"><div class="footer-line">Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.139.2">Hugo</a> | Theme - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/posts/about" target="_blank" rel="noopener noreferrer">叉鸽 | MrCroxx</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div></footer></div>
 
     <div id="fixed-buttons"><a href="#back-to-top" id="back-to-top-button" class="fixed-button" title="Back to Top">

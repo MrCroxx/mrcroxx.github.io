@@ -241,35 +241,35 @@
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span></code></pre></div><p>上面的代码中，省略的一些对消息的序列化与反序列化及对性能的小优化，我们主要关注其通过哪些方法为请求提供服务。</p>
 <table>
-<thead>
-<tr>
-<th>请求方法</th>
-<th>处理方式</th>
-<th>功能</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>PUT</td>
-<td>kvstore.Propose(k,v)</td>
-<td>更新键值对</td>
-</tr>
-<tr>
-<td>GET</td>
-<td>kvstore.Lookup(k)</td>
-<td>查找键对应的值</td>
-</tr>
-<tr>
-<td>POST</td>
-<td>confChangeC &lt;- cc</td>
-<td>将新节点加入集群</td>
-</tr>
-<tr>
-<td>DELETE</td>
-<td>confChangeC &lt;- cc</td>
-<td>从集群中移除节点</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th>请求方法</th>
+          <th>处理方式</th>
+          <th>功能</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>PUT</td>
+          <td>kvstore.Propose(k,v)</td>
+          <td>更新键值对</td>
+      </tr>
+      <tr>
+          <td>GET</td>
+          <td>kvstore.Lookup(k)</td>
+          <td>查找键对应的值</td>
+      </tr>
+      <tr>
+          <td>POST</td>
+          <td>confChangeC &lt;- cc</td>
+          <td>将新节点加入集群</td>
+      </tr>
+      <tr>
+          <td>DELETE</td>
+          <td>confChangeC &lt;- cc</td>
+          <td>从集群中移除节点</td>
+      </tr>
+  </tbody>
 </table>
 <p>从表中我们可以看出，与键值对相关的请求都会通过<code>kvstore</code>提供的方法处理，而有关集群配置的请求则是会编码为<code>etcd/raft/v3/raftpb</code>中proto定义的消息格式，直接传入<code>confChangeC</code>信道。从<code>main.go</code>可以看出，该信道的消费者是raft模块，我们在介绍该模块时会详细介绍其作用。（因此，前文中给出的raftexample设计图并不准确，REST服务器会将有关集群配置变更的消息直接交给raft服务器处理。）</p>
 <h2 id="3-kvstore">3. kvstore</h2>
@@ -413,120 +413,120 @@
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
 </span></span></code></pre></div><p>在结构体中，有4个用于与其它组件交互的信道：</p>
 <table>
-<thead>
-<tr>
-<th>信道</th>
-<th>描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>proposeC &lt;-chan string</td>
-<td>接收来自其它组件传入的需要通过raft达成共识的普通提议。</td>
-</tr>
-<tr>
-<td>confChangeC &lt;-chan raftpb.ConfChange</td>
-<td>接收来自其它组件的需要通过raft达成共识的集群变更提议。</td>
-</tr>
-<tr>
-<td>commitC chan&lt;- *string</td>
-<td>用来已通过raft达成共识的已提交的提议通知给其它组件的信道。</td>
-</tr>
-<tr>
-<td>errorC chan&lt;- error</td>
-<td>用来将错误报告给其它组件的信道。</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th>信道</th>
+          <th>描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>proposeC &lt;-chan string</td>
+          <td>接收来自其它组件传入的需要通过raft达成共识的普通提议。</td>
+      </tr>
+      <tr>
+          <td>confChangeC &lt;-chan raftpb.ConfChange</td>
+          <td>接收来自其它组件的需要通过raft达成共识的集群变更提议。</td>
+      </tr>
+      <tr>
+          <td>commitC chan&lt;- *string</td>
+          <td>用来已通过raft达成共识的已提交的提议通知给其它组件的信道。</td>
+      </tr>
+      <tr>
+          <td>errorC chan&lt;- error</td>
+          <td>用来将错误报告给其它组件的信道。</td>
+      </tr>
+  </tbody>
 </table>
 <p>结构体中，还有一些用来记录节点信息的字段：</p>
 <table>
-<thead>
-<tr>
-<th>字段</th>
-<th>描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>id int</td>
-<td>节点id，同样也作为raft会话中的client id。</td>
-</tr>
-<tr>
-<td>peer []string</td>
-<td>对等raft节点的url。</td>
-</tr>
-<tr>
-<td>join bool</td>
-<td>如果该节点是以加入已有集群的方式启动，那么该值为true；否则是false。</td>
-</tr>
-<tr>
-<td>waldir string</td>
-<td>预写日志（Write Ahead Log，WAL）的路径。</td>
-</tr>
-<tr>
-<td>snapdir stirng</td>
-<td>保存快照的目录路径</td>
-</tr>
-<tr>
-<td>getSnapshot func()([]byte, error)</td>
-<td>获取快照的方法签名。</td>
-</tr>
-<tr>
-<td>lastIndex uint64</td>
-<td>节点启动重启后会先恢复状态，其恢复到的状态的最后一条日志的索引。</td>
-</tr>
-<tr>
-<td>confState raftpb.ConfState</td>
-<td>集群配置状态（详见其声明）。</td>
-</tr>
-<tr>
-<td>snapshotIndex uint64</td>
-<td>快照中的状态下最后一条日志的索引。</td>
-</tr>
-<tr>
-<td>appliedIndex uint64</td>
-<td>已应用的最后一条日志的索引。</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th>字段</th>
+          <th>描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>id int</td>
+          <td>节点id，同样也作为raft会话中的client id。</td>
+      </tr>
+      <tr>
+          <td>peer []string</td>
+          <td>对等raft节点的url。</td>
+      </tr>
+      <tr>
+          <td>join bool</td>
+          <td>如果该节点是以加入已有集群的方式启动，那么该值为true；否则是false。</td>
+      </tr>
+      <tr>
+          <td>waldir string</td>
+          <td>预写日志（Write Ahead Log，WAL）的路径。</td>
+      </tr>
+      <tr>
+          <td>snapdir stirng</td>
+          <td>保存快照的目录路径</td>
+      </tr>
+      <tr>
+          <td>getSnapshot func()([]byte, error)</td>
+          <td>获取快照的方法签名。</td>
+      </tr>
+      <tr>
+          <td>lastIndex uint64</td>
+          <td>节点启动重启后会先恢复状态，其恢复到的状态的最后一条日志的索引。</td>
+      </tr>
+      <tr>
+          <td>confState raftpb.ConfState</td>
+          <td>集群配置状态（详见其声明）。</td>
+      </tr>
+      <tr>
+          <td>snapshotIndex uint64</td>
+          <td>快照中的状态下最后一条日志的索引。</td>
+      </tr>
+      <tr>
+          <td>appliedIndex uint64</td>
+          <td>已应用的最后一条日志的索引。</td>
+      </tr>
+  </tbody>
 </table>
 <p>在结构体中，还保存了etcd/raft提供的接口与其所需的相关组件：</p>
 <table>
-<thead>
-<tr>
-<th>字段</th>
-<th>描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>node raft.Node</td>
-<td>etcd/raft的核心接口，对于一个最简单的实现来说，开发者只需要与该接口打交道即可实现基于raft的服务。</td>
-</tr>
-<tr>
-<td>raftStorage *raft.MemoryStorage</td>
-<td>用来保存raft状态的接口，etcd/raft/storage.go中定义了etcd/raft模块所需的稳定存储接口，并提供了一个实现了该接口的内存存储<code>MemoryStorage</code><sup>注1</sup>，raftexample中就使用了该实现。</td>
-</tr>
-<tr>
-<td>wal *wal.WAL</td>
-<td>预写日志实现，raftexample直接使用了etcd/wal模块中的实现。</td>
-</tr>
-<tr>
-<td>snapshotter *snap.Snapshotter</td>
-<td>快照管理器的指针</td>
-</tr>
-<tr>
-<td>snapshotterReady chan *snap.Snapshotter</td>
-<td>一个用来发送snapshotter加载完毕的信号的“一次性”信道。因为snapshotter的创建对于新建raftNode来说是一个异步的过程，因此需要通过该信道来通知创建者snapshotter已经加载完成。</td>
-</tr>
-<tr>
-<td>snapCount uint64</td>
-<td>当wal中的日志超过该值时，触发快照操作并压缩日志。</td>
-</tr>
-<tr>
-<td>transport *rafthttp.Transport</td>
-<td>etcd/raft模块通信时使用的接口。同样，这里使用了基于http的默认实现。</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th>字段</th>
+          <th>描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>node raft.Node</td>
+          <td>etcd/raft的核心接口，对于一个最简单的实现来说，开发者只需要与该接口打交道即可实现基于raft的服务。</td>
+      </tr>
+      <tr>
+          <td>raftStorage *raft.MemoryStorage</td>
+          <td>用来保存raft状态的接口，etcd/raft/storage.go中定义了etcd/raft模块所需的稳定存储接口，并提供了一个实现了该接口的内存存储<code>MemoryStorage</code><sup>注1</sup>，raftexample中就使用了该实现。</td>
+      </tr>
+      <tr>
+          <td>wal *wal.WAL</td>
+          <td>预写日志实现，raftexample直接使用了etcd/wal模块中的实现。</td>
+      </tr>
+      <tr>
+          <td>snapshotter *snap.Snapshotter</td>
+          <td>快照管理器的指针</td>
+      </tr>
+      <tr>
+          <td>snapshotterReady chan *snap.Snapshotter</td>
+          <td>一个用来发送snapshotter加载完毕的信号的“一次性”信道。因为snapshotter的创建对于新建raftNode来说是一个异步的过程，因此需要通过该信道来通知创建者snapshotter已经加载完成。</td>
+      </tr>
+      <tr>
+          <td>snapCount uint64</td>
+          <td>当wal中的日志超过该值时，触发快照操作并压缩日志。</td>
+      </tr>
+      <tr>
+          <td>transport *rafthttp.Transport</td>
+          <td>etcd/raft模块通信时使用的接口。同样，这里使用了基于http的默认实现。</td>
+      </tr>
+  </tbody>
 </table>
 <div class="details admonition note open">
         <div class="details-summary admonition-title">
@@ -540,26 +540,26 @@
     </div>
 <p>此外，在结构体中，还有一些通过<code>chan struct{}</code>信道实现的信号量：</p>
 <table>
-<thead>
-<tr>
-<th>信号</th>
-<th>描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>stopc</td>
-<td>提议信道关闭信号</td>
-</tr>
-<tr>
-<td>httpstopc</td>
-<td>通知用于raft通信的http服务器关闭的信号</td>
-</tr>
-<tr>
-<td>httpdonec</td>
-<td>用于raft通信的http服务器关闭的信号</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th>信号</th>
+          <th>描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>stopc</td>
+          <td>提议信道关闭信号</td>
+      </tr>
+      <tr>
+          <td>httpstopc</td>
+          <td>通知用于raft通信的http服务器关闭的信号</td>
+      </tr>
+      <tr>
+          <td>httpdonec</td>
+          <td>用于raft通信的http服务器关闭的信号</td>
+      </tr>
+  </tbody>
 </table>
 <p>为了方便不熟悉go语言并发编程或channel的读者理解，下面将简单介绍这种信号量的设计与意义。</p>
 <h3 id="42-go语言中将struct信道用作信号的tips">4.2 go语言中将struct{}信道用作信号的tips</h3>
@@ -890,46 +890,46 @@
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">MustSync</span> <span class="kt">bool</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span></code></pre></div><table>
-<thead>
-<tr>
-<th>字段</th>
-<th>描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>*SoftState</td>
-<td>当前节点的软状态（易失状态）。如果该状态没有任何更新则该字段为<code>nil</code>。软状态不需要被处理或存储，仅当用户需要其中信息时才需要使用该字段。</td>
-</tr>
-<tr>
-<td>pb.HardState</td>
-<td>raft的硬状态，在节点向其它节点发送消息前，需要先存储硬状态。同样，如果其没有任何更新，该字段为一个空的硬状态。</td>
-</tr>
-<tr>
-<td>ReadStates []ReadState</td>
-<td>与线性一致性读（lineraizable read）相关状态，raftexample中没有相关的处理逻辑，在后续的对etcd/raft分析的文章中，会详细介绍这一字段。</td>
-</tr>
-<tr>
-<td>Entries []pb.Entry</td>
-<td>需要保存到稳定存储的日志条目，其需要在向其它节点发送消息前存储。</td>
-</tr>
-<tr>
-<td>Snapshot pb.Snapshot</td>
-<td>需要被保存到稳定存储的快照。</td>
-</tr>
-<tr>
-<td>CommittedEntries []pb.Entry</td>
-<td>已通过raft算法提交的日志条目，开发者需要将这些条目应用到自己的状态机中（在raftexample中即为<code>kvstore</code>）。这些条目在之前已经被应用到了稳定存储中。</td>
-</tr>
-<tr>
-<td>Messages []pb.Entry</td>
-<td>需要发送给其它节点的消息。在发送这些消息前，需要先将<code>HardState</code>和<code>Entries</code>保存到稳定存储中。如果这些消息中有<code>MsgSnap</code>消息（用来传输快照的消息），开发者必须在节点收到快照或接受快照失败后通过调用<code>ReportSnapshot</code>方法通知<code>Node</code>。（因为leader向某follower发送快照时会暂停向该follower发送raft日志的操作，因此其需要报告快照发送完成或失败以让leader继续对其进行操作。）</td>
-</tr>
-<tr>
-<td>MustSync bool</td>
-<td>该字段表示<code>HardState</code>和<code>Entires</code>是否必须同步写入磁盘，如果该字段为<code>false</code>，则可以异步写入。</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th>字段</th>
+          <th>描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>*SoftState</td>
+          <td>当前节点的软状态（易失状态）。如果该状态没有任何更新则该字段为<code>nil</code>。软状态不需要被处理或存储，仅当用户需要其中信息时才需要使用该字段。</td>
+      </tr>
+      <tr>
+          <td>pb.HardState</td>
+          <td>raft的硬状态，在节点向其它节点发送消息前，需要先存储硬状态。同样，如果其没有任何更新，该字段为一个空的硬状态。</td>
+      </tr>
+      <tr>
+          <td>ReadStates []ReadState</td>
+          <td>与线性一致性读（lineraizable read）相关状态，raftexample中没有相关的处理逻辑，在后续的对etcd/raft分析的文章中，会详细介绍这一字段。</td>
+      </tr>
+      <tr>
+          <td>Entries []pb.Entry</td>
+          <td>需要保存到稳定存储的日志条目，其需要在向其它节点发送消息前存储。</td>
+      </tr>
+      <tr>
+          <td>Snapshot pb.Snapshot</td>
+          <td>需要被保存到稳定存储的快照。</td>
+      </tr>
+      <tr>
+          <td>CommittedEntries []pb.Entry</td>
+          <td>已通过raft算法提交的日志条目，开发者需要将这些条目应用到自己的状态机中（在raftexample中即为<code>kvstore</code>）。这些条目在之前已经被应用到了稳定存储中。</td>
+      </tr>
+      <tr>
+          <td>Messages []pb.Entry</td>
+          <td>需要发送给其它节点的消息。在发送这些消息前，需要先将<code>HardState</code>和<code>Entries</code>保存到稳定存储中。如果这些消息中有<code>MsgSnap</code>消息（用来传输快照的消息），开发者必须在节点收到快照或接受快照失败后通过调用<code>ReportSnapshot</code>方法通知<code>Node</code>。（因为leader向某follower发送快照时会暂停向该follower发送raft日志的操作，因此其需要报告快照发送完成或失败以让leader继续对其进行操作。）</td>
+      </tr>
+      <tr>
+          <td>MustSync bool</td>
+          <td>该字段表示<code>HardState</code>和<code>Entires</code>是否必须同步写入磁盘，如果该字段为<code>false</code>，则可以异步写入。</td>
+      </tr>
+  </tbody>
 </table>
 <p><code>Ready</code>结构体中各个字段的注释已经很好地说明了其处理方式，这很有助于我们理解raftexample中对<code>Ready</code>信道的处理方式：</p>
 <ol>
@@ -1033,8 +1033,8 @@
 </div>
 </article></div>
         </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.128.2">Hugo</a> | Theme - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
-                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2024</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/posts/about" target="_blank" rel="noopener noreferrer">叉鸽 | MrCroxx</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        <div class="footer-container"><div class="footer-line">Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.139.2">Hugo</a> | Theme - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/posts/about" target="_blank" rel="noopener noreferrer">叉鸽 | MrCroxx</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div></footer></div>
 
     <div id="fixed-buttons"><a href="#back-to-top" id="back-to-top-button" class="fixed-button" title="Back to Top">

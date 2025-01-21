@@ -243,30 +243,30 @@
     </div>
 <p>在etcd/raft的日志操作中，有4个经常使用的索引：</p>
 <table>
-<thead>
-<tr>
-<th>索引名</th>
-<th>描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>committed</td>
-<td>在该节点所知数量达到quorum的节点保存到了稳定存储中的日志里，index最高的日志的index。</td>
-</tr>
-<tr>
-<td>applied</td>
-<td>在该节点的应用程序已应用到其状态机的日志里，index最高的日志的index。<br> 其中， $ applied \le committed $ 总是成立的。</td>
-</tr>
-<tr>
-<td>firstIndex</td>
-<td>在该节点的日志中，最新的快照之后的第一条日志的index。</td>
-</tr>
-<tr>
-<td>lastIndex</td>
-<td>在该节点的日志中，最后一条日志的index。</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th>索引名</th>
+          <th>描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td>committed</td>
+          <td>在该节点所知数量达到quorum的节点保存到了稳定存储中的日志里，index最高的日志的index。</td>
+      </tr>
+      <tr>
+          <td>applied</td>
+          <td>在该节点的应用程序已应用到其状态机的日志里，index最高的日志的index。<br> 其中， $ applied \le committed $ 总是成立的。</td>
+      </tr>
+      <tr>
+          <td>firstIndex</td>
+          <td>在该节点的日志中，最新的快照之后的第一条日志的index。</td>
+      </tr>
+      <tr>
+          <td>lastIndex</td>
+          <td>在该节点的日志中，最后一条日志的index。</td>
+      </tr>
+  </tbody>
 </table>
 <p>这里需要注意的是，所有的这些索引都是相对于当前节点而不是整个集群的，例如，当index为$i_1$的日志已被集群中数量达到quorum的节点保存到稳定存储时，一些节点可能还不知道$i_1$已被commit。</p>
 <p><code>raftLog</code>中unstable的部分保存在<code>unstable</code>结构体中，而stable的部分稍有些复杂。为了让使用etcd/raft模块的开发者能够根据自己的需求自定义Raft日志存储，stable的部分不是直接通过内部的结构体实现的。<code>go.etcd.io/etcd/raft/storage.go</code>文件中定义了<code>Storage</code>接口，只要实现了该接口，都可以用来存储stable日志。在<a href="/posts/code-reading/etcdraft-made-simple/2-overview/" rel="">深入浅出etcd/raft —— 0x02 etcd/raft总体设计</a>的引言中，笔者提到<code>Storage</code>接口只定义了读取稳定存储中的日志、快照、状态的方法（如下图所示），etcd/raft并不关心也不知道开发者写入稳定存储的方式。那么，etcd/raft是怎样将unstable中的数据写入到稳定存储中的呢？</p>
@@ -384,46 +384,46 @@
 </span></span></code></pre></div><p><code>unstable</code>结构体中的<code>offset</code>字段记录了unstable的日志起点，该起点可能比<code>Storage</code>中index最高的日志条目旧，也就是说<code>Storage</code>和<code>unstable</code>中的日志可能有部分重叠，因此在处理二者之间的日志时，有一些裁剪日志的操作。</p>
 <p><code>unstable</code>中较为重要的方法如下表所示。</p>
 <table>
-<thead>
-<tr>
-<th style="text-align:center">方法<div style="width: 18em"></div></th>
-<th style="text-align:left">描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center"><code>maybeFirstIndex() (uint64, bool)</code></td>
-<td style="text-align:left">获取相对整个<code>raftLog</code>的<em>first index</em>，当<code>unstable</code>无法得知该值时，第二个返回值返回<code>false</code>。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>maybeLastIndex() (uint64, bool)</code></td>
-<td style="text-align:left">获取相对整个<code>raftLog</code>的<em>last index</em>，当<code>unstable</code>无法得知该值时，第二个返回值返回<code>false</code>。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>maybeTerm(i uint64) (uint64, bool)</code></td>
-<td style="text-align:left">获取给定index的日志条目的term，当<code>unstable</code>无法得知该值时，第二个返回值返回<code>false</code></td>
-</tr>
-<tr>
-<td style="text-align:center"><code>stableTo(i, t uint64)</code></td>
-<td style="text-align:left">通知<code>unstable</code>当前index为<code>i</code>、term为<code>t</code>及其之前的日志已经被保存到了稳定存储中，可以裁剪掉<code>unstable</code>中的这段日志了。裁剪后会根据空间利用率适当地对空间进行优化。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>stableSnapTo(i uint64)</code></td>
-<td style="text-align:left">通知<code>unstable</code>当前index在<code>i</code>及其之前的快照已经保存到了稳定存储中，如果<code>unstable</code>中保存了该快照，那么可以释放该快照了。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>restore(s pb.Snapshot)</code></td>
-<td style="text-align:left">根据快照恢复<code>unstable</code>的状态（设置<code>unstbale</code>中的<code>offset</code>、<code>snapshot</code>，并将<code>entries</code>置空）。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>truncateAndAppend(ents []pb.Entry)</code></td>
-<td style="text-align:left">对给定的日志切片进行裁剪，并将其加入到<code>unstable</code>保存的日志中。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>slice(lo uint64, hi uint64)</code></td>
-<td style="text-align:left">返回给定范围内的日志切片。首先会通过<code>mustCheckOutOfBounds(lo, hi uint64)</code>方法检查是否越界，如果越界会因此panic。</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center">方法<div style="width: 18em"></div></th>
+          <th style="text-align: left">描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center"><code>maybeFirstIndex() (uint64, bool)</code></td>
+          <td style="text-align: left">获取相对整个<code>raftLog</code>的<em>first index</em>，当<code>unstable</code>无法得知该值时，第二个返回值返回<code>false</code>。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>maybeLastIndex() (uint64, bool)</code></td>
+          <td style="text-align: left">获取相对整个<code>raftLog</code>的<em>last index</em>，当<code>unstable</code>无法得知该值时，第二个返回值返回<code>false</code>。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>maybeTerm(i uint64) (uint64, bool)</code></td>
+          <td style="text-align: left">获取给定index的日志条目的term，当<code>unstable</code>无法得知该值时，第二个返回值返回<code>false</code></td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>stableTo(i, t uint64)</code></td>
+          <td style="text-align: left">通知<code>unstable</code>当前index为<code>i</code>、term为<code>t</code>及其之前的日志已经被保存到了稳定存储中，可以裁剪掉<code>unstable</code>中的这段日志了。裁剪后会根据空间利用率适当地对空间进行优化。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>stableSnapTo(i uint64)</code></td>
+          <td style="text-align: left">通知<code>unstable</code>当前index在<code>i</code>及其之前的快照已经保存到了稳定存储中，如果<code>unstable</code>中保存了该快照，那么可以释放该快照了。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>restore(s pb.Snapshot)</code></td>
+          <td style="text-align: left">根据快照恢复<code>unstable</code>的状态（设置<code>unstbale</code>中的<code>offset</code>、<code>snapshot</code>，并将<code>entries</code>置空）。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>truncateAndAppend(ents []pb.Entry)</code></td>
+          <td style="text-align: left">对给定的日志切片进行裁剪，并将其加入到<code>unstable</code>保存的日志中。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>slice(lo uint64, hi uint64)</code></td>
+          <td style="text-align: left">返回给定范围内的日志切片。首先会通过<code>mustCheckOutOfBounds(lo, hi uint64)</code>方法检查是否越界，如果越界会因此panic。</td>
+      </tr>
+  </tbody>
 </table>
 <p><code>unstable</code>中的<em>first index</em>和<em>last index</em>的实现与<code>Storage</code>稍有不同。<code>unstable</code>的<code>maybeFirstIndex</code>方法与<code>maybeLastIndex</code>方法获取的是相对整个<code>raftLog</code>的<em>first index</em>或<em>last index</em>，当<code>unstable</code>无法得知整个<code>raftLog</code>的<em>first index</em>或<em>last index</em>时，这两个方法的第二个返回值会被置为<code>false</code>。这种设计与<code>raftLog</code>的实现有关，在<code>raftLog</code>的<code>firstIndex</code>和<code>lastIndex</code>方法中，首先会调用<code>unstable</code>的<code>maybeFirstIndex</code>方法或<code>maybeLastIndex</code>方法，如果查询的索引不在<code>unstable</code>中时，其会继续询问<code>Storage</code>。<code>unstable</code>中<code>maybeFirstIndex</code>方法与<code>maybeLastIndex</code>方法的实现如下。</p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">
@@ -583,86 +583,86 @@
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span></code></pre></div><p><code>raftLog</code>提供了如下的较为重要的方法：</p>
 <table>
-<thead>
-<tr>
-<th style="text-align:center">方法<div style="width: 16em"></div></th>
-<th>描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center"><code>maybeAppend(index, logTerm, committed uint64, ents ...pb.Entry)</code></td>
-<td>尝试追加新日志，并更新<em>committed</em>索引（详见下文分析）。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>unstableEntries() []pb.Entry</code></td>
-<td>返回全部<code>unstable</code>中的日志条目。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>nextEnts() (ents []pb.Entry)</code></td>
-<td>返回可被应用到状态机的日志条目（已提交但还未应用），返回的长度受创建<code>raftLog</code>时指定的<code>maxNextEntsSize</code>限制。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>hasNextEnts() bool</code></td>
-<td>返回是否存在可被应用到状态机的日志。该方法不会调用<code>slice</code>方法，性能更高。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>hasPendingSnapshot() bool</code></td>
-<td>返回是否有未应用到状态机的快照（即<code>unstable</code>中保存的快照）。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>commitTo(tocommit uint64)</code></td>
-<td>更新<code>committed</code>索引，该方法会检查参数合法性。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>appliedTo(i uint64)</code></td>
-<td>更新<code>applied</code>索引，该方法会检查参数合法性。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>stableTo(i, t uint64)</code></td>
-<td>通知<code>unstable</code>当前已保存到稳定存储中最后的日志的index与term，让其适当裁剪日志。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>stableSnapTo(i uint64)</code></td>
-<td>通知<code>unstable</code>当前已保存到稳定存储中最后的快照的index，让其释放快照。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>lastTerm() uint64</code></td>
-<td>获取最后一条日志的term。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>term(i uint64) (uint64, error)</code></td>
-<td>获取给定index的日志条目的term。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>entries(i, maxsize uint64) ([]pb.Entry, error)</code></td>
-<td>获取index从<code>i</code>开始的最多<code>maxsize</code>条日志。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>allEntries() []pb.Entry</code></td>
-<td>获取全部日志条目。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>isUpToDate(lasti, term uint64) bool</code></td>
-<td>判断给定的term和index对应的日志条目是否至少与当前最后一个日志条目一样新。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>matchTerm(i, term uint64) bool</code></td>
-<td>判断给定的index与term是否日志中相应index的条目的term匹配。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>maybeCommit(maxIndex, term uint64) bool</code></td>
-<td>如果给定的index和term对应的日志条目还未被提交，将日志提交到给日志条目处并返回<code>true</code>，否则返回<code>false</code>。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>restore(s pb.Snapshot)</code></td>
-<td>将给定快照应用到（unstable）日志中。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>slice(lo, hi, maxSize uint64) ([]pb.Entry, error)</code></td>
-<td>返回index从<code>lo</code>到<code>hi</code>的最多<code>maxSize</code>条日志，该方法会检查参数是否合法。</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center">方法<div style="width: 16em"></div></th>
+          <th>描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center"><code>maybeAppend(index, logTerm, committed uint64, ents ...pb.Entry)</code></td>
+          <td>尝试追加新日志，并更新<em>committed</em>索引（详见下文分析）。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>unstableEntries() []pb.Entry</code></td>
+          <td>返回全部<code>unstable</code>中的日志条目。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>nextEnts() (ents []pb.Entry)</code></td>
+          <td>返回可被应用到状态机的日志条目（已提交但还未应用），返回的长度受创建<code>raftLog</code>时指定的<code>maxNextEntsSize</code>限制。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>hasNextEnts() bool</code></td>
+          <td>返回是否存在可被应用到状态机的日志。该方法不会调用<code>slice</code>方法，性能更高。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>hasPendingSnapshot() bool</code></td>
+          <td>返回是否有未应用到状态机的快照（即<code>unstable</code>中保存的快照）。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>commitTo(tocommit uint64)</code></td>
+          <td>更新<code>committed</code>索引，该方法会检查参数合法性。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>appliedTo(i uint64)</code></td>
+          <td>更新<code>applied</code>索引，该方法会检查参数合法性。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>stableTo(i, t uint64)</code></td>
+          <td>通知<code>unstable</code>当前已保存到稳定存储中最后的日志的index与term，让其适当裁剪日志。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>stableSnapTo(i uint64)</code></td>
+          <td>通知<code>unstable</code>当前已保存到稳定存储中最后的快照的index，让其释放快照。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>lastTerm() uint64</code></td>
+          <td>获取最后一条日志的term。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>term(i uint64) (uint64, error)</code></td>
+          <td>获取给定index的日志条目的term。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>entries(i, maxsize uint64) ([]pb.Entry, error)</code></td>
+          <td>获取index从<code>i</code>开始的最多<code>maxsize</code>条日志。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>allEntries() []pb.Entry</code></td>
+          <td>获取全部日志条目。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>isUpToDate(lasti, term uint64) bool</code></td>
+          <td>判断给定的term和index对应的日志条目是否至少与当前最后一个日志条目一样新。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>matchTerm(i, term uint64) bool</code></td>
+          <td>判断给定的index与term是否日志中相应index的条目的term匹配。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>maybeCommit(maxIndex, term uint64) bool</code></td>
+          <td>如果给定的index和term对应的日志条目还未被提交，将日志提交到给日志条目处并返回<code>true</code>，否则返回<code>false</code>。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>restore(s pb.Snapshot)</code></td>
+          <td>将给定快照应用到（unstable）日志中。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>slice(lo, hi, maxSize uint64) ([]pb.Entry, error)</code></td>
+          <td>返回index从<code>lo</code>到<code>hi</code>的最多<code>maxSize</code>条日志，该方法会检查参数是否合法。</td>
+      </tr>
+  </tbody>
 </table>
 <p><code>append</code>与<code>maybeAppend</code>是向<code>raftLog</code>写入日志的方法。二者的区别在于<code>append</code>不会检查给定的日志切片是否与已有日志有冲突，因此leader向<code>raftLog</code>中追加日志时会调用该函数；而<code>maybeAppend</code>会检查是否有冲突并找到冲突位置，并试图通过覆盖本地日志的方式解决冲突。但是，二者都会检查给定的日志起点是否在<code>committed</code>索引位置之前，如果在其之前，这违背了Raft算法的<strong>Log Matching</strong>性质，因此会引起panic（其实follower不会将<code>committed</code>之前的日志传给该函数，因此永远不会进入该分支）。源码如下：</p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">
@@ -873,46 +873,46 @@
 </span></span></code></pre></div><p><code>Progress</code>中有两个重要的索引：<code>match</code>与<code>next</code>。<code>match</code>表示leader所知的该follower的日志中匹配的日志条目的最高index，如果leader不知道该follower的日志状态时，<code>match</code>为0；<code>next</code>表示leader接下来要给该follower发送的日志的第一个条目的index。根据Raft算法论文，<code>next</code>是可能因异常回退的，而<code>match</code>是单调递增的。<code>next</code>小于<code>match</code>的节点会被认为是落后的节点。</p>
 <p><code>Progress</code>的一些常用的方法如下表所示：</p>
 <table>
-<thead>
-<tr>
-<th style="text-align:center">方法<div style="width: 14em"></div></th>
-<th>描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center"><code>ResetState(state StateType)</code></td>
-<td>重置状态为目标状态，该方法会清空所有状态记录的数据。该方法由<code>BecomeXXX</code>方法调用。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>BecomeProbe()</code></td>
-<td>将follower转为Probe状态。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>BecomeReplicate()</code></td>
-<td>将follower转为Replicate状态。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>BecomeSnapshot(snapshoti uint64)</code></td>
-<td>将follower转为Snapshot状态，并指定需要为其发送的快照的index。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>MaybeUpdate(n uint64) bool</code></td>
-<td>用于更新follower的进度（<em>match index</em>），如果传入的进度比当前进度旧，则不会更新进度并返回false，该方法还会根据传入的进度更新<em>next index</em>。leader会在收到来自follower的<code>MsgAppResp</code>消息时调用该方法。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>OptimisticUpdate(n uint64)</code></td>
-<td>不做检查直接更新<em>next index</em>，用于<code>StateReplicate</code>状态下日志复制流水线优化。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>MaybeDecrTo(rejected, last uint64) bool</code></td>
-<td>用于回退<em>next index</em>，该方法会根据参数判断是否需要回退，如果参数是来自过期的消息，那么不会回退。如果回退，则会返回true。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>IsPaused() bool</code></td>
-<td>判断为该follower发送消息的发送窗口是否阻塞，发送窗口大小与该follower的状态和<code>Raft</code>的配置有关。</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center">方法<div style="width: 14em"></div></th>
+          <th>描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center"><code>ResetState(state StateType)</code></td>
+          <td>重置状态为目标状态，该方法会清空所有状态记录的数据。该方法由<code>BecomeXXX</code>方法调用。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>BecomeProbe()</code></td>
+          <td>将follower转为Probe状态。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>BecomeReplicate()</code></td>
+          <td>将follower转为Replicate状态。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>BecomeSnapshot(snapshoti uint64)</code></td>
+          <td>将follower转为Snapshot状态，并指定需要为其发送的快照的index。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>MaybeUpdate(n uint64) bool</code></td>
+          <td>用于更新follower的进度（<em>match index</em>），如果传入的进度比当前进度旧，则不会更新进度并返回false，该方法还会根据传入的进度更新<em>next index</em>。leader会在收到来自follower的<code>MsgAppResp</code>消息时调用该方法。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>OptimisticUpdate(n uint64)</code></td>
+          <td>不做检查直接更新<em>next index</em>，用于<code>StateReplicate</code>状态下日志复制流水线优化。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>MaybeDecrTo(rejected, last uint64) bool</code></td>
+          <td>用于回退<em>next index</em>，该方法会根据参数判断是否需要回退，如果参数是来自过期的消息，那么不会回退。如果回退，则会返回true。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>IsPaused() bool</code></td>
+          <td>判断为该follower发送消息的发送窗口是否阻塞，发送窗口大小与该follower的状态和<code>Raft</code>的配置有关。</td>
+      </tr>
+  </tbody>
 </table>
 <p>以上的很多方法都与follower的状态有关，因此这里先介绍<code>Progress</code>中规定的3中follower状态。</p>
 <h3 id="32-follower的3种状态">3.2 follower的3种状态</h3>
@@ -1724,8 +1724,8 @@
 </div>
 </article></div>
         </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.128.2">Hugo</a> | Theme - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
-                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2024</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/posts/about" target="_blank" rel="noopener noreferrer">叉鸽 | MrCroxx</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        <div class="footer-container"><div class="footer-line">Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.139.2">Hugo</a> | Theme - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/posts/about" target="_blank" rel="noopener noreferrer">叉鸽 | MrCroxx</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div></footer></div>
 
     <div id="fixed-buttons"><a href="#back-to-top" id="back-to-top-button" class="fixed-button" title="Back to Top">

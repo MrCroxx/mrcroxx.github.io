@@ -241,40 +241,40 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
     </div>
 <p>不同隔离级别相应的问题可总结为下表：</p>
 <table>
-<thead>
-<tr>
-<th style="text-align:center">隔离级别<br>（isolation level）<div style="width:12em"></div></th>
-<th style="text-align:center">脏读<br>（dirty reads）<div style="width:8em"></div></th>
-<th style="text-align:center">不可重复读<br>（non-repeatable reads）<div style="width:14em"></div></th>
-<th style="text-align:center">幻读<br>（phantom reads）<div style="width:10em"></div></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center">未提交读<br>（read uncommitted）</td>
-<td style="text-align:center">&#x26a0;&#xfe0f;</td>
-<td style="text-align:center">&#x26a0;&#xfe0f;</td>
-<td style="text-align:center">&#x26a0;&#xfe0f;</td>
-</tr>
-<tr>
-<td style="text-align:center">提交读<br>（read committed）</td>
-<td style="text-align:center"></td>
-<td style="text-align:center">&#x26a0;&#xfe0f;</td>
-<td style="text-align:center">&#x26a0;&#xfe0f;</td>
-</tr>
-<tr>
-<td style="text-align:center">可重复读<br>（repeatable reads）</td>
-<td style="text-align:center"></td>
-<td style="text-align:center"></td>
-<td style="text-align:center">&#x26a0;&#xfe0f;</td>
-</tr>
-<tr>
-<td style="text-align:center">序列化读<br>（serializable）</td>
-<td style="text-align:center"></td>
-<td style="text-align:center"></td>
-<td style="text-align:center"></td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center">隔离级别<br>（isolation level）<div style="width:12em"></div></th>
+          <th style="text-align: center">脏读<br>（dirty reads）<div style="width:8em"></div></th>
+          <th style="text-align: center">不可重复读<br>（non-repeatable reads）<div style="width:14em"></div></th>
+          <th style="text-align: center">幻读<br>（phantom reads）<div style="width:10em"></div></th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center">未提交读<br>（read uncommitted）</td>
+          <td style="text-align: center">&#x26a0;&#xfe0f;</td>
+          <td style="text-align: center">&#x26a0;&#xfe0f;</td>
+          <td style="text-align: center">&#x26a0;&#xfe0f;</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">提交读<br>（read committed）</td>
+          <td style="text-align: center"></td>
+          <td style="text-align: center">&#x26a0;&#xfe0f;</td>
+          <td style="text-align: center">&#x26a0;&#xfe0f;</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">可重复读<br>（repeatable reads）</td>
+          <td style="text-align: center"></td>
+          <td style="text-align: center"></td>
+          <td style="text-align: center">&#x26a0;&#xfe0f;</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">序列化读<br>（serializable）</td>
+          <td style="text-align: center"></td>
+          <td style="text-align: center"></td>
+          <td style="text-align: center"></td>
+      </tr>
+  </tbody>
 </table>
 <h3 id="12-boltdb中acid的实现">1.2 boltdb中ACID的实现</h3>
 <p>在笔者看来，ACID性质的实现并不是相互孤立的，而是通过各种技术整体实现的。但是为了理解的清晰，这里简要划分一下boltdb中各种技术与ACID间的关系。</p>
@@ -289,50 +289,50 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 <p>Shadow Paging同样为实现事务隔离提供了支持。为了保证serializable的同时实现读写并发，当读写事务提交时，boltdb不会立即回收其不再使用的页（shadow page），这些页仍在freelist中该事务的<code>pending</code>列表中，因为此时这些页可能还在被未完成的只读事务读取。取而代之的是，boltdb会在事务开始时为其分配事务id<code>txid</code>，只读事务的<code>txid</code>为当前数据库的<code>txid</code>，读写事务的<code>txid</code>为当前数据库的<code>txid + 1</code>。boltdb会记录正在执行的事务的事务id；当创建读写事务时，boltdb会从只读事务中找到进行中的最小的<code>txid</code>，显然，该<code>txid</code>之前的读写事务的shadow page不再需要被读取，此时可以安全地释放这些读写事务的shadow page，即可以freelist中该事务的<code>pending</code>列表中的页合并到freelist的<code>ids</code>中。</p>
 <p>Shadow Paging保证了读读并发、读写并发的事务隔离性，boltdb还需要保证最多只有1个读写事务在进行。boltdb的读写事务开始前会申请互斥锁，以避免读写事务并行执行。这里需要注意两点：第一，因为boltdb支持读写并发，所以只读事务不需要申请S锁，否则只有读读事务才能并行执行；第二，在数据库领域，这种锁机制应叫做“latch”而非“lock”，只是其粒度较大。CMU 15-721中较为详细地介绍了Lock与Latch的区别，这里笔者搬运一下其总结表格。</p>
 <table>
-<thead>
-<tr>
-<th style="text-align:center"><div style="width:6em"></div></th>
-<th style="text-align:center">Locks<div style="width:10em"></div></th>
-<th style="text-align:center">Latches<div style="width:10em"></div></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center">Separate &hellip;</td>
-<td style="text-align:center">User transactions</td>
-<td style="text-align:center">Threads</td>
-</tr>
-<tr>
-<td style="text-align:center">Proetect &hellip;</td>
-<td style="text-align:center">Database contents</td>
-<td style="text-align:center">In-memory data structures</td>
-</tr>
-<tr>
-<td style="text-align:center">During &hellip;</td>
-<td style="text-align:center">Entire transactions</td>
-<td style="text-align:center">Critical sections</td>
-</tr>
-<tr>
-<td style="text-align:center">Modes &hellip;</td>
-<td style="text-align:center">Shared, exclusive, update, intention, escrow, schema, etc.</td>
-<td style="text-align:center">Read, writes, (perhaps) update</td>
-</tr>
-<tr>
-<td style="text-align:center">Deadlock &hellip;</td>
-<td style="text-align:center">Detection &amp; resolution</td>
-<td style="text-align:center">Avoidance</td>
-</tr>
-<tr>
-<td style="text-align:center">&hellip; by &hellip;</td>
-<td style="text-align:center">Aanlysis of the waits-for graph, timeout, transaction abort, partial rollback, lock de-escalation</td>
-<td style="text-align:center">Coding discipline, &ldquo;lock leveling&rdquo;</td>
-</tr>
-<tr>
-<td style="text-align:center">Kept in &hellip;</td>
-<td style="text-align:center">Lock manager&rsquo;s hash table</td>
-<td style="text-align:center">Protected data structure</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center"><div style="width:6em"></div></th>
+          <th style="text-align: center">Locks<div style="width:10em"></div></th>
+          <th style="text-align: center">Latches<div style="width:10em"></div></th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center">Separate &hellip;</td>
+          <td style="text-align: center">User transactions</td>
+          <td style="text-align: center">Threads</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">Proetect &hellip;</td>
+          <td style="text-align: center">Database contents</td>
+          <td style="text-align: center">In-memory data structures</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">During &hellip;</td>
+          <td style="text-align: center">Entire transactions</td>
+          <td style="text-align: center">Critical sections</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">Modes &hellip;</td>
+          <td style="text-align: center">Shared, exclusive, update, intention, escrow, schema, etc.</td>
+          <td style="text-align: center">Read, writes, (perhaps) update</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">Deadlock &hellip;</td>
+          <td style="text-align: center">Detection &amp; resolution</td>
+          <td style="text-align: center">Avoidance</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">&hellip; by &hellip;</td>
+          <td style="text-align: center">Aanlysis of the waits-for graph, timeout, transaction abort, partial rollback, lock de-escalation</td>
+          <td style="text-align: center">Coding discipline, &ldquo;lock leveling&rdquo;</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">Kept in &hellip;</td>
+          <td style="text-align: center">Lock manager&rsquo;s hash table</td>
+          <td style="text-align: center">Protected data structure</td>
+      </tr>
+  </tbody>
 </table>
 <p><strong>Durability（持久性）：</strong></p>
 <p>boltdb的读写事务提交时，会通过pwrite系统调用写底层文件，并通过fdatasync系统调用确保数据被安全写入到磁盘中。因为boltdb的mmap模式为<code>MAP_SHARED</code>，因此绕过mmap直接写入底层文件不会影响mmap中数据对底层文件修改的可见性。</p>
@@ -371,141 +371,141 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span>	<span class="nx">WriteFlag</span> <span class="kt">int</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span></code></pre></div><table>
-<thead>
-<tr>
-<th style="text-align:center">字段<div style="width:12em"></div></th>
-<th style="text-align:left">描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center"><code>writable bool</code></td>
-<td style="text-align:left">true表示当前事务为读写事务，false表示当前事务为只读事务。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>managed bool</code></td>
-<td style="text-align:left">标识当前事务是否为隐式事务，隐式事务由boltdb自动提交或回滚，用户不能主动提交或回滚。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>db *DB</code></td>
-<td style="text-align:left">创建该事务的数据库对象。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>meta *meta</code></td>
-<td style="text-align:left">当前事务创建时的<code>meta</code>拷贝。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>root Bucket</code></td>
-<td style="text-align:left">当前事务所见的root bucket的<code>Bucket</code>实例。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>page map[pgid]*page</code></td>
-<td style="text-align:left">索引当前事务所使用的dirty page（page buffer）。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>stats TxStats</code></td>
-<td style="text-align:left">统计变量。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>commitHandlers []func()</code></td>
-<td style="text-align:left">事务成功提交后需调用的回调函数列表。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>WriteFlag int</code></td>
-<td style="text-align:left"><code>WriteTo</code>方法reader打开文件时可配置的额外的flag。</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center">字段<div style="width:12em"></div></th>
+          <th style="text-align: left">描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center"><code>writable bool</code></td>
+          <td style="text-align: left">true表示当前事务为读写事务，false表示当前事务为只读事务。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>managed bool</code></td>
+          <td style="text-align: left">标识当前事务是否为隐式事务，隐式事务由boltdb自动提交或回滚，用户不能主动提交或回滚。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>db *DB</code></td>
+          <td style="text-align: left">创建该事务的数据库对象。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>meta *meta</code></td>
+          <td style="text-align: left">当前事务创建时的<code>meta</code>拷贝。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>root Bucket</code></td>
+          <td style="text-align: left">当前事务所见的root bucket的<code>Bucket</code>实例。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>page map[pgid]*page</code></td>
+          <td style="text-align: left">索引当前事务所使用的dirty page（page buffer）。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>stats TxStats</code></td>
+          <td style="text-align: left">统计变量。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>commitHandlers []func()</code></td>
+          <td style="text-align: left">事务成功提交后需调用的回调函数列表。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>WriteFlag int</code></td>
+          <td style="text-align: left"><code>WriteTo</code>方法reader打开文件时可配置的额外的flag。</td>
+      </tr>
+  </tbody>
 </table>
 <p><code>Tx</code>为boltdb的用户提供了一些方法来访问其中部分字段：</p>
 <table>
-<thead>
-<tr>
-<th style="text-align:center">方法<div style="width:12em"></div></th>
-<th style="text-align:left">描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center"><code>ID() int</code></td>
-<td style="text-align:left">返回当前事务id（<code>tx.meta.txid</code>）。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>DB *DB</code></td>
-<td style="text-align:left">返回创建当前事务的数据库实例。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>Size() int64</code></td>
-<td style="text-align:left">返回当前事务所见的数据库大小（非数据大小）。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>Writable() bool</code></td>
-<td style="text-align:left">返回当前事务事务可写。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>Stats() TxStats</code></td>
-<td style="text-align:left">返回当前事务的统计量。</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center">方法<div style="width:12em"></div></th>
+          <th style="text-align: left">描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center"><code>ID() int</code></td>
+          <td style="text-align: left">返回当前事务id（<code>tx.meta.txid</code>）。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>DB *DB</code></td>
+          <td style="text-align: left">返回创建当前事务的数据库实例。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>Size() int64</code></td>
+          <td style="text-align: left">返回当前事务所见的数据库大小（非数据大小）。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>Writable() bool</code></td>
+          <td style="text-align: left">返回当前事务事务可写。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>Stats() TxStats</code></td>
+          <td style="text-align: left">返回当前事务的统计量。</td>
+      </tr>
+  </tbody>
 </table>
 <p>此外，<code>Tx</code>还为boltdb的用户提供了一些访问root bucket的方法：</p>
 <table>
-<thead>
-<tr>
-<th style="text-align:center">方法<div style="width:12em"></div></th>
-<th style="text-align:left">描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center"><code>Cursor() *Cursor</code></td>
-<td style="text-align:left"><code>tx.root.Cursor()</code>。从当前事务获取root bucket的<code>Cursor</code>。由于root bucket中只保存子bucket，因此其返回的所有value都是nil。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>Bucket(name []byte) *Bucket</code></td>
-<td style="text-align:left"><code>tx.root.Bucket(name)</code>。获取root bucket的子bucket。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>CreateBucket(name []byte) (*Bucket, error)</code></td>
-<td style="text-align:left"><code>tx.root.CreateBucket(name)</code></td>
-</tr>
-<tr>
-<td style="text-align:center"><code>CreateBucketIfNotExists(name []byte) (*Bucket, error)</code></td>
-<td style="text-align:left"><code>tx.root.CreateBucketIfNotExists(name)</code>。如果root bucket的子bucket未创建，则创建子bucket并返回实例；否则直接返回其实例。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>DeleteBucket(name []byte) error</code></td>
-<td style="text-align:left"><code>tx.root.DeleteBucket(name)</code>。删除root bucket的子bucket。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>ForEach(fn func(name []byte, b *Bucket) error) error</code></td>
-<td style="text-align:left">遍历root bucket的所有子bucket并执行给定闭包。</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center">方法<div style="width:12em"></div></th>
+          <th style="text-align: left">描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center"><code>Cursor() *Cursor</code></td>
+          <td style="text-align: left"><code>tx.root.Cursor()</code>。从当前事务获取root bucket的<code>Cursor</code>。由于root bucket中只保存子bucket，因此其返回的所有value都是nil。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>Bucket(name []byte) *Bucket</code></td>
+          <td style="text-align: left"><code>tx.root.Bucket(name)</code>。获取root bucket的子bucket。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>CreateBucket(name []byte) (*Bucket, error)</code></td>
+          <td style="text-align: left"><code>tx.root.CreateBucket(name)</code></td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>CreateBucketIfNotExists(name []byte) (*Bucket, error)</code></td>
+          <td style="text-align: left"><code>tx.root.CreateBucketIfNotExists(name)</code>。如果root bucket的子bucket未创建，则创建子bucket并返回实例；否则直接返回其实例。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>DeleteBucket(name []byte) error</code></td>
+          <td style="text-align: left"><code>tx.root.DeleteBucket(name)</code>。删除root bucket的子bucket。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>ForEach(fn func(name []byte, b *Bucket) error) error</code></td>
+          <td style="text-align: left">遍历root bucket的所有子bucket并执行给定闭包。</td>
+      </tr>
+  </tbody>
 </table>
 <h3 id="22-事务的生命周期">2.2 事务的生命周期</h3>
 <p>本节将按照事务的生命周期，介绍并分析boltdb中事务的封装与实现。</p>
 <p>在介绍事务的生命周期前，先简单介绍一下boltdb的<code>DB</code>中三把重要的锁：</p>
 <table>
-<thead>
-<tr>
-<th style="text-align:center">字段<div style="width:10em"></div></th>
-<th style="text-align:left">描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center"><code>rwlock sync.Mutex</code></td>
-<td style="text-align:left">用来隔离可写事务的互斥锁（注意，不是读写锁）。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>metalock sync.Mutex</code></td>
-<td style="text-align:left">用来保护元数据访问的互斥锁。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>mmaplock sync.RWMutex</code></td>
-<td style="text-align:left">用来保护mmap操作的读写锁。</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center">字段<div style="width:10em"></div></th>
+          <th style="text-align: left">描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center"><code>rwlock sync.Mutex</code></td>
+          <td style="text-align: left">用来隔离可写事务的互斥锁（注意，不是读写锁）。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>metalock sync.Mutex</code></td>
+          <td style="text-align: left">用来保护元数据访问的互斥锁。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>mmaplock sync.RWMutex</code></td>
+          <td style="text-align: left">用来保护mmap操作的读写锁。</td>
+      </tr>
+  </tbody>
 </table>
 <p>boltdb支持“读读并发”与“读写并发”，用来隔离事务的锁<code>rwlock</code>是互斥锁，只有可写事务需要获取该锁，只读事务不受影响。由于事务开始时，需要复制当时的元数据，因此这里使用了互斥锁<code>metalock</code>来保护事务开始时的元数据访问，当事务初始化完成后就会释放<code>metalock</code>；另外，只读事务关闭时也需要获取<code>metalock</code>，但其目的是保护对<code>DB</code>对象的访问，而不时保护<code>meta</code>。而<code>mmaplock</code>是用来保护mmap操作的读写锁，只读事务会获取<code>mmaplock</code>的S锁，而mmap操作会获取<code>mmaplock</code>的X锁。这样，当可写事务需要更大的mmap空间时，其需要等待之前的只读事务都执行完毕，以避免只读事务引用的mmap地址失效；对于可写事务本身，其在mmap前会从根<code>Bucket</code>实例开始<code>dereference</code>操作，以避免可写事务本身引用了旧的mmap地址空间。</p>
 <p>这三种锁的获取顺序是：（<code>rwlock</code>） $\rightarrow$ <code>metalock</code> $\rightarrow$ （<code>mmaplock</code>）。</p>
@@ -1360,8 +1360,8 @@ This is the lowest isolation level. In this level, dirty reads are allowed, so o
 </div>
 </article></div>
         </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.128.2">Hugo</a> | Theme - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
-                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2024</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/posts/about" target="_blank" rel="noopener noreferrer">叉鸽 | MrCroxx</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        <div class="footer-container"><div class="footer-line">Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.139.2">Hugo</a> | Theme - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/posts/about" target="_blank" rel="noopener noreferrer">叉鸽 | MrCroxx</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div></footer></div>
 
     <div id="fixed-buttons"><a href="#back-to-top" id="back-to-top-button" class="fixed-button" title="Back to Top">

@@ -255,22 +255,22 @@
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">MajorityConfig</span> <span class="kd">map</span><span class="p">[</span><span class="kt">uint64</span><span class="p">]</span><span class="kd">struct</span><span class="p">{}</span>
 </span></span></code></pre></div><p><code>MajorityConfig</code>的实现非常简单，其只是voter节点id的集合，但<code>MajorityConfig</code>提供了一些很实用的与majority有关方法，如下表所示（仅给出主要方法）：</p>
 <table>
-<thead>
-<tr>
-<th style="text-align:center">方法<div style="width: 12em"></div></th>
-<th style="text-align:left">描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center"><code>CommittedIndex(l AckedIndexer) Index</code></td>
-<td style="text-align:left">根据给定的<code>AckedIndexer</code>计算被大多数节点接受了的<em>commit index</em> 。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>VoteResult(votes map[uint64]bool) VoteResult</code></td>
-<td style="text-align:left">根据给定的投票统计计算投票结果。</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center">方法<div style="width: 12em"></div></th>
+          <th style="text-align: left">描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center"><code>CommittedIndex(l AckedIndexer) Index</code></td>
+          <td style="text-align: left">根据给定的<code>AckedIndexer</code>计算被大多数节点接受了的<em>commit index</em> 。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>VoteResult(votes map[uint64]bool) VoteResult</code></td>
+          <td style="text-align: left">根据给定的投票统计计算投票结果。</td>
+      </tr>
+  </tbody>
 </table>
 <p><code>CommittedIndex</code>是根据该<code>MajorityConfig</code>计算被大多数接受的<em>commit index</em>，其参数<code>AckedIndexer</code>是一个接口：</p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl">
@@ -408,58 +408,58 @@
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span></code></pre></div><p><code>ProgressTracker</code>提供了如下方法：</p>
 <table>
-<thead>
-<tr>
-<th style="text-align:center">方法<div style="width: 20em"></div></th>
-<th style="text-align:left">描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center"><code>func MakeProgressTracker(maxInflight int) ProgressTracker</code></td>
-<td style="text-align:left">新建空配置。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>ConfState() pb.ConfState</code></td>
-<td style="text-align:left">返回当前激活的配置。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>IsSingleton() bool</code></td>
-<td style="text-align:left">判断当前配置是否为单节点模式（voter数为0，且不处于<em>joint configuration</em>中）。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>Committed() uint64</code></td>
-<td style="text-align:left">返回被quorum接受的<em>commit index</em>。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>Visit(f func(id uint64, pr *Progress))</code></td>
-<td style="text-align:left">有序遍历追踪的所有进度，并对其执行传入的函数闭包。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>QuorumActive() bool</code></td>
-<td style="text-align:left">判断是否有达到quorum数量的节点处于活跃状态（用于<strong>Check Quorum</strong>）。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>VoterNodes() []uint64</code></td>
-<td style="text-align:left">返回有序的voter节点id集合。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>LearnerNodes() []uint64</code></td>
-<td style="text-align:left">返回有序的learner节点id集合。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>ResetVotes()</code></td>
-<td style="text-align:left">重置记录的选票。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>RecordVote(id uint64, v bool)</code></td>
-<td style="text-align:left">记录来自节点<code>id</code>的选票。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>TallyVotes() (granted int, rejected int, _ quorum.VoteResult)</code></td>
-<td style="text-align:left">返回选票中赞同数、反对数、与当前投票结果。</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center">方法<div style="width: 20em"></div></th>
+          <th style="text-align: left">描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center"><code>func MakeProgressTracker(maxInflight int) ProgressTracker</code></td>
+          <td style="text-align: left">新建空配置。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>ConfState() pb.ConfState</code></td>
+          <td style="text-align: left">返回当前激活的配置。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>IsSingleton() bool</code></td>
+          <td style="text-align: left">判断当前配置是否为单节点模式（voter数为0，且不处于<em>joint configuration</em>中）。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>Committed() uint64</code></td>
+          <td style="text-align: left">返回被quorum接受的<em>commit index</em>。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>Visit(f func(id uint64, pr *Progress))</code></td>
+          <td style="text-align: left">有序遍历追踪的所有进度，并对其执行传入的函数闭包。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>QuorumActive() bool</code></td>
+          <td style="text-align: left">判断是否有达到quorum数量的节点处于活跃状态（用于<strong>Check Quorum</strong>）。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>VoterNodes() []uint64</code></td>
+          <td style="text-align: left">返回有序的voter节点id集合。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>LearnerNodes() []uint64</code></td>
+          <td style="text-align: left">返回有序的learner节点id集合。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>ResetVotes()</code></td>
+          <td style="text-align: left">重置记录的选票。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>RecordVote(id uint64, v bool)</code></td>
+          <td style="text-align: left">记录来自节点<code>id</code>的选票。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>TallyVotes() (granted int, rejected int, _ quorum.VoteResult)</code></td>
+          <td style="text-align: left">返回选票中赞同数、反对数、与当前投票结果。</td>
+      </tr>
+  </tbody>
 </table>
 <h2 id="3-etcdraft配置变更的实现">3. etcd/raft配置变更的实现</h2>
 <p>etcd/raft中新配置是在<em>apply-time</em>生效的，也就是说，如果etcd/raft模块的使用者在处理<code>Ready</code>结构体的<code>CommittedEntries</code>字段时遇到了实现了<code>ConfChangeI</code>接口的消息时（包括<code>ConfChangeV2</code>和兼容的旧版本<code>ConfChange</code>），需要主动调用<code>Node</code>的<code>ApplyConfChange</code>方法通知Raft状态机使用新配置。该方法最终会调用<code>raft</code>结构体的<code>applyConfChange</code>方法，切换到相应的配置。</p>
@@ -698,8 +698,8 @@
 </div>
 </article></div>
         </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.128.2">Hugo</a> | Theme - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
-                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2024</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/posts/about" target="_blank" rel="noopener noreferrer">叉鸽 | MrCroxx</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        <div class="footer-container"><div class="footer-line">Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.139.2">Hugo</a> | Theme - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/posts/about" target="_blank" rel="noopener noreferrer">叉鸽 | MrCroxx</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div></footer></div>
 
     <div id="fixed-buttons"><a href="#back-to-top" id="back-to-top-button" class="fixed-button" title="Back to Top">

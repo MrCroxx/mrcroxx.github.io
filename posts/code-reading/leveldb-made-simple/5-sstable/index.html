@@ -201,25 +201,25 @@
     </figure></p>
 <p>其中，合法的压缩类型标识符共两种：</p>
 <table>
-<thead>
-<tr>
-<th style="text-align:center">压缩类型</th>
-<th style="text-align:center">值</th>
-<th style="text-align:left">描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center">kNoCompression</td>
-<td style="text-align:center">0x0</td>
-<td style="text-align:left">不压缩。</td>
-</tr>
-<tr>
-<td style="text-align:center">kSnappyCompression</td>
-<td style="text-align:center">0x1</td>
-<td style="text-align:left">采用Snappy算法压缩。</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center">压缩类型</th>
+          <th style="text-align: center">值</th>
+          <th style="text-align: left">描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center">kNoCompression</td>
+          <td style="text-align: center">0x0</td>
+          <td style="text-align: left">不压缩。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">kSnappyCompression</td>
+          <td style="text-align: center">0x1</td>
+          <td style="text-align: left">采用Snappy算法压缩。</td>
+      </tr>
+  </tbody>
 </table>
 <h3 id="12-block格式">1.2 Block格式</h3>
 <p>SSTable中所有的Block（content）都以下图格式组织：</p>
@@ -255,102 +255,102 @@
 <p>通过这种方式，可以对频繁出现的公共前缀进行压缩。Restart Entry的间隔<code>leveldb::Options.block_restart_interval</code>默认为16，以平衡缓存局部性。</p>
 <p>接下来关注SSTable中各类Block保存的数据（以下屏蔽Restart细节，仅关注Entry中的key/value）。</p>
 <table>
-<thead>
-<tr>
-<th style="text-align:center">Block Type <div style="width:8em"></div></th>
-<th style="text-align:center">key<div style="width:12em"></div></th>
-<th style="text-align:center">value<div style="width:12em"></div></th>
-<th style="text-align:left">描述<div style="width:40em"></div></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center">Data Block</td>
-<td style="text-align:center">InternalKey Size + InternalKey</td>
-<td style="text-align:center">Value Size + Value</td>
-<td style="text-align:left">完整数据与SkipList中Key的格式相同。</td>
-</tr>
-<tr>
-<td style="text-align:center">Meta Block</td>
-<td style="text-align:center">-</td>
-<td style="text-align:center">-</td>
-<td style="text-align:left">Meta Block有多种类型，目前可分 Filter Meta Block与Stats Meta Block，分别保存当前SSTable的过滤器与统计数据。</td>
-</tr>
-<tr>
-<td style="text-align:center">Filter Meta Block</td>
-<td style="text-align:center">filter.{{ Filter Name}}</td>
-<td style="text-align:center">BlockHandle</td>
-<td style="text-align:left">该SSTable使用的过滤器名称及其索引。过滤器的实现详见下文。</td>
-</tr>
-<tr>
-<td style="text-align:center">Stats Meta Block</td>
-<td style="text-align:center">统计量名</td>
-<td style="text-align:center">统计量值</td>
-<td style="text-align:left">保存该SSTable的统计量。</td>
-</tr>
-<tr>
-<td style="text-align:center">MetaIndex Block</td>
-<td style="text-align:center">Meta Block Name</td>
-<td style="text-align:center">BlockHandle</td>
-<td style="text-align:left">用来索引所有的MetaBlock。</td>
-</tr>
-<tr>
-<td style="text-align:center">Index Block</td>
-<td style="text-align:center">相应Data Block的“最大”Key值（详见下文）</td>
-<td style="text-align:center">BlockHandle</td>
-<td style="text-align:left">用来快速索引key在SSTable的哪个Data Block中。</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center">Block Type <div style="width:8em"></div></th>
+          <th style="text-align: center">key<div style="width:12em"></div></th>
+          <th style="text-align: center">value<div style="width:12em"></div></th>
+          <th style="text-align: left">描述<div style="width:40em"></div></th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center">Data Block</td>
+          <td style="text-align: center">InternalKey Size + InternalKey</td>
+          <td style="text-align: center">Value Size + Value</td>
+          <td style="text-align: left">完整数据与SkipList中Key的格式相同。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">Meta Block</td>
+          <td style="text-align: center">-</td>
+          <td style="text-align: center">-</td>
+          <td style="text-align: left">Meta Block有多种类型，目前可分 Filter Meta Block与Stats Meta Block，分别保存当前SSTable的过滤器与统计数据。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">Filter Meta Block</td>
+          <td style="text-align: center">filter.{{ Filter Name}}</td>
+          <td style="text-align: center">BlockHandle</td>
+          <td style="text-align: left">该SSTable使用的过滤器名称及其索引。过滤器的实现详见下文。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">Stats Meta Block</td>
+          <td style="text-align: center">统计量名</td>
+          <td style="text-align: center">统计量值</td>
+          <td style="text-align: left">保存该SSTable的统计量。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">MetaIndex Block</td>
+          <td style="text-align: center">Meta Block Name</td>
+          <td style="text-align: center">BlockHandle</td>
+          <td style="text-align: left">用来索引所有的MetaBlock。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">Index Block</td>
+          <td style="text-align: center">相应Data Block的“最大”Key值（详见下文）</td>
+          <td style="text-align: center">BlockHandle</td>
+          <td style="text-align: left">用来快速索引key在SSTable的哪个Data Block中。</td>
+      </tr>
+  </tbody>
 </table>
 <p>在较早版本的LevelDB中，Index Block中的key为其相应的Data Block中最大的key。随后，LevelDB对Index Block中key的空间进行了优化。目前，该key为大于等于其相应Block的最大key，且小于下一个Data Block最小key的最短key值。对于SSTable中的最后一个Data Block的key，取大于其最后一个key的最短key值。</p>
 <p>例如，下表给出了在一个SSTable中连续的若干Data Block的key范围（这里简化了key的格式，假设其只保存一个简单字符串）及其在Index Block中的key，其中Data Block <code>n</code>为该SStable的最后一个Data Block：</p>
 <table>
-<thead>
-<tr>
-<th style="text-align:center">Data Block</th>
-<th style="text-align:center">min(key)</th>
-<th style="text-align:center">max(key)</th>
-<th style="text-align:center">index key</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center">Data Block <code>k</code></td>
-<td style="text-align:center">apple</td>
-<td style="text-align:center">catspaw</td>
-<td style="text-align:center"><code>catq</code></td>
-</tr>
-<tr>
-<td style="text-align:center">Data Block <code>k+1</code></td>
-<td style="text-align:center">catsup</td>
-<td style="text-align:center">dog</td>
-<td style="text-align:center"><code>dog</code></td>
-</tr>
-<tr>
-<td style="text-align:center">Data Block <code>k+2</code></td>
-<td style="text-align:center">dogecoin</td>
-<td style="text-align:center">&hellip;</td>
-<td style="text-align:center">&hellip;</td>
-</tr>
-<tr>
-<td style="text-align:center">&hellip;</td>
-<td style="text-align:center">&hellip;</td>
-<td style="text-align:center">&hellip;</td>
-<td></td>
-</tr>
-<tr>
-<td style="text-align:center">Data Block <code>n-1</code></td>
-<td style="text-align:center">CalvinWeirFields</td>
-<td style="text-align:center">PaulDano</td>
-<td style="text-align:center"><code>R</code></td>
-</tr>
-<tr>
-<td style="text-align:center">Data Block <code>n</code></td>
-<td style="text-align:center">RubyTiffanySparks</td>
-<td style="text-align:center">YoeKazan</td>
-<td style="text-align:center"><code>Z</code></td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center">Data Block</th>
+          <th style="text-align: center">min(key)</th>
+          <th style="text-align: center">max(key)</th>
+          <th style="text-align: center">index key</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center">Data Block <code>k</code></td>
+          <td style="text-align: center">apple</td>
+          <td style="text-align: center">catspaw</td>
+          <td style="text-align: center"><code>catq</code></td>
+      </tr>
+      <tr>
+          <td style="text-align: center">Data Block <code>k+1</code></td>
+          <td style="text-align: center">catsup</td>
+          <td style="text-align: center">dog</td>
+          <td style="text-align: center"><code>dog</code></td>
+      </tr>
+      <tr>
+          <td style="text-align: center">Data Block <code>k+2</code></td>
+          <td style="text-align: center">dogecoin</td>
+          <td style="text-align: center">&hellip;</td>
+          <td style="text-align: center">&hellip;</td>
+      </tr>
+      <tr>
+          <td style="text-align: center">&hellip;</td>
+          <td style="text-align: center">&hellip;</td>
+          <td style="text-align: center">&hellip;</td>
+          <td></td>
+      </tr>
+      <tr>
+          <td style="text-align: center">Data Block <code>n-1</code></td>
+          <td style="text-align: center">CalvinWeirFields</td>
+          <td style="text-align: center">PaulDano</td>
+          <td style="text-align: center"><code>R</code></td>
+      </tr>
+      <tr>
+          <td style="text-align: center">Data Block <code>n</code></td>
+          <td style="text-align: center">RubyTiffanySparks</td>
+          <td style="text-align: center">YoeKazan</td>
+          <td style="text-align: center"><code>Z</code></td>
+      </tr>
+  </tbody>
 </table>
 <p>从上表中可以看出，通过这种方式可以进一步压缩Index Block中key的空间。</p>
 <div class="details admonition info open">
@@ -402,8 +402,8 @@
 </div>
 </article></div>
         </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.128.2">Hugo</a> | Theme - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
-                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2024</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/posts/about" target="_blank" rel="noopener noreferrer">叉鸽 | MrCroxx</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        <div class="footer-container"><div class="footer-line">Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.139.2">Hugo</a> | Theme - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/posts/about" target="_blank" rel="noopener noreferrer">叉鸽 | MrCroxx</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div></footer></div>
 
     <div id="fixed-buttons"><a href="#back-to-top" id="back-to-top-button" class="fixed-button" title="Back to Top">

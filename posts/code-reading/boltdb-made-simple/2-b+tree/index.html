@@ -236,50 +236,50 @@
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">inodes</span> <span class="p">[]</span><span class="nx">inode</span>
 </span></span></code></pre></div><table>
-<thead>
-<tr>
-<th style="text-align:center">字段<div style="width: 14em"></th>
-<th style="text-align:left">描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center"><code>bucket *Bucket</code></td>
-<td style="text-align:left">该node所属的bucket指针。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>isLeaf bool</code></td>
-<td style="text-align:left">当前node是否为叶子节点。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>unbalanced bool</code></td>
-<td style="text-align:left">当前node是否可能不平衡。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>spilled bool</code></td>
-<td style="text-align:left">当前node是否已被调整过。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>key []byte</code></td>
-<td style="text-align:left">保存node初始化时的第一个key，用于在调整时索引。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>pgid pgid</code></td>
-<td style="text-align:left">当前node在mmap内存中相应的页id。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>parent *node</code></td>
-<td style="text-align:left">父节点指针。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>children nodes</code></td>
-<td style="text-align:left">保存已实例化的孩子节点的node，用于<code>spill</code>时递归向下更新node。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>inodes inodes</code></td>
-<td style="text-align:left">该node的内部节点，即该node所包含的元素。</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center">字段<div style="width: 14em"></th>
+          <th style="text-align: left">描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center"><code>bucket *Bucket</code></td>
+          <td style="text-align: left">该node所属的bucket指针。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>isLeaf bool</code></td>
+          <td style="text-align: left">当前node是否为叶子节点。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>unbalanced bool</code></td>
+          <td style="text-align: left">当前node是否可能不平衡。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>spilled bool</code></td>
+          <td style="text-align: left">当前node是否已被调整过。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>key []byte</code></td>
+          <td style="text-align: left">保存node初始化时的第一个key，用于在调整时索引。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>pgid pgid</code></td>
+          <td style="text-align: left">当前node在mmap内存中相应的页id。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>parent *node</code></td>
+          <td style="text-align: left">父节点指针。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>children nodes</code></td>
+          <td style="text-align: left">保存已实例化的孩子节点的node，用于<code>spill</code>时递归向下更新node。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>inodes inodes</code></td>
+          <td style="text-align: left">该node的内部节点，即该node所包含的元素。</td>
+      </tr>
+  </tbody>
 </table>
 <h3 id="12-node在内存与存储中的关系">1.2 node在内存与存储中的关系</h3>
 <p>node的存储结构即为branchNodePage或leafNodePage，因此，boltdb仅持久化保存了node的<code>isLeaf</code>、<code>pgid</code>、<code>inodes</code>信息，其它信息都是在node创建或加载时指定的。node的<code>write</code>、<code>read</code>方法揭示了node是怎样被序列化或反序列化的：</p>
@@ -418,54 +418,54 @@
 <h3 id="13-node中用于查询的方法">1.3 node中用于查询的方法</h3>
 <p>除了node的字段外，node的一些方法也用来查询或索引数据（leafNode没有孩子，其child指其内部元素，即inode）：</p>
 <table>
-<thead>
-<tr>
-<th style="text-align:center">方法<div style="width: 14em"></th>
-<th style="text-align:left">描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center"><code>root() *node</code></td>
-<td style="text-align:left">当前node所在B+Tree的根节点。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>minKeys() int</code></td>
-<td style="text-align:left">节点至少应有的key的个数，leafNode返回1，branchNode返回2。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>size() int</code></td>
-<td style="text-align:left">当前节点序列化后的字节数。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code> sizeLessThan(v int) bool</code></td>
-<td style="text-align:left">判断当前节点序列化后字节数是否小于给定值，当累加计算超出给定值时立即返回false，用于比较时性能比直接调用<code>size</code>方法好一些。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>pageElementSize() int</code></td>
-<td style="text-align:left">当前类型节点的inode的header大小，用于计算序列化后字节数。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>childAt(index int) *node</code></td>
-<td style="text-align:left">返回节点当前第<code>index</code>个孩子的指针（而不是初始时的第<code>index</code>个孩子）。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>childIndex(child *node) int</code></td>
-<td style="text-align:left">返回给定的节点在当前节点的inode中的序号（而不是初始时的序号）。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>numChildren() int</code></td>
-<td style="text-align:left">当前节点的孩子（inode）的个数。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>nextSibling() *node</code></td>
-<td style="text-align:left">当前节点的下一个兄弟节点（通过查询父节点获取）。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>prevSibling() *node</code></td>
-<td style="text-align:left">当前节点的上一个兄弟节点（通过查询父节点获取）。</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center">方法<div style="width: 14em"></th>
+          <th style="text-align: left">描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center"><code>root() *node</code></td>
+          <td style="text-align: left">当前node所在B+Tree的根节点。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>minKeys() int</code></td>
+          <td style="text-align: left">节点至少应有的key的个数，leafNode返回1，branchNode返回2。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>size() int</code></td>
+          <td style="text-align: left">当前节点序列化后的字节数。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code> sizeLessThan(v int) bool</code></td>
+          <td style="text-align: left">判断当前节点序列化后字节数是否小于给定值，当累加计算超出给定值时立即返回false，用于比较时性能比直接调用<code>size</code>方法好一些。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>pageElementSize() int</code></td>
+          <td style="text-align: left">当前类型节点的inode的header大小，用于计算序列化后字节数。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>childAt(index int) *node</code></td>
+          <td style="text-align: left">返回节点当前第<code>index</code>个孩子的指针（而不是初始时的第<code>index</code>个孩子）。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>childIndex(child *node) int</code></td>
+          <td style="text-align: left">返回给定的节点在当前节点的inode中的序号（而不是初始时的序号）。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>numChildren() int</code></td>
+          <td style="text-align: left">当前节点的孩子（inode）的个数。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>nextSibling() *node</code></td>
+          <td style="text-align: left">当前节点的下一个兄弟节点（通过查询父节点获取）。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>prevSibling() *node</code></td>
+          <td style="text-align: left">当前节点的上一个兄弟节点（通过查询父节点获取）。</td>
+      </tr>
+  </tbody>
 </table>
 <p>这些方法的实现都非常简单，这里不再赘述。</p>
 <h3 id="14-node中用于修改的方法">1.4 node中用于修改的方法</h3>
@@ -862,8 +862,8 @@
 </div>
 </article></div>
         </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.128.2">Hugo</a> | Theme - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
-                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2024</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/posts/about" target="_blank" rel="noopener noreferrer">叉鸽 | MrCroxx</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        <div class="footer-container"><div class="footer-line">Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.139.2">Hugo</a> | Theme - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/posts/about" target="_blank" rel="noopener noreferrer">叉鸽 | MrCroxx</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div></footer></div>
 
     <div id="fixed-buttons"><a href="#back-to-top" id="back-to-top-button" class="fixed-button" title="Back to Top">

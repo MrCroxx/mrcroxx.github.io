@@ -290,30 +290,30 @@
 </span></span></code></pre></div><p>如果<code>readOnly</code>的<code>option</code>字段的值为<code>ReadOnlyLeaseBased</code>，说明<em>read index</em>的实现使用了<strong>Lease Read</strong>，不需要在获取<em>read index</em>前广播心跳，因此不会用到<code>pendingReadIndex</code>与<code>readIndexQueue</code>字段。</p>
 <p><code>readOnly</code>还封装了如下方法：</p>
 <table>
-<thead>
-<tr>
-<th style="text-align:center">方法<div style="width: 12em"></div></th>
-<th style="text-align:left">描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center"><code>addRequest(index uint64, m pb.Message)</code></td>
-<td style="text-align:left">在广播用来确认<em>read index</em>的心跳消息前，需要调用该方法将该<em>read index</em>加入待确认队列。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>recvAck(id uint64, context []byte) map[uint64]bool</code></td>
-<td style="text-align:left">当收到确认<em>read index</em>的心跳响应时，需要调用该方法更新该<em>read index</em>的确认状态，该方法会返回收到的确认心跳响应的发送者的id集合。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>advance(m pb.Message) []*readIndexStatus</code></td>
-<td style="text-align:left">当有<em>read index</em>得到了达到quorum数量节点的ack时，调用该方法返回相应的<code>ReadState</code>，并从待确认的队列中移除相应的<em>read index</em>及其状态。该方法支持批量与流水线操作，因为如果队列中靠后的<em>read index</em>被确认，则其之前的<em>read index</em>也可以确认，因此该方法会返回所有已确认的<code>ReadState</code>。</td>
-</tr>
-<tr>
-<td style="text-align:center"><code>lastPendingRequestCtx() string</code></td>
-<td style="text-align:left">该方法用来获取待确认的最后一条<em>read index</em>对应的<code>rctx</code>。在<em>heartbeat timeout</em>超时构造心跳消息时，其携带的<em>read index</em>标识为最后一条待确认的<em>read index</em>的标识，因为如果队列中靠后的<em>read index</em>被确认，则其之前的<em>read index</em>也可以确认，该方法是为支持批量与流水线操作而设计的。</td>
-</tr>
-</tbody>
+  <thead>
+      <tr>
+          <th style="text-align: center">方法<div style="width: 12em"></div></th>
+          <th style="text-align: left">描述</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td style="text-align: center"><code>addRequest(index uint64, m pb.Message)</code></td>
+          <td style="text-align: left">在广播用来确认<em>read index</em>的心跳消息前，需要调用该方法将该<em>read index</em>加入待确认队列。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>recvAck(id uint64, context []byte) map[uint64]bool</code></td>
+          <td style="text-align: left">当收到确认<em>read index</em>的心跳响应时，需要调用该方法更新该<em>read index</em>的确认状态，该方法会返回收到的确认心跳响应的发送者的id集合。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>advance(m pb.Message) []*readIndexStatus</code></td>
+          <td style="text-align: left">当有<em>read index</em>得到了达到quorum数量节点的ack时，调用该方法返回相应的<code>ReadState</code>，并从待确认的队列中移除相应的<em>read index</em>及其状态。该方法支持批量与流水线操作，因为如果队列中靠后的<em>read index</em>被确认，则其之前的<em>read index</em>也可以确认，因此该方法会返回所有已确认的<code>ReadState</code>。</td>
+      </tr>
+      <tr>
+          <td style="text-align: center"><code>lastPendingRequestCtx() string</code></td>
+          <td style="text-align: left">该方法用来获取待确认的最后一条<em>read index</em>对应的<code>rctx</code>。在<em>heartbeat timeout</em>超时构造心跳消息时，其携带的<em>read index</em>标识为最后一条待确认的<em>read index</em>的标识，因为如果队列中靠后的<em>read index</em>被确认，则其之前的<em>read index</em>也可以确认，该方法是为支持批量与流水线操作而设计的。</td>
+      </tr>
+  </tbody>
 </table>
 <h4 id="222-获取read-index流程与实现">2.2.2 获取read index流程与实现</h4>
 <p><code>Node</code>接口的<code>ReadIndex</code>方法会为Raft状态机应用一条<code>MsgReadIndex</code>消息。etcd/raft实现了<strong>Follower Read</strong>（<a href="#12-readindex" rel="">1.2节</a>介绍了<strong>Follower Read</strong>的简单实现），即follower需要将获取<em>read index</em>的请求转发给leader，leader确认自己是合法的leader后将<em>read index</em>返回给follower，然后follower根据其自己的<em>apply index</em>与<em>read index</em>确定什么时候可以执行只读请求。因此，如果应用<code>MsgReadIndex</code>消息的节点是follower，其会将该请求转发给leader：</p>
@@ -447,8 +447,8 @@
 </div>
 </article></div>
         </main><footer class="footer">
-        <div class="footer-container"><div class="footer-line">Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.128.2">Hugo</a> | Theme - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
-                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2024</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/posts/about" target="_blank" rel="noopener noreferrer">叉鸽 | MrCroxx</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
+        <div class="footer-container"><div class="footer-line">Powered by <a href="https://gohugo.io/" target="_blank" rel="noopener noreffer" title="Hugo 0.139.2">Hugo</a> | Theme - <a href="https://github.com/HEIGE-PCloud/DoIt" target="_blank" rel="noopener noreffer" title="DoIt 0.2.13"><i class="far fa-edit fa-fw"></i> DoIt</a>
+                </div><div class="footer-line"><i class="far fa-copyright fa-fw"></i><span itemprop="copyrightYear">2019 - 2025</span><span class="author" itemprop="copyrightHolder">&nbsp;<a href="/posts/about" target="_blank" rel="noopener noreferrer">叉鸽 | MrCroxx</a></span>&nbsp;|&nbsp;<span class="license"><a rel="license external nofollow noopener noreffer" href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a></span></div>
         </div></footer></div>
 
     <div id="fixed-buttons"><a href="#back-to-top" id="back-to-top-button" class="fixed-button" title="Back to Top">

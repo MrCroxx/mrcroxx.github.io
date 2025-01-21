@@ -10,6 +10,11 @@
     <pubDate>Mon, 22 Jul 2019 16:37:55 &#43;0800</pubDate><author>
         <name>叉鸽 | MrCroxx</name>
     </author><guid>https://mrcroxx.github.io/posts/deployment/private-docker-registry-with-ldap-auth-and-webui/</guid>
-    <description><![CDATA[带LDAP认证与WebUI的Docker私有仓库搭建 1. 获取docker仓库并运行 docker pull registry:latest docker run -d -p 127.0.0.1:5000:5000 --name registry-localhost -v /opt/docker-registry:/var/lib/registry --restart=always registry:latest 2. 获取WebUI并运行 Docker Regi]]></description>
+    <description><![CDATA[<h1 id="带ldap认证与webui的docker私有仓库搭建">带LDAP认证与WebUI的Docker私有仓库搭建</h1>
+<h2 id="1-获取docker仓库并运行">1. 获取docker仓库并运行</h2>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">docker pull registry:latest
+</span></span><span class="line"><span class="cl">docker run -d -p 127.0.0.1:5000:5000 --name registry-localhost -v /opt/docker-registry:/var/lib/registry --restart<span class="o">=</span>always registry:latest
+</span></span></code></pre></div><h2 id="2-获取webui并运行">2. 获取WebUI并运行</h2>
+<p><em>Docker Registry的WebUI有很多，这里使用konradkleine/docker-registry-frontend:v2</em></p>]]></description>
 </item></channel>
 </rss>
